@@ -262,9 +262,31 @@ Add optional `partitioningMethod` field:
 
 Values: `"geographic"` (postcode, ward, parish), `"organisational"` (team, department), `"temporal"` (by date range), `"none"` (requires full ETL). This informs disaggregation feasibility and estimated lead time.
 
-### CSV import support
+### CMDB-aware import *(CSV/Excel import already implemented)*
 
-Most council IT teams can export system inventories from CMDB tools (ServiceNow, Jira, Excel) as CSV. Add a CSV import option at Stage 1 with column mapping UI: map CSV columns to the engine's schema fields (system name, vendor, users, cost, contract end date, etc.). Reduces the barrier to adoption compared to manual JSON preparation.
+Basic CSV/Excel import with auto-column-detection, clipboard paste, and manual entry are already implemented in the import wizard. The next step is **CMDB-specific format support** for common platforms:
+
+**ServiceNow default schema.** ServiceNow exports use a standard CMDB table structure (`cmdb_ci_server`, `cmdb_ci_appl`, `cmdb_ci_service`) with predictable column names (`name`, `vendor`, `operational_status`, `cost`, `support_group`, `u_contract_end_date`). Add a "ServiceNow" preset to the column mapping step that auto-maps these fields without user intervention.
+
+**Relationship table import.** CMDBs typically store relationships in a separate table (`cmdb_rel_ci` in ServiceNow, relationship exports in LeanIX). The engine currently requires edges to be embedded in the same file as nodes. Add support for importing a **second file** at the column mapping step that maps relationship rows (source CI, target CI, relationship type) to the engine's edge model. This is critical for councils whose CMDB exports separate the "what systems exist" data from the "which systems serve which functions" data.
+
+**Proposed UX:**
+- Step 1 of the import wizard gains a "CMDB format" selector: Generic CSV, ServiceNow, LeanIX
+- Selecting a format pre-fills column mappings and optionally prompts for a relationships file
+- Auto-detection still works as fallback — if a user uploads a ServiceNow export without selecting the preset, the regex rules should still match most columns
+
+**Schema mapping for common CMDB fields:**
+
+| ServiceNow field | Engine field |
+|---|---|
+| `name` | System label |
+| `vendor` / `manufacturer` | Vendor |
+| `operational_status` | (filter: only import active CIs) |
+| `u_annual_cost` / `cost` | Annual cost |
+| `u_contract_end_date` | End year/month |
+| `u_notice_period` | Notice period |
+| `hosted_on` / `cloud` | Is cloud |
+| `support_group` / `assignment_group` | Department (for function mapping) |
 
 ### Programme timeline milestones
 
@@ -334,13 +356,33 @@ Allow users to attach decisions and rationale to function cells:
 
 Export includes annotations so the decision register is self-documenting. This transforms the tool from a one-time analysis into a living transition record.
 
-### What-if scenario modelling
+### Transition simulation engine
 
-Allow users to explore "what if we consolidate on System A?" by clicking a system and seeing how signals adjust:
-- Remove competing systems from the analysis
-- Recalculate cost, user volume, and vendor density
-- Show migration complexity for each system that would be decommissioned
-- Compare scenarios side-by-side
+Move beyond analysis into **forward-looking decision modelling**. Once data and transition config are loaded, users should be able to select actions across the reorganisation and see a model of the impacts.
+
+**The concept.** The current tool answers "what does the estate look like?" The simulation engine answers "what happens if we do *this*?" Users select concrete actions — consolidate on System A, decommission System B, migrate users from C to D, extend contract E — and the engine recalculates the entire estate model to show the consequences.
+
+**Action types:**
+
+| Action | Effect on model |
+|---|---|
+| **Consolidate on System X** | Removes competing systems from the successor allocation; recalculates cost, user volume, vendor density; shows migration burden for decommissioned systems |
+| **Decommission System Y** | Removes system from estate; flags any functions left unserved; recalculates estate metrics |
+| **Extend contract** | Moves contract end date; recalculates vesting zone and notice trigger; may demote tier priority |
+| **Migrate users** | Transfers user count between systems; recalculates anchor status and user volume signal |
+| **Split shared service** | Creates two instances from one shared system; assigns each to a successor; recalculates boundary crossing |
+| **Procure replacement** | Adds a new system to a successor with estimated cost, users, and timeline; marks predecessor system for decommission |
+
+**Impact analysis.** After each action (or batch of actions), the engine should show:
+- **Before/after estate summary** — system count, total cost, collision count, pre-vesting triggers
+- **Changed signals** — which signals improve or worsen as a result of the action
+- **Timeline impact** — how procurement and migration activities fit against the vesting date and notice windows
+- **Dependency cascade** — if a decommissioned system is depended on by other systems (see system dependency tracking), flag the cascade
+- **Cost delta** — net change in annual IT spend, plus estimated one-off migration/procurement costs
+
+**Scenario comparison.** Save named scenarios ("Option A: consolidate on NEC", "Option B: procure new cloud platform") and compare side-by-side across key metrics. This enables programme boards to evaluate trade-offs quantitatively rather than debating in the abstract.
+
+**Decision capture.** When a scenario is approved, its actions become the decision record — feeding directly into the decision annotation system (see above). The simulation becomes the audit trail: "we chose Option A because it reduced annual cost by £200k and avoided a pre-vesting procurement cycle."
 
 ### System dependency tracking
 
@@ -367,11 +409,12 @@ Move from single-user browser sessions to shared workspaces where multiple team 
 
 ### API integration with council tools
 
-Reduce manual data preparation by consuming data from common council platforms:
-- ServiceNow CMDB export
-- LeanIX architecture repository
+Reduce manual data preparation by consuming data directly from common council platforms via API:
+- ServiceNow CMDB API (live CI and relationship queries — beyond the near-term file-based ServiceNow import)
+- LeanIX architecture repository API
 - Jira/Confluence project data
 - Direct contract register imports
+- Atkins/Faithful+Gould asset management systems
 
 ### Programme board reporting
 
@@ -420,7 +463,8 @@ How the engine's current and planned capabilities map against the two reference 
 | **Governance/compliance** | TCoP assessment only | + playbook phase tracking | Implied | Forthcoming |
 | **Vendor engagement** | Vendor density signal | Unchanged | Case studies | Core purpose |
 | **Target-state planning** | Not modelled | LGAM overlay (long-term) | Not modelled | Core purpose |
-| **What-if analysis** | Not modelled | Scenario comparison | Not addressed | Not addressed |
+| **Transition simulation** | Not modelled | Action modelling, scenario comparison, impact analysis | Not addressed | Not addressed |
+| **CMDB integration** | CSV/Excel with auto-detect | ServiceNow/LeanIX presets, relationship table import | Not addressed | Not addressed |
 
 ---
 
