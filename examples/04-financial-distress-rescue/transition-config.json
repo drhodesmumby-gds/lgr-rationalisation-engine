@@ -1,0 +1,15 @@
+{
+  "vestingDate": "2026-10-01",
+  "successors": [
+    {
+      "name": "West Greyminster Council",
+      "fullPredecessors": ["Greyminster Borough Council", "Westhaven District Council"],
+      "partialPredecessors": []
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Greyminster Borough Council",
+    "Westhaven District Council"
+  ]
+}

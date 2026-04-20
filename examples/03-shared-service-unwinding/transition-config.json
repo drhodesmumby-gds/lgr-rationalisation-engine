@@ -1,0 +1,21 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "Riverside Council",
+      "fullPredecessors": ["Riverdale Borough Council", "Stonebridge Borough Council"],
+      "partialPredecessors": []
+    },
+    {
+      "name": "Greater Wolds Council",
+      "fullPredecessors": ["Kingsway District Council"],
+      "partialPredecessors": []
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Riverdale Borough Council",
+    "Kingsway District Council",
+    "Stonebridge Borough Council"
+  ]
+}

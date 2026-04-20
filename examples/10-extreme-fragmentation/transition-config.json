@@ -1,0 +1,30 @@
+{
+  "vestingDate": "2027-10-01",
+  "successors": [
+    {
+      "name": "Blackwood North Council",
+      "fullPredecessors": ["Ashford Borough Council", "Birchwood District Council"],
+      "partialPredecessors": ["Greater Blackwood County Council", "Copperfield District Council"]
+    },
+    {
+      "name": "Blackwood South Council",
+      "fullPredecessors": ["Drayton Borough Council", "Eastbury District Council"],
+      "partialPredecessors": ["Greater Blackwood County Council"]
+    },
+    {
+      "name": "Copperfield Vale Council",
+      "fullPredecessors": ["Foxhall District Council"],
+      "partialPredecessors": ["Copperfield District Council"]
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Greater Blackwood County Council",
+    "Ashford Borough Council",
+    "Birchwood District Council",
+    "Copperfield District Council",
+    "Drayton Borough Council",
+    "Eastbury District Council",
+    "Foxhall District Council"
+  ]
+}

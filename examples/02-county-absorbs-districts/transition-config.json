@@ -1,0 +1,22 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "Hartfordshire Council",
+      "fullPredecessors": [
+        "Hartfordshire County Council",
+        "Millbrook District Council",
+        "Fenwick District Council",
+        "Ashbury District Council"
+      ],
+      "partialPredecessors": []
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Hartfordshire County Council",
+    "Millbrook District Council",
+    "Fenwick District Council",
+    "Ashbury District Council"
+  ]
+}

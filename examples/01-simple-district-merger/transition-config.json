@@ -1,0 +1,12 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "Thornbury and Crestfield Council",
+      "fullPredecessors": ["Thornbury District Council", "Crestfield District Council"],
+      "partialPredecessors": []
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": ["Thornbury District Council", "Crestfield District Council"]
+}

@@ -1,0 +1,12 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "Brightwell and Oldcastle Council",
+      "fullPredecessors": ["Brightwell District Council", "Oldcastle Borough Council"],
+      "partialPredecessors": []
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": ["Brightwell District Council", "Oldcastle Borough Council"]
+}

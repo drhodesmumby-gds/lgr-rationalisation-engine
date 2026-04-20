@@ -1,0 +1,44 @@
+{
+  "councilName": "Easton District",
+  "councilMetadata": {
+    "tier": "district",
+    "financialDistress": true
+  },
+  "nodes": [
+    { "id": "LGA_WASTE", "label": "Refuse Operations", "type": "Function", "lgaFunctionId": "142" },
+    { "id": "LGA_REVS", "label": "Revenues & Benefits", "type": "Function", "lgaFunctionId": "3" },
+    { "id": "LGA_PLAN", "label": "Planning", "type": "Function", "lgaFunctionId": "101" },
+    { "id": "LGA_HOUSE", "label": "Tenancy Services", "type": "Function", "lgaFunctionId": "159" },
+    { "id": "LGA_ENV", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
+    { "id": "LGA_ELEC", "label": "Elections", "type": "Function", "lgaFunctionId": "146" },
+    { "id": "LGA_FIN", "label": "Corporate Finance", "type": "Function", "lgaFunctionId": "116" },
+    { "id": "LGA_HR", "label": "HR & Payroll", "type": "Function", "lgaFunctionId": "119" },
+    { "id": "LGA_CRM", "label": "Customer Contact", "type": "Function", "lgaFunctionId": "43" },
+
+    {
+      "_note": "District-level monolith. Creates a secondary entanglement trap against the County Oracle system.",
+      "id": "sys_e_erp", "label": "Unit4 Business World", "type": "ITSystem", "owner": "Easton District", "vendor": "Unit4", "users": 850, "endYear": 2028, "endMonth": 4, "noticePeriod": 12, "cost": "£450k/yr", "annualCost": 450000, "portability": "Low", "dataPartitioning": "Monolithic", "isCloud": false, "isERP": true
+    },
+    {
+      "_note": "Shared service with Southby. Exact same NEC vendor and expiry.",
+      "id": "sys_shared_revs", "label": "NEC Revenues (Shared)", "type": "ITSystem", "owner": "Easton District", "vendor": "NEC", "users": 65, "endYear": 2029, "endMonth": 4, "noticePeriod": 12, "cost": "£150k/yr", "annualCost": 150000, "sharedWith": ["Southby Borough"], "portability": "Low", "dataPartitioning": "Monolithic", "isCloud": false, "isERP": false
+    },
+    { "id": "sys_e_waste", "label": "Local SQL Routing", "type": "ITSystem", "owner": "Easton District", "vendor": "In-House", "users": 30, "endYear": 2025, "endMonth": 11, "noticePeriod": 1, "cost": "£30k/yr", "annualCost": 30000, "portability": "High", "dataPartitioning": "Monolithic", "isCloud": false, "isERP": false },
+    { "id": "sys_e_plan", "label": "Agile Planning", "type": "ITSystem", "owner": "Easton District", "vendor": "AgileApps", "users": 35, "endYear": 2026, "endMonth": 12, "noticePeriod": 3, "cost": "£85k/yr", "annualCost": 85000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
+    { "id": "sys_e_house", "label": "NEC Housing", "type": "ITSystem", "owner": "Easton District", "vendor": "NEC", "users": 105, "endYear": 2027, "endMonth": 1, "noticePeriod": 6, "cost": "£190k/yr", "annualCost": 190000, "portability": "Low", "dataPartitioning": "Monolithic", "isCloud": false, "isERP": false },
+    { "id": "sys_e_env", "label": "Idox Public Protection", "type": "ITSystem", "owner": "Easton District", "vendor": "Idox", "users": 40, "endYear": 2025, "endMonth": 6, "noticePeriod": 3, "cost": "£60k/yr", "annualCost": 60000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": false, "isERP": false },
+    { "id": "sys_e_elec", "label": "Xpress Register", "type": "ITSystem", "owner": "Easton District", "vendor": "Civica", "users": 12, "endYear": 2028, "endMonth": 2, "noticePeriod": 6, "cost": "£35k/yr", "annualCost": 35000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": false, "isERP": false },
+    { "id": "sys_e_crm", "label": "GOSS iCM", "type": "ITSystem", "owner": "Easton District", "vendor": "GOSS Interactive", "users": 200, "endYear": 2026, "endMonth": 5, "noticePeriod": 3, "cost": "£90k/yr", "annualCost": 90000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false }
+  ],
+  "edges": [
+    { "source": "sys_e_waste", "target": "LGA_WASTE", "relationship": "REALIZES" },
+    { "source": "sys_shared_revs", "target": "LGA_REVS", "relationship": "REALIZES" },
+    { "source": "sys_e_plan", "target": "LGA_PLAN", "relationship": "REALIZES" },
+    { "source": "sys_e_house", "target": "LGA_HOUSE", "relationship": "REALIZES" },
+    { "source": "sys_e_env", "target": "LGA_ENV", "relationship": "REALIZES" },
+    { "source": "sys_e_elec", "target": "LGA_ELEC", "relationship": "REALIZES" },
+    { "source": "sys_e_erp", "target": "LGA_FIN", "relationship": "REALIZES" },
+    { "source": "sys_e_erp", "target": "LGA_HR", "relationship": "REALIZES" },
+    { "source": "sys_e_crm", "target": "LGA_CRM", "relationship": "REALIZES" }
+  ]
+}

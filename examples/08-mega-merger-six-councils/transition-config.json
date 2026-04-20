@@ -1,0 +1,24 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "West Elmhurst Council",
+      "fullPredecessors": ["Elmhurst District Council", "Fairford Borough Council", "Grantham District Council"],
+      "partialPredecessors": ["Westshire County Council"]
+    },
+    {
+      "name": "Ivy Hatherley Council",
+      "fullPredecessors": ["Hatherley District Council", "Ivybridge Borough Council"],
+      "partialPredecessors": ["Westshire County Council"]
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Westshire County Council",
+    "Elmhurst District Council",
+    "Fairford Borough Council",
+    "Grantham District Council",
+    "Hatherley District Council",
+    "Ivybridge Borough Council"
+  ]
+}

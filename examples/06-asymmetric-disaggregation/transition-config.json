@@ -1,0 +1,23 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "North Alderton Council",
+      "fullPredecessors": ["Alderton District Council", "Bramfield District Council"],
+      "partialPredecessors": ["Northmoor County Council", "Dunstable Borough Council"]
+    },
+    {
+      "name": "South Chelworth Council",
+      "fullPredecessors": ["Chelworth District Council"],
+      "partialPredecessors": ["Northmoor County Council", "Dunstable Borough Council"]
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Northmoor County Council",
+    "Alderton District Council",
+    "Bramfield District Council",
+    "Chelworth District Council",
+    "Dunstable Borough Council"
+  ]
+}

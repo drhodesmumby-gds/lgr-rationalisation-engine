@@ -1,0 +1,21 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "Penworth North Council",
+      "fullPredecessors": ["Langton District Council"],
+      "partialPredecessors": ["Penworth County Council"]
+    },
+    {
+      "name": "Penworth South Council",
+      "fullPredecessors": ["Middleham District Council"],
+      "partialPredecessors": ["Penworth County Council"]
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": [
+    "Penworth County Council",
+    "Langton District Council",
+    "Middleham District Council"
+  ]
+}

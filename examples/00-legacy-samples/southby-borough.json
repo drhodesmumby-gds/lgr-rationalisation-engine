@@ -1,0 +1,44 @@
+{
+  "councilName": "Southby Borough",
+  "councilMetadata": {
+    "tier": "district"
+  },
+  "nodes": [
+    { "id": "LGA_WASTE", "label": "Bin Collections", "type": "Function", "lgaFunctionId": "142" },
+    { "id": "LGA_REVS", "label": "Council Tax", "type": "Function", "lgaFunctionId": "3" },
+    { "id": "LGA_PLAN", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
+    { "id": "LGA_HOUSE", "label": "Housing", "type": "Function", "lgaFunctionId": "159" },
+    { "id": "LGA_ENV", "label": "Environmental Trading", "type": "Function", "lgaFunctionId": "34" },
+    { "id": "LGA_ELEC", "label": "Elections", "type": "Function", "lgaFunctionId": "146" },
+    { "id": "LGA_FIN", "label": "Finance", "type": "Function", "lgaFunctionId": "116" },
+    { "id": "LGA_HR", "label": "HR Operations", "type": "Function", "lgaFunctionId": "119" },
+    { "id": "LGA_CRM", "label": "Contact Centre", "type": "Function", "lgaFunctionId": "43" },
+
+    {
+      "_note": "The Commercial Override Trap. Extremely long contract with high lock-in.",
+      "id": "sys_s_waste", "label": "Whitespace Municipal", "type": "ITSystem", "owner": "Southby Borough", "vendor": "Whitespace", "users": 180, "endYear": 2032, "endMonth": 8, "noticePeriod": 12, "cost": "£320k/yr", "annualCost": 320000, "portability": "Low", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false
+    },
+    {
+      "_note": "Shared service with Easton.",
+      "id": "sys_shared_revs", "label": "NEC Revenues (Shared)", "type": "ITSystem", "owner": "Southby Borough", "vendor": "NEC", "users": 85, "endYear": 2029, "endMonth": 4, "noticePeriod": 12, "cost": "£150k/yr", "annualCost": 150000, "sharedWith": ["Easton District"], "portability": "Low", "dataPartitioning": "Monolithic", "isCloud": false, "isERP": false
+    },
+    { "id": "sys_s_plan", "label": "Idox Uniform On-Prem", "type": "ITSystem", "owner": "Southby Borough", "vendor": "Idox", "users": 65, "endYear": 2026, "endMonth": 1, "noticePeriod": 6, "cost": "£110k/yr", "annualCost": 110000, "portability": "Medium", "dataPartitioning": "Monolithic", "isCloud": false, "isERP": false },
+    { "id": "sys_s_house", "label": "Orchard Housing", "type": "ITSystem", "owner": "Southby Borough", "vendor": "MRI", "users": 110, "endYear": 2026, "endMonth": 1, "noticePeriod": 6, "cost": "£140k/yr", "annualCost": 140000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
+    { "id": "sys_s_env", "label": "Tascomi Public Protection", "type": "ITSystem", "owner": "Southby Borough", "vendor": "Idox", "users": 45, "endYear": 2028, "endMonth": 3, "noticePeriod": 6, "cost": "£80k/yr", "annualCost": 80000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
+    { "id": "sys_s_elec", "label": "Civica Xpress", "type": "ITSystem", "owner": "Southby Borough", "vendor": "Civica", "users": 18, "endYear": 2027, "endMonth": 11, "noticePeriod": 6, "cost": "£45k/yr", "annualCost": 45000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": false, "isERP": false },
+    { "id": "sys_s_fin", "label": "Civica Financials", "type": "ITSystem", "owner": "Southby Borough", "vendor": "Civica", "users": 90, "endYear": 2026, "endMonth": 4, "noticePeriod": 6, "cost": "£120k/yr", "annualCost": 120000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
+    { "id": "sys_s_hr", "label": "iTrent", "type": "ITSystem", "owner": "Southby Borough", "vendor": "MHR", "users": 250, "endYear": 2028, "endMonth": 9, "noticePeriod": 12, "cost": "£200k/yr", "annualCost": 200000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
+    { "id": "sys_s_crm", "label": "Granicus govService", "type": "ITSystem", "owner": "Southby Borough", "vendor": "Granicus", "users": 280, "endYear": 2026, "endMonth": 12, "noticePeriod": 6, "cost": "£160k/yr", "annualCost": 160000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false }
+  ],
+  "edges": [
+    { "source": "sys_s_waste", "target": "LGA_WASTE", "relationship": "REALIZES" },
+    { "source": "sys_shared_revs", "target": "LGA_REVS", "relationship": "REALIZES" },
+    { "source": "sys_s_plan", "target": "LGA_PLAN", "relationship": "REALIZES" },
+    { "source": "sys_s_house", "target": "LGA_HOUSE", "relationship": "REALIZES" },
+    { "source": "sys_s_env", "target": "LGA_ENV", "relationship": "REALIZES" },
+    { "source": "sys_s_elec", "target": "LGA_ELEC", "relationship": "REALIZES" },
+    { "source": "sys_s_fin", "target": "LGA_FIN", "relationship": "REALIZES" },
+    { "source": "sys_s_hr", "target": "LGA_HR", "relationship": "REALIZES" },
+    { "source": "sys_s_crm", "target": "LGA_CRM", "relationship": "REALIZES" }
+  ]
+}

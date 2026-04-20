@@ -1,0 +1,12 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "Oakham Council",
+      "fullPredecessors": ["Oakham County Council", "Brackley District Council", "Winsford District Council"],
+      "partialPredecessors": []
+    }
+  ],
+  "exportedAt": "2026-04-18T12:00:00Z",
+  "sourceCouncils": ["Oakham County Council", "Brackley District Council", "Winsford District Council"]
+}

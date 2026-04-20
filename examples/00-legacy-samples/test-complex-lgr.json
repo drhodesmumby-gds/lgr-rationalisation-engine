@@ -1,0 +1,115 @@
+{
+  "scenario": {
+    "title": "Asymmetric Disaggregation & Merger",
+    "description": "Models a complex 'fracture'. Legacy Council A is primarily merging with Council B to form 'Unitary AB'. However, border boundary changes mean Council A must also carve off portions of its Adult Social Care and Highways services to neighbouring Unitary C and Unitary D. The engine highlights the immediate need for Service Level Agreements (SLAs) to support the fragmented authorities."
+  },
+  "nodes": [
+    { "id": "f_waste", "label": "Waste Collection", "type": "Function", "lgaFunctionId": "142" },
+    { "id": "f_care", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
+    { "id": "f_highways", "label": "Highways Maintenance", "type": "Function", "lgaFunctionId": "109" },
+
+    {
+      "_note": "CLEAN MERGE: Council A's Waste system is only going to the main merger partner (Unitary AB).",
+      "id": "sys_a_waste",
+      "label": "Bartec Waste",
+      "type": "ITSystem",
+      "owner": "Council A (Fractured)",
+      "targetAuthorities": ["Unitary AB"],
+      "endYear": 2028,
+      "endMonth": 6,
+      "cost": "£150k/yr",
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false
+    },
+    {
+      "_note": "THE FRACTURE: Council A's Social Care system targets THREE future unitaries, but the database is Monolithic. The engine will flag this as a critical Disaggregation Risk.",
+      "id": "sys_a_care",
+      "label": "Liquidlogic ASC (Monolith)",
+      "type": "ITSystem",
+      "owner": "Council A (Fractured)",
+      "targetAuthorities": ["Unitary AB", "Unitary C", "Unitary D"],
+      "endYear": 2027,
+      "endMonth": 3,
+      "cost": "£800k/yr",
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false
+    },
+    {
+      "_note": "THE CLEAN FRACTURE: Highways is also splitting, but the data is easily segmented, so they can just export CSVs for C and D.",
+      "id": "sys_a_highways",
+      "label": "Confirm Highways",
+      "type": "ITSystem",
+      "owner": "Council A (Fractured)",
+      "targetAuthorities": ["Unitary AB", "Unitary C", "Unitary D"],
+      "endYear": 2026,
+      "endMonth": 10,
+      "cost": "£250k/yr",
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false
+    },
+
+    {
+      "_note": "Main merger partner. Collides with Council A in Unitary AB.",
+      "id": "sys_b_waste",
+      "label": "Local Routing DB",
+      "type": "ITSystem",
+      "owner": "Council B",
+      "targetAuthorities": ["Unitary AB"],
+      "endYear": 2025,
+      "endMonth": 12,
+      "cost": "£40k/yr",
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": false,
+      "isERP": false
+    },
+    
+    {
+      "_note": "Neighbouring authority receiving a fragment of Council A.",
+      "id": "sys_c_care",
+      "label": "Mosaic ASC",
+      "type": "ITSystem",
+      "owner": "Council C",
+      "targetAuthorities": ["Unitary C"],
+      "endYear": 2029,
+      "endMonth": 1,
+      "cost": "£600k/yr",
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": true,
+      "isERP": false
+    },
+
+    {
+      "_note": "Other neighbouring authority receiving a fragment.",
+      "id": "sys_d_care",
+      "label": "CareDirector",
+      "type": "ITSystem",
+      "owner": "Council D",
+      "targetAuthorities": ["Unitary D"],
+      "endYear": 2026,
+      "endMonth": 8,
+      "cost": "£550k/yr",
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false
+    }
+  ],
+  "edges": [
+    { "source": "sys_a_waste", "target": "f_waste", "relationship": "REALIZES" },
+    { "source": "sys_a_care", "target": "f_care", "relationship": "REALIZES" },
+    { "source": "sys_a_highways", "target": "f_highways", "relationship": "REALIZES" },
+    
+    { "source": "sys_b_waste", "target": "f_waste", "relationship": "REALIZES" },
+    
+    { "source": "sys_c_care", "target": "f_care", "relationship": "REALIZES" },
+    { "source": "sys_d_care", "target": "f_care", "relationship": "REALIZES" }
+  ]
+}
