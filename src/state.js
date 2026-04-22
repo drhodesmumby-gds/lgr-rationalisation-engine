@@ -1,0 +1,22 @@
+export const state = {
+    rawUploads: [],
+    mergedArchitecture: { nodes: [], edges: [], councils: new Set() },
+    activePersona: 'executive',
+    activePerspective: 'all',
+    lgaFunctionMap: new Map(),
+    signalWeights: null,  // initialized later from PERSONA_DEFAULT_WEIGHTS
+    analysisModalData: [],
+    transitionStructure: null,
+    operatingMode: 'discovery',
+    successorAllocationMap: null,
+    pendingTransitionConfig: null,
+    tierMap: new Map(),
+    councilTierMap: new Map(),
+    distressedCouncils: new Set(),
+    activeSortMode: 'tier',
+    activeFilters: { tier: 'all', collision: 'all' },
+    archEditorState: null,
+    headerCollapsed: false,
+    bannerCollapsed: false,
+    importWizardState: null,
+};

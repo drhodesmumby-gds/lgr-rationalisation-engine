@@ -5,3 +5,6 @@ screenshots/
 .claude/settings.local.json
 .claude/worktrees/
 slides/
+dist/
+e2e-*.js
+.claude/sprints/
