@@ -64,8 +64,10 @@ export function renderSimulationToolbar() {
 
     let warningHtml = '';
     if (impact && impact.warnings && impact.warnings.length > 0) {
+        // Humanize warnings: strip raw ESD IDs like "(3)" or "(159)" that mean nothing to users
+        const humanized = impact.warnings.map(w => w.replace(/\s*\(\d+\)\s*/g, ' ').replace(/\s{2,}/g, ' ').trim());
         warningHtml = `<div class="mt-2 p-2 bg-yellow-50 border-l-4 border-l-[#f47738] text-xs text-gray-800">
-            <span class="font-bold">Warnings:</span> ${impact.warnings.map(escHtml).join(' &bull; ')}
+            <span class="font-bold">Warnings:</span> ${humanized.map(escHtml).join(' &bull; ')}
         </div>`;
     }
 
@@ -114,16 +116,20 @@ export function renderBeforeAfterMetrics(impact) {
     function deltaHtml(value, lowerIsBetter) {
         if (value === null || value === 0) return `<span class="sim-delta-neutral">—</span>`;
         const sign = value > 0 ? '+' : '';
-        const cls = (lowerIsBetter ? value < 0 : value > 0) ? 'sim-delta-negative' : 'sim-delta-positive';
-        return `<span class="${cls}">${sign}${value}</span>`;
+        const isGood = lowerIsBetter ? value < 0 : value > 0;
+        const cls = isGood ? 'sim-delta-positive' : 'sim-delta-negative';
+        const arrow = isGood ? '\u25BC' : '\u25B2'; // ▼ down=good for lowerIsBetter, ▲ up=bad
+        return `<span class="${cls}">${arrow} ${sign}${value}</span>`;
     }
 
     function spendDeltaHtml(value) {
         if (value === null || value === 0) return `<span class="sim-delta-neutral">—</span>`;
-        const cls = value < 0 ? 'sim-delta-negative' : 'sim-delta-positive';
+        const isSaving = value < 0;
+        const cls = isSaving ? 'sim-delta-positive' : 'sim-delta-negative';
         const abs = Math.abs(value);
+        const arrow = isSaving ? '\u25BC' : '\u25B2';
         const prefix = value > 0 ? '+£' : '-£';
-        return `<span class="${cls}">${prefix}${abs.toLocaleString()}</span>`;
+        return `<span class="${cls}">${arrow} ${prefix}${abs.toLocaleString()}</span>`;
     }
 
     let html = '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
@@ -257,6 +263,18 @@ function getSimulatedITSystems() {
     return getSimulatedNodes().filter(n => n.type === 'ITSystem');
 }
 
+function systemOptionLabel(s) {
+    const parts = [s.label];
+    if (s._sourceCouncil) parts.push(s._sourceCouncil);
+    const meta = [];
+    if (typeof s.users === 'number') meta.push(`${s.users.toLocaleString()} users`);
+    if (typeof s.annualCost === 'number') meta.push(`£${s.annualCost.toLocaleString()}/yr`);
+    if (s.vendor) meta.push(s.vendor);
+    if (s.sharedWith && s.sharedWith.length > 0) meta.push('shared');
+    if (meta.length > 0) parts.push(meta.join(', '));
+    return parts.join(' — ');
+}
+
 function renderActionBuilderStep2(type) {
     const content = document.getElementById('actionBuilderContent');
     if (!content) return;
@@ -276,9 +294,9 @@ function renderActionBuilderStep2(type) {
         html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })), '', 'onchange="window._simUpdateConsolidateSystems()"');
         html += `<div id="consolidateSystemField">${buildSelectField('targetSystemId', 'Target System (keep)', [], 'Select a function and successor first')}</div>`;
     } else if (type === 'decommission') {
-        html += buildSelectField('systemId', 'System to decommission', systems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` })));
+        html += buildSelectField('systemId', 'System to decommission', systems.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
     } else if (type === 'extend-contract') {
-        html += buildSelectField('systemId', 'System', systems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` })));
+        html += buildSelectField('systemId', 'System', systems.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
         html += `<div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-bold mb-1">New End Year</label>
@@ -293,8 +311,8 @@ function renderActionBuilderStep2(type) {
         </div>`;
     } else if (type === 'migrate-users') {
         const systemsWithUsers = systems.filter(s => (s.users || 0) > 0);
-        html += buildSelectField('fromSystemId', 'From System', systemsWithUsers.map(s => ({ value: s.id, label: `${s.label} (${s.users} users)` })));
-        html += buildSelectField('toSystemId', 'To System', systems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` })));
+        html += buildSelectField('fromSystemId', 'From System', systemsWithUsers.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
+        html += buildSelectField('toSystemId', 'To System', systems.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
         html += `<div>
             <label class="block text-sm font-bold mb-1">User Count to Migrate</label>
             <input type="number" id="field_userCount" min="1" value="100" class="border-2 border-[#0b0c0c] p-2 text-sm w-48">
@@ -302,8 +320,8 @@ function renderActionBuilderStep2(type) {
     } else if (type === 'split-shared-service') {
         const sharedSystems = systems.filter(s => s.sharedWith && s.sharedWith.length > 0);
         html += buildSelectField('systemId', 'System to split', sharedSystems.length > 0
-            ? sharedSystems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` }))
-            : systems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` }))
+            ? sharedSystems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))
+            : systems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))
         );
         html += `<div id="splitsContainer">
             <label class="block text-sm font-bold mb-2">Splits (one per successor)</label>
@@ -321,7 +339,7 @@ function renderActionBuilderStep2(type) {
             <input type="number" id="field_annualCost" min="0" class="border-2 border-[#0b0c0c] p-2 text-sm w-48" placeholder="e.g. 150000"></div>`;
         html += `<div class="flex items-center gap-2"><input type="checkbox" id="field_isCloud" checked class="w-4 h-4"><label for="field_isCloud" class="text-sm font-bold">Cloud-hosted</label></div>`;
         html += buildSelectField('replacesSystemId', 'Replaces (optional)',
-            [{ value: '', label: 'None — new procurement' }, ...systems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` }))]
+            [{ value: '', label: 'None — new procurement' }, ...systems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))]
         );
     }
 
@@ -354,11 +372,20 @@ function addSplitRow() {
     const row = document.createElement('div');
     row.className = 'flex gap-2 items-center split-row';
     row.dataset.idx = idx;
-    const succOpts = successors.map(s => `<option value="${escHtml(s.name)}">${escHtml(s.name)}</option>`).join('');
+    // Default each row to a different successor where possible
+    const defaultIdx = Math.min(idx, successors.length - 1);
+    const succOpts = successors.map((s, i) => `<option value="${escHtml(s.name)}"${i === defaultIdx ? ' selected' : ''}>${escHtml(s.name)}</option>`).join('');
+    const splitId = `split_${idx}`;
     row.innerHTML = `
-        <select class="border-2 border-[#0b0c0c] p-1.5 text-sm flex-shrink-0 w-48 split-successor">${succOpts}</select>
-        <input type="text" class="border-2 border-[#0b0c0c] p-1.5 text-sm flex-1 split-label" placeholder="Instance label (e.g. System (North))">
-        <button type="button" onclick="this.closest('.split-row').remove()" class="text-[#d4351c] font-bold text-lg leading-none">&times;</button>
+        <div class="flex-shrink-0 w-48">
+            <label for="${splitId}_succ" class="sr-only">Successor authority for split ${idx + 1}</label>
+            <select id="${splitId}_succ" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full split-successor">${succOpts}</select>
+        </div>
+        <div class="flex-1">
+            <label for="${splitId}_label" class="sr-only">Instance label for split ${idx + 1}</label>
+            <input id="${splitId}_label" type="text" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full split-label" placeholder="Instance label (e.g. System (North))">
+        </div>
+        <button type="button" onclick="this.closest('.split-row').remove()" class="text-[#d4351c] font-bold text-lg leading-none" aria-label="Remove split ${idx + 1}">&times;</button>
     `;
     container.appendChild(row);
 }
@@ -410,7 +437,7 @@ export function updateConsolidateSystems() {
     }
 
     container.innerHTML = buildSelectField('targetSystemId', 'Target System (keep)',
-        relevantSystems.map(s => ({ value: s.id, label: `${s.label} (${s._sourceCouncil || '?'})` }))
+        relevantSystems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))
     );
 }
 
@@ -586,6 +613,11 @@ if (actionBuilderModal) {
     document.getElementById('btnApplyAction').addEventListener('click', applyActionFromBuilder);
     actionBuilderModal.addEventListener('click', (e) => {
         if (e.target === actionBuilderModal) actionBuilderModal.classList.add('hidden');
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !actionBuilderModal.classList.contains('hidden')) {
+            actionBuilderModal.classList.add('hidden');
+        }
     });
 }
 

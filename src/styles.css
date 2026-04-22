@@ -110,8 +110,8 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .sim-action-chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 2px solid #f47738; padding: 4px 10px; font-size: 12px; font-weight: bold; }
 .sim-action-chip button { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: #d4351c; font-weight: bold; padding: 0 2px; }
 .sim-action-chip button:hover { color: #0b0c0c; }
-.sim-delta-positive { color: #d4351c; font-weight: bold; }
-.sim-delta-negative { color: #00703c; font-weight: bold; }
+.sim-delta-positive { color: #005a30; font-weight: bold; }
+.sim-delta-negative { color: #942514; font-weight: bold; }
 .sim-delta-neutral { color: #505a5f; }
 .sim-before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
 .sim-before { background: #f3f2f1; padding: 4px 8px; font-size: 12px; }
