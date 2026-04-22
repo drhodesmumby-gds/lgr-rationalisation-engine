@@ -25,6 +25,11 @@ import { generatePersonaQuestions } from './analysis/questions.js';
 import { state } from './state.js';
 import { openImportWizard, closeImportWizard, handleImportNext, handleImportBack } from './features/import-wizard.js';
 import { openArchEditor, wireEditArchBtn, generateId } from './features/arch-editor.js';
+import {
+    enterSimulation, exitSimulation, recomputeSimulation,
+    renderSimulationToolbar, renderBeforeAfterMetrics,
+    openActionBuilder, applyActionFromBuilder
+} from './features/simulation-panel.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -647,6 +652,7 @@ document.getElementById('btnSkipTransition').addEventListener('click', () => {
 
 document.getElementById('btnReconfigureTransition').addEventListener('click', () => {
     isReconfiguring = true;
+    state.simulationState = null;
     tierMappingModal.classList.add('hidden');
     stageDashboard.classList.add('hidden');
     controlsArea.classList.add('hidden');
@@ -762,7 +768,11 @@ perspectiveSelect.addEventListener('change', (e) => {
     state.activePerspective = e.target.value;
     const analysisModalEl = document.getElementById('analysisModal');
     if (analysisModalEl) analysisModalEl.classList.add('hidden');
-    renderDashboard();
+    if (state.simulationState && state.simulationState.actions.length > 0) {
+        recomputeSimulation();
+    } else {
+        renderDashboard();
+    }
 });
 
 // --- Sort/filter toolbar event handlers ---
@@ -806,6 +816,32 @@ function updatePersonaBanner() {
     }
     // Re-apply collapsed state after className overwrite
     if (state.bannerCollapsed) personaBanner.classList.add('banner-collapsed');
+
+    // Show/hide Simulate button based on operating mode
+    let btnSim = document.getElementById('btnSimulate');
+    if (state.operatingMode === 'transition') {
+        if (!btnSim) {
+            btnSim = document.createElement('button');
+            btnSim.id = 'btnSimulate';
+            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#f47738] text-[#f47738]';
+            btnSim.textContent = 'Simulate';
+            btnSim.addEventListener('click', function() {
+                if (state.simulationState) {
+                    exitSimulation();
+                } else {
+                    enterSimulation();
+                }
+            });
+            const btnExport = document.getElementById('btnExportHTML');
+            if (btnExport && btnExport.parentNode) {
+                btnExport.parentNode.insertBefore(btnSim, btnExport);
+            }
+        }
+        btnSim.classList.remove('hidden');
+        btnSim.textContent = state.simulationState ? 'Exit Simulation' : 'Simulate';
+    } else {
+        if (btnSim) btnSim.classList.add('hidden');
+    }
 }
 
 // --- Estate Summary Panel rendering ---
@@ -831,35 +867,42 @@ function renderEstateSummary() {
     // --- Estate Overview section (always shown) ---
     html += '<div class="mb-6">';
     html += '<h3 class="text-lg font-bold mb-3 text-[#0b0c0c] border-b border-[#b1b4b6] pb-2">Estate Overview</h3>';
-    html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
 
-    // Predecessor count
-    html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-    html += '<p class="text-3xl font-bold text-[#0b0c0c]">' + metrics.predecessorCount + '</p>';
-    html += '<p class="text-sm font-bold text-gray-700">Predecessor councils</p>';
-    html += '</div>';
+    if (state.simulationState && state.simulationState.lastImpact) {
+        // Before/after comparison view when simulation is active
+        html += renderBeforeAfterMetrics(state.simulationState.lastImpact);
+    } else {
+        html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
 
-    // Total systems
-    html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-    html += '<p class="text-3xl font-bold text-[#0b0c0c]">' + metrics.systemCount + '</p>';
-    html += '<p class="text-sm font-bold text-gray-700">Total systems</p>';
-    html += '</div>';
-
-    // Collision count
-    html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-    html += '<p class="text-3xl font-bold text-[#0b0c0c]">' + metrics.collisionCount + '</p>';
-    html += '<p class="text-sm font-bold text-gray-700">' + wrapWithTooltip('Cross-council collisions', DOMAIN_TERMS['Collision']) + '</p>';
-    html += '</div>';
-
-    // Total annual spend (only if available)
-    if (metrics.totalAnnualSpend !== null) {
+        // Predecessor count
         html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-        html += '<p class="text-3xl font-bold text-[#0b0c0c]">£' + metrics.totalAnnualSpend.toLocaleString() + '</p>';
-        html += '<p class="text-sm font-bold text-gray-700">Total annual IT spend</p>';
+        html += '<p class="text-3xl font-bold text-[#0b0c0c]">' + metrics.predecessorCount + '</p>';
+        html += '<p class="text-sm font-bold text-gray-700">Predecessor councils</p>';
         html += '</div>';
+
+        // Total systems
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+        html += '<p class="text-3xl font-bold text-[#0b0c0c]">' + metrics.systemCount + '</p>';
+        html += '<p class="text-sm font-bold text-gray-700">Total systems</p>';
+        html += '</div>';
+
+        // Collision count
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+        html += '<p class="text-3xl font-bold text-[#0b0c0c]">' + metrics.collisionCount + '</p>';
+        html += '<p class="text-sm font-bold text-gray-700">' + wrapWithTooltip('Cross-council collisions', DOMAIN_TERMS['Collision']) + '</p>';
+        html += '</div>';
+
+        // Total annual spend (only if available)
+        if (metrics.totalAnnualSpend !== null) {
+            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+            html += '<p class="text-3xl font-bold text-[#0b0c0c]">£' + metrics.totalAnnualSpend.toLocaleString() + '</p>';
+            html += '<p class="text-sm font-bold text-gray-700">Total annual IT spend</p>';
+            html += '</div>';
+        }
+
+        html += '</div>'; // close grid
     }
 
-    html += '</div>'; // close grid
     html += '</div>'; // close Estate Overview section
 
     // --- Vendor Landscape section (Commercial persona only) ---
@@ -963,6 +1006,12 @@ export function renderDashboard() {
 
     // Render estate summary panel at the top
     renderEstateSummary();
+
+    // Render simulation toolbar (shown when simulation is active)
+    renderSimulationToolbar();
+
+    // Update persona banner Simulate button state
+    updatePersonaBanner();
 
     // Show toolbar and sync dropdown values with current state
     const toolbar = document.getElementById('matrixToolbar');
@@ -2026,6 +2075,7 @@ function exportToHTML() {
 
 document.getElementById('btnReset').addEventListener('click', () => {
     state.rawUploads = [];
+    state.simulationState = null;
     state.activePerspective = 'all';
     state.lgaFunctionMap.clear();
     state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };

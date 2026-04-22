@@ -104,3 +104,16 @@ header.header-collapsed .header-subtitle { display: none !important; }
 #personaBanner.banner-collapsed #personaIcon { display: none !important; }
 #personaBanner.banner-collapsed #personaDesc { display: none !important; }
 #personaBanner.banner-collapsed h2 { font-size: 0.875rem !important; }
+
+/* Simulation mode */
+.sim-toolbar { background-color: #fff3cd; border: 2px solid #f47738; border-left: 6px solid #f47738; padding: 16px; }
+.sim-action-chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 2px solid #f47738; padding: 4px 10px; font-size: 12px; font-weight: bold; }
+.sim-action-chip button { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: #d4351c; font-weight: bold; padding: 0 2px; }
+.sim-action-chip button:hover { color: #0b0c0c; }
+.sim-delta-positive { color: #d4351c; font-weight: bold; }
+.sim-delta-negative { color: #00703c; font-weight: bold; }
+.sim-delta-neutral { color: #505a5f; }
+.sim-before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.sim-before { background: #f3f2f1; padding: 4px 8px; font-size: 12px; }
+.sim-after { background: #fff3cd; padding: 4px 8px; font-size: 12px; font-weight: bold; }
+.sim-mode-banner { background: #f47738; color: #0b0c0c; padding: 4px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; margin-bottom: 8px; }
