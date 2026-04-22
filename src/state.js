@@ -16,6 +16,7 @@ export const state = {
     activeSortMode: 'tier',
     activeFilters: { tier: 'all', collision: 'all' },
     archEditorState: null,
+    simulationState: null,
     headerCollapsed: false,
     bannerCollapsed: false,
     importWizardState: null,
