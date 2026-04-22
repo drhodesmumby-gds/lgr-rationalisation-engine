@@ -4,6 +4,8 @@ import { applyAllActions } from '../simulation/actions.js';
 import { computeSimulationImpact } from '../simulation/impact.js';
 import { renderDashboard } from '../main.js';
 import { buildSuccessorAllocation } from '../analysis/allocation.js';
+import { buildEstateSankeyData, buildFunctionSankeyData } from './sankey-data.js';
+import { renderSankeyDiagram, destroySankeyDiagram } from './sankey-diagram.js';
 
 // ===================================================================
 // SIMULATION ENTRY / EXIT
@@ -51,10 +53,19 @@ export function recomputeSimulation() {
 }
 
 // ===================================================================
-// SIMULATION TOOLBAR RENDERING
+// SIMULATION WORKSPACE RENDERING
 // ===================================================================
 
-export function renderSimulationToolbar() {
+// Module-level UI state for workspace
+let _actionPanelCollapsed = false;
+let _sankeyDrillDown = null; // successor name for function-level, or null for estate
+let _sankeySizeMode = 'count'; // 'count' | 'cost'
+
+/**
+ * Main workspace render function. Replaces the old toolbar.
+ * Renders a side-by-side layout: action panel (left) + Sankey (right).
+ */
+export function renderSimulationWorkspace() {
     const toolbar = document.getElementById('simulationToolbar');
     if (!toolbar) return;
 
@@ -67,9 +78,46 @@ export function renderSimulationToolbar() {
     const actions = state.simulationState.actions;
     const impact = state.simulationState.lastImpact;
 
+    // Build the workspace shell
+    toolbar.innerHTML = `
+        <div class="sim-workspace">
+            <span class="sim-mode-banner">SIMULATION MODE</span>
+            <div class="sim-workspace-layout">
+                <div id="simActionPanel" class="sim-action-panel${_actionPanelCollapsed ? ' sim-panel-collapsed' : ''}"></div>
+                <div id="simSankeyPanel" class="sim-sankey-panel"></div>
+            </div>
+        </div>
+    `;
+    toolbar.classList.remove('hidden');
+
+    // Render action panel content
+    const actionPanel = toolbar.querySelector('#simActionPanel');
+    renderActionPanel(actionPanel, actions, impact);
+
+    // Render Sankey panel content
+    const sankeyPanel = toolbar.querySelector('#simSankeyPanel');
+    renderSankeyPanel(sankeyPanel);
+}
+
+// Keep backward-compatible alias
+export const renderSimulationToolbar = renderSimulationWorkspace;
+
+/**
+ * Renders the action panel content into the given element.
+ */
+function renderActionPanel(el, actions, impact) {
+    if (_actionPanelCollapsed) {
+        el.innerHTML = `
+            <div class="sim-panel-collapsed-content">
+                <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Expand action panel" aria-label="Expand action panel">&#x276F;</button>
+                <span class="sim-panel-collapsed-badge">${actions.length}</span>
+            </div>
+        `;
+        return;
+    }
+
     let warningHtml = '';
     if (impact && impact.warnings && impact.warnings.length > 0) {
-        // Humanize warnings: strip raw ESD IDs like "(3)" or "(159)" that mean nothing to users
         const humanized = [...new Set(impact.warnings)].map(w => w.replace(/\s*\(\d+\)\s*/g, ' ').replace(/\s{2,}/g, ' ').trim());
         warningHtml = `<div class="mt-2 p-2 bg-yellow-50 border-l-4 border-l-[#f47738] text-xs text-gray-800">
             <span class="font-bold">Warnings:</span> ${humanized.map(escHtml).join(' &bull; ')}
@@ -89,22 +137,99 @@ export function renderSimulationToolbar() {
         }).join(' ');
     }
 
-    toolbar.innerHTML = `
-        <div class="sim-toolbar">
-            <span class="sim-mode-banner">Simulation Mode</span>
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm font-bold text-[#0b0c0c]">${actions.length} action${actions.length !== 1 ? 's' : ''} applied</span>
-                    <button onclick="window._simOpenActionBuilder()" class="gds-btn text-sm px-3 py-1.5 font-bold">+ Add Action</button>
-                    ${actions.length > 0 ? `<button onclick="window._simClearAll()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold">Clear All</button>` : ''}
-                </div>
-                <button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold border-[#d4351c] text-[#d4351c]">Exit Simulation</button>
-            </div>
-            <div class="flex flex-wrap gap-2 mb-2">${actionsHtml}</div>
-            ${warningHtml}
+    const metricsHtml = impact ? renderBeforeAfterMetrics(impact) : '';
+
+    el.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-[#0b0c0c]">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>
+            <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Collapse action panel" aria-label="Collapse action panel">&#x276E;</button>
+        </div>
+        <div class="flex flex-col gap-2 mb-3">
+            <button onclick="window._simOpenActionBuilder()" class="gds-btn text-sm px-3 py-1.5 font-bold w-full text-left">+ Add Action</button>
+            ${actions.length > 0 ? `<button onclick="window._simClearAll()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left">Clear All</button>` : ''}
+        </div>
+        <div class="flex flex-col gap-1 mb-2">${actionsHtml}</div>
+        ${warningHtml}
+        ${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ''}
+        <div class="mt-4 pt-3 border-t border-[#f47738]">
+            <button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold border-[#d4351c] text-[#d4351c] w-full text-left">Exit Simulation</button>
         </div>
     `;
-    toolbar.classList.remove('hidden');
+}
+
+/**
+ * Renders the Sankey panel: breadcrumb + size toggle + diagram + legend.
+ */
+function renderSankeyPanel(el) {
+    // Build Sankey data
+    const allocMap = (state.simulationState?.lastImpact?.afterAllocation)
+        || state.simulationState?.baselineAllocation
+        || state.successorAllocationMap;
+
+    const actions = state.simulationState ? state.simulationState.actions : [];
+
+    // Breadcrumb
+    let breadcrumbHtml = '';
+    if (_sankeyDrillDown) {
+        breadcrumbHtml = `<div class="sankey-breadcrumb">
+            <a onclick="window._simSankeyBack()" href="#">&larr; Estate view</a>
+            &rsaquo; ${escHtml(_sankeyDrillDown)}
+        </div>`;
+    } else {
+        breadcrumbHtml = `<div class="sankey-breadcrumb">Estate overview &mdash; click a successor to drill down</div>`;
+    }
+
+    // Size toggle
+    const countActive = _sankeySizeMode === 'count' ? ' active' : '';
+    const costActive = _sankeySizeMode === 'cost' ? ' active' : '';
+    const sizeToggleHtml = `
+        <div class="sim-sankey-controls">
+            ${breadcrumbHtml}
+            <div class="flex gap-1 ml-auto">
+                <button class="sim-sankey-size-toggle${countActive}" onclick="window._simSankeySetSize('count')">System count</button>
+                <button class="sim-sankey-size-toggle${costActive}" onclick="window._simSankeySetSize('cost')">Annual cost</button>
+            </div>
+        </div>
+    `;
+
+    el.innerHTML = sizeToggleHtml + '<div id="sankeyDiagramContainer" style="width:100%;"></div>';
+
+    const container = el.querySelector('#sankeyDiagramContainer');
+    if (!container) return;
+
+    if (!allocMap || allocMap.size === 0) {
+        container.innerHTML = '<div style="padding:24px;color:#505a5f;font-size:13px;">No allocation data available. Transition mode required for Sankey diagram.</div>';
+        return;
+    }
+
+    let sankeyData;
+    let viewMode;
+
+    if (_sankeyDrillDown) {
+        sankeyData = buildFunctionSankeyData(allocMap, _sankeyDrillDown, state.lgaFunctionMap, actions, _sankeySizeMode);
+        viewMode = 'function';
+    } else {
+        sankeyData = buildEstateSankeyData(allocMap, state.transitionStructure, actions, _sankeySizeMode);
+        viewMode = 'estate';
+    }
+
+    renderSankeyDiagram(container, sankeyData, {
+        viewMode,
+        sizeMode: _sankeySizeMode,
+        onAction: (action) => {
+            if (!state.simulationState) return;
+            state.simulationState.actions.push(action);
+            recomputeSimulation();
+        },
+        onDrillDown: (successorName) => {
+            _sankeyDrillDown = successorName;
+            renderSimulationWorkspace();
+        },
+        onBack: () => {
+            _sankeyDrillDown = null;
+            renderSimulationWorkspace();
+        }
+    });
 }
 
 // ===================================================================
@@ -206,6 +331,48 @@ export function openActionBuilder() {
     renderActionBuilderStep1();
     document.getElementById('actionBuilderError').classList.add('hidden');
     modal.classList.remove('hidden');
+}
+
+/**
+ * Opens the action builder modal pre-filled at step 2 for a given action type.
+ * Called from Sankey context menus to skip step 1.
+ * @param {string} type  Action type (e.g. 'decommission', 'extend-contract', etc.)
+ * @param {Object} prefill  Fields to pre-fill: { systemId, funcId, successorName, fromSystemId, ... }
+ */
+export function openActionBuilderWithContext(type, prefill = {}) {
+    _actionBuilderStep = 2;
+    _actionBuilderType = type;
+    const modal = document.getElementById('actionBuilderModal');
+    if (!modal) return;
+    document.getElementById('actionBuilderError').classList.add('hidden');
+    renderActionBuilderStep2(type);
+    modal.classList.remove('hidden');
+
+    // Pre-fill fields after DOM is updated
+    requestAnimationFrame(() => {
+        if (prefill.systemId) {
+            const el = document.getElementById('field_systemId');
+            if (el) el.value = prefill.systemId;
+        }
+        if (prefill.fromSystemId) {
+            const el = document.getElementById('field_fromSystemId');
+            if (el) el.value = prefill.fromSystemId;
+        }
+        if (prefill.funcId) {
+            const funcEl = document.getElementById('field_funcId');
+            if (funcEl) {
+                funcEl.value = prefill.funcId;
+                funcEl.dispatchEvent(new Event('change'));
+            }
+        }
+        if (prefill.successorName) {
+            const succEl = document.getElementById('field_successorName');
+            if (succEl) {
+                succEl.value = prefill.successorName;
+                succEl.dispatchEvent(new Event('change'));
+            }
+        }
+    });
 }
 
 function renderActionBuilderStep1() {
@@ -698,6 +865,7 @@ if (actionBuilderModal) {
 
 window._simExit = exitSimulation;
 window._simOpenActionBuilder = openActionBuilder;
+window._simOpenActionBuilderWithContext = openActionBuilderWithContext;
 window._simRemoveAction = function(idx) {
     if (!state.simulationState) return;
     state.simulationState.actions.splice(idx, 1);
@@ -716,3 +884,15 @@ window._simActionBuilderBack = function() {
 };
 window._simUpdateConsolidateSystems = updateConsolidateSystems;
 window._simAddSplitRow = addSplitRow;
+window._simToggleActionPanel = function() {
+    _actionPanelCollapsed = !_actionPanelCollapsed;
+    renderSimulationWorkspace();
+};
+window._simSankeyBack = function() {
+    _sankeyDrillDown = null;
+    renderSimulationWorkspace();
+};
+window._simSankeySetSize = function(mode) {
+    _sankeySizeMode = mode;
+    renderSimulationWorkspace();
+};

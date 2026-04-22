@@ -255,6 +255,8 @@ Teams are created via `TeamCreate` with tasks managed through `TaskCreate`/`Task
 
 The application is tested by serving via a local HTTP server (`python3 -m http.server 8765`) and using Playwright MCP tools for browser interaction. The `file:///` protocol is blocked by Playwright — always serve over HTTP.
 
+**IMPORTANT — Browser testing must use Playwright MCP tools only.** Do NOT write custom Node.js scripts that import `playwright` or `playwright-core` from `node_modules` — the project only has `@playwright/test` as a dev dependency and direct imports will fail with `ERR_MODULE_NOT_FOUND`. Instead, use the MCP tools directly: `mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_click`, `mcp__playwright__browser_type`, `mcp__playwright__browser_file_upload`, `mcp__playwright__browser_evaluate`, `mcp__playwright__browser_take_screenshot`, `mcp__playwright__browser_wait_for`, `mcp__playwright__browser_console_messages`, etc.
+
 ### Documentation
 
 Four documentation files are maintained alongside the code:

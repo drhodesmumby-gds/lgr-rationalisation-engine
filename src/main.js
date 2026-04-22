@@ -27,7 +27,7 @@ import { openImportWizard, closeImportWizard, handleImportNext, handleImportBack
 import { openArchEditor, wireEditArchBtn, generateId } from './features/arch-editor.js';
 import {
     enterSimulation, exitSimulation, recomputeSimulation,
-    renderSimulationToolbar, renderBeforeAfterMetrics,
+    renderSimulationWorkspace, renderBeforeAfterMetrics,
     openActionBuilder, applyActionFromBuilder
 } from './features/simulation-panel.js';
 
@@ -1011,8 +1011,8 @@ export function renderDashboard() {
     // Render estate summary panel at the top
     renderEstateSummary();
 
-    // Render simulation toolbar (shown when simulation is active)
-    renderSimulationToolbar();
+    // Render simulation workspace (shown when simulation is active)
+    renderSimulationWorkspace();
 
     // Update persona banner Simulate button state
     updatePersonaBanner();

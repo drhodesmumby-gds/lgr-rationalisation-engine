@@ -122,3 +122,39 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .sim-ghost-card { opacity: 0.5; padding: 4px 8px; margin-top: 4px; background-color: #f3f2f1; border-left: 3px solid #b1b4b6; font-size: 12px; }
 .sim-ghost-card .line-through { text-decoration: line-through; }
 .sim-new-badge { background-color: #1d70b8; color: white; font-size: 10px; font-weight: bold; padding: 1px 6px; text-transform: uppercase; letter-spacing: 0.3px; margin-right: 4px; }
+
+/* Simulation Workspace */
+.sim-workspace { background: #fff3cd; border: 2px solid #f47738; border-left: 6px solid #f47738; }
+.sim-workspace-layout { display: flex; min-height: 400px; }
+.sim-action-panel { width: 360px; min-width: 360px; border-right: 2px solid #f47738; padding: 16px; overflow-y: auto; max-height: 600px; background: #fff3cd; transition: width 0.2s, min-width 0.2s; }
+.sim-action-panel.sim-panel-collapsed { width: 48px; min-width: 48px; padding: 8px 4px; overflow: hidden; }
+.sim-panel-collapse-btn { background: none; border: 1px solid #f47738; cursor: pointer; padding: 4px 8px; font-weight: bold; font-size: 13px; color: #0b0c0c; }
+.sim-panel-collapse-btn:hover { background: #f47738; }
+.sim-panel-collapsed-content { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 8px; }
+.sim-panel-collapsed-badge { background: #f47738; color: #0b0c0c; font-size: 11px; font-weight: bold; padding: 3px 6px; min-width: 24px; text-align: center; }
+.sim-sankey-panel { flex: 1; min-height: 400px; padding: 12px; background: #fffef5; position: relative; overflow: hidden; }
+.sim-sankey-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.sim-sankey-size-toggle { font-size: 12px; font-weight: bold; border: 1px solid #0b0c0c; padding: 3px 8px; background: white; cursor: pointer; }
+.sim-sankey-size-toggle.active { background: #0b0c0c; color: white; }
+
+/* Sankey SVG elements */
+.sankey-node rect { stroke: #0b0c0c; stroke-width: 1; cursor: pointer; }
+.sankey-node rect:hover { stroke-width: 2; opacity: 0.85; }
+.sankey-node text { font-size: 11px; font-weight: bold; fill: #0b0c0c; pointer-events: none; }
+.sankey-link { fill: none; stroke-opacity: 0.35; cursor: pointer; transition: stroke-opacity 0.15s; }
+.sankey-link:hover { stroke-opacity: 0.65; }
+.sankey-link.sim-affected { stroke-dasharray: 6 3; stroke-opacity: 0.5; }
+
+/* Context menu */
+.sankey-context-menu { position: absolute; background: white; border: 2px solid #0b0c0c; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 100; min-width: 200px; font-size: 13px; }
+.sankey-context-menu-item { padding: 8px 14px; cursor: pointer; font-weight: bold; border-bottom: 1px solid #f3f2f1; }
+.sankey-context-menu-item:hover { background: #f3f2f1; }
+.sankey-context-menu-header { padding: 6px 14px; background: #f3f2f1; font-size: 11px; text-transform: uppercase; font-weight: bold; color: #505a5f; border-bottom: 1px solid #b1b4b6; }
+
+/* Sankey breadcrumb + legend */
+.sankey-breadcrumb { font-size: 12px; font-weight: bold; padding: 4px 0 8px; color: #505a5f; }
+.sankey-breadcrumb a { color: #1d70b8; text-decoration: underline; cursor: pointer; }
+.sankey-breadcrumb a:hover { color: #0b0c0c; }
+.sankey-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10px; margin-top: 6px; }
+.sankey-legend-item { display: flex; align-items: center; gap: 4px; }
+.sankey-legend-swatch { display: inline-block; width: 12px; height: 12px; border: 1px solid #b1b4b6; }
