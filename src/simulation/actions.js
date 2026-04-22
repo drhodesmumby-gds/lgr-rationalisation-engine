@@ -3,7 +3,7 @@
  *
  * Action object shapes (discriminated union on `type`):
  *
- * { type: 'consolidate', functionId: string, successorName: string, targetSystemId: string }
+ * { type: 'consolidate', functionId: string, successorName: string, targetSystemId: string, removeSystemIds?: string[] }
  * { type: 'decommission', systemId: string }
  * { type: 'extend-contract', systemId: string, newEndYear: number, newEndMonth: number }
  * { type: 'migrate-users', fromSystemId: string, toSystemId: string, userCount: number }
@@ -53,7 +53,7 @@ export function applyAction(nodes, edges, action) {
 
 export function applyConsolidate(nodes, edges, action) {
     const warnings = [];
-    const { functionId, targetSystemId } = action;
+    const { functionId, targetSystemId, removeSystemIds, successorName } = action;
 
     // Find target system
     const targetIdx = nodes.findIndex(n => n.id === targetSystemId && n.type === 'ITSystem');
@@ -70,16 +70,20 @@ export function applyConsolidate(nodes, edges, action) {
         return { nodes, edges, warnings: [`Consolidate: no function nodes found for lgaFunctionId ${functionId}`] };
     }
 
-    // Find all system IDs that REALIZE this function (via edges)
-    const systemIdsServingFunction = new Set();
-    edges.forEach(e => {
-        if (e.relationship === 'REALIZES' && funcNodeIds.has(e.target)) {
-            systemIdsServingFunction.add(e.source);
-        }
-    });
-
-    // Systems to remove = those serving this function, minus the target
-    const systemsToRemove = new Set([...systemIdsServingFunction].filter(id => id !== targetSystemId));
+    let systemsToRemove;
+    if (removeSystemIds && removeSystemIds.length > 0) {
+        // Scoped consolidation: only remove explicitly listed systems
+        systemsToRemove = new Set(removeSystemIds.filter(id => id !== targetSystemId));
+    } else {
+        // Global fallback: remove all systems serving this function except target
+        const systemIdsServingFunction = new Set();
+        edges.forEach(e => {
+            if (e.relationship === 'REALIZES' && funcNodeIds.has(e.target)) {
+                systemIdsServingFunction.add(e.source);
+            }
+        });
+        systemsToRemove = new Set([...systemIdsServingFunction].filter(id => id !== targetSystemId));
+    }
 
     if (systemsToRemove.size === 0) {
         return { nodes, edges, warnings: [] }; // Nothing to consolidate
@@ -109,7 +113,8 @@ export function applyConsolidate(nodes, edges, action) {
         if (!hasRealizer) {
             const fnNode = nodes.find(n => n.id === fnId);
             const label = fnNode ? fnNode.label : fnId;
-            warnings.push(`Consolidate: function ${label} (${functionId}) may be unserved after consolidation`);
+            const scope = successorName ? ` in ${successorName}` : '';
+            warnings.push(`Consolidate: function ${label} (${functionId}) may be unserved${scope} after consolidation`);
         }
     });
 

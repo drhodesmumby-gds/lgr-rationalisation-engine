@@ -858,7 +858,11 @@ function renderEstateSummary() {
     );
 
     // Save critical path data for rendering below the matrix in renderDashboard()
-    window._criticalPathSystems = metrics.criticalPathSystems;
+    if (state.simulationState && state.simulationState.lastImpact) {
+        window._criticalPathSystems = state.simulationState.lastImpact.after.criticalPathSystems;
+    } else {
+        window._criticalPathSystems = metrics.criticalPathSystems;
+    }
 
     var perspectiveLabel = (state.activePerspective && state.activePerspective !== 'all') ? ' — ' + state.activePerspective : '';
     var html = '<div class="bg-white border-t-4 border-[#1d70b8] shadow-sm p-6">';
@@ -1029,13 +1033,24 @@ export function renderDashboard() {
     const body = document.getElementById('matrixBody');
     head.innerHTML = ''; body.innerHTML = '';
 
-    const councilsArray = Array.from(state.mergedArchitecture.councils).sort();
-    const systems = state.mergedArchitecture.nodes.filter(n => n.type === 'ITSystem');
+    // Branch data source: use simulated data if simulation is active
+    let activeNodes, activeEdges;
+    if (state.simulationState && state.simulationState.lastImpact) {
+        const simResult = state.simulationState.lastImpact.simulationResult;
+        activeNodes = simResult.nodes;
+        activeEdges = simResult.edges;
+    } else {
+        activeNodes = state.mergedArchitecture.nodes;
+        activeEdges = state.mergedArchitecture.edges;
+    }
+
+    const councilsArray = Array.from(state.simulationState && state.simulationState.lastImpact ? new Set(activeNodes.filter(n => n._sourceCouncil).map(n => n._sourceCouncil)) : state.mergedArchitecture.councils).sort();
+    const systems = activeNodes.filter(n => n.type === 'ITSystem');
 
     // --- Build successor allocation map if in transition mode ---
     let localSuccessorAllocation = null;
     if (state.operatingMode === 'transition' && state.transitionStructure) {
-        const allocResult = buildSuccessorAllocation(state.mergedArchitecture.nodes, state.mergedArchitecture.edges, state.transitionStructure);
+        const allocResult = buildSuccessorAllocation(activeNodes, activeEdges, state.transitionStructure);
         localSuccessorAllocation = allocResult.allocation;
         state.successorAllocationMap = localSuccessorAllocation;
     }
@@ -1060,7 +1075,7 @@ export function renderDashboard() {
     const functionRows = [];
 
     [...state.lgaFunctionMap.values()].forEach(lgaFunc => {
-        const funcEdges = state.mergedArchitecture.edges.filter(
+        const funcEdges = activeEdges.filter(
             e => lgaFunc.localNodeIds.has(e.target) && e.relationship === 'REALIZES'
         );
         const sysIds = funcEdges.map(e => e.source);
@@ -1186,8 +1201,50 @@ export function renderDashboard() {
                 const successorMap = localSuccessorAllocation.get(successorName);
                 const cellAllocations = successorMap ? (successorMap.get(lgaFunc.lgaId) || []) : [];
 
+                // Compare with baseline for visual diff
+                let diffClass = '';
+                let ghostCardsHtml = '';
+                let baselineIds = new Set();
+                if (state.simulationState && state.simulationState.baselineAllocation) {
+                    const baselineSuccMap = state.simulationState.baselineAllocation.get(successorName);
+                    const baselineCellAllocs = baselineSuccMap ? (baselineSuccMap.get(lgaFunc.lgaId) || []) : [];
+                    baselineIds = new Set(baselineCellAllocs.map(a => a.system.id));
+                    const currentIds = new Set(cellAllocations.map(a => a.system.id));
+
+                    const hasNew = cellAllocations.some(a => !baselineIds.has(a.system.id));
+                    const removedAllocs = baselineCellAllocs.filter(a => !currentIds.has(a.system.id));
+                    const isUnserved = cellAllocations.length === 0 && baselineCellAllocs.length > 0;
+
+                    if (isUnserved) {
+                        diffClass = ' border-l-4 border-l-[#d4351c]';
+                    } else if (hasNew) {
+                        diffClass = ' border-l-4 border-l-[#1d70b8]';
+                    } else if (removedAllocs.length > 0 && cellAllocations.length > 0) {
+                        diffClass = ' border-l-4 border-l-[#00703c]';
+                    }
+
+                    if (removedAllocs.length > 0) {
+                        ghostCardsHtml = removedAllocs.map(a => {
+                            const s = a.system;
+                            return `<div class="sim-ghost-card"><span class="line-through">${escHtml(s.label)}</span> <span class="text-xs text-gray-400">${escHtml(s._sourceCouncil || '')}</span></div>`;
+                        }).join('');
+                    }
+                }
+
                 if (cellAllocations.length === 0) {
-                    rowHTML += `<td class="${tdClass} p-3"><span class="text-gray-400 italic text-sm">No system allocated</span></td>`;
+                    const isUnserved = state.simulationState && state.simulationState.baselineAllocation && (() => {
+                        const bsm = state.simulationState.baselineAllocation.get(successorName);
+                        return bsm && (bsm.get(lgaFunc.lgaId) || []).length > 0;
+                    })();
+                    if (isUnserved) {
+                        rowHTML += `<td class="${tdClass} p-3 border-l-4 border-l-[#d4351c]">
+                            <span class="gds-tag tag-red">UNSERVED</span>
+                            <span class="text-gray-400 italic text-sm block mt-1">Previously served — no system allocated after simulation</span>
+                            ${ghostCardsHtml}
+                        </td>`;
+                    } else {
+                        rowHTML += `<td class="${tdClass} p-3"><span class="text-gray-400 italic text-sm">No system allocated</span></td>`;
+                    }
                 } else {
                     // Classify rationalisation pattern for this cell
                     const pattern = classifyRationalisationPattern(cellAllocations);
@@ -1195,9 +1252,21 @@ export function renderDashboard() {
 
                     // Build system cards with provenance
                     const cellSystems = cellAllocations.map(a => a.system);
-                    const systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations);
+                    let systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations);
 
-                    rowHTML += `<td class="${tdClass} p-3">${patternTagHtml}<div class="mt-2">${systemCardsHtml}</div></td>`;
+                    // Add NEW badges for systems not in baseline
+                    if (state.simulationState && state.simulationState.baselineAllocation) {
+                        cellAllocations.forEach(a => {
+                            if (!baselineIds.has(a.system.id)) {
+                                systemCardsHtml = systemCardsHtml.replace(
+                                    `>${escHtml(a.system.label)}<`,
+                                    `><span class="sim-new-badge">NEW</span> ${escHtml(a.system.label)}<`
+                                );
+                            }
+                        });
+                    }
+
+                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
 
                     // Collect for analysis
                     const taggedAllocations = cellAllocations.map(a => ({ ...a, _successorName: successorName }));

@@ -117,3 +117,8 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .sim-before { background: #f3f2f1; padding: 4px 8px; font-size: 12px; }
 .sim-after { background: #fff3cd; padding: 4px 8px; font-size: 12px; font-weight: bold; }
 .sim-mode-banner { background: #f47738; color: #0b0c0c; padding: 4px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; margin-bottom: 8px; }
+
+/* Simulation diff indicators */
+.sim-ghost-card { opacity: 0.5; padding: 4px 8px; margin-top: 4px; background-color: #f3f2f1; border-left: 3px solid #b1b4b6; font-size: 12px; }
+.sim-ghost-card .line-through { text-decoration: line-through; }
+.sim-new-badge { background-color: #1d70b8; color: white; font-size: 10px; font-weight: bold; padding: 1px 6px; text-transform: uppercase; letter-spacing: 0.3px; margin-right: 4px; }

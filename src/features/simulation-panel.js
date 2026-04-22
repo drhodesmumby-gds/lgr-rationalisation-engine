@@ -3,15 +3,20 @@ import { escHtml } from '../ui-helpers.js';
 import { applyAllActions } from '../simulation/actions.js';
 import { computeSimulationImpact } from '../simulation/impact.js';
 import { renderDashboard } from '../main.js';
+import { buildSuccessorAllocation } from '../analysis/allocation.js';
 
 // ===================================================================
 // SIMULATION ENTRY / EXIT
 // ===================================================================
 
 export function enterSimulation() {
+    const baselineAllocation = state.transitionStructure
+        ? buildSuccessorAllocation(state.mergedArchitecture.nodes, state.mergedArchitecture.edges, state.transitionStructure).allocation
+        : null;
     state.simulationState = {
         baselineNodes: JSON.parse(JSON.stringify(state.mergedArchitecture.nodes)),
         baselineEdges: JSON.parse(JSON.stringify(state.mergedArchitecture.edges)),
+        baselineAllocation,
         actions: [],
         lastImpact: null
     };
@@ -65,7 +70,7 @@ export function renderSimulationToolbar() {
     let warningHtml = '';
     if (impact && impact.warnings && impact.warnings.length > 0) {
         // Humanize warnings: strip raw ESD IDs like "(3)" or "(159)" that mean nothing to users
-        const humanized = impact.warnings.map(w => w.replace(/\s*\(\d+\)\s*/g, ' ').replace(/\s{2,}/g, ' ').trim());
+        const humanized = [...new Set(impact.warnings)].map(w => w.replace(/\s*\(\d+\)\s*/g, ' ').replace(/\s{2,}/g, ' ').trim());
         warningHtml = `<div class="mt-2 p-2 bg-yellow-50 border-l-4 border-l-[#f47738] text-xs text-gray-800">
             <span class="font-bold">Warnings:</span> ${humanized.map(escHtml).join(' &bull; ')}
         </div>`;
@@ -294,9 +299,9 @@ function renderActionBuilderStep2(type) {
         html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })), '', 'onchange="window._simUpdateConsolidateSystems()"');
         html += `<div id="consolidateSystemField">${buildSelectField('targetSystemId', 'Target System (keep)', [], 'Select a function and successor first')}</div>`;
     } else if (type === 'decommission') {
-        html += buildSelectField('systemId', 'System to decommission', systems.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
+        html += buildSystemSelect('systemId', 'System to decommission', systems);
     } else if (type === 'extend-contract') {
-        html += buildSelectField('systemId', 'System', systems.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
+        html += buildSystemSelect('systemId', 'System', systems);
         html += `<div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-bold mb-1">New End Year</label>
@@ -311,17 +316,16 @@ function renderActionBuilderStep2(type) {
         </div>`;
     } else if (type === 'migrate-users') {
         const systemsWithUsers = systems.filter(s => (s.users || 0) > 0);
-        html += buildSelectField('fromSystemId', 'From System', systemsWithUsers.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
-        html += buildSelectField('toSystemId', 'To System', systems.map(s => ({ value: s.id, label: systemOptionLabel(s) })));
+        html += buildSystemSelect('fromSystemId', 'From System', systemsWithUsers);
+        html += buildSystemSelect('toSystemId', 'To System', systems);
         html += `<div>
             <label class="block text-sm font-bold mb-1">User Count to Migrate</label>
             <input type="number" id="field_userCount" min="1" value="100" class="border-2 border-[#0b0c0c] p-2 text-sm w-48">
         </div>`;
     } else if (type === 'split-shared-service') {
         const sharedSystems = systems.filter(s => s.sharedWith && s.sharedWith.length > 0);
-        html += buildSelectField('systemId', 'System to split', sharedSystems.length > 0
-            ? sharedSystems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))
-            : systems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))
+        html += buildSystemSelect('systemId', 'System to split',
+            sharedSystems.length > 0 ? sharedSystems : systems
         );
         html += `<div id="splitsContainer">
             <label class="block text-sm font-bold mb-2">Splits (one per successor)</label>
@@ -338,9 +342,7 @@ function renderActionBuilderStep2(type) {
         html += `<div><label class="block text-sm font-bold mb-1">Annual Cost (£)</label>
             <input type="number" id="field_annualCost" min="0" class="border-2 border-[#0b0c0c] p-2 text-sm w-48" placeholder="e.g. 150000"></div>`;
         html += `<div class="flex items-center gap-2"><input type="checkbox" id="field_isCloud" checked class="w-4 h-4"><label for="field_isCloud" class="text-sm font-bold">Cloud-hosted</label></div>`;
-        html += buildSelectField('replacesSystemId', 'Replaces (optional)',
-            [{ value: '', label: 'None — new procurement' }, ...systems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))]
-        );
+        html += buildSystemSelect('replacesSystemId', 'Replaces (optional)', systems, 'None — new procurement');
     }
 
     html += '</div>';
@@ -359,6 +361,46 @@ function buildSelectField(id, label, options, placeholder, extraAttrs) {
     return `<div>
         <label for="field_${id}" class="block text-sm font-bold mb-1">${escHtml(label)}</label>
         <select id="field_${id}" class="border-2 border-[#0b0c0c] p-2 text-sm w-full" ${extraAttrs || ''}>${ph}${opts}</select>
+    </div>`;
+}
+
+function buildSystemSelect(id, label, systems, placeholder, extraAttrs) {
+    // Group systems by _sourceCouncil
+    const groups = new Map();
+    systems.forEach(s => {
+        const council = s._sourceCouncil || 'Unknown';
+        if (!groups.has(council)) groups.set(council, []);
+        groups.get(council).push(s);
+    });
+
+    // Sort councils alphabetically, systems within each group alphabetically
+    const sortedCouncils = [...groups.keys()].sort();
+
+    let optsHtml = '';
+    if (placeholder) {
+        optsHtml += `<option value="">${escHtml(placeholder)}</option>`;
+    }
+
+    if (sortedCouncils.length <= 1) {
+        // No grouping needed — single council or no council info
+        const allSystems = systems.slice().sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+        optsHtml += allSystems.map(s =>
+            `<option value="${escHtml(s.id)}">${escHtml(systemOptionLabel(s))}</option>`
+        ).join('');
+    } else {
+        sortedCouncils.forEach(council => {
+            const councilSystems = groups.get(council).slice().sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+            optsHtml += `<optgroup label="${escHtml(council)}">`;
+            optsHtml += councilSystems.map(s =>
+                `<option value="${escHtml(s.id)}">${escHtml(systemOptionLabel(s))}</option>`
+            ).join('');
+            optsHtml += '</optgroup>';
+        });
+    }
+
+    return `<div>
+        <label for="field_${id}" class="block text-sm font-bold mb-1">${escHtml(label)}</label>
+        <select id="field_${id}" class="border-2 border-[#0b0c0c] p-2 text-sm w-full" ${extraAttrs || ''}>${optsHtml}</select>
     </div>`;
 }
 
@@ -421,14 +463,16 @@ export function updateConsolidateSystems() {
     // Filter to systems allocated to this successor
     let relevantSystems = systems.filter(s => sysIdsServingFunction.has(s.id));
 
-    // Further filter by successor if allocation map available
-    if (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation) {
-        const afterAlloc = state.simulationState.lastImpact.afterAllocation;
-        if (afterAlloc.has(successorName) && afterAlloc.get(successorName).has(funcId)) {
-            const allocations = afterAlloc.get(successorName).get(funcId);
-            const allocIds = new Set(allocations.map(a => a.system.id));
-            relevantSystems = relevantSystems.filter(s => allocIds.has(s.id));
-        }
+    // Further filter by successor using allocation map (afterAllocation if available, else baselineAllocation)
+    const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
+        ? state.simulationState.lastImpact.afterAllocation
+        : (state.simulationState && state.simulationState.baselineAllocation)
+            ? state.simulationState.baselineAllocation
+            : null;
+    if (allocMap && allocMap.has(successorName) && allocMap.get(successorName).has(funcId)) {
+        const allocations = allocMap.get(successorName).get(funcId);
+        const allocIds = new Set(allocations.map(a => a.system.id));
+        relevantSystems = relevantSystems.filter(s => allocIds.has(s.id));
     }
 
     if (relevantSystems.length === 0) {
@@ -436,9 +480,35 @@ export function updateConsolidateSystems() {
         return;
     }
 
-    container.innerHTML = buildSelectField('targetSystemId', 'Target System (keep)',
-        relevantSystems.map(s => ({ value: s.id, label: systemOptionLabel(s) }))
-    );
+    container.innerHTML = buildSystemSelect('targetSystemId', 'Target System (keep)', relevantSystems);
+}
+
+function getConsolidateCellSystemIds(funcId, successorName) {
+    const systems = getSimulatedITSystems();
+    const simNodes = getSimulatedNodes();
+    const simEdges = state.simulationState
+        ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
+        : [];
+    const funcNodeIds = new Set(simNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === funcId).map(n => n.id));
+    const sysIdsServingFunction = new Set();
+    simEdges.forEach(e => {
+        if (e.relationship === 'REALIZES' && funcNodeIds.has(e.target)) {
+            sysIdsServingFunction.add(e.source);
+        }
+    });
+    let relevantSystems = systems.filter(s => sysIdsServingFunction.has(s.id));
+    // Use afterAllocation if available, else baselineAllocation for successor scoping
+    const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
+        ? state.simulationState.lastImpact.afterAllocation
+        : (state.simulationState && state.simulationState.baselineAllocation)
+            ? state.simulationState.baselineAllocation
+            : null;
+    if (allocMap && allocMap.has(successorName) && allocMap.get(successorName).has(funcId)) {
+        const allocations = allocMap.get(successorName).get(funcId);
+        const allocIds = new Set(allocations.map(a => a.system.id));
+        relevantSystems = relevantSystems.filter(s => allocIds.has(s.id));
+    }
+    return relevantSystems.map(s => s.id);
 }
 
 function showActionBuilderError(msg) {
@@ -469,7 +539,10 @@ export function applyActionFromBuilder() {
                 showActionBuilderError('Please fill in all fields.');
                 return;
             }
-            action = { type: 'consolidate', functionId: funcId, successorName, targetSystemId };
+            // Compute removeSystemIds: all systems in this cell except the target
+            const removeSystemIds = getConsolidateCellSystemIds(funcId, successorName)
+                .filter(id => id !== targetSystemId);
+            action = { type: 'consolidate', functionId: funcId, successorName, targetSystemId, removeSystemIds };
 
         } else if (type === 'decommission') {
             const systemId = document.getElementById('field_systemId')?.value;
@@ -526,7 +599,8 @@ export function applyActionFromBuilder() {
                 vendor: vendor || null,
                 annualCost: annualCostRaw ? parseInt(annualCostRaw, 10) : null,
                 isCloud: !!isCloud,
-                _sourceCouncil: successorName || 'Simulated'
+                _sourceCouncil: successorName || 'Simulated',
+                targetAuthorities: successorName ? [successorName] : []
             };
             action = { type: 'procure-replacement', functionId: funcId, successorName, newSystem, replacesSystemId };
         }
@@ -590,7 +664,8 @@ function getActionLabel(action) {
             const funcEntry = state.lgaFunctionMap.get(action.functionId);
             const funcLabel = funcEntry ? funcEntry.label : action.functionId;
             const label = action.newSystem ? action.newSystem.label : '?';
-            return `Procure ${label} for ${funcLabel}`;
+            const successor = action.successorName || '';
+            return successor ? `Procure ${label} for ${funcLabel} \u2192 ${successor}` : `Procure ${label} for ${funcLabel}`;
         }
         default:
             return action.type;

@@ -127,11 +127,13 @@ describe('Simulation Action Engine — Property Tests', () => {
             fc.property(arbConsolidateEstate, ({ nodes, edges, fn, systems }) => {
                 const targetSystem = systems[0];
                 const competingCount = systems.length - 1;
+                const removeSystemIds = systems.filter(s => s.id !== targetSystem.id).map(s => s.id);
 
                 const result = applyConsolidate(nodes, edges, {
                     type: 'consolidate',
                     functionId: fn.lgaFunctionId,
                     targetSystemId: targetSystem.id,
+                    removeSystemIds,
                 });
 
                 const resultSystems = result.nodes.filter(n => n.type === 'ITSystem');
@@ -165,11 +167,13 @@ describe('Simulation Action Engine — Property Tests', () => {
             fc.property(arbConsolidateWithUsers, ({ nodes, edges, fn, systems }) => {
                 const targetSystem = systems[0];
                 const totalUsersBefore = systems.reduce((sum, s) => sum + (s.users || 0), 0);
+                const removeSystemIds = systems.filter(s => s.id !== targetSystem.id).map(s => s.id);
 
                 const result = applyConsolidate(nodes, edges, {
                     type: 'consolidate',
                     functionId: fn.lgaFunctionId,
                     targetSystemId: targetSystem.id,
+                    removeSystemIds,
                 });
 
                 const resultSystems = result.nodes.filter(n => n.type === 'ITSystem');
@@ -177,6 +181,49 @@ describe('Simulation Action Engine — Property Tests', () => {
 
                 // Total users after should be >= total before (users transferred to target)
                 expect(totalUsersAfter).toBeGreaterThanOrEqual(totalUsersBefore);
+            })
+        );
+    });
+
+    it('Property: Consolidate with removeSystemIds only removes specified systems', () => {
+        // Build estate with 3+ systems but only specify 1 to remove
+        const arbPartialConsolidate = fc.tuple(
+            arbFunction,
+            fc.array(arbSystem, { minLength: 3, maxLength: 5 })
+        ).filter(([fn, systems]) => {
+            const sysIds = systems.map(s => s.id);
+            return new Set(sysIds).size === sysIds.length;
+        }).map(([fn, systems]) => {
+            const edges = systems.map(sys => ({
+                source: sys.id,
+                target: fn.id,
+                relationship: 'REALIZES'
+            }));
+            return { nodes: [...systems, fn], edges, fn, systems };
+        });
+
+        fc.assert(
+            fc.property(arbPartialConsolidate, ({ nodes, edges, fn, systems }) => {
+                const targetSystem = systems[0];
+                // Only remove one of the competing systems, not all
+                const removeSystemIds = [systems[1].id];
+
+                const result = applyConsolidate(nodes, edges, {
+                    type: 'consolidate',
+                    functionId: fn.lgaFunctionId,
+                    targetSystemId: targetSystem.id,
+                    removeSystemIds,
+                });
+
+                const resultSystems = result.nodes.filter(n => n.type === 'ITSystem');
+                // Should have removed exactly 1, keeping target + remaining
+                expect(resultSystems.length).toBe(systems.length - 1);
+                expect(result.nodes.some(n => n.id === targetSystem.id)).toBe(true);
+                expect(result.nodes.some(n => n.id === systems[1].id)).toBe(false);
+                // systems[2] and beyond should still be present
+                for (let i = 2; i < systems.length; i++) {
+                    expect(result.nodes.some(n => n.id === systems[i].id)).toBe(true);
+                }
             })
         );
     });
