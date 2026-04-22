@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGR Workspace Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
+    <style>
+{{STYLES}}
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-[#0b0c0c] text-white p-4 border-b-[6px] border-[#1d70b8] flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-bold">GOV.UK</h1>
+            <span class="text-xl font-normal border-l border-gray-600 pl-4 hidden md:inline header-subtitle">LGR Transition Workspace</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="btnCollapseHeader" onclick="toggleHeaderCollapse()" class="bg-transparent text-white hover:text-gray-300 p-1" aria-label="Collapse header" title="Collapse header">
+                <svg class="w-5 h-5 collapse-chevron" id="headerChevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+            </button>
+            <button id="btnOpenGlossary" class="bg-transparent hover:underline px-3 py-1.5 text-sm font-bold text-white transition">Glossary</button>
+            <div id="controlsArea" class="flex flex-wrap items-center gap-4 hidden">
+                <div class="flex items-center gap-2 bg-white text-black px-3 py-1.5 border-2 border-black">
+                    <label for="perspectiveSelect" class="text-sm font-bold">Perspective:<span class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full border border-[#505a5f] text-[#505a5f] hover:text-[#1d70b8] hover:border-[#1d70b8] cursor-pointer ml-1 align-middle" onclick="openDocModal('perspectives')" title="Learn more">?</span></label>
+                    <select id="perspectiveSelect" class="border-none outline-none text-sm font-bold text-[#d4351c] cursor-pointer">
+                        <option value="all">Unitary (All Councils)</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 bg-white text-black px-3 py-1.5 border-2 border-black">
+                    <label for="personaSelect" class="text-sm font-bold">View Persona:<span class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full border border-[#505a5f] text-[#505a5f] hover:text-[#1d70b8] hover:border-[#1d70b8] cursor-pointer ml-1 align-middle" onclick="openDocModal('personas')" title="Learn more">?</span></label>
+                    <select id="personaSelect" class="border-none outline-none text-sm font-bold text-[#1d70b8] cursor-pointer">
+                        <option value="executive">Executive / Transition Board</option>
+                        <option value="commercial">Commercial / Transition Director</option>
+                        <option value="architect">Enterprise Architect (CTO)</option>
+                    </select>
+                </div>
+                <button id="btnOpenOptions" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Signal Options</button>
+                <button id="btnReset" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Start Over</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-auto relative">
+
+        <!-- STAGE 1: UPLOAD -->
+        <div id="stageUpload" class="max-w-4xl mx-auto mt-20 p-8 bg-white border-t-4 border-[#1d70b8] shadow-md transition-opacity duration-300">
+            <h2 class="text-3xl font-bold mb-4">1. Ingest Legacy Architectures</h2>
+            <p class="text-lg text-gray-700 mb-8">Upload the isolated JSON architectural exports from the merging councils. The engine will merge them into a unified workspace.</p>
+
+            <div id="uploadArea" class="border-4 border-dashed border-[#b1b4b6] p-12 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                <span class="text-xl font-bold text-[#1d70b8] underline">Select JSON files</span>
+                <span class="text-lg text-gray-600 block mt-2">Upload Council A, Council B, etc.</span>
+                <input type="file" id="fileInput" multiple accept=".json" class="sr-only">
+            </div>
+
+            <!-- Import wizard entry points -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="text-center text-sm text-gray-500 font-bold uppercase tracking-wider mb-4">Or import from a different format</p>
+                <div class="flex flex-col gap-3 max-w-sm mx-auto">
+                    <button id="btnOpenImportWizard" class="gds-btn-secondary px-4 py-3 font-bold text-base w-full text-center">Import from Spreadsheet (CSV / Excel)</button>
+                    <button id="btnOpenManualEntry" class="gds-btn-secondary px-4 py-3 font-bold text-base w-full text-center">Build Register from Scratch</button>
+                </div>
+            </div>
+
+            <div id="fileList" class="mt-8 space-y-2 hidden">
+                <h3 class="font-bold border-b pb-2">Staged Files:</h3>
+                <ul id="uploadedFilesUl" class="list-disc pl-5 text-[#00703c] font-bold"></ul>
+                <button id="btnProceedBaseline" class="gds-btn mt-6">Proceed to Baselining & Reconciliation &rarr;</button>
+            </div>
+
+            <div class="mt-8 pt-8 border-t border-gray-200 text-center">
+                <button id="btnLoadDemo" class="text-[#1d70b8] underline font-bold hover:text-[#0b0c0c]">Load Complex LGR Demo Scenario</button>
+            </div>
+        </div>
+
+        <!-- STAGE 1.5: TRANSITION CONFIGURATION -->
+        <div id="stageTransitionConfig" class="max-w-4xl mx-auto mt-10 p-8 bg-white border-t-4 border-[#1d70b8] shadow-md hidden">
+            <h2 class="text-3xl font-bold mb-4">1.5 Transition Structure Configuration</h2>
+            <p class="text-lg text-gray-700 mb-6">Define the successor authorities and vesting date for transition planning analysis. This enables the engine to analyse the estate from the perspective of what each successor needs.</p>
+
+            <input type="file" accept=".json" id="transitionConfigInput" class="sr-only">
+
+            <div class="mb-6">
+                <label for="vestingDateInput" class="block font-bold mb-2">Vesting Date</label>
+                <p class="text-sm text-gray-600 mb-2">The legal date on which successor authorities come into existence.</p>
+                <input type="date" id="vestingDateInput" class="border-2 border-[#0b0c0c] p-2 text-base font-bold w-64" min="2025-01-01" max="2040-12-31">
+            </div>
+
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Successor Authorities</h3>
+                    <div class="flex items-center gap-2">
+                        <button id="btnDetectFromArch" type="button" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Detect from architecture</button>
+                        <button id="btnImportTransition" type="button" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Import Configuration</button>
+                        <button id="btnExportTransition" type="button" class="gds-btn px-3 py-1.5 text-sm font-bold" disabled>Export Configuration</button>
+                        <button id="btnAddSuccessor" type="button" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">+ Add Successor</button>
+                    </div>
+                </div>
+                <div id="transitionImportWarning" class="hidden mb-4 p-3 bg-yellow-50 border-l-4 border-l-[#f47738]">
+                    <p class="font-bold text-sm text-[#0b0c0c]">Import warning</p>
+                    <p id="transitionImportWarningMsg" class="text-sm text-gray-700 mt-1"></p>
+                </div>
+                <div id="successorList" class="space-y-6"></div>
+            </div>
+
+            <div id="transitionValidationWarning" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-l-[#f47738]">
+                <p class="font-bold text-[#0b0c0c]">&#9888; Unassigned councils</p>
+                <p id="transitionValidationMsg" class="text-sm text-gray-700 mt-1"></p>
+            </div>
+
+            <div class="flex items-center gap-4 mt-8">
+                <button id="btnProceedTransition" class="gds-btn">Proceed with Transition Planning &rarr;</button>
+                <button id="btnSkipTransition" class="text-[#1d70b8] underline font-bold hover:text-[#0b0c0c] bg-transparent border-none cursor-pointer text-base">Skip &mdash; use Estate Discovery mode</button>
+            </div>
+        </div>
+
+        <!-- STAGE 2: BASELINING & RECONCILIATION -->
+        <div id="stageBaseline" class="max-w-5xl mx-auto mt-10 p-8 bg-white border-t-4 border-[#53284f] shadow-md hidden">
+            <h2 class="text-3xl font-bold mb-4">2. LGA Function Taxonomy Alignment</h2>
+            <p class="text-lg text-gray-700 mb-6">
+                The engine has merged the uploaded architectures and resolved each function against the <a href="https://webservices.esd.org.uk/lists/functions" target="_blank" class="text-[#1d70b8] underline">LGA/ESD Standard Function Taxonomy</a>. Each function node must carry a valid <code class="bg-gray-100 px-1 text-sm font-mono">lgaFunctionId</code> matching an ESD identifier.
+            </p>
+
+            <div id="validationErrors" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-l-[#d4351c]"></div>
+
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <div class="border border-gray-300 p-4 bg-green-50 border-l-4 border-l-[#00703c]">
+                    <h3 class="text-2xl font-bold text-[#00703c]" id="countMatched">0</h3>
+                    <p class="font-bold">Functions appearing in 2+ councils</p>
+                    <p class="text-sm text-gray-600 mt-1">Cross-council collision candidates. Rationalisation required.</p>
+                </div>
+                <div class="border border-gray-300 p-4 bg-blue-50 border-l-4 border-l-[#1d70b8]">
+                    <h3 class="text-2xl font-bold text-[#1d70b8]" id="countUnmatched">0</h3>
+                    <p class="font-bold">Functions unique to one council</p>
+                    <p class="text-sm text-gray-600 mt-1">No collision. Safely inherited Day 1.</p>
+                </div>
+            </div>
+
+            <div id="stage2EditLinks" class="mb-6 p-4 bg-[#f3f2f1] border border-[#b1b4b6]">
+                <p class="font-bold text-sm mb-2">Edit staged architectures:</p>
+                <div id="stage2EditButtons" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <button id="btnGenerateMatrix" class="gds-btn w-full text-center text-lg py-3">Generate Restructure Matrix</button>
+        </div>
+
+        <!-- STAGE 3: PERSONA DASHBOARD -->
+        <div id="stageDashboard" class="w-full h-full flex flex-col hidden bg-white">
+
+            <div id="personaBanner" class="bg-[#f3f2f1] border-b-2 border-[#0b0c0c] p-4 flex gap-4 items-start transition-colors duration-300 shrink-0">
+                <svg class="w-8 h-8 shrink-0" id="personaIcon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-bold text-lg" id="personaTitle">Executive View Active</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="btnExportHTML" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Export</button>
+                            <button id="btnViewTierMapping" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">View Tier Mapping</button>
+                            <button id="btnReconfigureTransition" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Reconfigure Transition</button>
+                            <button id="btnCollapseBanner" onclick="toggleBannerCollapse()" class="text-gray-500 hover:text-black p-1" aria-label="Collapse banner" title="Collapse banner">
+                                <svg class="w-5 h-5 collapse-chevron" id="bannerChevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-800" id="personaDesc">Consolidated view of both hard commercial expiry constraints and architectural technical debt.</p>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-auto p-4 md:p-8">
+                <div class="max-w-[1800px] mx-auto space-y-12">
+                    <!-- Estate Summary Panel -->
+                    <div id="estateSummaryPanel" class="hidden"></div>
+
+                    <!-- Sort/Filter Toolbar -->
+                    <div id="matrixToolbar" class="hidden bg-[#f3f2f1] border border-[#b1b4b6] flex flex-wrap items-center gap-6 px-4 py-3 mb-4">
+                        <div class="flex items-center gap-2">
+                            <label for="sortModeSelect" class="text-sm font-bold">Sort by:</label>
+                            <select id="sortModeSelect" class="border border-[#0b0c0c] text-sm px-2 py-1">
+                                <option value="tier">Tier priority</option>
+                                <option value="collisions">Collision count</option>
+                                <option value="alpha">Function name (A-Z)</option>
+                                <option value="urgency">Contract urgency</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="filterTierSelect" class="text-sm font-bold">Tier:</label>
+                            <select id="filterTierSelect" class="border border-[#0b0c0c] text-sm px-2 py-1">
+                                <option value="all">All tiers</option>
+                                <option value="1">Tier 1 only</option>
+                                <option value="2">Tier 2 only</option>
+                                <option value="3">Tier 3 only</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="filterCollisionSelect" class="text-sm font-bold">Functions:</label>
+                            <select id="filterCollisionSelect" class="border border-[#0b0c0c] text-sm px-2 py-1">
+                                <option value="all">All functions</option>
+                                <option value="collision">Collisions only</option>
+                                <option value="unique">Unique only</option>
+                            </select>
+                        </div>
+                        <span id="matrixRowCount" class="text-sm text-gray-600 ml-auto"></span>
+                    </div>
+
+                    <!-- Dynamic Matrix -->
+                    <div class="bg-white shadow-sm overflow-auto max-h-[80vh] border border-gray-300">
+                        <table class="gds-table" id="dashboardMatrix">
+                            <thead id="matrixHead"></thead>
+                            <tbody id="matrixBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Critical Path Panel (rendered below matrix) -->
+                    <div id="criticalPathPanel" class="mt-6"></div>
+
+                    <!-- Dynamic Timeline -->
+                    <div id="timelineSection" class="bg-white p-6 border-t-4 border-[#0b0c0c] shadow-sm">
+                        <h2 class="text-2xl font-bold mb-2">Contract Notice &amp; Expiry Timelines<span class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full border border-[#505a5f] text-[#505a5f] hover:text-[#1d70b8] hover:border-[#1d70b8] cursor-pointer ml-2 align-middle" onclick="openDocModal('timeline')" title="Learn more">?</span></h2>
+                        <p class="text-gray-700 mb-6 max-w-4xl">Visualizing hard legal deadlines. The solid bar ends at contract expiry. The <span class="px-2 py-1 bg-[#ffb2a8] font-bold text-[#d4351c] text-xs uppercase border border-[#d4351c] mx-1">Striped Zone</span> represents the mandatory notice period. <strong>Action must be taken before the striped zone begins to avoid auto-renewal.</strong></p>
+                        <div class="timeline-track" id="timelineTrack"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIGNAL OPTIONS MODAL -->
+        <div id="optionsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white max-w-2xl w-full p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
+                <button id="btnCloseOptions" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                <h2 class="text-2xl font-bold mb-1">Signal Options</h2>
+                <p class="text-sm text-gray-600 mb-6">Control which signals appear in the analysis column and how prominently. <strong>High</strong> signals appear with a coloured badge. <strong>Low</strong> signals appear as small grey notes. <strong>Off</strong> signals are hidden. Changing persona resets to that persona's defaults.</p>
+                <table class="w-full text-sm mb-6">
+                    <thead>
+                        <tr class="border-b-2 border-[#0b0c0c]">
+                            <th class="text-left pb-2 font-bold">Signal</th>
+                            <th class="text-center pb-2 font-bold w-14">Off</th>
+                            <th class="text-center pb-2 font-bold w-14">Low</th>
+                            <th class="text-center pb-2 font-bold w-14">Med</th>
+                            <th class="text-center pb-2 font-bold w-14">High</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signalWeightsTable"></tbody>
+                </table>
+                <div class="flex gap-3 items-center">
+                    <button id="btnApplyWeights" class="gds-btn">Apply &amp; refresh</button>
+                    <button id="btnResetWeights" class="gds-btn-secondary px-4 py-2 text-sm font-bold hover:bg-gray-100">Reset to persona defaults</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GLOSSARY MODAL -->
+        <div id="glossaryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white max-w-2xl w-full p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
+                <button id="btnCloseGlossary" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                <h2 class="text-2xl font-bold mb-4">LGR Engine Terminology Glossary</h2>
+
+                <div class="space-y-6 overflow-y-auto max-h-[70vh] pr-4">
+
+                    <!-- Section 1: Transition Concepts -->
+                    <div>
+                        <h3 class="font-bold text-base text-white bg-[#1d70b8] px-3 py-1.5 mb-3">Transition Concepts</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Vesting Date</p>
+                                <p class="text-sm text-gray-700">The legal date the new unitary authority comes into existence. All Tier 1 (Day 1 critical) services must be operational by this date. Contract notice deadlines are measured relative to it.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Predecessor</p>
+                                <p class="text-sm text-gray-700">An existing council that is being merged or restructured. Its IT estate, contracts, and services are inherited by one or more successor authorities.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Successor</p>
+                                <p class="text-sm text-gray-700">The new unitary authority created from the reorganisation. A predecessor can be a full predecessor (all systems transfer) or partial predecessor (systems are split across multiple successors).</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Perspective</p>
+                                <p class="text-sm text-gray-700">A filtered view of the estate. "All Councils/Successors" shows the full merged picture. Selecting a specific successor or council highlights its columns and filters analysis to that entity.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Collision</p>
+                                <p class="text-sm text-gray-700">Two or more councils have IT systems serving the same LGA standard function. Collisions require rationalisation decisions &mdash; one system must be chosen, or a disaggregation strategy defined.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Cross-tier</p>
+                                <p class="text-sm text-gray-700">Systems from councils with different tier classifications (county vs district). May represent complementary delivery across different service layers, not duplication &mdash; requires closer analysis before assuming consolidation.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: System Properties -->
+                    <div>
+                        <h3 class="font-bold text-base text-white bg-[#d4351c] px-3 py-1.5 mb-3">System Properties</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Portability</p>
+                                <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
+                                    <li><strong>High:</strong> Open APIs, REST/GraphQL access, or native interoperability standards. Easy machine-to-machine extraction.</li>
+                                    <li><strong>Medium:</strong> Batch extracts (CSV/XML), standard SQL database dumps, scheduled reporting modules.</li>
+                                    <li><strong>Low:</strong> Proprietary schema, vendor-paywalled extraction, or locked-in SaaS with no bulk export. High vendor hostage risk.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Data Layer</p>
+                                <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
+                                    <li><strong>Segmented:</strong> Data is structured cleanly and can be partitioned (e.g., filtered by ward or department for disaggregation).</li>
+                                    <li><strong>Monolithic:</strong> Data is highly entangled across domains. Cannot be easily unpicked. High risk for migrations/splits; requires dedicated ETL planning.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Cloud / On-Premise</p>
+                                <p class="text-sm text-gray-700">Cloud systems are externally hosted SaaS or IaaS. On-premise systems are hosted on physical council servers and may have different migration, licensing, and support implications.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">ERP (Enterprise Resource Planning)</p>
+                                <p class="text-sm text-gray-700">Monolithic business systems covering finance, HR, and payroll. Highly entangled data structures make disaggregation complex. Assessed under TCoP Point 9 (modularity).</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Shared Service</p>
+                                <p class="text-sm text-gray-700">A system jointly operated across council boundaries. Requires unwinding or re-contracting during reorganisation. May cross successor boundaries, requiring formal service unwinding plans.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">ESD/LGA Function</p>
+                                <p class="text-sm text-gray-700">Standard function from the LGA/ESD taxonomy (176 entries). Maps council-specific service names to a common classification, enabling cross-council comparison in the matrix.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Analysis Signals -->
+                    <div>
+                        <h3 class="font-bold text-base text-white bg-[#53284f] px-3 py-1.5 mb-3">Analysis Signals</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Contract Urgency</p>
+                                <p class="text-sm text-gray-700">Classifies each system's contract end date relative to the vesting date into zones: Pre-vesting (red), Year 1 (amber), Natural expiry (blue), Long-tail (black). Accounts for notice period to identify the true action deadline.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Notice Period Action Zone</p>
+                                <p class="text-sm text-gray-700">Contract expiry dates are misleading. If a contract has a 12-month notice period, the true "drop-dead" decision date is 12 months before expiry. The timeline visualises this as a red striped warning zone.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">User Volume</p>
+                                <p class="text-sm text-gray-700">Relative scale of systems by reported user count. Proportionality scoring identifies when one system is significantly larger than others (anchor threshold: 50% larger than the next).</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Vendor Density</p>
+                                <p class="text-sm text-gray-700">Number of distinct vendors providing systems for the same function across councils. When the same vendor appears across multiple predecessors, there is a commercial opportunity to consolidate into a single enterprise agreement.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Tech Debt (On-premise)</p>
+                                <p class="text-sm text-gray-700">Systems hosted on council servers rather than cloud/SaaS. On-premise systems may face hosting, support, and licensing complications during transitions.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">TCoP Alignment</p>
+                                <p class="text-sm text-gray-700">Assessment against the UK Government Technology Code of Practice. Points 3 (spend), 4 (open standards), 5 (cloud first), 9 (modularity), and 11 (commercial) are evaluated from system properties.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Rationalisation Patterns -->
+                    <div>
+                        <h3 class="font-bold text-base text-white bg-[#00703c] px-3 py-1.5 mb-3">Rationalisation Patterns</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-bold text-[#00703c]">inherit-as-is</p>
+                                <p class="text-sm text-gray-700">Single system, no competition. The system continues under the new authority. Priority: confirm contract novation, verify licence, and confirm no data partitioning is needed.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#1d70b8]">choose-and-consolidate</p>
+                                <p class="text-sm text-gray-700">Multiple systems serve the same function within a successor. A selection decision is required: one system is retained and others decommissioned. User volume, cost, and portability guide the choice.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#d4351c]">extract-and-partition</p>
+                                <p class="text-sm text-gray-700">A system crosses successor boundaries and must be split. Data and/or service must be partitioned so each successor can operate independently. Highest risk for monolithic systems.</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#53284f]">extract-partition-and-consolidate</p>
+                                <p class="text-sm text-gray-700">The most complex pattern: systems must be both split across successors and consolidated within each successor. Requires sequenced delivery &mdash; partition first, then consolidate within each new authority.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Governance & Compliance -->
+                    <div>
+                        <h3 class="font-bold text-base text-white bg-[#0b0c0c] px-3 py-1.5 mb-3">Governance &amp; Compliance</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">TCoP (Technology Code of Practice)</p>
+                                <p class="text-sm text-gray-700">UK Government's framework for technology decisions. Five points are assessed: Point 3 (spend controls / vendor lock-in), Point 4 (open standards / portability), Point 5 (cloud first), Point 9 (modularity / avoid monoliths), Point 11 (commercial / contract flexibility).</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Tier Classification</p>
+                                <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
+                                    <li><strong>Tier 1 (Day 1 Critical):</strong> Statutory and safeguarding services that must be operational from vesting day.</li>
+                                    <li><strong>Tier 2 (High Priority):</strong> Important services needed post-transition but not Day 1 critical.</li>
+                                    <li><strong>Tier 3 (Post-Day 1):</strong> Services that can be transitioned after the new authority is established. Tier 3 is promoted to Tier 2 when a contract notice trigger falls before the vesting date.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0b0c0c]">Anchor System</p>
+                                <p class="text-sm text-gray-700">Declared when a system is at least 50% larger than the second-largest system by user count. Marginal differences will not trigger an anchor. An anchor system is generally the most logical migration target to minimise business disruption.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER MAPPING MODAL -->
+        <div id="tierMappingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white max-w-3xl w-full p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
+                <button id="btnCloseTierMapping" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                <h2 class="text-2xl font-bold mb-2">Playbook Tier Mapping</h2>
+                <p class="text-sm text-gray-600 mb-6">Default ESD function-to-tier classification based on MHCLG Playbook prioritisation guidance. Functions not listed default to Tier 2. Function-level overrides and Tier 3 promotion (when a contract expires before vesting) may adjust the effective tier at runtime.</p>
+                <div id="tierMappingContent" class="overflow-y-auto max-h-[65vh] pr-4 space-y-6"></div>
+            </div>
+        </div>
+
+        <!-- ANALYSIS DETAIL MODAL -->
+        <div id="analysisModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white max-w-4xl w-full mx-4 p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
+                <button id="btnCloseAnalysis" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                <div id="analysisModalContent" class="overflow-y-auto max-h-[85vh] pr-2"></div>
+            </div>
+        </div>
+
+        <!-- DOCUMENTATION MODAL -->
+        <div id="docModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white max-w-3xl w-full mx-4 p-8 border-t-8 border-[#1d70b8] shadow-2xl relative max-h-[85vh] flex flex-col">
+                <button id="btnCloseDoc" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                <h2 id="docModalTitle" class="text-2xl font-bold mb-4"></h2>
+                <div id="docModalContent" class="overflow-y-auto flex-1 space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- ARCHITECTURE EDITOR MODAL -->
+        <div id="architectureEditorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white w-full max-w-6xl mx-4 p-6 border-t-8 border-[#1d70b8] shadow-2xl relative max-h-[90vh] flex flex-col">
+                <button id="btnCloseArchEditor" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                <h2 id="archEditorTitle" class="text-2xl font-bold mb-4">Edit Architecture</h2>
+                <div id="archEditorTabs" class="flex gap-2 mb-4 border-b border-[#b1b4b6]">
+                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-[#1d70b8]" data-tab="council">Council Info</button>
+                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-transparent" data-tab="functions">Functions</button>
+                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-transparent" data-tab="systems">IT Systems</button>
+                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-transparent" data-tab="edges">Edges</button>
+                </div>
+                <div id="archEditorContent" class="overflow-auto flex-1"></div>
+                <div id="archEditorConfirm" class="hidden mt-3 p-3 bg-green-50 border-l-4 border-l-[#00703c] text-[#00703c] font-bold text-sm"></div>
+                <div class="flex gap-3 mt-4 pt-4 border-t border-[#b1b4b6]">
+                    <button id="btnApplyArchChanges" class="gds-btn" type="button">Apply Changes</button>
+                    <button id="btnExportArchJson" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Export JSON</button>
+                    <button id="btnCancelArchEditor" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMPORT WIZARD MODAL -->
+        <div id="importWizardModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="importWizardTitle">
+            <div class="bg-white w-full max-w-5xl mx-4 p-6 border-t-8 border-[#1d70b8] shadow-2xl max-h-[90vh] flex flex-col">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h2 id="importWizardTitle" class="text-2xl font-bold">Import from Spreadsheet</h2>
+                    <button id="btnCloseImportWizard" class="text-gray-500 hover:text-black font-bold text-xl" aria-label="Close import wizard">&times;</button>
+                </div>
+                <!-- Step indicator -->
+                <div id="importWizardStepBar" class="flex items-center gap-0 mb-6 text-sm font-bold select-none">
+                    <div class="import-step-indicator flex items-center gap-2 px-3 py-2 border-b-4" data-step="1">
+                        <span class="import-step-num w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                        <span class="import-step-label">Source</span>
+                    </div>
+                    <div class="text-gray-300 mx-1">&#8250;</div>
+                    <div class="import-step-indicator flex items-center gap-2 px-3 py-2 border-b-4 border-transparent" data-step="2">
+                        <span class="import-step-num w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                        <span class="import-step-label">Column Mapping</span>
+                    </div>
+                    <div class="text-gray-300 mx-1 import-step-sep-2" data-step="2">&#8250;</div>
+                    <div class="import-step-indicator flex items-center gap-2 px-3 py-2 border-b-4 border-transparent import-step-item-3" data-step="3">
+                        <span class="import-step-num w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                        <span class="import-step-label">Function Mapping</span>
+                    </div>
+                    <div class="text-gray-300 mx-1">&#8250;</div>
+                    <div class="import-step-indicator flex items-center gap-2 px-3 py-2 border-b-4 border-transparent" data-step="4">
+                        <span class="import-step-num w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                        <span class="import-step-label">Review</span>
+                    </div>
+                </div>
+                <!-- Dynamic content area -->
+                <div id="importWizardContent" class="overflow-y-auto flex-1"></div>
+                <!-- Error/notice area -->
+                <div id="importWizardError" class="hidden mt-3 p-3 bg-red-50 border-l-4 border-l-[#d4351c] text-[#d4351c] font-bold text-sm"></div>
+                <!-- Footer -->
+                <div class="flex gap-3 mt-4 pt-4 border-t border-[#b1b4b6] justify-between">
+                    <button id="btnImportBack" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Back</button>
+                    <button id="btnImportNext" class="gds-btn px-6 py-2 font-bold" type="button">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LGA Functions datalist for autocomplete -->
+        <datalist id="lgaFunctionsDatalist"></datalist>
+
+    </main>
+
+    <script>
+{{BUNDLE}}
+    </script>
+</body>
+</html>

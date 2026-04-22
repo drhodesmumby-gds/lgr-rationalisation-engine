@@ -4,10 +4,13 @@
   "private": true,
   "description": "Test infrastructure for LGR Transition Workspace Engine",
   "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "fast-check": "^4.1.1",
     "vitest": "^3.2.1"
   },

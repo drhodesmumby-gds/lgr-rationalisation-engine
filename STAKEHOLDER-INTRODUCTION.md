@@ -24,11 +24,18 @@ The tool operates in four stages.
 
 ### Stage 1 — Ingest
 
-Each participating council exports a structured description of their IT systems: which systems they run, what services those systems support, what their contracts look like, and key technical characteristics. These are uploaded as JSON files.
+Council IT estate data is uploaded through one of several entry paths:
 
-The engine accepts any number of council files simultaneously and merges them into a unified workspace. If a transition configuration file is included alongside the architecture files, it is automatically detected and applied at the next stage. A built-in demo loads example data without requiring file preparation.
+- **Structured JSON upload** — for councils with architecture data already in the engine's schema format
+- **CSV or Excel upload** — the engine auto-detects common column headers (System Name, Vendor, Annual Cost, Contract End Date, etc.) and maps them to its internal schema
+- **Clipboard paste** — copy rows directly from a spreadsheet and paste into the import wizard
+- **Guided manual entry** — a form-based path for councils starting with no structured data at all
 
-Each uploaded file can be inspected and modified using the built-in **visual architecture editor** before proceeding.
+The **import wizard** guides users through a multi-step process: select a data source, map columns to fields, assign ESD function identifiers (with auto-suggestions based on token matching against department names), and review before import. A downloadable CSV template is available to help councils prepare data in advance.
+
+The engine accepts any number of council files simultaneously and merges them into a unified workspace. If a transition configuration file is included alongside the architecture files, it is automatically detected and applied at the next stage.
+
+Each uploaded file can be inspected and modified using the built-in **visual architecture editor** before proceeding. The editor provides four tabs — council metadata, functions, IT systems, and relationships — allowing corrections without re-importing.
 
 ### Stage 1.5 — Transition structure
 
@@ -39,7 +46,9 @@ This stage defines *how* the predecessor councils will reorganise into successor
   - **Full predecessors** — the entire estate of a council transfers to one successor
   - **Partial predecessors** — a council's estate must be split across multiple successors (disaggregation)
 
-The tool validates that every council is accounted for and that assignments are consistent. Transition configurations can be imported from and exported to JSON files for reuse across sessions.
+The tool validates that every council is accounted for and that assignments are consistent. A **"Detect from architecture"** button can auto-populate the transition structure by scanning uploaded architectures for `targetAuthorities` fields on systems, inferring successor authorities and predecessor assignments without manual entry.
+
+Transition configurations can be imported from and exported to JSON files for reuse across sessions.
 
 This stage can be skipped to use **Estate Discovery mode** — a simpler cross-council comparison without transition modelling.
 
@@ -65,10 +74,13 @@ The matrix includes:
 - **Sort and filter controls** — sort by tier priority, collision count, or name; filter by tier or collision status
 - **Estate summary** — total systems, collisions, annual spend, pre-vesting triggers, disaggregation count
 - **Rationalisation patterns** — each function row is classified and colour-tagged
-- **Analysis column** — configurable signals, TCoP assessment, and persona-specific insight questions
-- **Critical path panel** — pre-vesting contract decisions requiring immediate action
+- **Analysis column** — configurable signals, TCoP assessment, and persona-specific contextual questions
+- **Cross-tier collision detection** — flags where systems from different council tiers (county vs district) serve the same function, as these may represent complementary rather than duplicated delivery
+- **Critical path panel** — pre-vesting contract decisions requiring immediate action (Executive persona)
 - **Contract timeline** — centred on the vesting date, with notice period zones striped in red
 - **Perspective filtering** — view the entire estate or filter to a specific successor authority's view
+- **Inline help** — contextual help icons throughout the interface explain signals, patterns, TCoP criteria, and other analytical concepts without leaving the dashboard
+- **Glossary** — a domain terminology reference accessible from the header bar, covering 16 key terms used in the analysis
 
 ---
 
@@ -127,6 +139,10 @@ Emphasises monolithic data, portability risk, on-premise systems, and Technology
 
 Primary questions: *Where will data disaggregation be hardest? Which systems carry the most technical risk? Where are we locked in to proprietary platforms?*
 
+### Contextual questions
+
+Each analysis cell includes persona-specific questions generated from the data. These are not generic prompts — they adapt based on the rationalisation pattern, the systems present, contract timelines, signal results, and financial exposure. For example, an Executive view of a function with a pre-vesting notice trigger and a monolithic data layer will surface questions about Day 1 operational readiness and data separation timelines. A Commercial view of the same function will ask about vendor negotiation leverage and contract extension options.
+
 ---
 
 ## The tier system
@@ -183,7 +199,7 @@ This gives architecture and commercial teams a quick alignment check against nat
 
 ## What data is required
 
-Each council prepares a JSON file describing their IT estate. The key information per system is:
+Each council provides a description of their IT estate. This can be supplied as a structured JSON file, a CSV or Excel spreadsheet, clipboard-pasted rows, or entered manually through the import wizard. The key information per system is:
 
 - System name and vendor
 - Which service function it supports (referenced against the ESD taxonomy)
@@ -197,6 +213,8 @@ Each council prepares a JSON file describing their IT estate. The key informatio
 - Which other councils share the system (if applicable)
 
 Additionally, the council's **tier** (county/district/borough/unitary) and **financial distress** status can be specified. Councils in financial distress have their systems flagged with risk warnings throughout the analysis.
+
+For councils importing from spreadsheets, the import wizard auto-detects common column headers and maps them to the engine's schema. A downloadable CSV template is available for councils that want to prepare data in advance. ESD function assignment — the critical step that enables cross-council reconciliation — is guided by token-overlap matching that auto-suggests functions from department or service names.
 
 A separate transition configuration file defines the vesting date and successor authority structure.
 
@@ -228,8 +246,8 @@ Each scenario includes council architecture files, a transition configuration, a
 ## Export capabilities
 
 - **Transition configuration** — export and import the transition structure as JSON, enabling reuse across sessions and sharing between team members
-- **HTML export** — generate a self-contained HTML file of the full analysis from Stage 3
-- **Architecture JSON** — export modified architecture data from the visual editor
+- **HTML export** — generate a self-contained HTML file of the full Stage 3 analysis, suitable for offline sharing with stakeholders who do not have access to the tool
+- **Architecture JSON** — export modified architecture data from the visual editor, enabling councils to build their architecture description iteratively and reuse it across sessions
 
 ---
 
@@ -238,7 +256,7 @@ Each scenario includes council architecture files, a transition configuration, a
 - Data is self-reported by councils; the engine performs no validation of the values themselves
 - User counts may not be comparable across councils (concurrent vs named vs total users)
 - No data confidence annotation — field values are treated as equivalent regardless of whether they are verified, assumed, or estimated
-- No live data connections; all data must be prepared as JSON manually
+- No live data connections; data must be uploaded via JSON, CSV, Excel, or manual entry
 - The anchor system badge is a proportionality indicator, not a migration recommendation
 
 ---
@@ -251,7 +269,10 @@ This tool demonstrates several things that are difficult to achieve with spreads
 - **Transition-aware analysis**: the matrix adapts to show each successor authority's estate, with disaggregation and rationalisation patterns classified automatically
 - **Cross-council contract visibility**: notice period deadlines across the entire combined estate are visible in a single timeline, centred on the vesting date
 - **Shared service boundary detection**: systems shared across councils are automatically checked for successor boundary crossings that require unwinding
+- **Cross-tier collision detection**: where county and district systems serve the same function, the tool flags that these may represent complementary delivery rather than duplication
 - **Role-appropriate emphasis**: the same baseline data is presented differently for different audiences without maintaining separate documents
+- **Contextual decision support**: persona-specific questions adapt to the data — the questions an Executive sees for a pre-vesting monolithic ERP differ from those a Commercial lead or Architect sees
 - **Signal configurability**: the analysis is not a fixed verdict — practitioners can adjust emphasis to match the current decision or meeting context
 - **TCoP alignment checking**: systems are automatically assessed against the Technology Code of Practice, giving immediate governance visibility
 - **Automatic priority adjustment**: tier promotion ensures commercially urgent services are not hidden in a low-priority tier
+- **Flexible data ingestion**: the import wizard meets councils where they are — whether they have structured architecture data, spreadsheets, or nothing at all
