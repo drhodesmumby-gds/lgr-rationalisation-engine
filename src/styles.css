@@ -158,3 +158,32 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .sankey-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10px; margin-top: 6px; }
 .sankey-legend-item { display: flex; align-items: center; gap: 4px; }
 .sankey-legend-swatch { display: inline-block; width: 12px; height: 12px; border: 1px solid #b1b4b6; }
+
+/* Sankey tooltip */
+.sankey-tooltip { position: absolute; background: white; border: 1px solid #b1b4b6; box-shadow: 0 2px 4px rgba(0,0,0,0.15); padding: 8px 12px; font-size: 12px; line-height: 1.5; max-width: 300px; z-index: 200; pointer-events: none; }
+
+/* Council filter dropdown */
+.sim-sankey-filter { font-size: 12px; font-weight: bold; border: 1px solid #0b0c0c; padding: 3px 8px; background: white; }
+
+/* Drag-and-drop states */
+.sankey-node-dragging rect { opacity: 0.7; stroke-dasharray: 4 2; }
+.sankey-drop-target rect { stroke: #1d70b8 !important; stroke-width: 3 !important; stroke-dasharray: 4 2; }
+.sankey-decommission-zone rect { fill: #f3f2f1; stroke: #d4351c; stroke-width: 2; stroke-dasharray: 6 3; }
+.sankey-decommission-zone text { fill: #d4351c; }
+.sankey-node rect { cursor: pointer; }
+.sankey-node-dragging { cursor: grabbing; }
+
+/* Sankey overlay toggles */
+.sim-sankey-overlay-toggle { font-size: 11px; font-weight: bold; border: 1px solid #0b0c0c; padding: 2px 8px; background: white; cursor: pointer; }
+.sim-sankey-overlay-toggle.active { background: #0b0c0c; color: white; }
+.sim-sankey-overlay-toggle:hover:not(.active) { background: #f3f2f1; }
+
+/* Migration overlay paths */
+.sankey-migration-overlay { pointer-events: none; }
+.sankey-cross-successor-overlay { pointer-events: none; }
+
+/* Obligation detail modal */
+.obl-detail-card { transition: box-shadow 0.15s; }
+.obl-detail-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.obl-scope-list li { padding-left: 12px; position: relative; }
+.obl-scope-list li::before { content: "\2022"; position: absolute; left: 0; color: #505a5f; font-weight: bold; }

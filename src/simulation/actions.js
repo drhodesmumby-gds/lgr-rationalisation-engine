@@ -15,27 +15,82 @@
  *   nodes: Array<object>,       // deep-copied, modified ITSystem/Function nodes
  *   edges: Array<object>,       // deep-copied, modified REALIZES edges
  *   warnings: Array<string>,    // human-readable warning strings
+ *   obligations: Array<object>, // data migration / cross-successor impact obligations
  *   appliedCount: number        // number of actions successfully applied
  * }
  */
 
-export function applyAllActions(baselineNodes, baselineEdges, actions) {
+import { generateObligations } from './obligations.js';
+
+/**
+ * @param {Array} baselineNodes
+ * @param {Array} baselineEdges
+ * @param {Array} actions
+ * @param {Map|null} [baselineAllocation]  Baseline successor allocation map (for obligation generation)
+ * @param {Map|null} [lgaFunctionMap]  LGA function map (for obligation labels)
+ */
+export function applyAllActions(baselineNodes, baselineEdges, actions, baselineAllocation, lgaFunctionMap) {
     // Deep-copy baseline
     let nodes = JSON.parse(JSON.stringify(baselineNodes));
     let edges = JSON.parse(JSON.stringify(baselineEdges));
     const allWarnings = [];
+    const allObligations = [];
     let appliedCount = 0;
 
     // Apply each action sequentially
-    for (const action of actions) {
+    for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        const beforeNodes = nodes;
+
         const result = applyAction(nodes, edges, action);
+
+        // Generate obligations for systems removed by this action
+        if (baselineAllocation) {
+            const removedIds = getRemovedSystemIds(beforeNodes, result.nodes);
+            if (removedIds.size > 0) {
+                const removedSystems = beforeNodes.filter(n => removedIds.has(n.id));
+                const targetSystem = getTargetSystem(result.nodes, action);
+                const obligations = generateObligations(
+                    baselineAllocation, action, i,
+                    removedSystems, targetSystem, lgaFunctionMap
+                );
+                allObligations.push(...obligations);
+            }
+        }
+
         nodes = result.nodes;
         edges = result.edges;
         allWarnings.push(...result.warnings);
         appliedCount++;
     }
 
-    return { nodes, edges, warnings: allWarnings, appliedCount };
+    return { nodes, edges, warnings: allWarnings, obligations: allObligations, appliedCount };
+}
+
+/**
+ * Detects which system IDs were present before but absent after an action.
+ */
+function getRemovedSystemIds(beforeNodes, afterNodes) {
+    const afterIds = new Set(afterNodes.map(n => n.id));
+    return new Set(
+        beforeNodes
+            .filter(n => n.type === 'ITSystem' && !afterIds.has(n.id))
+            .map(n => n.id)
+    );
+}
+
+/**
+ * Extracts the target system from the result nodes for a given action.
+ * For consolidate: the targetSystemId. For procure-replacement: the newSystem.
+ */
+function getTargetSystem(resultNodes, action) {
+    if (action.type === 'consolidate' && action.targetSystemId) {
+        return resultNodes.find(n => n.id === action.targetSystemId) || null;
+    }
+    if (action.type === 'procure-replacement' && action.newSystem) {
+        return resultNodes.find(n => n.id === action.newSystem.id) || null;
+    }
+    return null;
 }
 
 export function applyAction(nodes, edges, action) {
@@ -107,16 +162,19 @@ export function applyConsolidate(nodes, edges, action) {
     // Remove edges from removed systems
     edges = edges.filter(e => !systemsToRemove.has(e.source));
 
-    // Check for unserved functions
-    funcNodeIds.forEach(fnId => {
-        const hasRealizer = edges.some(e => e.relationship === 'REALIZES' && e.target === fnId);
-        if (!hasRealizer) {
-            const fnNode = nodes.find(n => n.id === fnId);
-            const label = fnNode ? fnNode.label : fnId;
-            const scope = successorName ? ` in ${successorName}` : '';
-            warnings.push(`Consolidate: function ${label} (${functionId}) may be unserved${scope} after consolidation`);
-        }
-    });
+    // Check for unserved functions at the lgaFunctionId level.
+    // After cross-council consolidation, individual Function nodes from removed councils
+    // may lose their realizer, but the function is still served if ANY node with the same
+    // lgaFunctionId has a realizer (e.g. the target system's own council's Function node).
+    const anyRealizer = Array.from(funcNodeIds).some(fnId =>
+        edges.some(e => e.relationship === 'REALIZES' && e.target === fnId)
+    );
+    if (!anyRealizer) {
+        const fnNode = nodes.find(n => funcNodeIds.has(n.id));
+        const label = fnNode ? fnNode.label : functionId;
+        const scope = successorName ? ` in ${successorName}` : '';
+        warnings.push(`Consolidate: function ${label} (${functionId}) may be unserved${scope} after consolidation`);
+    }
 
     return { nodes, edges, warnings };
 }

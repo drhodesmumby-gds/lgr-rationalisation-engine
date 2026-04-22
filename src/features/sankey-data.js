@@ -117,7 +117,7 @@ export function buildEstateSankeyData(allocMap, transitionStructure, actions, si
  * @param {string} [sizeMode='count']  'count' | 'cost'
  * @returns {{ nodes: Array, links: Array }}
  */
-export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap, actions, sizeMode = 'count') {
+export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap, actions, sizeMode = 'count', councilFilter = null, functionFilter = null) {
     if (!allocMap || !allocMap.has(successorName)) {
         return { nodes: [], links: [] };
     }
@@ -133,6 +133,7 @@ export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap,
     const linkMap = new Map();
 
     funcMap.forEach((allocations, lgaFunctionId) => {
+        if (functionFilter && lgaFunctionId !== functionFilter) return;
         const funcEntry = lgaFunctionMap && lgaFunctionMap.get(lgaFunctionId);
         const funcLabel = funcEntry ? funcEntry.label : lgaFunctionId;
         const funcNodeId = `func:${lgaFunctionId}`;
@@ -140,6 +141,7 @@ export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap,
 
         allocations.forEach(a => {
             if (!a.system) return;
+            if (councilFilter && (a.sourceCouncil || a.system._sourceCouncil || 'Unknown') !== councilFilter) return;
             const sys = a.system;
             const sysNodeId = `sys:${sys.id}`;
             if (!systemNodes.has(sys.id)) {
@@ -152,7 +154,16 @@ export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap,
                     vendor: sys.vendor,
                     users: sys.users,
                     annualCost: sys.annualCost,
-                    isAffected: affectedIds.has(sys.id)
+                    isAffected: affectedIds.has(sys.id),
+                    // Contract data for overlay rendering
+                    endYear: sys.endYear || null,
+                    endMonth: sys.endMonth || null,
+                    noticePeriod: sys.noticePeriod || null,
+                    // Data characteristics for migration overlay
+                    dataPartitioning: sys.dataPartitioning || null,
+                    portability: sys.portability || null,
+                    isERP: !!sys.isERP,
+                    isCloud: !!sys.isCloud
                 });
             }
 
@@ -176,6 +187,8 @@ export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap,
             source: `sys:${sysId}`,
             target: `func:${funcId}`,
             value: Math.max(value, 1), // D3 sankey requires positive values
+            rawCount: entry.count,
+            rawCost: entry.cost,
             hasSimAction: entry.hasSimAction
         });
     });

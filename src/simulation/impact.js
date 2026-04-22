@@ -31,8 +31,8 @@ export function computeSimulationImpact({
         perspective
     );
 
-    // 2. Apply all actions to get simulated state
-    const simResult = applyAllActions(baselineNodes, baselineEdges, actions);
+    // 2. Apply all actions to get simulated state (with obligation generation)
+    const simResult = applyAllActions(baselineNodes, baselineEdges, actions, beforeAlloc.allocation, lgaFunctionMap);
 
     // 3. Compute "after" allocation and metrics using simulated state
     const afterAlloc = transitionStructure
@@ -62,6 +62,7 @@ export function computeSimulationImpact({
         simulationResult: simResult,
         afterAllocation: afterAlloc.allocation,
         warnings: [...simResult.warnings, ...afterAlloc.warnings],
+        obligations: simResult.obligations || [],
     };
 }
 
