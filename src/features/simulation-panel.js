@@ -136,8 +136,8 @@ function renderActionPanel(el, actions, impact) {
             const label = getActionLabel(action);
             return `<span class="sim-action-chip">
                 ${escHtml(label)}
-                <button onclick="window._simEditAction(${idx})" title="Edit" aria-label="Edit action">&#9998;</button>
-                <button onclick="window._simRemoveAction(${idx})" title="Remove this action" aria-label="Remove action">&times;</button>
+                <button class="sim-chip-edit" onclick="window._simEditAction(${idx})" title="Edit" aria-label="Edit action">&#9998;</button>
+                <button class="sim-chip-delete" onclick="window._simRemoveAction(${idx})" title="Remove this action" aria-label="Remove action">&times;</button>
             </span>`;
         }).join(' ');
     }
@@ -350,21 +350,23 @@ function renderObligationsPanel(obligations) {
         html += `<div class="mt-2 text-xs text-gray-600">${resolved.length} resolved (data migrating to target systems)</div>`;
     }
 
-    html += `<a class="text-xs text-[#1d70b8] underline font-bold cursor-pointer mt-2 block" onclick="window._simOpenObligationDetail()">View migration plan &rarr;</a>`;
+    html += `<button class="text-xs text-[#1d70b8] underline font-bold mt-2 block text-left" onclick="window._simOpenObligationDetail()">View migration plan &rarr;</button>`;
 
     html += '</div>';
     return html;
 }
 
 function renderObligationChip(obl) {
-    const sevColour = { high: '#d4351c', medium: '#f47738', low: '#b1b4b6' };
+    const sevBg = { high: '#d4351c', medium: '#f47738', low: '#b1b4b6' };
+    const sevText = { high: '#fff', medium: '#0b0c0c', low: '#0b0c0c' };
     const sevLabel = obl.severity.toUpperCase();
-    const colour = sevColour[obl.severity] || '#b1b4b6';
+    const bg = sevBg[obl.severity] || '#b1b4b6';
+    const fg = sevText[obl.severity] || '#0b0c0c';
     const dest = obl.toSystem ? escHtml(obl.toSystem.label) : '<span class="text-[#d4351c]">???</span>';
     const funcLabel = obl.functionLabel ? ` (${escHtml(obl.functionLabel)})` : '';
     const crossTag = obl.type === 'cross-successor-impact' ? ' <span class="text-[#d4351c] font-bold">CROSS</span>' : '';
     return `<div class="mt-1 flex items-start gap-1">
-        <span style="background:${colour};color:#fff;font-size:9px;padding:1px 4px;font-weight:bold;flex-shrink:0;">${sevLabel}</span>
+        <span style="background:${bg};color:${fg};font-size:9px;padding:1px 4px;font-weight:bold;flex-shrink:0;">${sevLabel}</span>
         <span>${escHtml(obl.fromSystem.label)} &rarr; ${dest}${funcLabel}${crossTag}</span>
     </div>`;
 }
@@ -386,7 +388,15 @@ function openObligationDetail() {
     renderObligationDetailContent(obligations);
 
     const modal = document.getElementById('obligationDetailModal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        // Store current focus for return on close
+        _obligationDetailOpener = document.activeElement;
+        modal.classList.remove('hidden');
+        // Set up focus trap and move focus into modal
+        _obligationDetailTrapCleanup = createFocusTrap(modal);
+        const closeBtn = document.getElementById('btnCloseObligationDetail');
+        if (closeBtn) closeBtn.focus();
+    }
 }
 
 function renderObligationDetailContent(obligations) {
@@ -443,7 +453,7 @@ function renderObligationDetailContent(obligations) {
     let html = `
         <div class="mb-6">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Simulation</p>
-            <h2 class="text-2xl font-bold mb-1">Data Migration Plan</h2>
+            <h2 id="obligationDetailTitle" class="text-2xl font-bold mb-1">Data Migration Plan</h2>
             <div class="flex items-center gap-3 flex-wrap text-sm text-gray-600">
                 <span>Persona: <strong>${personaLabels[persona] || persona}</strong></span>
                 <span>${scored.length} obligation${scored.length !== 1 ? 's' : ''}</span>
@@ -452,7 +462,7 @@ function renderObligationDetailContent(obligations) {
 
         <div class="mb-6">
             <h3 class="font-bold text-base mb-3 border-b pb-1">Summary</h3>
-            <div class="grid grid-cols-4 gap-3 mb-3">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                 <div class="border border-gray-300 p-3 text-center">
                     <div class="text-2xl font-bold">${scored.length}</div>
                     <div class="text-xs text-gray-600">Total</div>
@@ -489,23 +499,25 @@ function renderObligationDetailContent(obligations) {
         const chevron = isExpanded ? '&#x25BE;' : '&#x25B8;';
         const sysLabel = obls[0].fromSystem.label;
         const maxSev = obls.reduce((best, o) => sevOrder[o.severity] < sevOrder[best] ? o.severity : best, 'low');
-        const sevColour = { high: '#d4351c', medium: '#f47738', low: '#b1b4b6' };
-        const groupColour = sevColour[maxSev] || '#b1b4b6';
+        const sevBg = { high: '#d4351c', medium: '#f47738', low: '#b1b4b6' };
+        const sevText = { high: '#fff', medium: '#0b0c0c', low: '#0b0c0c' };
+        const groupColour = sevBg[maxSev] || '#b1b4b6';
+        const groupTextColour = sevText[maxSev] || '#0b0c0c';
 
         html += `<div class="mb-4 obl-detail-card border border-gray-300 bg-white" style="border-left: 4px solid ${groupColour};">
-            <div class="flex items-center gap-2 cursor-pointer p-3" onclick="window._simToggleObligationGroup('${escHtml(sysId)}')">
+            <button class="flex items-center gap-2 w-full p-3 text-left" aria-expanded="${isExpanded}" onclick="window._simToggleObligationGroup('${escHtml(sysId)}')">
                 <span class="text-sm">${chevron}</span>
-                <span style="background:${groupColour};color:#fff;font-size:10px;padding:2px 6px;font-weight:bold;flex-shrink:0;">${maxSev.toUpperCase()}</span>
-                <h3 class="font-bold text-sm flex-1">${escHtml(sysLabel)} <span class="text-gray-500 font-normal">(${obls.length} obligation${obls.length !== 1 ? 's' : ''})</span></h3>
+                <span style="background:${groupColour};color:${groupTextColour};font-size:10px;padding:2px 6px;font-weight:bold;flex-shrink:0;">${maxSev.toUpperCase()}</span>
+                <h4 class="font-bold text-sm flex-1">${escHtml(sysLabel)} <span class="text-gray-500 font-normal">(${obls.length} obligation${obls.length !== 1 ? 's' : ''})</span></h4>
                 ${hasCross ? '<span style="background:#d4351c;color:#fff;font-size:10px;padding:2px 6px;font-weight:bold;text-transform:uppercase;flex-shrink:0;">Cross-successor</span>' : ''}
-            </div>`;
+            </button>`;
 
         if (isExpanded) {
             const sys = obls[0].fromSystem;
 
             // 1. Source system card (once)
             html += `<div class="border-t border-gray-200 p-3 bg-gray-50">
-                <div class="text-[10px] font-bold uppercase text-gray-500 mb-1">Source system</div>
+                <div class="text-[12px] font-bold uppercase text-gray-500 mb-1">Source system</div>
                 <div class="font-bold text-sm mb-1">${escHtml(sys.label)}</div>
                 <div class="text-xs text-gray-600 mb-2">${escHtml(sys.council)}${sys.vendor ? ' &middot; ' + escHtml(sys.vendor) : ''}</div>`;
 
@@ -542,7 +554,7 @@ function renderObligationDetailContent(obligations) {
             const bullets = generateMigrationScopeBullets(obls[0]);
             if (bullets.length > 0) {
                 html += `<div class="border-t border-gray-200 p-3">
-                    <div class="text-[10px] font-bold uppercase text-gray-500 mb-1">Migration scope</div>
+                    <div class="text-[12px] font-bold uppercase text-gray-500 mb-1">Migration scope</div>
                     <ul class="obl-scope-list text-xs text-gray-700 space-y-1">
                         ${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}
                     </ul>
@@ -551,30 +563,32 @@ function renderObligationDetailContent(obligations) {
 
             // 3. Compact obligations table
             html += `<div class="border-t border-gray-200 p-3">
-                <div class="text-[10px] font-bold uppercase text-gray-500 mb-1">Obligations</div>
+                <div class="text-[12px] font-bold uppercase text-gray-500 mb-1">Obligations</div>
+                <div class="overflow-x-auto">
                 <table class="w-full text-xs border-collapse">
                     <thead>
                         <tr class="text-left text-gray-500 border-b border-gray-200">
-                            <th class="pb-1 pr-2 font-semibold">Severity</th>
-                            <th class="pb-1 pr-2 font-semibold">Function</th>
-                            <th class="pb-1 pr-2 font-semibold">Target</th>
-                            <th class="pb-1 pr-2 font-semibold">Successor</th>
-                            <th class="pb-1 font-semibold">Type</th>
+                            <th scope="col" class="pb-1 pr-2 font-semibold">Severity</th>
+                            <th scope="col" class="pb-1 pr-2 font-semibold">Function</th>
+                            <th scope="col" class="pb-1 pr-2 font-semibold">Target</th>
+                            <th scope="col" class="pb-1 pr-2 font-semibold">Successor</th>
+                            <th scope="col" class="pb-1 font-semibold">Type</th>
                         </tr>
                     </thead>
                     <tbody>`;
 
             obls.forEach(obl => {
-                const rowColour = sevColour[obl.severity] || '#b1b4b6';
+                const rowBadgeBg = sevBg[obl.severity] || '#b1b4b6';
+                const rowBadgeFg = sevText[obl.severity] || '#0b0c0c';
                 const targetCell = obl.toSystem
                     ? escHtml(obl.toSystem.label)
                     : '<span class="text-[#d4351c] font-bold">Unresolved</span>';
                 const crossCell = obl.type === 'cross-successor-impact'
                     ? '<span style="background:#d4351c;color:#fff;font-size:9px;padding:1px 4px;font-weight:bold;">CROSS</span>'
                     : '';
-                const rowBg = !obl.resolved ? ' class="bg-red-50"' : '';
+                const rowBg = !obl.resolved ? ' class="bg-white"' : '';
                 html += `<tr${rowBg}>
-                    <td class="py-1 pr-2"><span style="background:${rowColour};color:#fff;font-size:9px;padding:1px 4px;font-weight:bold;">${obl.severity.toUpperCase()}</span></td>
+                    <td class="py-1 pr-2"><span style="background:${rowBadgeBg};color:${rowBadgeFg};font-size:9px;padding:1px 4px;font-weight:bold;">${obl.severity.toUpperCase()}</span></td>
                     <td class="py-1 pr-2">${escHtml(obl.functionLabel || obl.functionId)}</td>
                     <td class="py-1 pr-2">${targetCell}</td>
                     <td class="py-1 pr-2">${escHtml(obl.affectedSuccessors[0] || '')}</td>
@@ -582,7 +596,7 @@ function renderObligationDetailContent(obligations) {
                 </tr>`;
             });
 
-            html += `</tbody></table></div>`;
+            html += `</tbody></table></div></div>`;
         }
 
         html += `</div>`;
@@ -790,7 +804,11 @@ export function openActionBuilder() {
     if (!modal) return;
     renderActionBuilderStep1();
     document.getElementById('actionBuilderError').classList.add('hidden');
+    _actionBuilderOpener = document.activeElement;
     modal.classList.remove('hidden');
+    _actionBuilderTrapCleanup = createFocusTrap(modal);
+    const closeBtn = document.getElementById('btnCloseActionBuilder');
+    if (closeBtn) closeBtn.focus();
 }
 
 /**
@@ -806,7 +824,15 @@ export function openActionBuilderWithContext(type, prefill = {}) {
     if (!modal) return;
     document.getElementById('actionBuilderError').classList.add('hidden');
     renderActionBuilderStep2(type);
+    if (modal.classList.contains('hidden')) {
+        _actionBuilderOpener = document.activeElement;
+    }
     modal.classList.remove('hidden');
+    if (!_actionBuilderTrapCleanup) {
+        _actionBuilderTrapCleanup = createFocusTrap(modal);
+    }
+    const closeBtn = document.getElementById('btnCloseActionBuilder');
+    if (closeBtn) closeBtn.focus();
 
     // Update title to indicate edit vs add
     const titleEl = document.getElementById('actionBuilderTitle');
@@ -1374,31 +1400,68 @@ function getActionLabel(action) {
 }
 
 // ===================================================================
+// FOCUS TRAP UTILITY
+// ===================================================================
+
+/**
+ * Sets up a focus trap inside a modal element.
+ * Returns a cleanup function that removes the event listener.
+ */
+function createFocusTrap(modalEl) {
+    const focusableSelectors = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    function trapFocus(e) {
+        if (e.key !== 'Tab') return;
+        const focusable = [...modalEl.querySelectorAll(focusableSelectors)].filter(el => !el.closest('[hidden]') && !el.closest('.hidden'));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    }
+    modalEl.addEventListener('keydown', trapFocus);
+    return () => modalEl.removeEventListener('keydown', trapFocus);
+}
+
+// ===================================================================
 // GLOBAL WINDOW HOOKS (called from inline HTML onclick handlers)
 // ===================================================================
+
+// Track opener elements for focus return
+let _actionBuilderOpener = null;
+let _obligationDetailOpener = null;
+let _actionBuilderTrapCleanup = null;
+let _obligationDetailTrapCleanup = null;
 
 // --- Wire action builder modal close/apply buttons ---
 const actionBuilderModal = document.getElementById('actionBuilderModal');
 if (actionBuilderModal) {
-    document.getElementById('btnCloseActionBuilder').addEventListener('click', () => {
+    const closeActionBuilderModal = () => {
         actionBuilderModal.classList.add('hidden');
         _editingActionIndex = null;
-    });
-    document.getElementById('btnCancelAction').addEventListener('click', () => {
-        actionBuilderModal.classList.add('hidden');
-        _editingActionIndex = null;
-    });
+        if (_actionBuilderTrapCleanup) { _actionBuilderTrapCleanup(); _actionBuilderTrapCleanup = null; }
+        if (_actionBuilderOpener && typeof _actionBuilderOpener.focus === 'function') {
+            _actionBuilderOpener.focus();
+            _actionBuilderOpener = null;
+        }
+    };
+    document.getElementById('btnCloseActionBuilder').addEventListener('click', closeActionBuilderModal);
+    document.getElementById('btnCancelAction').addEventListener('click', closeActionBuilderModal);
     document.getElementById('btnApplyAction').addEventListener('click', applyActionFromBuilder);
     actionBuilderModal.addEventListener('click', (e) => {
-        if (e.target === actionBuilderModal) {
-            actionBuilderModal.classList.add('hidden');
-            _editingActionIndex = null;
-        }
+        if (e.target === actionBuilderModal) closeActionBuilderModal();
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !actionBuilderModal.classList.contains('hidden')) {
-            actionBuilderModal.classList.add('hidden');
-            _editingActionIndex = null;
+            closeActionBuilderModal();
         }
     });
 }
@@ -1470,15 +1533,21 @@ window._simToggleObligationGroup = function(groupKey) {
 // --- Wire obligation detail modal close handlers ---
 const obligationDetailModal = document.getElementById('obligationDetailModal');
 if (obligationDetailModal) {
-    document.getElementById('btnCloseObligationDetail').addEventListener('click', () => {
+    const closeObligationDetailModal = () => {
         obligationDetailModal.classList.add('hidden');
-    });
+        if (_obligationDetailTrapCleanup) { _obligationDetailTrapCleanup(); _obligationDetailTrapCleanup = null; }
+        if (_obligationDetailOpener && typeof _obligationDetailOpener.focus === 'function') {
+            _obligationDetailOpener.focus();
+            _obligationDetailOpener = null;
+        }
+    };
+    document.getElementById('btnCloseObligationDetail').addEventListener('click', closeObligationDetailModal);
     obligationDetailModal.addEventListener('click', (e) => {
-        if (e.target === obligationDetailModal) obligationDetailModal.classList.add('hidden');
+        if (e.target === obligationDetailModal) closeObligationDetailModal();
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !obligationDetailModal.classList.contains('hidden')) {
-            obligationDetailModal.classList.add('hidden');
+            closeObligationDetailModal();
         }
     });
 }

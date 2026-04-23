@@ -108,8 +108,10 @@ header.header-collapsed .header-subtitle { display: none !important; }
 /* Simulation mode */
 .sim-toolbar { background-color: #fff3cd; border: 2px solid #f47738; border-left: 6px solid #f47738; padding: 16px; }
 .sim-action-chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 2px solid #f47738; padding: 4px 10px; font-size: 12px; font-weight: bold; }
-.sim-action-chip button { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: #d4351c; font-weight: bold; padding: 0 2px; }
+.sim-action-chip button { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; font-weight: bold; padding: 0 2px; }
 .sim-action-chip button:hover { color: #0b0c0c; }
+.sim-action-chip .sim-chip-edit { color: #1d70b8; }
+.sim-action-chip .sim-chip-delete { color: #d4351c; }
 .sim-delta-positive { color: #005a30; font-weight: bold; }
 .sim-delta-negative { color: #942514; font-weight: bold; }
 .sim-delta-neutral { color: #505a5f; }
@@ -128,6 +130,11 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .sim-workspace-layout { display: flex; min-height: 400px; }
 .sim-action-panel { width: 360px; min-width: 360px; border-right: 2px solid #f47738; padding: 16px; overflow-y: auto; max-height: 600px; background: #fff3cd; transition: width 0.2s, min-width 0.2s; }
 .sim-action-panel.sim-panel-collapsed { width: 48px; min-width: 48px; padding: 8px 4px; overflow: hidden; }
+@media (max-width: 767px) {
+    .sim-workspace-layout { flex-direction: column; }
+    .sim-action-panel { width: 100%; min-width: 0; border-right: none; border-bottom: 2px solid #f47738; max-height: none; }
+    .sim-action-panel.sim-panel-collapsed { width: 100%; min-width: 0; }
+}
 .sim-panel-collapse-btn { background: none; border: 1px solid #f47738; cursor: pointer; padding: 4px 8px; font-weight: bold; font-size: 13px; color: #0b0c0c; }
 .sim-panel-collapse-btn:hover { background: #f47738; }
 .sim-panel-collapsed-content { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 8px; }
