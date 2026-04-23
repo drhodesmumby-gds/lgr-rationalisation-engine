@@ -1332,10 +1332,14 @@ export function renderDashboard() {
                                 badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Procure: ${escHtml(procLabel)}</span>${sharedLabel}`;
                             }
                             const actionBtnLabel = isPropagated ? 'View' : 'Edit';
+                            const actionAriaLabel = isPropagated
+                                ? `View shared service decision for ${escHtml(lgaFunc.label)} in ${succName_safe}`
+                                : `Edit decision for ${escHtml(lgaFunc.label)} in ${succName_safe}`;
                             decisionAffordanceHtml = `<div class="mt-2 flex items-center gap-2 flex-wrap">
                                 ${badgeHtml}
                                 <button class="text-xs text-[#1d70b8] underline sim-decide-btn"
                                         data-func-id="${funcId_safe}" data-successor="${succName_safe}"
+                                        aria-label="${actionAriaLabel}"
                                         type="button">${actionBtnLabel}</button>
                             </div>`;
                         } else if (cellAllocations.length >= 2) {

@@ -548,7 +548,7 @@ export function applyConsolidateErp(nodes, edges, action) {
  */
 export function applyEstablishSharedService(nodes, edges, action) {
     const warnings = [];
-    const { systemId, sharedSuccessorFunctionNodeIds } = action;
+    const { systemId, primarySuccessorName, sharedSuccessorFunctionNodeIds } = action;
 
     const sysIdx = nodes.findIndex(n => n.id === systemId && n.type === 'ITSystem');
     if (sysIdx === -1) {
@@ -566,9 +566,11 @@ export function applyEstablishSharedService(nodes, edges, action) {
     const newSharedWithSet = new Set(existingSharedWith);
     Object.keys(sharedSuccessorFunctionNodeIds).forEach(sn => newSharedWithSet.add(sn));
 
-    // Build updated targetAuthorities (deduplicate with existing)
+    // Build updated targetAuthorities — include BOTH the primary successor and shared successors
+    // so buildSuccessorAllocation() allocates the system to all participating successors
     const existingTargetAuth = Array.isArray(original.targetAuthorities) ? original.targetAuthorities : [];
     const newTargetAuthSet = new Set(existingTargetAuth);
+    if (primarySuccessorName) newTargetAuthSet.add(primarySuccessorName);
     Object.keys(sharedSuccessorFunctionNodeIds).forEach(sn => newTargetAuthSet.add(sn));
 
     // Clone and update the system node

@@ -217,6 +217,7 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
                 type: 'establish-shared-service',
                 systemId: targetSystemId,
                 functionId,
+                primarySuccessorName: successorName,
                 sharedSuccessorFunctionNodeIds
             });
         }
@@ -326,7 +327,8 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
     // Systems not retained by any decision are replaced
     const replacedSystems = allSystemsInCell.filter(sysId => !globalRetainedSystemIds.has(sysId));
 
-    // Build the new system node
+    // Build the new system node — include targetAuthorities so buildSuccessorAllocation()
+    // can allocate the procured system to the correct successor after simulation
     const newSystemId = `sys-procured-${functionId}-${successorName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
     const newSystem = {
         id: procuredSystem.id || newSystemId,
@@ -334,6 +336,7 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         vendor: procuredSystem.vendor || null,
         annualCost: procuredSystem.annualCost || 0,
         isCloud: procuredSystem.isCloud !== undefined ? procuredSystem.isCloud : true,
+        targetAuthorities: [successorName],
         type: 'ITSystem'
     };
 
@@ -344,7 +347,38 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         // We still emit the disaggregate signal for ordering purposes.
     }
 
-    // Emit establish-shared-service action for primary procure + establish-shared decisions.
+    // Emit procure-replacement action FIRST so the system exists in the graph
+    // before establish-shared-service tries to find it
+    if (replacedSystems.length > 0) {
+        actions.push({
+            type: 'procure-replacement',
+            functionId,
+            successorName,
+            newSystem,
+            replacesSystemId: replacedSystems[0],
+            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
+        });
+
+        // Decommission any additional replaced systems beyond the first
+        for (let i = 1; i < replacedSystems.length; i++) {
+            actions.push({
+                type: 'decommission',
+                systemId: replacedSystems[i]
+            });
+        }
+    } else {
+        // No systems to replace — just add the new one
+        actions.push({
+            type: 'procure-replacement',
+            functionId,
+            successorName,
+            newSystem,
+            replacesSystemId: null,
+            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
+        });
+    }
+
+    // Emit establish-shared-service action AFTER procure-replacement so the system exists.
     // Uses the pre-generated procured system ID (stored on procuredSystem.id) so propagated
     // decisions can reference the same system ID in their retainedSystemIds.
     if (boundaryChoice === 'establish-shared' && !decision.sharedServiceOrigin &&
@@ -376,40 +410,10 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
                 type: 'establish-shared-service',
                 systemId: procuredSystemId,
                 functionId,
+                primarySuccessorName: successorName,
                 sharedSuccessorFunctionNodeIds
             });
         }
-    }
-
-    // Emit procure-replacement action for the first replaced system (primary replacement)
-    // Additional replaced systems are removed via separate decommission actions
-    if (replacedSystems.length > 0) {
-        actions.push({
-            type: 'procure-replacement',
-            functionId,
-            successorName,
-            newSystem,
-            replacesSystemId: replacedSystems[0],
-            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
-        });
-
-        // Decommission any additional replaced systems beyond the first
-        for (let i = 1; i < replacedSystems.length; i++) {
-            actions.push({
-                type: 'decommission',
-                systemId: replacedSystems[i]
-            });
-        }
-    } else {
-        // No systems to replace — just add the new one
-        actions.push({
-            type: 'procure-replacement',
-            functionId,
-            successorName,
-            newSystem,
-            replacesSystemId: null,
-            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
-        });
     }
 
     return { actions, obligations: [] };

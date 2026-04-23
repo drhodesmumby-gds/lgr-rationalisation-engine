@@ -326,9 +326,14 @@ function renderDecisionSummary(el, impact) {
                 ? resolveSystemLabel(dec.retainedSystemIds[0])
                 : null;
             const dLabel = decisionLabel(dec, retainedLabel);
+            const sharedTag = dec.sharedServiceOrigin
+                ? ' <span class="text-[10px] font-bold text-[#f47738]">[Shared]</span>'
+                : (dec.sharedWithSuccessors && dec.sharedWithSuccessors.length > 0
+                    ? ` <span class="text-[10px] text-gray-400">(shared with ${dec.sharedWithSuccessors.length})</span>`
+                    : '');
             return `<div class="text-xs py-0.5 border-b border-gray-100 last:border-0">
                 <span class="font-bold">${escHtml(funcLabel)}</span>
-                <span class="text-gray-500"> (${escHtml(dec.successorName)})</span>
+                <span class="text-gray-500"> (${escHtml(dec.successorName)})</span>${sharedTag}
                 <span class="block text-gray-700">&rarr; ${escHtml(dLabel)}</span>
             </div>`;
         }).join('');
@@ -1082,6 +1087,10 @@ function buildDecisionDescription(obl) {
         }
         case 'split-shared-service': {
             return `Decision: split shared service for ${funcLabel}${successorText}`;
+        }
+        case 'establish-shared-service': {
+            const targetLabel = obl.toSystem ? obl.toSystem.label : 'selected system';
+            return `Decision: establish ${targetLabel} as shared service for ${funcLabel}${successorText}`;
         }
         default:
             return null;

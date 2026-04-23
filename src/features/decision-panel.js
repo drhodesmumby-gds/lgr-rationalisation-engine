@@ -94,10 +94,13 @@ function renderDecisionPanelContent(functionId, successorName) {
     const existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
 
     // Check if this is a propagated shared-service decision — show read-only view if so
+    const footer = document.getElementById('decisionPanelFooter');
     if (existingDecision && existingDecision.sharedServiceOrigin) {
         content.innerHTML = renderPropagatedSharedServiceView(existingDecision, funcLabel, successorName, tierBadge);
+        if (footer) footer.classList.add('hidden');
         return;
     }
+    if (footer) footer.classList.remove('hidden');
 
     // Build the header
     const headerHtml = `
@@ -187,12 +190,12 @@ function renderPropagatedSharedServiceView(decision, funcLabel, successorName, t
             </p>
             <div class="flex gap-2 flex-wrap mt-3">
                 <button type="button" class="gds-btn text-sm px-3 py-1.5"
-                        onclick="window._simOpenDecision(${JSON.stringify(decision.functionId)}, ${JSON.stringify(originSuccessorName)})">
+                        onclick="window._simOpenDecision('${escHtml(decision.functionId)}', '${escHtml(originSuccessorName)}')">
                     Edit shared arrangement in ${escHtml(originSuccessorName)}
                 </button>
                 <button type="button"
-                        class="text-sm px-3 py-1.5 border border-[#d4351c] text-[#d4351c] font-bold hover:bg-red-50"
-                        onclick="window._simUnlinkSharedService(${JSON.stringify(decision.functionId)}, ${JSON.stringify(successorName)})">
+                        class="text-sm px-3 py-1.5 bg-[#d4351c] text-white font-bold hover:bg-[#aa2a16]"
+                        onclick="if(confirm('Remove ${escHtml(successorName)} from the shared service arrangement? This will revert this cell to undecided.')) window._simUnlinkSharedService('${escHtml(decision.functionId)}', '${escHtml(successorName)}')">
                     Remove from shared service
                 </button>
             </div>
