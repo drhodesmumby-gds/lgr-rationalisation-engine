@@ -28,6 +28,7 @@ let _currentFunctionId = null;
 let _currentSuccessorName = null;
 let _panelOpener = null;
 let _trapCleanup = null;
+let _allSystems = [];
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -88,6 +89,7 @@ function renderDecisionPanelContent(functionId, successorName) {
         isDisaggregation: a.isDisaggregation || false,
         allocationType: a.allocationType
     }));
+    _allSystems = systems;
 
     // Check for an existing decision (edit mode)
     const decisions = state.simulationState.decisions;
@@ -1052,6 +1054,48 @@ export function applyDecisionFromPanel() {
                 showDecisionError(`${sharedSuccessor} already has an independent decision for this function. Remove it before establishing a shared service.`);
                 return;
             }
+        }
+    }
+
+    // --- Confirmation step for establish-shared: show impact before applying ---
+    if (boundaryChoice === 'establish-shared' && sharedWithSuccessors.length > 0) {
+        // Build system label
+        let systemLabel;
+        if (systemChoice === 'choose' && retainedSystemIds.length > 0) {
+            const sys = _allSystems.find(s => s.id === retainedSystemIds[0]);
+            systemLabel = sys ? sys.label : retainedSystemIds[0];
+        } else if (systemChoice === 'procure' && procuredSystem) {
+            systemLabel = procuredSystem.label;
+        } else {
+            systemLabel = 'selected system';
+        }
+
+        // Build function label
+        const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(_currentFunctionId) : null;
+        const funcLabel = funcEntry ? funcEntry.label : _currentFunctionId;
+
+        // Count decommissions per shared successor
+        const lines = [`${_currentSuccessorName} (primary)`];
+        for (const sharedSuccessor of sharedWithSuccessors) {
+            let decommCount = 0;
+            if (state.simulationState && state.simulationState.baselineAllocation) {
+                const succMap = state.simulationState.baselineAllocation.get(sharedSuccessor);
+                if (succMap) {
+                    const allocations = succMap.get(_currentFunctionId);
+                    if (allocations) {
+                        const chosenId = retainedSystemIds.length > 0 ? retainedSystemIds[0] : (procuredSystem ? procuredSystem.id : null);
+                        decommCount = allocations.filter(a => a.system && a.system.id !== chosenId).length;
+                    }
+                }
+            }
+            const decommNote = decommCount > 0 ? ` (${decommCount} system${decommCount !== 1 ? 's' : ''} to be decommissioned)` : ' (no existing systems)';
+            lines.push(`${sharedSuccessor}${decommNote}`);
+        }
+
+        const confirmMsg = `Establish shared service?\n\n${systemLabel} will become the shared system for ${funcLabel} across:\n${lines.map(l => `  \u2022 ${l}`).join('\n')}\n\nThis will decommission competing systems in all listed successors.`;
+
+        if (!confirm(confirmMsg)) {
+            return;
         }
     }
 

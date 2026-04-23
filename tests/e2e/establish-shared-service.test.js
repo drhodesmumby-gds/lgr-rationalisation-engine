@@ -82,6 +82,7 @@ async function establishSharedService(page) {
     }
     await successorCb.check();
 
+    page.once('dialog', dialog => dialog.accept());
     await page.locator('#btnApplyDecision').click();
     await expect(modal).toBeHidden({ timeout: 10000 });
     return 'ok';
@@ -126,6 +127,7 @@ test.describe('Establish Shared Service', () => {
         expect(cbCount).toBeGreaterThan(0);
 
         await successorCheckboxes.first().check();
+        page.once('dialog', dialog => dialog.accept());
         await page.locator('#btnApplyDecision').click();
         await expect(modal).toBeHidden({ timeout: 10000 });
 
