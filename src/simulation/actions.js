@@ -23,7 +23,7 @@
  * }
  */
 
-import { generateObligations, generateDisaggregationObligations } from './obligations.js';
+import { generateObligations, generateDisaggregationObligations, generateSharedServiceGovernanceObligation } from './obligations.js';
 
 /**
  * @param {Array} baselineNodes
@@ -75,6 +75,16 @@ export function applyAllActions(baselineNodes, baselineEdges, actions, baselineA
                     originalSystem, action, i, lgaFunctionMap
                 );
                 allObligations.push(...obligations);
+            }
+        }
+
+        // Generate governance obligation for shared service arrangements
+        if (action.type === 'establish-shared-service') {
+            const systemNode = result.nodes.find(n => n.id === action.systemId);
+            if (systemNode) {
+                allObligations.push(
+                    generateSharedServiceGovernanceObligation(action, i, systemNode, lgaFunctionMap)
+                );
             }
         }
 

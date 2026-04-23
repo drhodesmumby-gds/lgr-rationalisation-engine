@@ -15,7 +15,7 @@
 /**
  * @typedef {Object} SimulationObligation
  * @property {string} id
- * @property {'data-migration'|'function-gap'|'cross-successor-impact'|'data-partition'|'deferral-cost'} type
+ * @property {'data-migration'|'function-gap'|'cross-successor-impact'|'data-partition'|'deferral-cost'|'shared-service-governance'} type
  * @property {number} actionIndex
  * @property {string} actionType
  * @property {Object} fromSystem
@@ -335,6 +335,61 @@ export function generateDeferralObligations(decision, baselineAllocation, lgaFun
 }
 
 /**
+ * Generates a governance obligation for a shared service arrangement.
+ *
+ * @param {Object} action  The establish-shared-service action
+ * @param {number} actionIndex
+ * @param {Object} systemNode  The shared system node (from result nodes)
+ * @param {Map|null} lgaFunctionMap
+ * @returns {SimulationObligation}
+ */
+export function generateSharedServiceGovernanceObligation(action, actionIndex, systemNode, lgaFunctionMap) {
+    const sys = systemNode;
+    const funcEntry = lgaFunctionMap && lgaFunctionMap.get(action.functionId);
+    const funcLabel = funcEntry ? funcEntry.label : action.functionId;
+
+    const sharedSuccessors = Object.keys(action.sharedSuccessorFunctionNodeIds || {});
+    const allSuccessors = [action.primarySuccessorName, ...sharedSuccessors].filter(Boolean);
+
+    return {
+        id: `obl-${actionIndex}-shared-gov-${sys.id}-${action.functionId}`,
+        type: 'shared-service-governance',
+        actionIndex,
+        actionType: 'establish-shared-service',
+        fromSystem: {
+            id: sys.id,
+            label: sys.label || sys.id,
+            council: sys._sourceCouncil || 'Unknown',
+            vendor: sys.vendor || null,
+            users: typeof sys.users === 'number' ? sys.users : 0,
+            annualCost: typeof sys.annualCost === 'number' ? sys.annualCost : 0,
+            dataPartitioning: sys.dataPartitioning || null,
+            portability: sys.portability || null,
+            isERP: !!sys.isERP,
+            isCloud: !!sys.isCloud,
+            endYear: sys.endYear || null,
+            endMonth: sys.endMonth || null,
+            noticePeriod: sys.noticePeriod || null
+        },
+        toSystem: null,
+        affectedSuccessors: allSuccessors,
+        functionId: action.functionId,
+        functionLabel: funcLabel,
+        isMonolithic: sys.dataPartitioning === 'Monolithic',
+        isLowPortability: sys.portability === 'Low',
+        isERP: !!sys.isERP,
+        isOnPrem: !sys.isCloud,
+        userCount: typeof sys.users === 'number' ? sys.users : 0,
+        annualCost: typeof sys.annualCost === 'number' ? sys.annualCost : 0,
+        contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}` : null,
+        noticePeriod: typeof sys.noticePeriod === 'number' ? sys.noticePeriod : null,
+        resolved: true,
+        sharedSuccessors,
+        primarySuccessor: action.primarySuccessorName
+    };
+}
+
+/**
  * Computes obligation severity using the active persona's signal weights.
  * The same obligation shows as high-severity for a data-focused persona
  * (architect) but lower for a commercial persona.
@@ -380,6 +435,14 @@ export function computeObligationSeverity(obl, weights) {
         if (extensionCount > 0 && weights.contractUrgency > 0) {
             score += weights.contractUrgency;
         }
+    }
+
+    // Shared service governance — always at least medium severity
+    if (obl.type === 'shared-service-governance') {
+        score += 2;
+        const successorCount = (obl.sharedSuccessors || []).length;
+        if (successorCount > 1) score += successorCount - 1;
+        if (obl.isERP) score += 1;
     }
 
     if (score >= 5) return 'high';
@@ -477,6 +540,18 @@ export function generateMigrationScopeBullets(obl) {
 
         // Always unresolved for deferral
         bullets.push('Deferral is not a permanent solution — consolidation decision required to close this obligation');
+        return bullets;
+    }
+
+    // Shared service governance
+    if (obl.type === 'shared-service-governance') {
+        const allSuccessors = [obl.primarySuccessor, ...(obl.sharedSuccessors || [])].filter(Boolean);
+        bullets.push(`Shared service: ${obl.fromSystem.label} serves ${obl.functionLabel || 'this function'} across ${allSuccessors.length} successors`);
+        bullets.push(`Participating successors: ${allSuccessors.join(', ')}`);
+        bullets.push('Governance model required: SLA, cost-sharing, and change management across successor boundaries');
+        if (obl.isERP) {
+            bullets.push('ERP system shared across boundaries — changes to this system affect all participating successors');
+        }
         return bullets;
     }
 

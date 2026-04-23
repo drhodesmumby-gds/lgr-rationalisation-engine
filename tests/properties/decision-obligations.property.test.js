@@ -426,4 +426,78 @@ describe('Decision Obligations — Property Tests', () => {
         );
     });
 
+    it('Unit: establish-shared-service generates a shared-service-governance obligation', () => {
+        // Two function nodes, one per successor, both lgaFunctionId '148'
+        const fnA = { id: 'fn-a', label: 'Adult Social Care', type: 'Function', lgaFunctionId: '148' };
+        const fnB = { id: 'fn-b', label: 'Adult Social Care', type: 'Function', lgaFunctionId: '148' };
+
+        // Two system nodes from different councils
+        const sysA = {
+            id: 'sys-a', label: 'System Alpha', type: 'ITSystem',
+            vendor: 'Vendor X', users: 500, annualCost: 120000,
+            isCloud: true, isERP: false, dataPartitioning: 'Segmented', portability: 'Medium',
+            _sourceCouncil: 'Council A'
+        };
+        const sysB = {
+            id: 'sys-b', label: 'System Beta', type: 'ITSystem',
+            vendor: 'Vendor Y', users: 300, annualCost: 80000,
+            isCloud: false, isERP: false, dataPartitioning: 'Segmented', portability: 'High',
+            _sourceCouncil: 'Council B'
+        };
+
+        const baselineNodes = [fnA, fnB, sysA, sysB];
+        const baselineEdges = [
+            { source: 'sys-a', target: 'fn-a', relationship: 'REALIZES' },
+            { source: 'sys-b', target: 'fn-b', relationship: 'REALIZES' }
+        ];
+
+        // Baseline allocation: Successor A has sys-a for fn 148; Successor B has sys-b for fn 148
+        const funcMapA = new Map();
+        funcMapA.set('148', [
+            { system: sysA, sourceCouncil: 'Council A', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+        ]);
+        const funcMapB = new Map();
+        funcMapB.set('148', [
+            { system: sysB, sourceCouncil: 'Council B', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+        ]);
+        const allocationMap = new Map([
+            ['Successor A', funcMapA],
+            ['Successor B', funcMapB]
+        ]);
+
+        const lgaFunctionMap = new Map();
+        lgaFunctionMap.set('148', { label: 'Adult Social Care', lgaId: '148' });
+
+        const action = {
+            type: 'establish-shared-service',
+            systemId: 'sys-a',
+            functionId: '148',
+            primarySuccessorName: 'Successor A',
+            sharedSuccessorFunctionNodeIds: { 'Successor B': ['fn-b'] }
+        };
+
+        const result = applyAllActions(baselineNodes, baselineEdges, [action], allocationMap, lgaFunctionMap);
+
+        // Must have exactly 1 obligation
+        expect(result.obligations).toHaveLength(1);
+
+        const obl = result.obligations[0];
+
+        // Type must be shared-service-governance
+        expect(obl.type).toBe('shared-service-governance');
+
+        // Must reference both successors
+        expect(obl.affectedSuccessors).toContain('Successor A');
+        expect(obl.affectedSuccessors).toContain('Successor B');
+
+        // Must be resolved (the arrangement is explicitly defined)
+        expect(obl.resolved).toBe(true);
+
+        // Must record the primary successor
+        expect(obl.primarySuccessor).toBe('Successor A');
+
+        // Must list the shared successor
+        expect(obl.sharedSuccessors).toContain('Successor B');
+    });
+
 });
