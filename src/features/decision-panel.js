@@ -953,8 +953,24 @@ function updateCrossSuccessorPreview() {
                     const s = a.system;
                     const userNote = s.users != null ? ` — ${Number(s.users).toLocaleString()} users` : '';
                     const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP)</span>' : '';
-                    return `<div class="text-xs ml-2 mt-0.5">${escHtml(s.label || s.id)}${erpNote}${userNote}</div>`;
+                    const costNote = typeof s.annualCost === 'number' && s.annualCost > 0
+                        ? ` — £${s.annualCost >= 1000000 ? (s.annualCost / 1000000).toFixed(1) + 'M' : Math.round(s.annualCost / 1000) + 'k'}/yr`
+                        : '';
+                    const contractNote = s.endYear
+                        ? ` — contract ${s.endYear}-${String(s.endMonth || 12).padStart(2, '0')}${s.noticePeriod ? ` (${s.noticePeriod}mo notice)` : ''}`
+                        : '';
+                    return `<div class="text-xs ml-2 mt-0.5">${escHtml(s.label || s.id)}${erpNote}${userNote}${costNote}${contractNote}</div>`;
                 }).join('');
+                const totalCost = toDecommission.reduce((sum, a) => sum + (typeof a.system.annualCost === 'number' ? a.system.annualCost : 0), 0);
+                const totalUsers = toDecommission.reduce((sum, a) => sum + (typeof a.system.users === 'number' ? a.system.users : 0), 0);
+                if (totalCost > 0 || totalUsers > 0) {
+                    const costLabel = totalCost >= 1000000 ? `£${(totalCost / 1000000).toFixed(1)}M` : `£${Math.round(totalCost / 1000)}k`;
+                    html += `<div class="text-xs ml-2 mt-1 pt-1 border-t border-yellow-200 font-bold text-[#0b0c0c]">`;
+                    html += `Total: ${toDecommission.length} system${toDecommission.length !== 1 ? 's' : ''}`;
+                    if (totalUsers > 0) html += `, ${totalUsers.toLocaleString()} users`;
+                    if (totalCost > 0) html += `, ${costLabel}/yr`;
+                    html += `</div>`;
+                }
             }
         }
         html += '</div>';

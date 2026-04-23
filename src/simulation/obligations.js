@@ -548,7 +548,17 @@ export function generateMigrationScopeBullets(obl) {
         const allSuccessors = [obl.primarySuccessor, ...(obl.sharedSuccessors || [])].filter(Boolean);
         bullets.push(`Shared service: ${obl.fromSystem.label} serves ${obl.functionLabel || 'this function'} across ${allSuccessors.length} successors`);
         bullets.push(`Participating successors: ${allSuccessors.join(', ')}`);
+        if (obl.primarySuccessor) {
+            bullets.push(`Proposed host authority: ${obl.primarySuccessor} — confirm contract holder, cost-sharing formula, and change control authority`);
+        }
         bullets.push('Governance model required: SLA, cost-sharing, and change management across successor boundaries');
+        if (obl.fromSystem.vendor) {
+            bullets.push(`Vendor dependency: ${obl.fromSystem.vendor} becomes the sole provider for this function across ${allSuccessors.length} successors — assess contract terms, exit clauses, and multi-authority licensing`);
+        }
+        if (obl.contractEndDate) {
+            const notice = obl.noticePeriod ? ` (${obl.noticePeriod}-month notice period)` : '';
+            bullets.push(`Shared service contract ends ${obl.contractEndDate}${notice} — determine novation or new multi-party agreement before expiry`);
+        }
         if (obl.isERP) {
             bullets.push('ERP system shared across boundaries — changes to this system affect all participating successors');
         }
