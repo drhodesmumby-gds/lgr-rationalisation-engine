@@ -632,7 +632,12 @@ function renderObligationsPanel(obligations) {
     }
 
     if (resolved.length > 0) {
-        html += `<div class="mt-2 text-xs text-gray-600">${resolved.length} resolved (data migrating to target systems)</div>`;
+        const govCount = resolved.filter(o => o.type === 'shared-service-governance').length;
+        const migCount = resolved.length - govCount;
+        const parts = [];
+        if (migCount > 0) parts.push(`${migCount} migration${migCount !== 1 ? 's' : ''} resolved`);
+        if (govCount > 0) parts.push(`${govCount} governance arrangement${govCount !== 1 ? 's' : ''} established`);
+        html += `<div class="mt-2 text-xs text-gray-600">${parts.join(', ')}</div>`;
     }
 
     html += `<button class="text-xs text-[#1d70b8] underline font-bold mt-2 block text-left" onclick="window._simOpenObligationDetail()">View migration plan &rarr;</button>`;

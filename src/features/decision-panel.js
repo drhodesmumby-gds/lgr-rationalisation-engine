@@ -611,14 +611,14 @@ export function renderAxisTwo(systems, successorName, existingDecision) {
                         <span><strong>Establish shared service</strong> — create new cross-boundary arrangement</span>
                     </label>
                     <div id="axis2EstablishSharedDetail" class="ml-6 mt-2 ${existingBoundary === 'establish-shared' ? '' : 'hidden'}">
-                        <p class="text-xs text-gray-600 mb-2">Select which other successors will share this service. The chosen system will be adopted as the decided system for each selected successor, decommissioning their existing systems:</p>
-                        <fieldset>
+                        <p id="establishSharedConsequencesDesc" class="text-xs text-gray-600 mb-2">Select which other successors will share this service. The chosen system will be adopted as the decided system for each selected successor, decommissioning their existing systems:</p>
+                        <fieldset aria-describedby="establishSharedConsequencesDesc">
                             <legend class="text-xs font-bold text-gray-700 mb-2">Successors to include in shared service:</legend>
                             <div id="establishSharedSuccessorsContainer" class="space-y-2">
                                 ${renderEstablishSharedSuccessorCheckboxes(successorName, existingDecision)}
                             </div>
                         </fieldset>
-                        <div id="crossSuccessorPreview"></div>
+                        <div id="crossSuccessorPreview" aria-live="polite" aria-atomic="true"></div>
                     </div>
                 </div>
             </fieldset>
@@ -933,8 +933,8 @@ function updateCrossSuccessorPreview() {
         return;
     }
 
-    let html = '<div class="mt-3 p-3 bg-orange-50 border-l-4 border-l-[#f47738]">';
-    html += '<p class="text-xs font-bold text-[#f47738] mb-2">Impact on shared successors:</p>';
+    let html = '<div class="mt-3 p-3 bg-yellow-50 border-l-4 border-l-[#f47738]">';
+    html += '<p class="text-xs font-bold text-[#0b0c0c] mb-2">Impact on shared successors:</p>';
 
     for (const successor of selectedSuccessors) {
         const succMap = allocation.get(successor);
