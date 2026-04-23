@@ -618,6 +618,7 @@ export function renderAxisTwo(systems, successorName, existingDecision) {
                                 ${renderEstablishSharedSuccessorCheckboxes(successorName, existingDecision)}
                             </div>
                         </fieldset>
+                        <div id="crossSuccessorPreview"></div>
                     </div>
                 </div>
             </fieldset>
@@ -862,6 +863,16 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
             }
         });
     });
+
+    // Wire establish-shared successor checkboxes to update cross-successor preview
+    content.querySelectorAll('.establish-shared-successor-cb').forEach(cb => {
+        cb.addEventListener('change', updateCrossSuccessorPreview);
+    });
+
+    // Also update cross-successor preview when system choice changes
+    content.querySelectorAll('input[name="chooseSystem"]').forEach(radio => {
+        radio.addEventListener('change', updateCrossSuccessorPreview);
+    });
 }
 
 /**
@@ -884,6 +895,73 @@ function updateDecommissionPreview(systems, chosenId, content) {
         const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP — edge severed only if serving other functions)</span>' : '';
         return `<div class="mt-0.5">${escHtml(s.label)}${erpNote}${userNote}</div>`;
     }).join('');
+}
+
+/**
+ * Updates the cross-successor decommission preview when establish-shared checkboxes change.
+ * Shows which systems in each selected successor's cell will be decommissioned.
+ */
+function updateCrossSuccessorPreview() {
+    const content = document.getElementById('decisionPanelContent');
+    if (!content) return;
+    const previewDiv = content.querySelector('#crossSuccessorPreview');
+    if (!previewDiv) return;
+
+    // Get currently selected shared successors
+    const checkedCbs = content.querySelectorAll('.establish-shared-successor-cb:checked');
+    const selectedSuccessors = [...checkedCbs].map(cb => cb.value);
+
+    if (selectedSuccessors.length === 0) {
+        previewDiv.innerHTML = '';
+        return;
+    }
+
+    // Get chosen system ID from axis 1
+    const chosenRadio = content.querySelector('input[name="chooseSystem"]:checked');
+    const axis1Radio = content.querySelector('input[name="axis1Choice"]:checked');
+    const systemChoice = axis1Radio ? axis1Radio.value : null;
+
+    let chosenSystemId = null;
+    if (systemChoice === 'choose' && chosenRadio) {
+        chosenSystemId = chosenRadio.value;
+    }
+    // For procure, there's no existing system to exclude
+
+    const allocation = state.simulationState ? state.simulationState.baselineAllocation : null;
+    if (!allocation) {
+        previewDiv.innerHTML = '';
+        return;
+    }
+
+    let html = '<div class="mt-3 p-3 bg-orange-50 border-l-4 border-l-[#f47738]">';
+    html += '<p class="text-xs font-bold text-[#f47738] mb-2">Impact on shared successors:</p>';
+
+    for (const successor of selectedSuccessors) {
+        const succMap = allocation.get(successor);
+        const allocations = succMap ? succMap.get(_currentFunctionId) : null;
+
+        html += `<div class="mt-2"><span class="text-xs font-bold">${escHtml(successor)}:</span>`;
+
+        if (!allocations || allocations.length === 0) {
+            html += '<div class="text-xs text-gray-500 ml-2">No existing systems — shared system will be newly allocated</div>';
+        } else {
+            const toDecommission = allocations.filter(a => a.system && a.system.id !== chosenSystemId);
+            if (toDecommission.length === 0) {
+                html += '<div class="text-xs text-gray-500 ml-2">Chosen system already present — no decommissions</div>';
+            } else {
+                html += toDecommission.map(a => {
+                    const s = a.system;
+                    const userNote = s.users != null ? ` — ${Number(s.users).toLocaleString()} users` : '';
+                    const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP)</span>' : '';
+                    return `<div class="text-xs ml-2 mt-0.5">${escHtml(s.label || s.id)}${erpNote}${userNote}</div>`;
+                }).join('');
+            }
+        }
+        html += '</div>';
+    }
+
+    html += '</div>';
+    previewDiv.innerHTML = html;
 }
 
 // ---------------------------------------------------------------------------
