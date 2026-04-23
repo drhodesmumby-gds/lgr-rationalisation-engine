@@ -1313,7 +1313,7 @@ export function renderDashboard() {
                                 const origin = existingDecision.sharedServiceOrigin || '';
                                 const originParts = origin.split('::');
                                 const originSuccessor = originParts.length >= 2 ? originParts.slice(1).join('::') : origin;
-                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800" title="Shared service established by ${escHtml(originSuccessor)}">Shared: ${escHtml(originSuccessor)}</span>`;
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800" title="Shared service established by ${escHtml(originSuccessor)}">Shared: ${escHtml(originSuccessor)}</span>`;
                             } else if (existingDecision.systemChoice === 'choose') {
                                 const retainedId = existingDecision.retainedSystemIds && existingDecision.retainedSystemIds.length > 0
                                     ? existingDecision.retainedSystemIds[0] : null;

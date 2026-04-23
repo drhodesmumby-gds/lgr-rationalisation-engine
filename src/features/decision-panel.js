@@ -612,7 +612,7 @@ export function renderAxisTwo(systems, successorName, existingDecision) {
                         <p class="text-xs text-gray-600 mb-2">Select which other successors will share this service. The chosen system will be adopted as the decided system for each selected successor, decommissioning their existing systems:</p>
                         <fieldset>
                             <legend class="text-xs font-bold text-gray-700 mb-2">Successors to include in shared service:</legend>
-                            <div id="establishSharedSuccessorsContainer" class="space-y-1">
+                            <div id="establishSharedSuccessorsContainer" class="space-y-2">
                                 ${renderEstablishSharedSuccessorCheckboxes(successorName, existingDecision)}
                             </div>
                         </fieldset>
@@ -851,7 +851,12 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
                 disaggDetail.classList.toggle('hidden', radio.value !== 'disaggregate');
             }
             if (establishSharedDetail) {
+                const wasHidden = establishSharedDetail.classList.contains('hidden');
                 establishSharedDetail.classList.toggle('hidden', radio.value !== 'establish-shared');
+                if (wasHidden && radio.value === 'establish-shared') {
+                    const firstCb = establishSharedDetail.querySelector('.establish-shared-successor-cb');
+                    if (firstCb) firstCb.focus();
+                }
             }
         });
     });
