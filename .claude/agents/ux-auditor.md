@@ -128,17 +128,25 @@ Test at three viewport widths:
 
 Use `browser_resize` to test different viewports.
 
+## Team Workflow
+
+You are spawned by the **team lead** after a sprint that changes UI, layout, modals, or visual design. Your spawn prompt may specify particular areas to focus on.
+
+**Communication rule:** Send your audit report to the **team lead only**. Do not message other agents.
+
 ## Testing Protocol
 
 ### Setup
 
-The application must be served over HTTP, not opened via `file:///` protocol. Start a local server:
+The application is built from ES modules under `src/` into a single bundled HTML file. Serve it over HTTP (Playwright blocks `file:///`):
 
 ```bash
 cd /path/to/project && python3 -m http.server 8765 &
 ```
 
 Then navigate to `http://localhost:8765/lgr-rationalisation-engine.html`.
+
+If the built file appears stale, run `node build.js` first to rebuild.
 
 ### Test Scenarios
 

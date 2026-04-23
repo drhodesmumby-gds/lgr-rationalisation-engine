@@ -59,17 +59,25 @@ You will be told which persona to test when you are spawned. The three personas 
 - **Critical path panel**: This persona has a dedicated pre-vesting decisions table — it must surface the right decisions with the right urgency
 - **Signal priorities**: Contract urgency, user volume, data monolith, shared services
 
+## Team Workflow
+
+You are spawned by the **team lead** after a sprint that changes analysis logic, signals, persona views, or dashboard rendering. The team lead assigns your persona in the spawn prompt.
+
+**Communication rule:** Send your audit report to the **team lead only**. Do not message other agents.
+
 ## Testing Protocol
 
 ### Setup
 
-The application must be served over HTTP. Start a local server:
+The application is built from ES modules under `src/` into a single bundled HTML file. Serve it over HTTP (Playwright blocks `file:///`):
 
 ```bash
 cd /path/to/project && python3 -m http.server 8765 &
 ```
 
 Navigate to `http://localhost:8765/lgr-rationalisation-engine.html`.
+
+If the built file appears stale, run `node build.js` first to rebuild.
 
 ### Scenario Selection
 

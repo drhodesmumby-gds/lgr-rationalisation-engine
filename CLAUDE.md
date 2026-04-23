@@ -244,12 +244,34 @@ Auto-detected at Stage 1 if uploaded alongside architecture files (has `successo
 
 ### Multi-Agent Team Structure
 
-For sprint-based development work, the project uses a Planner/Generator/Evaluator team pattern:
-- **Planner** (Opus) — designs implementation approach, creates tasks, assigns work
-- **Generator** (Sonnet, bypassPermissions) — implements code changes
-- **Evaluator** (Sonnet, bypassPermissions) — verifies implementations against acceptance criteria
+Sprint-based development uses a team lead + specialist agent pattern. The team lead (parent Opus session) orchestrates all work — it does NOT write code directly. See `.claude/team-protocol.md` for full details.
 
-Teams are created via `TeamCreate` with tasks managed through `TaskCreate`/`TaskUpdate`. Generators work in isolation mode (`isolation: "worktree"`) when making code changes.
+**Development agents:**
+- **Planner** (Opus) — Designs implementation approaches. Spawned to keep design exploration out of the team lead's context window.
+- **Generator** (Sonnet, `bypassPermissions`, `isolation: "worktree"`) — Implements code changes in an isolated worktree.
+- **Evaluator** (Sonnet, `bypassPermissions`) — Verifies implementation via Playwright MCP browser testing and `npm test`.
+
+**Quality agents:**
+- **Test Writer** (Sonnet) — Expands property test suite after sprints adding pure functions
+- **UX Auditor** (Sonnet) — GOV.UK Design System compliance, accessibility, responsive behaviour
+- **Persona Tester** (Opus) — Tests utility from Enterprise Architect, Commercial, or Executive perspective
+
+**Sprint workflow:**
+1. DESIGN — Spawn Planner for complex work (or use plan mode for simple tasks)
+2. BUILD — `TeamCreate` → spawn Generator → wait for completion
+3. TEST — Spawn Evaluator → wait for results → iterate if needed
+4. SHIP — Commit, clean up core team
+5. QUALITY — Trigger quality agents based on what changed:
+   - UI changes → UX Auditor
+   - Analysis/signal changes → Persona Testers (up to 3 in parallel)
+   - New pure functions → Test Writer
+
+**Key rules:**
+- All communication flows through the team lead — agents never message each other
+- Team lead provides complete context in spawn prompts
+- Generator works in worktrees; Evaluator and quality agents test against main branch
+- Team lead delegates implementation, never writes code directly
+- Team lead proactively triggers quality testing after each sprint
 
 ### Testing
 

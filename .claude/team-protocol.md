@@ -2,216 +2,110 @@
 
 ## Architecture
 
-Multi-agent team following the Planner → Generator → Evaluator model from
-[Anthropic's harness design for long-running apps](https://www.anthropic.com/engineering/harness-design-long-running-apps), extended with a Test Writer for property test maintenance and quality testing agents for UX and persona utility audits.
+Multi-agent team following a **hub-and-spoke model**: the team lead (parent Claude session) orchestrates all work, and agents communicate exclusively with the team lead — never with each other.
 
-### Agent Roles
+### Team Lead
 
-| Agent | Responsibility | Model | Key Tools |
+The parent Claude session (Opus) acts as team lead:
+- Receives user requests and decides scope
+- Delegates complex design work to the Planner agent (to minimise context usage)
+- Spawns Generator and Evaluator agents sequentially
+- Reviews results and manages iteration
+- Triggers quality testing after sprints ship
+- **Does NOT write code directly** — delegates all implementation to agents
+
+### Agent Inventory
+
+| Agent | Role | Model | When to spawn |
 |---|---|---|---|
-| **Planner** | Gap analysis, sprint planning, acceptance criteria | Opus | Read, Grep, Write (sprint contracts) |
-| **Generator** | Feature implementation, self-testing | Sonnet/Opus | Edit, Bash (npm test), Write |
-| **Evaluator** | Quality verification, browser testing, grading | Sonnet | Bash (npm test), Playwright MCP |
-| **Test Writer** | Property test expansion and maintenance | Sonnet | Read, Grep, Bash (npm test), Write |
-| **UX Auditor** | GOV.UK Design System compliance, UX quality, accessibility | Sonnet | Read, Playwright MCP, Write |
-| **Persona Tester** | Utility testing from a specific persona perspective | Opus | Read, Playwright MCP, Write |
+| **Planner** | Designs implementation approaches | Opus | Complex features requiring codebase exploration |
+| **Generator** | Writes code | Sonnet | Every sprint — implements the plan |
+| **Evaluator** | Verifies quality via browser + tests | Sonnet | Every sprint — after Generator finishes |
+| **Test Writer** | Expands property test suite | Sonnet | After sprints adding new pure functions |
+| **UX Auditor** | GOV.UK compliance + UX quality | Sonnet | After UI-heavy sprints |
+| **Persona Tester** | Tests utility for a specific role | Opus | After analysis/signal sprints |
 
-### Team Lead (You)
-
-The human operator (or the parent Claude session) acts as team lead:
-- Approves sprint contracts before implementation begins
-- Reviews evaluation reports
-- Resolves disputes between agents
-- Decides when to proceed to the next sprint
-
-## Coordination Protocol
-
-### Sprint Lifecycle
+## Sprint Workflow
 
 ```
-1. PLAN    → Planner writes sprint contract
-2. REVIEW  → Team lead approves contract (or requests changes)
-3. BUILD   → Generator implements the feature
-4. TEST    → Evaluator verifies against acceptance criteria
-5. ITERATE → If NEEDS REVISION, Generator fixes bugs and Evaluator re-tests
-6. SHIP    → Evaluation PASS → sprint complete
-7. TESTS   → Test Writer adds/updates property tests for new/modified pure functions
+1. DESIGN   → Spawn Planner for complex work (or team lead uses plan mode for simple tasks)
+2. REVIEW   → Team lead reviews plan, approves or adjusts
+3. BUILD    → TeamCreate → spawn Generator (isolation: "worktree", mode: "bypassPermissions")
+4. TEST     → Spawn Evaluator (mode: "bypassPermissions") to verify in browser
+5. ITERATE  → If issues: team lead relays bugs to Generator → re-test
+6. SHIP     → Team lead commits, cleans up core team (TeamDelete)
+7. QUALITY  → Team lead triggers quality agents (see below)
 ```
 
-**Step 7 (TESTS)** runs after the sprint ships. The Test Writer reads the sprint contract to understand what changed, identifies new/modified pure functions, and writes property tests. This can run in parallel with the next sprint's PLAN phase since it only touches `tests/` files, not `lgr-rationalisation-engine.html`.
+### Step 7: Quality Testing
 
-### File-Based Communication
+After a sprint ships, the team lead assesses what changed and spawns the appropriate quality agents:
 
-All artifacts live in `.claude/sprints/sprint-{N}/`:
+| What changed | Agent(s) to spawn |
+|---|---|
+| UI layout, components, modals, visual design | **UX Auditor** |
+| Analysis logic, signals, persona views, dashboard | **Persona Testers** (up to 3 in parallel, one per persona) |
+| New/modified pure functions in `src/` | **Test Writer** |
+| Multiple of the above | Spawn applicable agents in parallel |
 
-| File | Written by | Purpose |
-|---|---|---|
-| `contract.md` | Planner | Sprint scope, acceptance criteria, test plan |
-| `status.md` | Any agent | **Persistent state tracker** — survives session crashes |
-| `evaluation.md` | Evaluator | Test results, grades, bug reports |
-| `notes.md` | Any agent | Observations, decisions, context for future sprints |
+Quality agents run independently against the committed code on the main branch. Their output:
+- UX Auditor → `.claude/audits/ux-audit.md`
+- Persona Testers → `.claude/audits/persona-{name}-audit.md`
+- Test Writer → new/updated files in `tests/properties/`
 
-### Sprint Status File (Crash Recovery)
+**The team lead should proactively trigger quality testing** after every sprint — not wait for the user to request it.
 
-Each sprint has a `status.md` that agents update as they work. This is the **primary resumption mechanism** — if a session times out or crashes, a new session reads this file to understand exactly where things stand.
+Findings from quality testing feed into the next sprint's planning. The Planner should read `.claude/audits/` before designing a new sprint.
 
-Agents MUST update `status.md` at every phase transition and before/after significant edits.
+## Communication Model
 
-Format:
-
-```markdown
-# Sprint {N} Status
-
-## Current Phase
-BUILD | TEST | ITERATE | COMPLETE
-
-## Last Updated
-{ISO timestamp}
-
-## Agent
-{Which agent was working: planner / generator / evaluator}
-
-## Progress
-- [x] {Completed step}
-- [x] {Completed step}
-- [ ] {Next step — where to resume}
-- [ ] {Remaining step}
-
-## State of lgr-rationalisation-engine.html
-{Brief description: clean / mid-edit / known broken state}
-{If mid-edit: what was being changed and what remains}
-
-## Test Baseline
-{Last known `npm test` result: X passed, Y failed}
-
-## Resumption Instructions
-{What a freshly-spawned agent should do first to pick up this sprint}
-```
-
-### Sprint Contract Negotiation
-
-Before implementation begins, the Evaluator reviews the Planner's contract:
-- Are acceptance criteria testable?
-- Is test coverage adequate?
-- Are edge cases from red-team.md considered?
-
-If the Evaluator flags issues, the Planner revises before the Generator starts.
-
-## Quality Gates
-
-A sprint passes when:
-1. All existing property tests pass (`npm test`)
-2. All acceptance criteria verified PASS by Evaluator
-3. No Critical or Major bugs open
-4. Grades average >= 3/5 across all dimensions
-5. No regressions in existing functionality
-
-## Context Management
-
-The key advantage of this model over single-agent sessions:
-- Each agent has a **focused context window** — no bloat from irrelevant history
-- Sprint contracts serve as **compressed context** — the Generator doesn't need the full spec, just the contract
-- File-based handoffs survive session boundaries — work can resume after interruptions
-- The Evaluator catches drift that a self-evaluating agent would miss
-
-## Starting a Sprint
-
-To launch a sprint, the team lead runs:
+**Hub-and-spoke through the team lead.** Agents NEVER message each other.
 
 ```
-1. Spawn planner agent → produces sprint contract + initial status.md
-2. Review and approve the contract
-3. Spawn generator agent → implements the feature (updates status.md throughout)
-4. Spawn evaluator agent → tests the implementation (updates status.md throughout)
-5. If NEEDS REVISION → message generator with bugs → repeat 3-4
-6. If PASS → sprint complete
+                    ┌──────────┐
+                    │ Team Lead│
+                    └────┬─────┘
+           ┌─────────┬──┴──┬─────────┐
+           │         │     │         │
+       ┌───┴───┐ ┌───┴──┐ ┌┴────┐ ┌──┴───┐
+       │Planner│ │Gener.│ │Eval.│ │Quality│
+       └───────┘ └──────┘ └─────┘ └──────┘
 ```
 
-## Resuming After a Crash / Timeout
+- Team lead provides **complete context** in spawn prompts — agents don't share conversation history
+- Agents send completion summaries / reports back to the team lead
+- The team lead relays bugs, follow-ups, or iteration requests between agents
+- If an agent needs information from another agent's work, the team lead provides it in the spawn prompt
 
-If a session dies mid-sprint:
+## Worktree Isolation
 
-```
-1. Read .claude/sprints/sprint-{N}/status.md to understand current state
-2. Check the phase:
-   - PLAN   → re-spawn planner to finish the contract
-   - BUILD  → re-spawn generator; it reads status.md and resumes from last checkpoint
-   - TEST   → re-spawn evaluator; it reads status.md and resumes from last tested criterion
-   - ITERATE → re-spawn generator with the evaluator's bug report
-3. The agent reads status.md FIRST, not the full conversation history
-4. No context is lost — the sprint contract + status file contain everything needed
-```
+- **Generator** works in an isolated git worktree (`isolation: "worktree"`). Changes are committed in the worktree and merged to the main branch by the team lead.
+- **Evaluator** tests against the main branch (after Generator's changes are merged or in the main worktree).
+- **Quality agents** test against the committed main branch.
 
-The status file is the single source of truth for sprint progress. Agents treat it like a transaction log — write before acting, update after completing.
+## Architecture
 
-## Testing Teams
+The project uses **modular ES modules** under `src/`, bundled by esbuild into a single HTML file.
 
-Beyond the core development lifecycle (Plan → Build → Test), two additional agent types exist for qualitative testing:
+- **Source**: `src/` — ES modules (main.js, state.js, features/, simulation/, analysis/, constants/)
+- **Build**: `node build.js` → `lgr-rationalisation-engine.html`
+- **Tests**: `npm test` — vitest + fast-check property tests in `tests/`
+- **Serve for browser testing**: `python3 -m http.server 8765` from repo root, navigate to `http://localhost:8765/lgr-rationalisation-engine.html`
 
-### UX Audit Team
+## Crash Recovery
 
-| Agent | Responsibility | Model |
-|---|---|---|
-| **UX Auditor** | GOV.UK Design System compliance, general UX quality, accessibility, responsive behaviour | Sonnet |
+If a session dies mid-sprint, the team lead reads:
+1. Git status — what's committed, what's in progress
+2. `.claude/sprints/sprint-{N}/status.md` — if the sprint used file-based status tracking
+3. Team task list — via `TaskList`
 
-The UX Auditor operates independently. It reads `GOVUK-DESIGN-SYSTEM-REFERENCE.md` as its compliance baseline and tests the application through Playwright. Output goes to `.claude/audits/ux-audit.md`.
+Then re-spawns the appropriate agent with context about where things stand.
 
-**When to run**: After significant UI changes (new views, layout modifications, new components). Can run in parallel with a development sprint's Evaluator phase.
+## Project Context
 
-### Persona Utility Testing Team
-
-| Agent | Responsibility | Model |
-|---|---|---|
-| **Persona Tester (Architect)** | Tests utility from CTO/Enterprise Architect perspective | Opus |
-| **Persona Tester (Commercial)** | Tests utility from Commercial/Transition Director perspective | Opus |
-| **Persona Tester (Executive)** | Tests utility from Executive/Transition Board perspective | Opus |
-
-All three use the same agent definition (`persona-tester.md`) but are spawned with different persona assignments and agent names. They load example scenarios, switch to their assigned persona, and evaluate whether the tool delivers genuinely actionable insights.
-
-Output goes to `.claude/audits/persona-{name}-audit.md`.
-
-**When to run**: After significant analysis/signal changes, new persona features, or dashboard modifications. All three can run in parallel since they test different personas. Can also run in parallel with a development sprint if the sprint doesn't touch analysis logic.
-
-### Coordination Between Testing and Development
-
-```
-Development Sprint                 Testing (parallel if no conflicts)
-──────────────────                 ──────────────────────────────────
-PLAN  → sprint contract
-REVIEW → approve contract
-BUILD  → implement feature    ──→  UX Auditor (if UI sprint)
-TEST   → evaluator verifies   ──→  Persona Testers (if analysis sprint)
-SHIP   → sprint complete
-                               ──→  Testing reports inform next sprint's Planner
-```
-
-Testing outputs (gap reports, recommendations) feed back into the Planner's gap analysis for subsequent sprints. The Planner should read `.claude/audits/` before planning a new sprint.
-
-### Running Testing Teams
-
-To run a UX audit:
-```
-1. Spawn ux-auditor agent
-2. It operates autonomously — no input needed beyond the task assignment
-3. Review the audit report at .claude/audits/ux-audit.md
-```
-
-To run persona testing (all three in parallel):
-```
-1. Create a team with TaskCreate for the testing scope
-2. Spawn 3 persona-tester agents with names: persona-architect, persona-commercial, persona-executive
-3. Assign each their persona via SendMessage
-4. They operate autonomously, testing scenarios and documenting findings
-5. Review audit reports at .claude/audits/persona-{name}-audit.md
-6. Clean up team when all three complete
-```
-
-## Project-Specific Notes
-
-- **Single-file constraint**: `lgr-rationalisation-engine.html` is the only implementation file
-- **Existing test suite**: 12+ property tests in `tests/` — these must never regress
-- **Sample data**: 10 curated scenarios in `examples/` (01–10), each with council files, transition config, and README. Plus 5 legacy sample files at the repo root.
-- **Red team document**: `red-team.md` contains edge cases from real LGR announcements
-- **Kiro spec**: `.kiro/specs/lgr-transition-planning/` has authoritative requirements
-- **GOV.UK Design System reference**: `GOVUK-DESIGN-SYSTEM-REFERENCE.md` — authoritative reference for visual standards, component usage, and documented deviations
-- **Audit output**: `.claude/audits/` directory for UX and persona testing reports
+- **Sample data**: 10 curated scenarios in `examples/` (01–10) + 5 legacy samples in `examples/00-legacy-samples/`
+- **Design reference**: `GOVUK-DESIGN-SYSTEM-REFERENCE.md`
+- **Edge cases**: `red-team.md` (84KB)
+- **Spec**: `.kiro/specs/lgr-transition-planning/`
+- **Historical sprints**: `.claude/sprints/` (gitignored, local only)
+- **Audit output**: `.claude/audits/`
