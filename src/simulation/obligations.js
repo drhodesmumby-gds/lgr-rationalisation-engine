@@ -15,7 +15,7 @@
 /**
  * @typedef {Object} SimulationObligation
  * @property {string} id
- * @property {'data-migration'|'function-gap'|'cross-successor-impact'} type
+ * @property {'data-migration'|'function-gap'|'cross-successor-impact'|'data-partition'} type
  * @property {number} actionIndex
  * @property {string} actionType
  * @property {Object} fromSystem
@@ -128,6 +128,85 @@ export function generateObligations(baselineAllocation, action, actionIndex, rem
 }
 
 /**
+ * Generates obligations specific to disaggregation.
+ * Unlike consolidation (where obligations track removed -> target),
+ * disaggregation obligations track the data partitioning challenge
+ * of splitting one system into N successor-scoped instances.
+ *
+ * Uses equal division of users/cost (same as split-shared-service).
+ *
+ * @param {Object} originalSystem  The system being disaggregated
+ * @param {Object} action          The disaggregate action
+ * @param {number} actionIndex     Index into the actions array
+ * @param {Map|null} lgaFunctionMap
+ * @returns {SimulationObligation[]}
+ */
+export function generateDisaggregationObligations(originalSystem, action, actionIndex, lgaFunctionMap) {
+    const obligations = [];
+    const sys = originalSystem;
+    const totalUsers = typeof sys.users === 'number' ? sys.users : 0;
+    const totalCost = typeof sys.annualCost === 'number' ? sys.annualCost : 0;
+    const splitCount = action.splits.length;
+
+    action.splits.forEach((split, splitIndex) => {
+        // Equal division, remainder to last split
+        let userCount, annualCost;
+        if (splitIndex < splitCount - 1) {
+            userCount = Math.round(totalUsers / splitCount);
+            annualCost = Math.round(totalCost / splitCount);
+        } else {
+            const perSplit = Math.round(totalUsers / splitCount);
+            userCount = totalUsers - perSplit * (splitCount - 1);
+            const perSplitCost = Math.round(totalCost / splitCount);
+            annualCost = totalCost - perSplitCost * (splitCount - 1);
+        }
+
+        obligations.push({
+            id: `obl-${actionIndex}-disagg-${sys.id}-${split.successorName}`,
+            type: 'data-partition',
+            actionIndex,
+            actionType: 'disaggregate',
+            fromSystem: {
+                id: sys.id,
+                label: sys.label || sys.id,
+                council: sys._sourceCouncil || 'Unknown',
+                vendor: sys.vendor || null,
+                users: totalUsers,
+                annualCost: totalCost,
+                dataPartitioning: sys.dataPartitioning || null,
+                portability: sys.portability || null,
+                isERP: !!sys.isERP,
+                isCloud: !!sys.isCloud,
+                endYear: sys.endYear || null,
+                endMonth: sys.endMonth || null,
+                noticePeriod: sys.noticePeriod || null
+            },
+            toSystem: {
+                id: `${sys.id}-disagg-${splitIndex}`,
+                label: split.label,
+                council: split.successorName
+            },
+            affectedSuccessors: [split.successorName],
+            functionId: null,       // Disaggregation affects ALL functions the system serves
+            functionLabel: null,
+            isMonolithic: sys.dataPartitioning === 'Monolithic',
+            isLowPortability: sys.portability === 'Low',
+            isERP: !!sys.isERP,
+            isOnPrem: !sys.isCloud,
+            userCount,
+            annualCost,
+            contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}` : null,
+            noticePeriod: typeof sys.noticePeriod === 'number' ? sys.noticePeriod : null,
+            splitIndex,
+            splitCount,
+            resolved: true   // The partition target IS defined (the split instance)
+        });
+    });
+
+    return obligations;
+}
+
+/**
  * Computes obligation severity using the active persona's signal weights.
  * The same obligation shows as high-severity for a data-focused persona
  * (architect) but lower for a commercial persona.
@@ -156,6 +235,9 @@ export function computeObligationSeverity(obl, weights) {
 
     // Cross-successor always elevated
     if (obl.type === 'cross-successor-impact') score += 2;
+
+    // Data partition obligations (disaggregation) — always significant complexity
+    if (obl.type === 'data-partition') score += 1;
 
     if (score >= 5) return 'high';
     if (score >= 2) return 'medium';
@@ -210,6 +292,18 @@ export function generateMigrationScopeBullets(obl) {
     // Cross-successor
     if (obl.type === 'cross-successor-impact') {
         bullets.push(`Cross-successor impact — removal affects ${obl.affectedSuccessors.join(', ')}`);
+    }
+
+    // Disaggregation-specific
+    if (obl.type === 'data-partition') {
+        const successor = obl.affectedSuccessors[0] || 'successor';
+        const splitCount = obl.splitCount || 2;
+        bullets.push(`Data partition: 1 of ${splitCount} equal parts to ${successor}`);
+        if (obl.isMonolithic) {
+            bullets.push('Monolithic data store requires extraction before partition — no clean geographic split boundary exists in the data layer');
+        } else {
+            bullets.push('Segmented data — geographic partition may be achievable through configuration or tenant separation');
+        }
     }
 
     // Unresolved

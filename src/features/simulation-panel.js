@@ -585,11 +585,16 @@ function renderObligationDetailContent(obligations) {
                     : '<span class="text-[#d4351c] font-bold">Unresolved</span>';
                 const crossCell = obl.type === 'cross-successor-impact'
                     ? '<span style="background:#d4351c;color:#fff;font-size:9px;padding:1px 4px;font-weight:bold;">CROSS</span>'
-                    : '';
+                    : obl.type === 'data-partition'
+                        ? '<span style="background:#4c2c92;color:#fff;font-size:9px;padding:1px 4px;font-weight:bold;">PARTITION</span>'
+                        : '';
+                const functionCell = obl.type === 'data-partition'
+                    ? '<span class="text-gray-500 italic">(all functions)</span>'
+                    : escHtml(obl.functionLabel || obl.functionId);
                 const rowBg = !obl.resolved ? ' class="bg-white"' : '';
                 html += `<tr${rowBg}>
                     <td class="py-1 pr-2"><span style="background:${rowBadgeBg};color:${rowBadgeFg};font-size:9px;padding:1px 4px;font-weight:bold;">${obl.severity.toUpperCase()}</span></td>
-                    <td class="py-1 pr-2">${escHtml(obl.functionLabel || obl.functionId)}</td>
+                    <td class="py-1 pr-2">${functionCell}</td>
                     <td class="py-1 pr-2">${targetCell}</td>
                     <td class="py-1 pr-2">${escHtml(obl.affectedSuccessors[0] || '')}</td>
                     <td class="py-1">${crossCell}</td>
@@ -779,6 +784,12 @@ function editAction(idx) {
         case 'split-shared-service':
             prefill = { systemId: action.systemId, splits: action.splits };
             break;
+        case 'disaggregate':
+            prefill = { systemId: action.systemId, disaggSplits: action.splits };
+            break;
+        case 'consolidate-erp':
+            prefill = { successorName: action.successorName, targetSystemId: action.targetSystemId };
+            break;
         case 'procure-replacement':
             prefill = {
                 funcId: action.functionId,
@@ -927,6 +938,37 @@ export function openActionBuilderWithContext(type, prefill = {}) {
                 });
             }
         }
+        // For disaggregate: populate split rows
+        if (type === 'disaggregate' && prefill.disaggSplits && prefill.disaggSplits.length > 0) {
+            const disaggSplitRows = document.getElementById('disaggSplitRows');
+            if (disaggSplitRows) {
+                disaggSplitRows.innerHTML = '';
+                _disaggSplitRowCount = 0;
+                prefill.disaggSplits.forEach(split => {
+                    addDisaggSplitRow();
+                    const rows = disaggSplitRows.querySelectorAll('.disagg-split-row');
+                    const row = rows[rows.length - 1];
+                    if (row) {
+                        const succSel = row.querySelector('.disagg-split-successor');
+                        const labelInp = row.querySelector('.disagg-split-label');
+                        if (succSel) succSel.value = split.successorName;
+                        if (labelInp) labelInp.value = split.label;
+                    }
+                });
+            }
+        }
+        // For consolidate-erp: trigger ERP systems update
+        if (type === 'consolidate-erp' && prefill.successorName) {
+            requestAnimationFrame(() => {
+                updateErpSystems();
+                if (prefill.targetSystemId) {
+                    requestAnimationFrame(() => {
+                        const el = document.getElementById('field_targetSystemId');
+                        if (el) { el.value = prefill.targetSystemId; updateErpReviewTable(); }
+                    });
+                }
+            });
+        }
     });
 }
 
@@ -937,10 +979,12 @@ function renderActionBuilderStep1() {
 
     const types = [
         { id: 'consolidate', label: 'Consolidate Systems', desc: 'Choose one system to keep for a function; decommission others' },
+        { id: 'consolidate-erp', label: 'Consolidate ERP', desc: 'Choose one ERP as the corporate platform for a successor — consolidates across all functions the ERP serves' },
         { id: 'decommission', label: 'Decommission System', desc: 'Remove a system entirely' },
         { id: 'extend-contract', label: 'Extend Contract', desc: "Change a system's contract end date" },
         { id: 'migrate-users', label: 'Migrate Users', desc: 'Move users from one system to another' },
-        { id: 'split-shared-service', label: 'Split Shared Service', desc: 'Split a shared service into separate instances per successor' },
+        { id: 'split-shared-service', label: 'Split Shared Service', desc: 'Unwind a voluntary shared service partnership — split into separate instances per successor (equal division)' },
+        { id: 'disaggregate', label: 'Disaggregate County System', desc: 'Split a county/shared-predecessor system across successor authorities (equal division)' },
         { id: 'procure-replacement', label: 'Procure Replacement', desc: 'Add a new system to replace an existing one' }
     ];
 
@@ -1054,6 +1098,38 @@ function renderActionBuilderStep2(type) {
             <div id="splitRows" class="space-y-2"></div>
             <button type="button" onclick="window._simAddSplitRow()" class="mt-2 gds-btn-secondary px-3 py-1.5 text-xs font-bold">+ Add Split</button>
         </div>`;
+    } else if (type === 'disaggregate') {
+        // Filter to systems with isDisaggregation flag, fall back to all systems
+        const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
+            ? state.simulationState.lastImpact.afterAllocation
+            : (state.simulationState && state.simulationState.baselineAllocation)
+                ? state.simulationState.baselineAllocation
+                : null;
+        let disaggSystems = [];
+        if (allocMap) {
+            allocMap.forEach((funcMap) => {
+                funcMap.forEach((allocations) => {
+                    allocations.forEach(a => {
+                        if (a.isDisaggregation && a.system && !disaggSystems.find(s => s.id === a.system.id)) {
+                            const sys = systems.find(s => s.id === a.system.id);
+                            if (sys) disaggSystems.push(sys);
+                        }
+                    });
+                });
+            });
+        }
+        const systemsToShow = disaggSystems.length > 0 ? disaggSystems : systems;
+        html += buildSystemSelect('systemId', 'System to disaggregate', systemsToShow, '', 'onchange="window._simUpdateDisaggregateAdvisory()"');
+        html += `<div id="disaggAdvisory"></div>`;
+        html += `<div id="disaggSplitsContainer">
+            <label class="block text-sm font-bold mb-2">Splits (one per successor)</label>
+            <div id="disaggSplitRows" class="space-y-2"></div>
+            <button type="button" onclick="window._simAddDisaggSplitRow()" class="mt-2 gds-btn-secondary px-3 py-1.5 text-xs font-bold">+ Add Split</button>
+        </div>`;
+    } else if (type === 'consolidate-erp') {
+        html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })), '', 'onchange="window._simUpdateErpSystems()"');
+        html += `<div id="erpSystemField">${buildSelectField('targetSystemId', 'Target ERP (keep)', [], 'Select a successor first')}</div>`;
+        html += `<div id="erpReviewTable"></div>`;
     } else if (type === 'procure-replacement') {
         html += buildSelectField('funcId', 'Function', lgaFunctions.map(f => ({ value: f.lgaId, label: f.label })));
         html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })));
@@ -1074,6 +1150,12 @@ function renderActionBuilderStep2(type) {
     if (type === 'split-shared-service') {
         addSplitRow();
         addSplitRow();
+    }
+
+    // Initialise split rows for disaggregate
+    if (type === 'disaggregate') {
+        addDisaggSplitRow();
+        addDisaggSplitRow();
     }
 }
 
@@ -1152,6 +1234,193 @@ function addSplitRow() {
         <button type="button" onclick="this.closest('.split-row').remove()" class="text-[#d4351c] font-bold text-lg leading-none" aria-label="Remove split ${idx + 1}">&times;</button>
     `;
     container.appendChild(row);
+}
+
+let _disaggSplitRowCount = 0;
+
+function addDisaggSplitRow() {
+    const container = document.getElementById('disaggSplitRows');
+    if (!container) return;
+    const successors = (state.transitionStructure && state.transitionStructure.successors) ? state.transitionStructure.successors : [];
+    const idx = _disaggSplitRowCount++;
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center disagg-split-row';
+    row.dataset.idx = idx;
+    const defaultIdx = Math.min(idx, successors.length - 1);
+    const succOpts = successors.map((s, i) => `<option value="${escHtml(s.name)}"${i === defaultIdx ? ' selected' : ''}>${escHtml(s.name)}</option>`).join('');
+    const splitId = `disagg_${idx}`;
+    row.innerHTML = `
+        <div class="flex-shrink-0 w-48">
+            <label for="${splitId}_succ" class="sr-only">Successor authority for disagg split ${idx + 1}</label>
+            <select id="${splitId}_succ" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full disagg-split-successor">${succOpts}</select>
+        </div>
+        <div class="flex-1">
+            <label for="${splitId}_label" class="sr-only">Instance label for disagg split ${idx + 1}</label>
+            <input id="${splitId}_label" type="text" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full disagg-split-label" placeholder="Instance label (e.g. System (North))">
+        </div>
+        <button type="button" onclick="this.closest('.disagg-split-row').remove()" class="text-[#d4351c] font-bold text-lg leading-none" aria-label="Remove disagg split ${idx + 1}">&times;</button>
+    `;
+    container.appendChild(row);
+}
+
+function updateDisaggregateAdvisory() {
+    const systemId = document.getElementById('field_systemId')?.value;
+    const advisory = document.getElementById('disaggAdvisory');
+    if (!advisory) return;
+    if (!systemId) { advisory.innerHTML = ''; return; }
+
+    const sys = getSimulatedITSystems().find(s => s.id === systemId);
+    if (!sys) { advisory.innerHTML = ''; return; }
+
+    let html = '';
+    if (sys.dataPartitioning === 'Monolithic') {
+        html += `<div class="mt-2 p-2 bg-red-50 border-l-4 border-l-[#d4351c] text-xs text-[#d4351c]">
+            <strong>Monolithic data:</strong> This system has monolithic data partitioning. Splitting the contract does not split the data. A data extraction and partitioning strategy must be developed before disaggregation.
+        </div>`;
+    }
+    if (sys.portability === 'Low') {
+        html += `<div class="mt-2 p-2 bg-amber-50 border-l-4 border-l-[#f47738] text-xs">
+            <strong>Low portability:</strong> Vendor-specific data formats may require specialist ETL tooling for partition.
+        </div>`;
+    }
+    if (sys.isERP) {
+        html += `<div class="mt-2 p-2 bg-amber-50 border-l-4 border-l-[#f47738] text-xs">
+            <strong>ERP system:</strong> This system serves multiple functions. All functions will be affected by disaggregation. Consider making the ERP consolidation decision first, then disaggregate the winning platform.
+        </div>`;
+    }
+    advisory.innerHTML = html;
+}
+
+function updateErpSystems() {
+    const successorName = document.getElementById('field_successorName')?.value;
+    const erpFieldContainer = document.getElementById('erpSystemField');
+    const reviewTable = document.getElementById('erpReviewTable');
+    if (!erpFieldContainer) return;
+
+    if (!successorName) {
+        erpFieldContainer.innerHTML = buildSelectField('targetSystemId', 'Target ERP (keep)', [], 'Select a successor first');
+        if (reviewTable) reviewTable.innerHTML = '';
+        return;
+    }
+
+    const systems = getSimulatedITSystems();
+    // Filter to ERP systems allocated to this successor
+    const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
+        ? state.simulationState.lastImpact.afterAllocation
+        : (state.simulationState && state.simulationState.baselineAllocation)
+            ? state.simulationState.baselineAllocation
+            : null;
+
+    let successorSystemIds = new Set();
+    if (allocMap && allocMap.has(successorName)) {
+        allocMap.get(successorName).forEach((allocations) => {
+            allocations.forEach(a => {
+                if (a.system) successorSystemIds.add(a.system.id);
+            });
+        });
+    }
+
+    const erpSystems = systems.filter(s => s.isERP && (successorSystemIds.size === 0 || successorSystemIds.has(s.id)));
+
+    if (erpSystems.length === 0) {
+        erpFieldContainer.innerHTML = buildSelectField('targetSystemId', 'Target ERP (keep)', [], 'No ERP systems found for this successor');
+        if (reviewTable) reviewTable.innerHTML = '';
+        return;
+    }
+
+    const erpOptions = erpSystems.map(s => {
+        const meta = [];
+        if (s.vendor) meta.push(s.vendor);
+        if (typeof s.users === 'number') meta.push(`${s.users.toLocaleString()} users`);
+        if (typeof s.annualCost === 'number') meta.push(`£${s.annualCost.toLocaleString()}/yr`);
+        const label = s.label + (meta.length > 0 ? ` (${meta.join(', ')})` : '');
+        return { value: s.id, label };
+    });
+
+    erpFieldContainer.innerHTML = buildSelectField('targetSystemId', 'Target ERP (keep)', erpOptions, '', 'onchange="window._simUpdateErpReviewTable()"');
+    if (reviewTable) reviewTable.innerHTML = '';
+}
+
+function updateErpReviewTable() {
+    const successorName = document.getElementById('field_successorName')?.value;
+    const targetSystemId = document.getElementById('field_targetSystemId')?.value;
+    const reviewTable = document.getElementById('erpReviewTable');
+    if (!reviewTable || !successorName || !targetSystemId) { if (reviewTable) reviewTable.innerHTML = ''; return; }
+
+    const simNodes = getSimulatedNodes();
+    const simEdges = state.simulationState
+        ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
+        : [];
+
+    // Find lgaFunctionIds the target ERP serves
+    const targetFuncNodeIds = new Set();
+    simEdges.forEach(e => {
+        if (e.source === targetSystemId && e.relationship === 'REALIZES') {
+            targetFuncNodeIds.add(e.target);
+        }
+    });
+
+    if (targetFuncNodeIds.size === 0) {
+        reviewTable.innerHTML = '<div class="mt-3 text-xs text-gray-600 italic">This ERP has no REALIZES edges in the current simulated state.</div>';
+        return;
+    }
+
+    // Build function rows
+    const rows = [];
+    const seenFuncIds = new Set();
+
+    targetFuncNodeIds.forEach(fnNodeId => {
+        const fnNode = simNodes.find(n => n.id === fnNodeId);
+        if (!fnNode || !fnNode.lgaFunctionId) return;
+        const funcId = fnNode.lgaFunctionId;
+        if (seenFuncIds.has(funcId)) return;
+        seenFuncIds.add(funcId);
+
+        const funcEntry = state.lgaFunctionMap && state.lgaFunctionMap.get(funcId);
+        const funcLabel = funcEntry ? funcEntry.label : (fnNode.label || funcId);
+
+        // Get all systems for this function+successor
+        const cellSystemIds = getConsolidateCellSystemIds(funcId, successorName);
+        const competingSystems = getSimulatedITSystems().filter(s => cellSystemIds.includes(s.id) && s.id !== targetSystemId);
+
+        rows.push({ funcId, funcLabel, competingSystems });
+    });
+
+    if (rows.length === 0) {
+        reviewTable.innerHTML = '<div class="mt-3 text-xs text-gray-600 italic">No functions found for this ERP in this successor.</div>';
+        return;
+    }
+
+    let html = `<div class="mt-4">
+        <div class="text-sm font-bold mb-2">Affected functions &amp; competing systems</div>
+        <div class="text-xs text-gray-600 mb-2">Checked systems will be removed (consolidated onto the selected ERP). Uncheck to keep alongside the ERP.</div>
+        <table class="w-full text-xs border-collapse">
+            <thead>
+                <tr class="text-left text-gray-500 border-b border-gray-200">
+                    <th scope="col" class="pb-1 pr-2 font-semibold">Function</th>
+                    <th scope="col" class="pb-1 pr-2 font-semibold">Competing systems (will remove)</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    rows.forEach(({ funcId, funcLabel, competingSystems }) => {
+        if (competingSystems.length === 0) {
+            html += `<tr><td class="py-1 pr-2">${escHtml(funcLabel)}</td><td class="py-1 text-gray-500 italic">None</td></tr>`;
+        } else {
+            html += `<tr><td class="py-1 pr-2 align-top">${escHtml(funcLabel)}</td><td class="py-1">`;
+            competingSystems.forEach(s => {
+                const cbId = `erp_remove_${funcId}_${s.id}`;
+                html += `<div class="flex items-center gap-1 mb-0.5">
+                    <input type="checkbox" id="${cbId}" name="${cbId}" checked class="w-3 h-3">
+                    <label for="${cbId}" class="text-xs">${escHtml(s.label)}${s._sourceCouncil ? ' (' + escHtml(s._sourceCouncil) + ')' : ''}</label>
+                </div>`;
+            });
+            html += `</td></tr>`;
+        }
+    });
+
+    html += `</tbody></table></div>`;
+    reviewTable.innerHTML = html;
 }
 
 export function updateConsolidateSystems() {
@@ -1305,6 +1574,68 @@ export function applyActionFromBuilder() {
             }
             action = { type: 'split-shared-service', systemId, splits };
 
+        } else if (type === 'disaggregate') {
+            const systemId = document.getElementById('field_systemId')?.value;
+            if (!systemId) { showActionBuilderError('Please select a system.'); return; }
+            const splitRows = document.querySelectorAll('#disaggSplitRows .disagg-split-row');
+            const splits = [];
+            splitRows.forEach(row => {
+                const successorName = row.querySelector('.disagg-split-successor')?.value;
+                const label = row.querySelector('.disagg-split-label')?.value;
+                if (successorName && label) splits.push({ successorName, label });
+            });
+            if (splits.length < 2) {
+                showActionBuilderError('At least 2 split instances are required.');
+                return;
+            }
+            action = { type: 'disaggregate', systemId, splits };
+
+        } else if (type === 'consolidate-erp') {
+            const successorName = document.getElementById('field_successorName')?.value;
+            const targetSystemId = document.getElementById('field_targetSystemId')?.value;
+            if (!successorName || !targetSystemId) {
+                showActionBuilderError('Please select a successor and target ERP.');
+                return;
+            }
+
+            const simNodes = getSimulatedNodes();
+            const simEdges = state.simulationState
+                ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
+                : [];
+
+            // Find lgaFunctionIds the target ERP serves
+            const targetFuncNodeIds = new Set();
+            simEdges.forEach(e => {
+                if (e.source === targetSystemId && e.relationship === 'REALIZES') {
+                    targetFuncNodeIds.add(e.target);
+                }
+            });
+
+            const affectedFunctionIds = [];
+            const removedPerFunction = {};
+
+            targetFuncNodeIds.forEach(fnNodeId => {
+                const fnNode = simNodes.find(n => n.id === fnNodeId);
+                if (!fnNode || !fnNode.lgaFunctionId) return;
+                const funcId = fnNode.lgaFunctionId;
+                if (affectedFunctionIds.includes(funcId)) return; // dedupe
+
+                affectedFunctionIds.push(funcId);
+
+                const cellSystemIds = getConsolidateCellSystemIds(funcId, successorName);
+                const removeIds = cellSystemIds.filter(id => {
+                    if (id === targetSystemId) return false;
+                    const checkbox = document.getElementById(`erp_remove_${funcId}_${id}`);
+                    return !checkbox || checkbox.checked; // Default: remove (checked)
+                });
+
+                if (removeIds.length > 0) {
+                    removedPerFunction[funcId] = removeIds;
+                }
+            });
+
+            action = { type: 'consolidate-erp', successorName, targetSystemId, affectedFunctionIds, removedPerFunction };
+
         } else if (type === 'procure-replacement') {
             const funcId = document.getElementById('field_funcId')?.value;
             const successorName = document.getElementById('field_successorName')?.value;
@@ -1350,10 +1681,12 @@ export function applyActionFromBuilder() {
 function getActionTypeName(type) {
     const names = {
         'consolidate': 'Consolidate Systems',
+        'consolidate-erp': 'Consolidate ERP',
         'decommission': 'Decommission System',
         'extend-contract': 'Extend Contract',
         'migrate-users': 'Migrate Users',
         'split-shared-service': 'Split Shared Service',
+        'disaggregate': 'Disaggregate County System',
         'procure-replacement': 'Procure Replacement'
     };
     return names[type] || type;
@@ -1386,6 +1719,18 @@ function getActionLabel(action) {
             const sys = state.simulationState.baselineNodes.find(n => n.id === action.systemId);
             const n = action.splits ? action.splits.length : '?';
             return `Split ${sys ? sys.label : action.systemId} \u2192 ${n} instances`;
+        }
+        case 'disaggregate': {
+            const sys = state.simulationState.baselineNodes.find(n => n.id === action.systemId);
+            const n = action.splits ? action.splits.length : '?';
+            return `Disaggregate ${sys ? sys.label : action.systemId} \u2192 ${n} instances`;
+        }
+        case 'consolidate-erp': {
+            const sys = getSimulatedITSystems().find(s => s.id === action.targetSystemId)
+                || state.simulationState.baselineNodes.find(n => n.id === action.targetSystemId);
+            const sysLabel = sys ? sys.label : action.targetSystemId;
+            const funcCount = action.affectedFunctionIds ? action.affectedFunctionIds.length : '?';
+            return `ERP Consolidation: keep ${sysLabel} in ${action.successorName} (${funcCount} functions)`;
         }
         case 'procure-replacement': {
             const funcEntry = state.lgaFunctionMap.get(action.functionId);
@@ -1489,6 +1834,10 @@ window._simActionBuilderBack = function() {
 };
 window._simUpdateConsolidateSystems = updateConsolidateSystems;
 window._simAddSplitRow = addSplitRow;
+window._simAddDisaggSplitRow = addDisaggSplitRow;
+window._simUpdateDisaggregateAdvisory = updateDisaggregateAdvisory;
+window._simUpdateErpSystems = updateErpSystems;
+window._simUpdateErpReviewTable = updateErpReviewTable;
 window._simToggleActionPanel = function() {
     _actionPanelCollapsed = !_actionPanelCollapsed;
     renderSimulationWorkspace();

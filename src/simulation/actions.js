@@ -4,10 +4,12 @@
  * Action object shapes (discriminated union on `type`):
  *
  * { type: 'consolidate', functionId: string, successorName: string, targetSystemId: string, removeSystemIds?: string[] }
+ * { type: 'consolidate-erp', successorName: string, targetSystemId: string, affectedFunctionIds: string[], removedPerFunction: Object }
  * { type: 'decommission', systemId: string }
  * { type: 'extend-contract', systemId: string, newEndYear: number, newEndMonth: number }
  * { type: 'migrate-users', fromSystemId: string, toSystemId: string, userCount: number }
  * { type: 'split-shared-service', systemId: string, splits: Array<{ successorName: string, label: string }> }
+ * { type: 'disaggregate', systemId: string, splits: Array<{ successorName: string, label: string }> }
  * { type: 'procure-replacement', functionId: string, successorName: string, newSystem: object, replacesSystemId: string }
  *
  * SimulationResult shape:
@@ -20,7 +22,7 @@
  * }
  */
 
-import { generateObligations } from './obligations.js';
+import { generateObligations, generateDisaggregationObligations } from './obligations.js';
 
 /**
  * @param {Array} baselineNodes
@@ -58,6 +60,18 @@ export function applyAllActions(baselineNodes, baselineEdges, actions, baselineA
             }
         }
 
+        // Generate disaggregation-specific obligations (the original system is removed,
+        // but this is not a consolidation — it's a partition obligation per split)
+        if (action.type === 'disaggregate') {
+            const originalSystem = beforeNodes.find(n => n.id === action.systemId);
+            if (originalSystem) {
+                const obligations = generateDisaggregationObligations(
+                    originalSystem, action, i, lgaFunctionMap
+                );
+                allObligations.push(...obligations);
+            }
+        }
+
         nodes = result.nodes;
         edges = result.edges;
         allWarnings.push(...result.warnings);
@@ -82,9 +96,13 @@ function getRemovedSystemIds(beforeNodes, afterNodes) {
 /**
  * Extracts the target system from the result nodes for a given action.
  * For consolidate: the targetSystemId. For procure-replacement: the newSystem.
+ * For consolidate-erp: the targetSystemId (anchor ERP).
  */
 function getTargetSystem(resultNodes, action) {
     if (action.type === 'consolidate' && action.targetSystemId) {
+        return resultNodes.find(n => n.id === action.targetSystemId) || null;
+    }
+    if (action.type === 'consolidate-erp' && action.targetSystemId) {
         return resultNodes.find(n => n.id === action.targetSystemId) || null;
     }
     if (action.type === 'procure-replacement' && action.newSystem) {
@@ -95,11 +113,13 @@ function getTargetSystem(resultNodes, action) {
 
 export function applyAction(nodes, edges, action) {
     switch (action.type) {
-        case 'consolidate': return applyConsolidate(nodes, edges, action);
-        case 'decommission': return applyDecommission(nodes, edges, action);
-        case 'extend-contract': return applyExtendContract(nodes, edges, action);
-        case 'migrate-users': return applyMigrateUsers(nodes, edges, action);
-        case 'split-shared-service': return applySplitSharedService(nodes, edges, action);
+        case 'consolidate':         return applyConsolidate(nodes, edges, action);
+        case 'consolidate-erp':     return applyConsolidateErp(nodes, edges, action);
+        case 'decommission':        return applyDecommission(nodes, edges, action);
+        case 'extend-contract':     return applyExtendContract(nodes, edges, action);
+        case 'migrate-users':       return applyMigrateUsers(nodes, edges, action);
+        case 'split-shared-service':return applySplitSharedService(nodes, edges, action);
+        case 'disaggregate':        return applyDisaggregate(nodes, edges, action);
         case 'procure-replacement': return applyProcureReplacement(nodes, edges, action);
         default:
             return { nodes, edges, warnings: [`Unknown action type: ${action.type}`] };
@@ -324,6 +344,147 @@ export function applySplitSharedService(nodes, edges, action) {
     edges = [...edges, ...newEdges];
 
     return { nodes, edges, warnings };
+}
+
+export function applyDisaggregate(nodes, edges, action) {
+    const warnings = [];
+    const { systemId, splits } = action;
+
+    const sysIdx = nodes.findIndex(n => n.id === systemId && n.type === 'ITSystem');
+    if (sysIdx === -1) {
+        return { nodes, edges, warnings: [`Disaggregate: system ${systemId} not found`] };
+    }
+
+    if (!splits || splits.length < 2) {
+        return { nodes, edges, warnings: ['Disaggregate: at least 2 splits required'] };
+    }
+
+    const original = nodes[sysIdx];
+
+    // --- Monolithic data warning ---
+    if (original.dataPartitioning === 'Monolithic') {
+        warnings.push(
+            `Disaggregate: ${original.label} has monolithic data partitioning — ` +
+            `splitting the contract does not split the data. ` +
+            `A data extraction and partitioning strategy is required before this system can be disaggregated.`
+        );
+    }
+
+    // --- Low portability warning ---
+    if (original.portability === 'Low') {
+        warnings.push(
+            `Disaggregate: ${original.label} has low data portability — ` +
+            `vendor-specific data formats may require specialist ETL tooling for partition.`
+        );
+    }
+
+    // --- ERP warning ---
+    if (original.isERP) {
+        warnings.push(
+            `Disaggregate: ${original.label} is an ERP system — ` +
+            `disaggregation affects all functions this ERP serves. ` +
+            `Consider whether an ERP-level consolidation decision should be made first.`
+        );
+    }
+
+    // Collect REALIZES edges from original
+    const originalEdges = edges.filter(e => e.source === systemId && e.relationship === 'REALIZES');
+
+    // Create new split systems with equal allocation (same as split-shared-service)
+    const newSystems = splits.map((split, index) => {
+        const newId = `${systemId}-disagg-${index}`;
+        const newSys = {
+            ...original,
+            id: newId,
+            label: split.label,
+            sharedWith: [],
+            targetAuthorities: [split.successorName],
+            _disaggregatedFrom: systemId
+        };
+
+        // Equal user allocation — remainder to last split
+        if (typeof original.users === 'number') {
+            if (index < splits.length - 1) {
+                newSys.users = Math.round(original.users / splits.length);
+            } else {
+                const perSplit = Math.round(original.users / splits.length);
+                newSys.users = original.users - perSplit * (splits.length - 1);
+            }
+        }
+
+        // Equal cost allocation — remainder to last split
+        if (typeof original.annualCost === 'number') {
+            if (index < splits.length - 1) {
+                newSys.annualCost = Math.round(original.annualCost / splits.length);
+            } else {
+                const perSplit = Math.round(original.annualCost / splits.length);
+                newSys.annualCost = original.annualCost - perSplit * (splits.length - 1);
+            }
+        }
+
+        return newSys;
+    });
+
+    // Create new edges for each new system (copy all REALIZES from original)
+    const newEdges = [];
+    newSystems.forEach(newSys => {
+        originalEdges.forEach(origEdge => {
+            newEdges.push({ source: newSys.id, target: origEdge.target, relationship: 'REALIZES' });
+        });
+    });
+
+    // Remove original system and its edges
+    nodes = nodes.filter(n => n.id !== systemId);
+    edges = edges.filter(e => e.source !== systemId);
+
+    // Add new systems and edges
+    nodes = [...nodes, ...newSystems];
+    edges = [...edges, ...newEdges];
+
+    return { nodes, edges, warnings };
+}
+
+export function applyConsolidateErp(nodes, edges, action) {
+    const warnings = [];
+    const { successorName, targetSystemId, affectedFunctionIds, removedPerFunction } = action;
+
+    // Validate target system exists
+    const targetIdx = nodes.findIndex(n => n.id === targetSystemId && n.type === 'ITSystem');
+    if (targetIdx === -1) {
+        return { nodes, edges, warnings: [`ConsolidateERP: target system ${targetSystemId} not found`] };
+    }
+
+    const targetSys = nodes[targetIdx];
+    if (!targetSys.isERP) {
+        warnings.push(`ConsolidateERP: ${targetSys.label} is not flagged as an ERP — proceeding anyway`);
+    }
+
+    if (!affectedFunctionIds || affectedFunctionIds.length === 0) {
+        return { nodes, edges, warnings: [...warnings, 'ConsolidateERP: no affected functions specified'] };
+    }
+
+    // Apply consolidation for each affected function
+    let currentNodes = nodes;
+    let currentEdges = edges;
+
+    for (const funcId of affectedFunctionIds) {
+        const removeIds = (removedPerFunction && removedPerFunction[funcId]) ? removedPerFunction[funcId] : [];
+        if (removeIds.length === 0) continue;
+
+        const result = applyConsolidate(currentNodes, currentEdges, {
+            type: 'consolidate',
+            functionId: funcId,
+            successorName,
+            targetSystemId,
+            removeSystemIds: removeIds
+        });
+
+        currentNodes = result.nodes;
+        currentEdges = result.edges;
+        warnings.push(...result.warnings);
+    }
+
+    return { nodes: currentNodes, edges: currentEdges, warnings };
 }
 
 export function applyProcureReplacement(nodes, edges, action) {
