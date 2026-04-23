@@ -31,6 +31,8 @@ import {
 } from './features/simulation-panel.js';
 import { openDecisionPanel } from './features/decision-panel.js';
 import { getDecisionKey } from './simulation/decisions.js';
+import { exportScenario, importScenario } from './features/scenario-manager.js';
+import { exportReport } from './features/report-export.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -205,6 +207,19 @@ fileInput.addEventListener('change', async (e) => {
         const text = await file.text();
         try {
             const json = JSON.parse(text);
+
+            // Detect scenario files (have type 'lgr-scenario' and decisions array)
+            if (json.type === 'lgr-scenario' && Array.isArray(json.decisions)) {
+                state.pendingScenario = json;
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-3';
+                const span = document.createElement('span');
+                span.textContent = `${file.name} (scenario — ${json.decisions.length} decision${json.decisions.length !== 1 ? 's' : ''})`;
+                span.className = 'text-[#505a5f] italic';
+                li.appendChild(span);
+                listUl.appendChild(li);
+                continue;
+            }
 
             // Detect transition config files (have successors but no nodes)
             if (json.successors && Array.isArray(json.successors) && !json.nodes) {
@@ -842,6 +857,98 @@ function updatePersonaBanner() {
         btnSim.textContent = state.simulationState ? 'Exit Simulation' : 'Simulate';
     } else {
         if (btnSim) btnSim.classList.add('hidden');
+    }
+
+    // --- Scenario management buttons (simulation mode only) ---
+    let btnSaveScenario = document.getElementById('btnSaveScenario');
+    let btnLoadScenario = document.getElementById('btnLoadScenario');
+    let btnExportReport = document.getElementById('btnExportReport');
+
+    if (state.simulationState) {
+        // Save Scenario button
+        if (!btnSaveScenario) {
+            btnSaveScenario = document.createElement('button');
+            btnSaveScenario.id = 'btnSaveScenario';
+            btnSaveScenario.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100';
+            btnSaveScenario.textContent = 'Save Scenario';
+            btnSaveScenario.addEventListener('click', () => exportScenario());
+            const btnExport = document.getElementById('btnExportHTML');
+            if (btnExport && btnExport.parentNode) {
+                btnExport.parentNode.insertBefore(btnSaveScenario, btnExport);
+            }
+        }
+        btnSaveScenario.classList.remove('hidden');
+
+        // Load Scenario button + hidden file input
+        if (!btnLoadScenario) {
+            btnLoadScenario = document.createElement('button');
+            btnLoadScenario.id = 'btnLoadScenario';
+            btnLoadScenario.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100';
+            btnLoadScenario.textContent = 'Load Scenario';
+
+            const scenarioFileInput = document.createElement('input');
+            scenarioFileInput.type = 'file';
+            scenarioFileInput.accept = '.json';
+            scenarioFileInput.style.display = 'none';
+            scenarioFileInput.id = 'scenarioFileInput';
+
+            scenarioFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const text = await file.text();
+                    const result = importScenario(text, {
+                        lgaFunctionMap: state.lgaFunctionMap,
+                        transitionStructure: state.transitionStructure
+                    });
+                    if (result.warnings.length > 0) {
+                        const proceed = confirm(
+                            `Scenario loaded with ${result.warnings.length} warning(s):\n\n` +
+                            result.warnings.slice(0, 5).join('\n') +
+                            (result.warnings.length > 5 ? `\n...and ${result.warnings.length - 5} more` : '') +
+                            '\n\nProceed anyway?'
+                        );
+                        if (!proceed) {
+                            scenarioFileInput.value = '';
+                            return;
+                        }
+                    }
+                    state.simulationState.decisions = result.decisions;
+                    recomputeSimulation();
+                } catch (err) {
+                    alert(`Failed to load scenario: ${err.message}`);
+                }
+                scenarioFileInput.value = '';
+            });
+
+            document.body.appendChild(scenarioFileInput);
+            btnLoadScenario.addEventListener('click', () => scenarioFileInput.click());
+
+            const btnExport = document.getElementById('btnExportHTML');
+            if (btnExport && btnExport.parentNode) {
+                btnExport.parentNode.insertBefore(btnLoadScenario, btnExport);
+            }
+        }
+        btnLoadScenario.classList.remove('hidden');
+
+        // Export Report button
+        if (!btnExportReport) {
+            btnExportReport = document.createElement('button');
+            btnExportReport.id = 'btnExportReport';
+            btnExportReport.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100';
+            btnExportReport.textContent = 'Export Report';
+            btnExportReport.addEventListener('click', () => exportReport());
+            const btnExport = document.getElementById('btnExportHTML');
+            if (btnExport && btnExport.parentNode) {
+                btnExport.parentNode.insertBefore(btnExportReport, btnExport);
+            }
+        }
+        btnExportReport.classList.remove('hidden');
+    } else {
+        // Hide all scenario buttons when not in simulation
+        if (btnSaveScenario) btnSaveScenario.classList.add('hidden');
+        if (btnLoadScenario) btnLoadScenario.classList.add('hidden');
+        if (btnExportReport) btnExportReport.classList.add('hidden');
     }
 }
 

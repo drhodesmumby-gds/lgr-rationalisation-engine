@@ -11,6 +11,7 @@ import { renderSankeyDiagram, destroySankeyDiagram, PREDECESSOR_COLOURS } from '
 // NOTE: openDecisionPanel is NOT imported here to avoid circular dependency
 // (decision-panel.js imports recomputeSimulation from this file).
 // Instead we call window._simOpenDecision() which is wired up by decision-panel.js.
+import { importScenario } from './scenario-manager.js';
 
 // ===================================================================
 // SIMULATION ENTRY / EXIT
@@ -30,6 +31,22 @@ export function enterSimulation() {
         lastImpact: null
     };
     renderDashboard();
+
+    // Auto-load pending scenario if one was uploaded at Stage 1
+    if (state.pendingScenario) {
+        try {
+            const result = importScenario(JSON.stringify(state.pendingScenario), {
+                lgaFunctionMap: state.lgaFunctionMap,
+                transitionStructure: state.transitionStructure
+            });
+            state.simulationState.decisions = result.decisions;
+            state.pendingScenario = null;
+            recomputeSimulation();
+        } catch (e) {
+            console.warn('Failed to auto-load pending scenario:', e.message);
+            state.pendingScenario = null;
+        }
+    }
 }
 
 export function exitSimulation() {
