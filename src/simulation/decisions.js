@@ -24,6 +24,8 @@
  * // Axis 2: Operating Model Boundary
  * @property {'none'|'disaggregate'|'maintain-shared'|'establish-shared'} boundaryChoice
  * @property {Array<{successorName: string, label: string}>} disaggregationSplits
+ * @property {string[]} sharedWithSuccessors     -- successor names sharing the service (establish-shared primary)
+ * @property {string|null} sharedServiceOrigin   -- decision key of primary decision (set on propagated decisions)
  *
  * // Contract handling (explicit extend decisions for defer)
  * @property {Array<{systemId: string, newEndYear: number, newEndMonth: number}>} contractExtensions
@@ -55,6 +57,8 @@ export function getDecisionKey(functionId, successorName) {
  * @param {Object|null} [params.procuredSystem]
  * @param {'none'|'disaggregate'|'maintain-shared'|'establish-shared'} [params.boundaryChoice]
  * @param {Array<{successorName: string, label: string}>} [params.disaggregationSplits]
+ * @param {string[]} [params.sharedWithSuccessors]   -- successor names sharing the service
+ * @param {string|null} [params.sharedServiceOrigin] -- decision key of primary decision (propagated only)
  * @param {Array<{systemId: string, newEndYear: number, newEndMonth: number}>} [params.contractExtensions]
  * @returns {FunctionDecision}
  */
@@ -66,6 +70,8 @@ export function createDecision({
     procuredSystem,
     boundaryChoice,
     disaggregationSplits,
+    sharedWithSuccessors,
+    sharedServiceOrigin,
     contractExtensions
 }) {
     const slug = successorName.replace(/\s+/g, '-').toLowerCase();
@@ -79,6 +85,8 @@ export function createDecision({
         procuredSystem: procuredSystem || null,
         boundaryChoice: boundaryChoice || 'none',
         disaggregationSplits: disaggregationSplits || [],
+        sharedWithSuccessors: sharedWithSuccessors || [],
+        sharedServiceOrigin: sharedServiceOrigin || null,
         contractExtensions: contractExtensions || []
     };
 }
@@ -138,6 +146,20 @@ export function validateDecision(decision) {
 
     if (!Array.isArray(decision.disaggregationSplits)) {
         errors.push('disaggregationSplits must be an array');
+    }
+
+    if (decision.sharedWithSuccessors !== undefined && decision.sharedWithSuccessors !== null) {
+        if (!Array.isArray(decision.sharedWithSuccessors)) {
+            errors.push('sharedWithSuccessors must be an array of strings');
+        } else if (decision.sharedWithSuccessors.some(s => typeof s !== 'string')) {
+            errors.push('sharedWithSuccessors must contain only strings');
+        }
+    }
+
+    if (decision.sharedServiceOrigin !== undefined && decision.sharedServiceOrigin !== null) {
+        if (typeof decision.sharedServiceOrigin !== 'string') {
+            errors.push('sharedServiceOrigin must be a string or null');
+        }
     }
 
     if (!Array.isArray(decision.contractExtensions)) {

@@ -648,4 +648,232 @@ describe('Decision Projector — Property Tests', () => {
         );
     });
 
+    it('Property: establish-shared-service creates REALIZES edges and decommissions existing systems', () => {
+        // Successor C has System A + System B for Function F.
+        // Successor D has System E + System F_ for Function F.
+        // Primary decision: choose System A for (F, C), establish-shared with D.
+        // Propagated decision: choose System A for (F, D) with sharedServiceOrigin.
+        // Expected:
+        //   - System A has REALIZES edges to BOTH C's and D's function nodes for F
+        //   - System B removed (C's consolidate)
+        //   - Systems E and F_ removed (D's propagated consolidate)
+        //   - System A's sharedWith includes 'Successor-D', targetAuthorities includes 'Successor-D'
+        fc.assert(
+            fc.property(
+                arbFunction.filter(f => f.lgaFunctionId === '1'),
+                arbFunction.filter(f => f.lgaFunctionId === '1'),
+                arbSystem,
+                arbSystem,
+                arbSystem,
+                arbSystem,
+                (fnC, fnD, sysA, sysB, sysE, sysF) => {
+                    // Ensure all IDs are unique
+                    const ids = [fnC.id, fnD.id, sysA.id, sysB.id, sysE.id, sysF.id];
+                    if (new Set(ids).size !== ids.length) return;
+                    if (fnC.id === fnD.id) return;
+
+                    const successorC = 'Successor-C';
+                    const successorD = 'Successor-D';
+
+                    // Build baseline
+                    const nodes = [sysA, sysB, sysE, sysF, fnC, fnD];
+                    const edges = [
+                        { source: sysA.id, target: fnC.id, relationship: 'REALIZES' },
+                        { source: sysB.id, target: fnC.id, relationship: 'REALIZES' },
+                        { source: sysE.id, target: fnD.id, relationship: 'REALIZES' },
+                        { source: sysF.id, target: fnD.id, relationship: 'REALIZES' }
+                    ];
+
+                    const allocation = new Map();
+                    const funcMapC = new Map();
+                    funcMapC.set(fnC.lgaFunctionId, [
+                        { system: sysA, sourceCouncil: 'Council-A', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false },
+                        { system: sysB, sourceCouncil: 'Council-B', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+                    ]);
+                    allocation.set(successorC, funcMapC);
+
+                    const funcMapD = new Map();
+                    funcMapD.set(fnD.lgaFunctionId, [
+                        { system: sysE, sourceCouncil: 'Council-E', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false },
+                        { system: sysF, sourceCouncil: 'Council-F', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+                    ]);
+                    allocation.set(successorD, funcMapD);
+
+                    const primaryKey = getDecisionKey(fnC.lgaFunctionId, successorC);
+                    const propagatedKey = getDecisionKey(fnD.lgaFunctionId, successorD);
+
+                    const decisions = new Map();
+
+                    // Primary: choose sysA for (F, C), establish-shared with D
+                    decisions.set(primaryKey, {
+                        id: 'dec-primary',
+                        functionId: fnC.lgaFunctionId,
+                        successorName: successorC,
+                        timestamp: new Date().toISOString(),
+                        systemChoice: 'choose',
+                        retainedSystemIds: [sysA.id],
+                        procuredSystem: null,
+                        boundaryChoice: 'establish-shared',
+                        disaggregationSplits: [],
+                        sharedWithSuccessors: [successorD],
+                        sharedServiceOrigin: null,
+                        contractExtensions: []
+                    });
+
+                    // Propagated: choose sysA for (F, D), with sharedServiceOrigin
+                    decisions.set(propagatedKey, {
+                        id: 'dec-propagated',
+                        functionId: fnD.lgaFunctionId,
+                        successorName: successorD,
+                        timestamp: new Date().toISOString(),
+                        systemChoice: 'choose',
+                        retainedSystemIds: [sysA.id],
+                        procuredSystem: null,
+                        boundaryChoice: 'establish-shared',
+                        disaggregationSplits: [],
+                        sharedWithSuccessors: [],
+                        sharedServiceOrigin: primaryKey,
+                        contractExtensions: []
+                    });
+
+                    const { actions } = projectDecisions(decisions, nodes, edges, allocation, null);
+                    const result = applyAllActions(nodes, edges, actions);
+
+                    // System A must survive
+                    expect(result.nodes.some(n => n.id === sysA.id)).toBe(true);
+
+                    // System B removed (C's consolidate)
+                    expect(result.nodes.some(n => n.id === sysB.id)).toBe(false);
+
+                    // Systems E and F_ removed (D's propagated consolidate)
+                    expect(result.nodes.some(n => n.id === sysE.id)).toBe(false);
+                    expect(result.nodes.some(n => n.id === sysF.id)).toBe(false);
+
+                    // System A has REALIZES edge to C's function node (fnC)
+                    expect(result.edges.some(e => e.source === sysA.id && e.target === fnC.id && e.relationship === 'REALIZES')).toBe(true);
+
+                    // System A has REALIZES edge to D's function node (fnD) — via establish-shared-service
+                    expect(result.edges.some(e => e.source === sysA.id && e.target === fnD.id && e.relationship === 'REALIZES')).toBe(true);
+
+                    // Establish-shared-service action must exist and come before consolidate actions
+                    const establishIdx = actions.findIndex(a => a.type === 'establish-shared-service');
+                    const consolidateIdx = actions.findIndex(a => a.type === 'consolidate');
+                    if (establishIdx !== -1 && consolidateIdx !== -1) {
+                        expect(establishIdx).toBeLessThan(consolidateIdx);
+                    }
+                }
+            ),
+            { numRuns: 30 }
+        );
+    });
+
+    it('Property: establish-shared with ERP preserves REALIZES edges for other functions', () => {
+        // System A (ERP) serves F1 and F2 in Successor C. Successor D has System E for F1.
+        // Primary decision: choose A for (F1, C), establish-shared with D.
+        // Propagated decision: choose A for (F1, D) with sharedServiceOrigin.
+        // Expected:
+        //   A has REALIZES edges to D's function nodes for F1, but NOT F2.
+        //   A's REALIZES edges to C's F2 nodes are preserved.
+        fc.assert(
+            fc.property(
+                arbFunction.filter(f => f.lgaFunctionId === '1'),
+                arbFunction.filter(f => f.lgaFunctionId === '1'),
+                arbFunction.filter(f => f.lgaFunctionId === '2'),
+                arbErpSystem,
+                arbSystem,
+                (fnC1, fnD1, fnC2, sysA, sysE) => {
+                    const ids = [fnC1.id, fnD1.id, fnC2.id, sysA.id, sysE.id];
+                    if (new Set(ids).size !== ids.length) return;
+                    if (fnC1.id === fnD1.id || fnC1.id === fnC2.id) return;
+
+                    const successorC = 'Successor-C';
+                    const successorD = 'Successor-D';
+
+                    const nodes = [sysA, sysE, fnC1, fnD1, fnC2];
+                    const edges = [
+                        { source: sysA.id, target: fnC1.id, relationship: 'REALIZES' },
+                        { source: sysA.id, target: fnC2.id, relationship: 'REALIZES' },
+                        { source: sysE.id, target: fnD1.id, relationship: 'REALIZES' }
+                    ];
+
+                    const allocation = new Map();
+                    const funcMapC = new Map();
+                    funcMapC.set('1', [
+                        { system: sysA, sourceCouncil: 'Council-A', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+                    ]);
+                    funcMapC.set('2', [
+                        { system: sysA, sourceCouncil: 'Council-A', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+                    ]);
+                    allocation.set(successorC, funcMapC);
+
+                    const funcMapD = new Map();
+                    funcMapD.set('1', [
+                        { system: sysE, sourceCouncil: 'Council-E', allocationType: 'full', needsAllocationReview: false, isDisaggregation: false }
+                    ]);
+                    allocation.set(successorD, funcMapD);
+
+                    const primaryKey = getDecisionKey('1', successorC);
+                    const propagatedKey = getDecisionKey('1', successorD);
+
+                    const decisions = new Map();
+
+                    // Primary: choose sysA for (F1, C), establish-shared with D
+                    decisions.set(primaryKey, {
+                        id: 'dec-erp-primary',
+                        functionId: '1',
+                        successorName: successorC,
+                        timestamp: new Date().toISOString(),
+                        systemChoice: 'choose',
+                        retainedSystemIds: [sysA.id],
+                        procuredSystem: null,
+                        boundaryChoice: 'establish-shared',
+                        disaggregationSplits: [],
+                        sharedWithSuccessors: [successorD],
+                        sharedServiceOrigin: null,
+                        contractExtensions: []
+                    });
+
+                    // Propagated: choose sysA for (F1, D) with sharedServiceOrigin
+                    decisions.set(propagatedKey, {
+                        id: 'dec-erp-propagated',
+                        functionId: '1',
+                        successorName: successorD,
+                        timestamp: new Date().toISOString(),
+                        systemChoice: 'choose',
+                        retainedSystemIds: [sysA.id],
+                        procuredSystem: null,
+                        boundaryChoice: 'establish-shared',
+                        disaggregationSplits: [],
+                        sharedWithSuccessors: [],
+                        sharedServiceOrigin: primaryKey,
+                        contractExtensions: []
+                    });
+
+                    const { actions } = projectDecisions(decisions, nodes, edges, allocation, null);
+                    const result = applyAllActions(nodes, edges, actions);
+
+                    // System A must survive
+                    expect(result.nodes.some(n => n.id === sysA.id)).toBe(true);
+
+                    // System E must be removed (D's propagated consolidate)
+                    expect(result.nodes.some(n => n.id === sysE.id)).toBe(false);
+
+                    // A's REALIZES edge to C's F1 node (fnC1) must be preserved
+                    expect(result.edges.some(e => e.source === sysA.id && e.target === fnC1.id && e.relationship === 'REALIZES')).toBe(true);
+
+                    // A's REALIZES edge to C's F2 node (fnC2) must be preserved (ERP still serves F2)
+                    expect(result.edges.some(e => e.source === sysA.id && e.target === fnC2.id && e.relationship === 'REALIZES')).toBe(true);
+
+                    // A must have REALIZES edge to D's F1 node (fnD1) — via establish-shared-service
+                    expect(result.edges.some(e => e.source === sysA.id && e.target === fnD1.id && e.relationship === 'REALIZES')).toBe(true);
+
+                    // A must NOT have REALIZES edge to D's F2 nodes — establish-shared is per-function
+                    // (fnD1 is for lgaFunctionId='1', fnC2 is for lgaFunctionId='2', and fnD has no F2 node)
+                    // This is structurally guaranteed by the test setup since there's no D F2 node.
+                }
+            ),
+            { numRuns: 30 }
+        );
+    });
+
 });

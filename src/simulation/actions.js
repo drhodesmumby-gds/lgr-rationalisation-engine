@@ -11,6 +11,7 @@
  * { type: 'split-shared-service', systemId: string, splits: Array<{ successorName: string, label: string }> }
  * { type: 'disaggregate', systemId: string, splits: Array<{ successorName: string, label: string }> }
  * { type: 'procure-replacement', functionId: string, successorName: string, newSystem: object, replacesSystemId: string }
+ * { type: 'establish-shared-service', systemId: string, functionId: string, sharedSuccessorFunctionNodeIds: Object<string, string[]> }
  *
  * SimulationResult shape:
  * {
@@ -118,14 +119,15 @@ function getTargetSystem(resultNodes, action) {
 
 export function applyAction(nodes, edges, action) {
     switch (action.type) {
-        case 'consolidate':         return applyConsolidate(nodes, edges, action);
-        case 'consolidate-erp':     return applyConsolidateErp(nodes, edges, action);
-        case 'decommission':        return applyDecommission(nodes, edges, action);
-        case 'extend-contract':     return applyExtendContract(nodes, edges, action);
-        case 'migrate-users':       return applyMigrateUsers(nodes, edges, action);
-        case 'split-shared-service':return applySplitSharedService(nodes, edges, action);
-        case 'disaggregate':        return applyDisaggregate(nodes, edges, action);
-        case 'procure-replacement': return applyProcureReplacement(nodes, edges, action);
+        case 'consolidate':              return applyConsolidate(nodes, edges, action);
+        case 'consolidate-erp':          return applyConsolidateErp(nodes, edges, action);
+        case 'decommission':             return applyDecommission(nodes, edges, action);
+        case 'extend-contract':          return applyExtendContract(nodes, edges, action);
+        case 'migrate-users':            return applyMigrateUsers(nodes, edges, action);
+        case 'split-shared-service':     return applySplitSharedService(nodes, edges, action);
+        case 'disaggregate':             return applyDisaggregate(nodes, edges, action);
+        case 'procure-replacement':      return applyProcureReplacement(nodes, edges, action);
+        case 'establish-shared-service': return applyEstablishSharedService(nodes, edges, action);
         default:
             return { nodes, edges, warnings: [`Unknown action type: ${action.type}`] };
     }
@@ -529,6 +531,78 @@ export function applyConsolidateErp(nodes, edges, action) {
     return { nodes: currentNodes, edges: currentEdges, warnings };
 }
 
+/**
+ * Applies an 'establish-shared-service' action.
+ *
+ * Updates the system's sharedWith and targetAuthorities metadata to include
+ * each shared successor, then creates REALIZES edges from the system to each
+ * listed function node ID in the shared successors' cells.
+ *
+ * This action must run BEFORE the propagated decisions' consolidate actions
+ * so that the shared system already has REALIZES edges to the shared successors'
+ * function nodes when those consolidates run.
+ *
+ * @param {Array} nodes
+ * @param {Array} edges
+ * @param {{ type: 'establish-shared-service', systemId: string, functionId: string, sharedSuccessorFunctionNodeIds: Object<string, string[]> }} action
+ */
+export function applyEstablishSharedService(nodes, edges, action) {
+    const warnings = [];
+    const { systemId, sharedSuccessorFunctionNodeIds } = action;
+
+    const sysIdx = nodes.findIndex(n => n.id === systemId && n.type === 'ITSystem');
+    if (sysIdx === -1) {
+        return { nodes, edges, warnings: [`EstablishSharedService: system ${systemId} not found`] };
+    }
+
+    if (!sharedSuccessorFunctionNodeIds || Object.keys(sharedSuccessorFunctionNodeIds).length === 0) {
+        return { nodes, edges, warnings: ['EstablishSharedService: no shared successor function node IDs provided'] };
+    }
+
+    const original = nodes[sysIdx];
+
+    // Build updated sharedWith (deduplicate with existing)
+    const existingSharedWith = Array.isArray(original.sharedWith) ? original.sharedWith : [];
+    const newSharedWithSet = new Set(existingSharedWith);
+    Object.keys(sharedSuccessorFunctionNodeIds).forEach(sn => newSharedWithSet.add(sn));
+
+    // Build updated targetAuthorities (deduplicate with existing)
+    const existingTargetAuth = Array.isArray(original.targetAuthorities) ? original.targetAuthorities : [];
+    const newTargetAuthSet = new Set(existingTargetAuth);
+    Object.keys(sharedSuccessorFunctionNodeIds).forEach(sn => newTargetAuthSet.add(sn));
+
+    // Clone and update the system node
+    const updatedSystem = {
+        ...original,
+        sharedWith: [...newSharedWithSet],
+        targetAuthorities: [...newTargetAuthSet]
+    };
+    nodes = [...nodes.slice(0, sysIdx), updatedSystem, ...nodes.slice(sysIdx + 1)];
+
+    // Create REALIZES edges to each shared successor's function nodes (skip if already exists)
+    const existingEdgeSet = new Set(
+        edges.filter(e => e.source === systemId && e.relationship === 'REALIZES').map(e => e.target)
+    );
+
+    const newEdges = [];
+    Object.entries(sharedSuccessorFunctionNodeIds).forEach(([_successorName, fnNodeIds]) => {
+        fnNodeIds.forEach(fnNodeId => {
+            if (!existingEdgeSet.has(fnNodeId)) {
+                newEdges.push({ source: systemId, target: fnNodeId, relationship: 'REALIZES' });
+                existingEdgeSet.add(fnNodeId); // prevent duplicate within this action
+            }
+        });
+    });
+
+    edges = [...edges, ...newEdges];
+
+    if (newEdges.length === 0) {
+        warnings.push(`EstablishSharedService: no new REALIZES edges created for system ${systemId} (all already present)`);
+    }
+
+    return { nodes, edges, warnings };
+}
+
 export function applyProcureReplacement(nodes, edges, action) {
     const warnings = [];
     const { functionId, newSystem, replacesSystemId } = action;
@@ -547,8 +621,11 @@ export function applyProcureReplacement(nodes, edges, action) {
     const sysNode = { ...newSystem, type: 'ITSystem' };
     nodes = [...nodes, sysNode];
 
-    // Create REALIZES edges to function nodes
-    const funcNodes = nodes.filter(n => n.type === 'Function' && n.lgaFunctionId === functionId);
+    // Create REALIZES edges to function nodes (scoped to successor when available)
+    const scopeIds = action.scopeFunctionNodeIds ? new Set(action.scopeFunctionNodeIds) : null;
+    const funcNodes = scopeIds
+        ? nodes.filter(n => scopeIds.has(n.id))
+        : nodes.filter(n => n.type === 'Function' && n.lgaFunctionId === functionId);
     const newEdges = funcNodes.map(fn => ({
         source: sysNode.id,
         target: fn.id,

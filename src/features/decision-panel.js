@@ -93,6 +93,12 @@ function renderDecisionPanelContent(functionId, successorName) {
     const decisions = state.simulationState.decisions;
     const existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
 
+    // Check if this is a propagated shared-service decision — show read-only view if so
+    if (existingDecision && existingDecision.sharedServiceOrigin) {
+        content.innerHTML = renderPropagatedSharedServiceView(existingDecision, funcLabel, successorName, tierBadge);
+        return;
+    }
+
     // Build the header
     const headerHtml = `
         <div class="mb-6">
@@ -129,6 +135,71 @@ function renderDecisionPanelContent(functionId, successorName) {
     if (existingDecision) {
         prefillDecision(existingDecision, systems, successorName);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Propagated shared-service read-only view
+// ---------------------------------------------------------------------------
+
+/**
+ * Renders a read-only view for a propagated shared-service decision.
+ * Shows the shared system, the origin successor, and options to navigate to the
+ * primary decision or unlink this propagated decision.
+ *
+ * @param {Object} decision  The propagated FunctionDecision
+ * @param {string} funcLabel  Human-readable function label
+ * @param {string} successorName  This successor's name
+ * @param {string} tierBadge  HTML for tier badge
+ * @returns {string} HTML
+ */
+function renderPropagatedSharedServiceView(decision, funcLabel, successorName, tierBadge) {
+    const origin = decision.sharedServiceOrigin || '';
+    // Parse the origin key back to successor name — format is 'functionId::successorName'
+    const originParts = origin.split('::');
+    const originSuccessorName = originParts.length >= 2 ? originParts.slice(1).join('::') : origin;
+
+    // Find the shared system label
+    const retainedId = decision.retainedSystemIds && decision.retainedSystemIds.length > 0
+        ? decision.retainedSystemIds[0] : null;
+    const baselineNodes = state.simulationState ? state.simulationState.baselineNodes : null;
+    const sharedSystem = retainedId && baselineNodes
+        ? baselineNodes.find(n => n.id === retainedId)
+        : null;
+    const systemLabel = sharedSystem ? sharedSystem.label : (retainedId || 'shared system');
+    const systemVendor = sharedSystem && sharedSystem.vendor ? ` — ${sharedSystem.vendor}` : '';
+
+    return `
+        <div class="mb-6">
+            <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Shared Service Decision</p>
+            <h2 id="decisionPanelTitle" class="text-2xl font-bold mb-1">${escHtml(funcLabel)}</h2>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-sm font-bold text-gray-700">Successor: ${escHtml(successorName)}</span>
+                ${tierBadge}
+            </div>
+        </div>
+
+        <div class="p-4 bg-blue-50 border-l-4 border-l-[#1d70b8] mb-4">
+            <p class="text-sm font-bold text-[#1d70b8] mb-1">This function is served by a shared service</p>
+            <p class="text-sm text-gray-700 mb-2">
+                <strong>${escHtml(systemLabel)}</strong>${escHtml(systemVendor)} has been established as a shared service
+                by <strong>${escHtml(originSuccessorName)}</strong>.
+                This successor authority participates in that shared arrangement.
+            </p>
+            <div class="flex gap-2 flex-wrap mt-3">
+                <button type="button" class="gds-btn text-sm px-3 py-1.5"
+                        onclick="window._simOpenDecision(${JSON.stringify(decision.functionId)}, ${JSON.stringify(originSuccessorName)})">
+                    Edit shared arrangement in ${escHtml(originSuccessorName)}
+                </button>
+                <button type="button"
+                        class="text-sm px-3 py-1.5 border border-[#d4351c] text-[#d4351c] font-bold hover:bg-red-50"
+                        onclick="window._simUnlinkSharedService(${JSON.stringify(decision.functionId)}, ${JSON.stringify(successorName)})">
+                    Remove from shared service
+                </button>
+            </div>
+        </div>
+
+        <p class="text-xs text-gray-500">To change which system serves this function in ${escHtml(successorName)}, first remove it from the shared service above, then make an independent decision.</p>
+    `;
 }
 
 // ---------------------------------------------------------------------------
@@ -534,10 +605,52 @@ export function renderAxisTwo(systems, successorName, existingDecision) {
                                ${existingBoundary === 'establish-shared' ? 'checked' : ''}>
                         <span><strong>Establish shared service</strong> — create new cross-boundary arrangement</span>
                     </label>
+                    <div id="axis2EstablishSharedDetail" class="ml-6 mt-2 ${existingBoundary === 'establish-shared' ? '' : 'hidden'}">
+                        <p class="text-xs text-gray-600 mb-2">Select which other successors will share this service. The chosen system will be adopted as the decided system for each selected successor, decommissioning their existing systems:</p>
+                        <fieldset>
+                            <legend class="text-xs font-bold text-gray-700 mb-2">Successors to include in shared service:</legend>
+                            <div id="establishSharedSuccessorsContainer" class="space-y-1">
+                                ${renderEstablishSharedSuccessorCheckboxes(successorName, existingDecision)}
+                            </div>
+                        </fieldset>
+                    </div>
                 </div>
             </fieldset>
         </div>
     `;
+}
+
+/**
+ * Renders one checkbox per other successor in the transition structure.
+ * Pre-fills from existingDecision.sharedWithSuccessors if editing.
+ *
+ * @param {string} currentSuccessorName
+ * @param {Object|null} existingDecision
+ * @returns {string} HTML
+ */
+function renderEstablishSharedSuccessorCheckboxes(currentSuccessorName, existingDecision) {
+    const successors = state.transitionStructure ? state.transitionStructure.successors : [];
+    const otherSuccessors = successors.filter(s => s.name !== currentSuccessorName);
+
+    if (otherSuccessors.length === 0) {
+        return '<p class="text-xs text-gray-500 italic">No other successor authorities available.</p>';
+    }
+
+    const preChecked = new Set(
+        (existingDecision && existingDecision.sharedWithSuccessors) ? existingDecision.sharedWithSuccessors : []
+    );
+
+    return otherSuccessors.map(s => {
+        const safeId = `shareWith_${escHtml(s.name.replace(/\s+/g, '_'))}`;
+        const checked = preChecked.has(s.name) ? 'checked' : '';
+        return `
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="${safeId}" name="establishSharedSuccessor"
+                       value="${escHtml(s.name)}" class="establish-shared-successor-cb" ${checked}>
+                <label for="${safeId}" class="text-sm cursor-pointer">${escHtml(s.name)}</label>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderSplitRow(split, index) {
@@ -699,9 +812,11 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
 
         // Show Axis 2 only for choose or procure (not defer)
         if (axis2Section) {
+            const hasMultipleSuccessors = (state.transitionStructure?.successors?.length || 0) > 1;
             const shouldShow = (choice === 'choose' || choice === 'procure') &&
                 (systems.some(s => s.sharedWith && s.sharedWith.length > 0) ||
                  systems.some(s => s.isDisaggregation) ||
+                 hasMultipleSuccessors ||
                  (existingDecision && existingDecision.boundaryChoice && existingDecision.boundaryChoice !== 'none'));
             axis2Section.classList.toggle('hidden', !shouldShow);
         }
@@ -724,11 +839,16 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
         });
     });
 
-    // Wire Axis 2 disaggregate radio to show/hide split configuration
+    const establishSharedDetail = content.querySelector('#axis2EstablishSharedDetail');
+
+    // Wire Axis 2 radios to show/hide detail panels
     axis2Radios.forEach(radio => {
         radio.addEventListener('change', () => {
             if (disaggDetail) {
                 disaggDetail.classList.toggle('hidden', radio.value !== 'disaggregate');
+            }
+            if (establishSharedDetail) {
+                establishSharedDetail.classList.toggle('hidden', radio.value !== 'establish-shared');
             }
         });
     });
@@ -890,7 +1010,50 @@ export function applyDecisionFromPanel() {
         }
     }
 
-    // Create the decision
+    // Read establish-shared successors
+    let sharedWithSuccessors = [];
+    if (boundaryChoice === 'establish-shared') {
+        const checkedCbs = content.querySelectorAll('.establish-shared-successor-cb:checked');
+        sharedWithSuccessors = [...checkedCbs].map(cb => cb.value);
+        if (sharedWithSuccessors.length === 0) {
+            showDecisionError('Establish shared service requires at least one other successor to share with.');
+            return;
+        }
+    }
+
+    // --- Cascade delete: if the OLD decision had sharedWithSuccessors, delete those propagated decisions ---
+    const currentKey = getDecisionKey(_currentFunctionId, _currentSuccessorName);
+    const oldDecision = state.simulationState.decisions.get(currentKey);
+    if (oldDecision && oldDecision.sharedWithSuccessors && oldDecision.sharedWithSuccessors.length > 0) {
+        for (const oldSharedSuccessor of oldDecision.sharedWithSuccessors) {
+            const oldPropKey = getDecisionKey(_currentFunctionId, oldSharedSuccessor);
+            const oldPropDecision = state.simulationState.decisions.get(oldPropKey);
+            // Only delete if it was actually a propagated decision for THIS primary
+            if (oldPropDecision && oldPropDecision.sharedServiceOrigin === currentKey) {
+                state.simulationState.decisions.delete(oldPropKey);
+            }
+        }
+    }
+
+    // --- Conflict check for establish-shared: target successors must not have independent decisions ---
+    if (boundaryChoice === 'establish-shared') {
+        for (const sharedSuccessor of sharedWithSuccessors) {
+            const targetKey = getDecisionKey(_currentFunctionId, sharedSuccessor);
+            const targetDecision = state.simulationState.decisions.get(targetKey);
+            if (targetDecision && !targetDecision.sharedServiceOrigin) {
+                showDecisionError(`${sharedSuccessor} already has an independent decision for this function. Remove it before establishing a shared service.`);
+                return;
+            }
+        }
+    }
+
+    // --- Pre-generate procured system ID for establish-shared + procure so propagated decisions can reference it ---
+    if (boundaryChoice === 'establish-shared' && systemChoice === 'procure' && procuredSystem) {
+        const slug = _currentSuccessorName.replace(/\s+/g, '-').toLowerCase();
+        procuredSystem.id = `sys-procured-${_currentFunctionId}-${slug}-${Date.now()}`;
+    }
+
+    // Create the primary decision
     const decision = createDecision({
         functionId: _currentFunctionId,
         successorName: _currentSuccessorName,
@@ -898,7 +1061,8 @@ export function applyDecisionFromPanel() {
         retainedSystemIds,
         procuredSystem,
         boundaryChoice,
-        disaggregationSplits
+        disaggregationSplits,
+        sharedWithSuccessors
     });
 
     // Validate
@@ -908,9 +1072,39 @@ export function applyDecisionFromPanel() {
         return;
     }
 
-    // Store decision
-    const key = getDecisionKey(_currentFunctionId, _currentSuccessorName);
-    state.simulationState.decisions.set(key, decision);
+    // Store primary decision
+    state.simulationState.decisions.set(currentKey, decision);
+
+    // --- Create propagated decisions for each shared successor ---
+    if (boundaryChoice === 'establish-shared' && sharedWithSuccessors.length > 0) {
+        // Determine retainedSystemIds for propagated decisions
+        let propagatedRetainedIds;
+        if (systemChoice === 'choose') {
+            propagatedRetainedIds = [...retainedSystemIds];
+        } else if (systemChoice === 'procure') {
+            propagatedRetainedIds = [procuredSystem.id];
+        } else {
+            propagatedRetainedIds = [];
+        }
+
+        for (const sharedSuccessor of sharedWithSuccessors) {
+            const propagatedDecision = createDecision({
+                functionId: _currentFunctionId,
+                successorName: sharedSuccessor,
+                systemChoice: 'choose',
+                retainedSystemIds: propagatedRetainedIds,
+                procuredSystem: null,
+                boundaryChoice: 'establish-shared',
+                disaggregationSplits: [],
+                sharedWithSuccessors: [],
+                sharedServiceOrigin: currentKey,
+                contractExtensions: []
+            });
+
+            const propKey = getDecisionKey(_currentFunctionId, sharedSuccessor);
+            state.simulationState.decisions.set(propKey, propagatedDecision);
+        }
+    }
 
     // Recompute simulation
     recomputeSimulation();
@@ -1015,6 +1209,45 @@ window._simDecisionAddSplit = function() {
  */
 window._simOpenDecision = function(functionId, successorName) {
     openDecisionPanel(functionId, successorName);
+};
+
+// ---------------------------------------------------------------------------
+// Unlink from shared service — window hook
+// ---------------------------------------------------------------------------
+
+/**
+ * Removes this successor's propagated decision from the shared service arrangement.
+ * Updates the primary decision's sharedWithSuccessors to exclude this successor.
+ * The successor's cell reverts to undecided.
+ *
+ * @param {string} functionId
+ * @param {string} successorName  The propagated successor to unlink
+ */
+window._simUnlinkSharedService = function(functionId, successorName) {
+    if (!state.simulationState) return;
+    const decisions = state.simulationState.decisions;
+    const propKey = getDecisionKey(functionId, successorName);
+    const propDecision = decisions.get(propKey);
+    if (!propDecision || !propDecision.sharedServiceOrigin) return;
+
+    const primaryKey = propDecision.sharedServiceOrigin;
+    const primaryDecision = decisions.get(primaryKey);
+
+    // Remove this propagated decision
+    decisions.delete(propKey);
+
+    // Update the primary decision's sharedWithSuccessors
+    if (primaryDecision && Array.isArray(primaryDecision.sharedWithSuccessors)) {
+        const updated = {
+            ...primaryDecision,
+            sharedWithSuccessors: primaryDecision.sharedWithSuccessors.filter(s => s !== successorName)
+        };
+        decisions.set(primaryKey, updated);
+    }
+
+    // Recompute and close panel
+    recomputeSimulation();
+    closeDecisionPanel();
 };
 
 // ---------------------------------------------------------------------------

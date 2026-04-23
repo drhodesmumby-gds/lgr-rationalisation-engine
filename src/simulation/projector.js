@@ -92,6 +92,12 @@ function decisionOrder(a, b) {
 function decisionPriority(decision) {
     if (decision.systemChoice === 'defer') return 2;
     if (decision.boundaryChoice === 'disaggregate') return 0;
+    // Primary establish-shared decisions run before propagated decisions so that
+    // REALIZES edges are created in the shared successors' cells before the
+    // propagated consolidate actions try to work with the shared system.
+    if (decision.boundaryChoice === 'establish-shared' && !decision.sharedServiceOrigin) return 0;
+    // Propagated decisions (auto-created from establish-shared) run after primary
+    if (decision.sharedServiceOrigin) return 1;
     return 1;
 }
 
@@ -163,6 +169,57 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
             systemId: targetSystemId,
             splits: disaggregationSplits
         });
+    }
+
+    // Emit establish-shared-service action BEFORE consolidate for primary establish-shared decisions.
+    // Only emit from the PRIMARY decision (no sharedServiceOrigin), not from propagated decisions.
+    // This creates REALIZES edges in the shared successors' cells before their consolidates run.
+    if (boundaryChoice === 'establish-shared' && !decision.sharedServiceOrigin &&
+        decision.sharedWithSuccessors && decision.sharedWithSuccessors.length > 0) {
+
+        const sharedSuccessorFunctionNodeIds = {};
+        for (const sharedSuccessor of decision.sharedWithSuccessors) {
+            // Find function nodes reachable from the systems in the shared successor's cell
+            const sharedCellSystemIds = new Set(getSystemsInCell(baselineAllocation, functionId, sharedSuccessor));
+            const candidateFuncNodeIds = new Set(
+                baselineNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === functionId).map(n => n.id)
+            );
+
+            const fnNodeIds = new Set();
+            baselineEdges.forEach(e => {
+                if (sharedCellSystemIds.has(e.source) && e.relationship === 'REALIZES' && candidateFuncNodeIds.has(e.target)) {
+                    fnNodeIds.add(e.target);
+                }
+            });
+
+            // If the shared successor's cell has no systems, fall back to any function nodes with
+            // this lgaFunctionId that aren't already in this decision's cell.
+            if (fnNodeIds.size === 0) {
+                const thisCellSysIds = new Set(allSystemsInCell);
+                const thisCellFnIds = new Set();
+                baselineEdges.forEach(e => {
+                    if (thisCellSysIds.has(e.source) && e.relationship === 'REALIZES' && candidateFuncNodeIds.has(e.target)) {
+                        thisCellFnIds.add(e.target);
+                    }
+                });
+                candidateFuncNodeIds.forEach(fnId => {
+                    if (!thisCellFnIds.has(fnId)) fnNodeIds.add(fnId);
+                });
+            }
+
+            if (fnNodeIds.size > 0) {
+                sharedSuccessorFunctionNodeIds[sharedSuccessor] = [...fnNodeIds];
+            }
+        }
+
+        if (Object.keys(sharedSuccessorFunctionNodeIds).length > 0) {
+            actions.push({
+                type: 'establish-shared-service',
+                systemId: targetSystemId,
+                functionId,
+                sharedSuccessorFunctionNodeIds
+            });
+        }
     }
 
     // Build the consolidate action
@@ -253,6 +310,19 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
     // Find all systems currently serving this function in this successor
     const allSystemsInCell = getSystemsInCell(baselineAllocation, functionId, successorName);
 
+    // Compute scope: function nodes reachable from this cell's systems
+    // (limits the procured system's REALIZES edges to this successor's function nodes)
+    const cellSystemIds = new Set(allSystemsInCell);
+    const candidateFuncNodeIds = new Set(
+        baselineNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === functionId).map(n => n.id)
+    );
+    const scopeFunctionNodeIds = [];
+    baselineEdges.forEach(e => {
+        if (cellSystemIds.has(e.source) && e.relationship === 'REALIZES' && candidateFuncNodeIds.has(e.target)) {
+            scopeFunctionNodeIds.push(e.target);
+        }
+    });
+
     // Systems not retained by any decision are replaced
     const replacedSystems = allSystemsInCell.filter(sysId => !globalRetainedSystemIds.has(sysId));
 
@@ -274,6 +344,43 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         // We still emit the disaggregate signal for ordering purposes.
     }
 
+    // Emit establish-shared-service action for primary procure + establish-shared decisions.
+    // Uses the pre-generated procured system ID (stored on procuredSystem.id) so propagated
+    // decisions can reference the same system ID in their retainedSystemIds.
+    if (boundaryChoice === 'establish-shared' && !decision.sharedServiceOrigin &&
+        decision.sharedWithSuccessors && decision.sharedWithSuccessors.length > 0) {
+
+        const procuredSystemId = newSystem.id;
+        const sharedSuccessorFunctionNodeIds = {};
+        for (const sharedSuccessor of decision.sharedWithSuccessors) {
+            const sharedCellSystemIds = new Set(getSystemsInCell(baselineAllocation, functionId, sharedSuccessor));
+            const fnNodeIds = new Set();
+            baselineEdges.forEach(e => {
+                if (sharedCellSystemIds.has(e.source) && e.relationship === 'REALIZES' && candidateFuncNodeIds.has(e.target)) {
+                    fnNodeIds.add(e.target);
+                }
+            });
+            // Fallback: any candidate function nodes not in this cell
+            if (fnNodeIds.size === 0) {
+                const thisCellFnIds = new Set(scopeFunctionNodeIds);
+                candidateFuncNodeIds.forEach(fnId => {
+                    if (!thisCellFnIds.has(fnId)) fnNodeIds.add(fnId);
+                });
+            }
+            if (fnNodeIds.size > 0) {
+                sharedSuccessorFunctionNodeIds[sharedSuccessor] = [...fnNodeIds];
+            }
+        }
+        if (Object.keys(sharedSuccessorFunctionNodeIds).length > 0) {
+            actions.push({
+                type: 'establish-shared-service',
+                systemId: procuredSystemId,
+                functionId,
+                sharedSuccessorFunctionNodeIds
+            });
+        }
+    }
+
     // Emit procure-replacement action for the first replaced system (primary replacement)
     // Additional replaced systems are removed via separate decommission actions
     if (replacedSystems.length > 0) {
@@ -282,7 +389,8 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
             functionId,
             successorName,
             newSystem,
-            replacesSystemId: replacedSystems[0]
+            replacesSystemId: replacedSystems[0],
+            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
         });
 
         // Decommission any additional replaced systems beyond the first
@@ -299,7 +407,8 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
             functionId,
             successorName,
             newSystem,
-            replacesSystemId: null
+            replacesSystemId: null,
+            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
         });
     }
 

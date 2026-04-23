@@ -1305,26 +1305,38 @@ export function renderDashboard() {
                         const succName_safe = escHtml(successorName);
 
                         if (existingDecision) {
-                            // Show decision badge + Edit link
+                            // Show decision badge + Edit/View link
+                            const isPropagated = !!existingDecision.sharedServiceOrigin;
                             let badgeHtml = '';
-                            if (existingDecision.systemChoice === 'choose') {
+                            if (isPropagated) {
+                                // Propagated shared-service decision — amber "Shared" badge
+                                const origin = existingDecision.sharedServiceOrigin || '';
+                                const originParts = origin.split('::');
+                                const originSuccessor = originParts.length >= 2 ? originParts.slice(1).join('::') : origin;
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800" title="Shared service established by ${escHtml(originSuccessor)}">Shared: ${escHtml(originSuccessor)}</span>`;
+                            } else if (existingDecision.systemChoice === 'choose') {
                                 const retainedId = existingDecision.retainedSystemIds && existingDecision.retainedSystemIds.length > 0
                                     ? existingDecision.retainedSystemIds[0] : null;
                                 const retainedNode = retainedId && state.simulationState.baselineNodes
                                     ? state.simulationState.baselineNodes.find(n => n.id === retainedId) : null;
                                 const sysLabel = retainedNode ? retainedNode.label : 'system';
-                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-800">Chose: ${escHtml(sysLabel)}</span>`;
+                                const sharedLabel = existingDecision.sharedWithSuccessors && existingDecision.sharedWithSuccessors.length > 0
+                                    ? ` <span class="text-blue-700 font-bold">(shared with ${existingDecision.sharedWithSuccessors.length})</span>` : '';
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-800">Chose: ${escHtml(sysLabel)}</span>${sharedLabel}`;
                             } else if (existingDecision.systemChoice === 'defer') {
                                 badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Deferred</span>`;
                             } else if (existingDecision.systemChoice === 'procure') {
                                 const procLabel = existingDecision.procuredSystem ? existingDecision.procuredSystem.label : 'New System';
-                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Procure: ${escHtml(procLabel)}</span>`;
+                                const sharedLabel = existingDecision.sharedWithSuccessors && existingDecision.sharedWithSuccessors.length > 0
+                                    ? ` <span class="text-blue-700 font-bold">(shared with ${existingDecision.sharedWithSuccessors.length})</span>` : '';
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Procure: ${escHtml(procLabel)}</span>${sharedLabel}`;
                             }
+                            const actionBtnLabel = isPropagated ? 'View' : 'Edit';
                             decisionAffordanceHtml = `<div class="mt-2 flex items-center gap-2 flex-wrap">
                                 ${badgeHtml}
                                 <button class="text-xs text-[#1d70b8] underline sim-decide-btn"
                                         data-func-id="${funcId_safe}" data-successor="${succName_safe}"
-                                        type="button">Edit</button>
+                                        type="button">${actionBtnLabel}</button>
                             </div>`;
                         } else if (cellAllocations.length >= 2) {
                             // Undecided cell with competing systems: show Decide link
