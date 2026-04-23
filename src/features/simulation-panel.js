@@ -1,12 +1,16 @@
 import { state } from '../state.js';
 import { escHtml } from '../ui-helpers.js';
-import { applyAllActions } from '../simulation/actions.js';
 import { computeSimulationImpact } from '../simulation/impact.js';
 import { computeObligationSeverity, generateMigrationScopeBullets } from '../simulation/obligations.js';
+import { projectDecisions } from '../simulation/projector.js';
+import { getDecisionKey } from '../simulation/decisions.js';
 import { renderDashboard } from '../main.js';
 import { buildSuccessorAllocation } from '../analysis/allocation.js';
 import { buildEstateSankeyData, buildFunctionSankeyData } from './sankey-data.js';
 import { renderSankeyDiagram, destroySankeyDiagram, PREDECESSOR_COLOURS } from './sankey-diagram.js';
+// NOTE: openDecisionPanel is NOT imported here to avoid circular dependency
+// (decision-panel.js imports recomputeSimulation from this file).
+// Instead we call window._simOpenDecision() which is wired up by decision-panel.js.
 
 // ===================================================================
 // SIMULATION ENTRY / EXIT
@@ -21,6 +25,8 @@ export function enterSimulation() {
         baselineEdges: JSON.parse(JSON.stringify(state.mergedArchitecture.edges)),
         baselineAllocation,
         actions: [],
+        decisions: new Map(),
+        projectedActions: [],
         lastImpact: null
     };
     renderDashboard();
@@ -38,18 +44,58 @@ export function exitSimulation() {
 export function recomputeSimulation() {
     if (!state.simulationState) return;
     const ss = state.simulationState;
-    if (ss.actions.length === 0) {
-        ss.lastImpact = null;
+
+    // Prefer decisions (new path) when the decisions map is non-empty.
+    // Fall back to raw actions (legacy path) when decisions map is empty.
+    const useDecisions = ss.decisions && ss.decisions.size > 0;
+
+    if (useDecisions) {
+        // New path: project decisions into actions via the pure projector
+        const { actions: projectedActions, obligations: projObligations } = projectDecisions(
+            ss.decisions,
+            ss.baselineNodes,
+            ss.baselineEdges,
+            ss.baselineAllocation,
+            state.lgaFunctionMap
+        );
+        ss.projectedActions = projectedActions;
+
+        if (projectedActions.length === 0) {
+            ss.lastImpact = null;
+        } else {
+            ss.lastImpact = computeSimulationImpact({
+                baselineNodes: ss.baselineNodes,
+                baselineEdges: ss.baselineEdges,
+                actions: projectedActions,
+                transitionStructure: state.transitionStructure,
+                lgaFunctionMap: state.lgaFunctionMap,
+                perspective: state.activePerspective
+            });
+            // Merge projector-generated obligations with engine-generated obligations
+            if (ss.lastImpact) {
+                ss.lastImpact.obligations = [
+                    ...(ss.lastImpact.obligations || []),
+                    ...projObligations
+                ];
+            }
+        }
     } else {
-        ss.lastImpact = computeSimulationImpact({
-            baselineNodes: ss.baselineNodes,
-            baselineEdges: ss.baselineEdges,
-            actions: ss.actions,
-            transitionStructure: state.transitionStructure,
-            lgaFunctionMap: state.lgaFunctionMap,
-            perspective: state.activePerspective
-        });
+        // Legacy path: use raw actions array directly
+        ss.projectedActions = [];
+        if (!ss.actions || ss.actions.length === 0) {
+            ss.lastImpact = null;
+        } else {
+            ss.lastImpact = computeSimulationImpact({
+                baselineNodes: ss.baselineNodes,
+                baselineEdges: ss.baselineEdges,
+                actions: ss.actions,
+                transitionStructure: state.transitionStructure,
+                lgaFunctionMap: state.lgaFunctionMap,
+                perspective: state.activePerspective
+            });
+        }
     }
+
     renderDashboard();
 }
 
@@ -67,7 +113,7 @@ let _sankeyOverlay = 'default'; // 'default' | 'migration' | 'cross-successor' |
 
 /**
  * Main workspace render function. Replaces the old toolbar.
- * Renders a side-by-side layout: action panel (left) + Sankey (right).
+ * Renders a side-by-side layout: decision summary panel (left) + Sankey (right).
  */
 export function renderSimulationWorkspace() {
     const toolbar = document.getElementById('simulationToolbar');
@@ -79,7 +125,6 @@ export function renderSimulationWorkspace() {
         return;
     }
 
-    const actions = state.simulationState.actions;
     const impact = state.simulationState.lastImpact;
 
     // Build the workspace shell
@@ -94,9 +139,9 @@ export function renderSimulationWorkspace() {
     `;
     toolbar.classList.remove('hidden');
 
-    // Render action panel content
+    // Render decision summary panel content
     const actionPanel = toolbar.querySelector('#simActionPanel');
-    renderActionPanel(actionPanel, actions, impact);
+    renderDecisionSummary(actionPanel, impact);
 
     // Render Sankey panel content
     const sankeyPanel = toolbar.querySelector('#simSankeyPanel');
@@ -106,20 +151,260 @@ export function renderSimulationWorkspace() {
 // Keep backward-compatible alias
 export const renderSimulationToolbar = renderSimulationWorkspace;
 
+// ===================================================================
+// DECISION SUMMARY PANEL (replaces old action panel)
+// ===================================================================
+
 /**
- * Renders the action panel content into the given element.
+ * Counts the number of function+successor pairs that have 2 or more competing systems.
+ * These are the cells where a decision is meaningful.
+ * @returns {number}
  */
-function renderActionPanel(el, actions, impact) {
+function countDecidableFunctions() {
+    const ss = state.simulationState;
+    if (!ss) return 0;
+    const allocMap = ss.baselineAllocation || state.successorAllocationMap;
+    if (!allocMap) return 0;
+    let count = 0;
+    allocMap.forEach((funcMap) => {
+        funcMap.forEach((allocations) => {
+            if (allocations.length >= 2) count++;
+        });
+    });
+    return count;
+}
+
+/**
+ * Computes ERP decision status: for each ERP system, how many functions it covers
+ * and how many of those have decisions (and breakdown by choice type).
+ *
+ * @param {Map} decisions - state.simulationState.decisions
+ * @returns {Array<{erpLabel: string, totalFunctions: number, decidedCount: number, retained: number, replacedByChoice: number, replacedByProcure: number, deferred: number}>}
+ */
+function computeErpDecisionStatus(decisions) {
+    const ss = state.simulationState;
+    if (!ss) return [];
+    const allocMap = ss.baselineAllocation || state.successorAllocationMap;
+    if (!allocMap) return [];
+
+    // Find all ERP systems and which function+successor cells they appear in
+    const erpMap = new Map(); // erpSystemId -> { label, cells: [{functionId, successorName}] }
+
+    allocMap.forEach((funcMap, successorName) => {
+        funcMap.forEach((allocations, functionId) => {
+            allocations.forEach(a => {
+                if (a.system && a.system.isERP) {
+                    const id = a.system.id;
+                    if (!erpMap.has(id)) {
+                        erpMap.set(id, { label: a.system.label || id, cells: [] });
+                    }
+                    erpMap.get(id).cells.push({ functionId, successorName });
+                }
+            });
+        });
+    });
+
+    const result = [];
+    erpMap.forEach((erp, erpSystemId) => {
+        // Unique function+successor cells
+        const uniqueCells = [];
+        const seen = new Set();
+        erp.cells.forEach(c => {
+            const k = `${c.functionId}::${c.successorName}`;
+            if (!seen.has(k)) { seen.add(k); uniqueCells.push(c); }
+        });
+
+        let decidedCount = 0, retained = 0, replacedByChoice = 0, replacedByProcure = 0, deferred = 0;
+        uniqueCells.forEach(c => {
+            const dec = decisions.get(getDecisionKey(c.functionId, c.successorName));
+            if (dec) {
+                decidedCount++;
+                if (dec.systemChoice === 'defer') {
+                    deferred++;
+                } else if (dec.systemChoice === 'choose') {
+                    // Is the ERP system in the retained set?
+                    const erpRetained = (dec.retainedSystemIds || []).includes(erpSystemId);
+                    if (erpRetained) { retained++; } else { replacedByChoice++; }
+                } else if (dec.systemChoice === 'procure') {
+                    // Procure means all old systems (including the ERP) are replaced by a new procurement
+                    replacedByProcure++;
+                }
+            }
+        });
+
+        result.push({
+            erpLabel: erp.label,
+            totalFunctions: uniqueCells.length,
+            decidedCount,
+            retained,
+            replacedByChoice,
+            replacedByProcure,
+            deferred
+        });
+    });
+
+    return result;
+}
+
+/**
+ * Returns a compact human-readable label for a decision.
+ * @param {Object} decision
+ * @param {string} [systemLabel] - optional resolved label for retained system
+ * @returns {string}
+ */
+function decisionLabel(decision, systemLabel) {
+    if (decision.systemChoice === 'choose') {
+        return systemLabel ? `Keep ${systemLabel}` : 'Keep system';
+    }
+    if (decision.systemChoice === 'procure') {
+        return decision.procuredSystem ? `Procure ${decision.procuredSystem.label}` : 'Procure replacement';
+    }
+    if (decision.systemChoice === 'defer') {
+        return 'Deferred';
+    }
+    return decision.systemChoice;
+}
+
+/**
+ * Resolves the label for the retained/chosen system ID from baseline nodes.
+ * @param {string} systemId
+ * @returns {string}
+ */
+function resolveSystemLabel(systemId) {
+    if (!state.simulationState) return systemId;
+    const node = state.simulationState.baselineNodes.find(n => n.id === systemId);
+    return node ? node.label : systemId;
+}
+
+/**
+ * Renders the decision summary panel into the given element.
+ * Replaces the old renderActionPanel / action chip display.
+ *
+ * @param {HTMLElement} el
+ * @param {Object|null} impact
+ */
+function renderDecisionSummary(el, impact) {
     if (_actionPanelCollapsed) {
+        const decisions = state.simulationState ? state.simulationState.decisions : new Map();
         el.innerHTML = `
             <div class="sim-panel-collapsed-content">
-                <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Expand action panel" aria-label="Expand action panel">&#x276F;</button>
-                <span class="sim-panel-collapsed-badge">${actions.length}</span>
+                <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Expand panel" aria-label="Expand decision panel">&#x276F;</button>
+                <span class="sim-panel-collapsed-badge">${decisions.size}</span>
             </div>
         `;
         return;
     }
 
+    const decisions = state.simulationState ? (state.simulationState.decisions || new Map()) : new Map();
+    const totalDecidable = countDecidableFunctions();
+    const decidedCount = decisions.size;
+    const pct = totalDecidable > 0 ? Math.round((decidedCount / totalDecidable) * 100) : 0;
+
+    // Progress bar
+    const progressBarHtml = `
+        <div class="mt-1 mb-1" aria-label="Decision progress: ${pct}%">
+            <div class="w-full bg-gray-200 h-2 border border-gray-300">
+                <div class="h-full bg-[#1d70b8]" style="width:${pct}%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5">${decidedCount} of ${totalDecidable} decidable functions &mdash; ${pct}%</div>
+        </div>
+    `;
+
+    // Latest 5 decisions (sorted by timestamp descending)
+    const sortedDecisions = [...decisions.values()]
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+        .slice(0, 5);
+
+    let latestHtml = '';
+    if (sortedDecisions.length === 0) {
+        latestHtml = '<div class="text-xs text-gray-500 italic">No decisions made yet. Click "Decide" on a matrix cell to begin.</div>';
+    } else {
+        latestHtml = sortedDecisions.map(dec => {
+            const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(dec.functionId) : null;
+            const funcLabel = funcEntry ? funcEntry.label : `Function ${dec.functionId}`;
+            const retainedLabel = dec.systemChoice === 'choose' && dec.retainedSystemIds && dec.retainedSystemIds.length > 0
+                ? resolveSystemLabel(dec.retainedSystemIds[0])
+                : null;
+            const dLabel = decisionLabel(dec, retainedLabel);
+            return `<div class="text-xs py-0.5 border-b border-gray-100 last:border-0">
+                <span class="font-bold">${escHtml(funcLabel)}</span>
+                <span class="text-gray-500"> (${escHtml(dec.successorName)})</span>
+                <span class="block text-gray-700">&rarr; ${escHtml(dLabel)}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // Undecided Functions — cells with 2+ systems but no decision yet
+    let undecidedHtml = '';
+    {
+        const allocMap = state.simulationState?.baselineAllocation || state.successorAllocationMap;
+        const undecidedCells = [];
+        if (allocMap) {
+            allocMap.forEach((funcMap, succName) => {
+                funcMap.forEach((allocations, funcId) => {
+                    if (allocations.length >= 2) {
+                        const decKey = getDecisionKey(funcId, succName);
+                        if (!decisions.has(decKey)) {
+                            const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+                            const funcLabel = funcEntry ? funcEntry.label : `Function ${funcId}`;
+                            undecidedCells.push({ funcId, succName, funcLabel });
+                        }
+                    }
+                });
+            });
+        }
+        if (undecidedCells.length > 0) {
+            const SHOW_LIMIT = 10;
+            const visible = undecidedCells.slice(0, SHOW_LIMIT);
+            const overflow = undecidedCells.length - visible.length;
+            const rows = visible.map(cell => {
+                const safeFuncId = escHtml(cell.funcId);
+                const safeSucc = escHtml(cell.succName);
+                return `<div class="text-xs py-0.5 border-b border-gray-100 last:border-0 flex items-center justify-between gap-1">
+                    <span class="truncate" title="${escHtml(cell.funcLabel)} (${safeSucc})">${escHtml(cell.funcLabel)} <span class="text-gray-400">(${safeSucc})</span></span>
+                    <button class="text-xs font-bold text-[#1d70b8] underline whitespace-nowrap"
+                            onclick="window._simOpenDecision('${safeFuncId}', '${safeSucc}')"
+                            type="button">Decide</button>
+                </div>`;
+            }).join('');
+            const moreHtml = overflow > 0
+                ? `<div class="text-xs text-gray-400 mt-1">+${overflow} more undecided</div>`
+                : '';
+            undecidedHtml = `
+                <div class="mt-2 pt-2 border-t border-gray-200">
+                    <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Undecided Functions</div>
+                    ${rows}
+                    ${moreHtml}
+                </div>
+            `;
+        }
+    }
+
+    // ERP status
+    const erpStatuses = computeErpDecisionStatus(decisions);
+    let erpHtml = '';
+    if (erpStatuses.length > 0) {
+        const erpRows = erpStatuses.map(erp => {
+            const parts = [];
+            if (erp.retained > 0) parts.push(`${erp.retained} retained`);
+            if (erp.replacedByChoice > 0) parts.push(`${erp.replacedByChoice} replaced`);
+            if (erp.replacedByProcure > 0) parts.push(`${erp.replacedByProcure} procured`);
+            if (erp.deferred > 0) parts.push(`${erp.deferred} deferred`);
+            const breakdown = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+            return `<div class="text-xs py-0.5">
+                <span class="inline-block text-xs px-1 py-0 bg-[#d4351c] text-white font-bold mr-1">ERP</span>
+                <strong>${escHtml(erp.erpLabel)}</strong>: ${erp.decidedCount}/${erp.totalFunctions} decided${escHtml(breakdown)}
+            </div>`;
+        }).join('');
+        erpHtml = `
+            <div class="mt-2 pt-2 border-t border-gray-200">
+                <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">ERP Status</div>
+                ${erpRows}
+            </div>
+        `;
+    }
+
+    // Warnings
     let warningHtml = '';
     if (impact && impact.warnings && impact.warnings.length > 0) {
         const humanized = [...new Set(impact.warnings)].map(w => w.replace(/\s*\(\d+\)\s*/g, ' ').replace(/\s{2,}/g, ' ').trim());
@@ -128,37 +413,26 @@ function renderActionPanel(el, actions, impact) {
         </div>`;
     }
 
-    let actionsHtml = '';
-    if (actions.length === 0) {
-        actionsHtml = '<span class="text-sm text-gray-600 italic">No actions added. Click "Add Action" to simulate a change.</span>';
-    } else {
-        actionsHtml = actions.map((action, idx) => {
-            const label = getActionLabel(action);
-            return `<span class="sim-action-chip">
-                ${escHtml(label)}
-                <button class="sim-chip-edit" onclick="window._simEditAction(${idx})" title="Edit" aria-label="Edit action">&#9998;</button>
-                <button class="sim-chip-delete" onclick="window._simRemoveAction(${idx})" title="Remove this action" aria-label="Remove action">&times;</button>
-            </span>`;
-        }).join(' ');
-    }
-
     const metricsHtml = impact ? renderBeforeAfterMetrics(impact, true) : '';
     const obligationsHtml = impact ? renderObligationsPanel(impact.obligations) : '';
 
     el.innerHTML = `
-        <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold text-[#0b0c0c]">${actions.length} action${actions.length !== 1 ? 's' : ''}</span>
-            <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Collapse action panel" aria-label="Collapse action panel">&#x276E;</button>
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wide text-[#0b0c0c]">Decisions</span>
+            <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Collapse panel" aria-label="Collapse decision panel">&#x276E;</button>
         </div>
-        <div class="flex flex-col gap-2 mb-3">
-            <button onclick="window._simOpenActionBuilder()" class="gds-btn text-sm px-3 py-1.5 font-bold w-full text-left">+ Add Action</button>
-            ${actions.length > 0 ? `<button onclick="window._simClearAll()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left">Clear All</button>` : ''}
+        ${progressBarHtml}
+        <div class="mt-2 pt-2 border-t border-gray-200">
+            <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Latest Decisions</div>
+            ${latestHtml}
         </div>
-        <div class="flex flex-col gap-1 mb-2">${actionsHtml}</div>
+        ${undecidedHtml}
+        ${erpHtml}
         ${warningHtml}
         ${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ''}
         ${obligationsHtml}
-        <div class="mt-4 pt-3 border-t border-[#f47738]">
+        <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2">
+            ${decidedCount > 0 ? `<button onclick="window._simClearAllDecisions()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left">Clear All Decisions</button>` : ''}
             <button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold border-[#d4351c] text-[#d4351c] w-full text-left">Exit Simulation</button>
         </div>
     `;
@@ -173,7 +447,12 @@ function renderSankeyPanel(el) {
         || state.simulationState?.baselineAllocation
         || state.successorAllocationMap;
 
-    const actions = state.simulationState ? state.simulationState.actions : [];
+    // Prefer projected actions (from decisions) when available; fall back to raw actions
+    const actions = state.simulationState
+        ? (state.simulationState.projectedActions?.length > 0
+            ? state.simulationState.projectedActions
+            : (state.simulationState.actions || []))
+        : [];
 
     // Breadcrumb
     let breadcrumbHtml = '';
@@ -263,6 +542,7 @@ function renderSankeyPanel(el) {
         overlay: _sankeyOverlay,
         obligations,
         vestingDate: state.transitionStructure?.vestingDate || null,
+        successorName: _sankeyDrillDown || null,
         onAction: (action) => {
             if (!state.simulationState) return;
             state.simulationState.actions.push(action);
@@ -514,6 +794,16 @@ function renderObligationDetailContent(obligations) {
 
         if (isExpanded) {
             const sys = obls[0].fromSystem;
+            const repObl = obls[0];
+
+            // Decision language description (using actionType + obligation context)
+            const decisionDescription = buildDecisionDescription(repObl);
+            if (decisionDescription) {
+                html += `<div class="border-t border-gray-200 p-3 bg-blue-50">
+                    <div class="text-[12px] font-bold uppercase text-gray-500 mb-1">Decision</div>
+                    <div class="text-xs font-bold text-[#1d70b8]">${escHtml(decisionDescription)}</div>
+                </div>`;
+            }
 
             // 1. Source system card (once)
             html += `<div class="border-t border-gray-200 p-3 bg-gray-50">
@@ -754,993 +1044,47 @@ export function renderBeforeAfterMetrics(impact, compact = false) {
     return html;
 }
 
-// ===================================================================
-// ACTION BUILDER MODAL
-// ===================================================================
-
-let _actionBuilderStep = 1;
-let _actionBuilderType = null;
-let _editingActionIndex = null;
-
-function editAction(idx) {
-    if (!state.simulationState) return;
-    const action = state.simulationState.actions[idx];
-    if (!action) return;
-
-    let prefill = {};
-    switch (action.type) {
-        case 'consolidate':
-            prefill = { funcId: action.functionId, successorName: action.successorName, targetSystemId: action.targetSystemId };
-            break;
-        case 'decommission':
-            prefill = { systemId: action.systemId };
-            break;
-        case 'extend-contract':
-            prefill = { systemId: action.systemId, newEndYear: action.newEndYear, newEndMonth: action.newEndMonth };
-            break;
-        case 'migrate-users':
-            prefill = { fromSystemId: action.fromSystemId, toSystemId: action.toSystemId, userCount: action.userCount };
-            break;
-        case 'split-shared-service':
-            prefill = { systemId: action.systemId, splits: action.splits };
-            break;
-        case 'disaggregate':
-            prefill = { systemId: action.systemId, disaggSplits: action.splits };
-            break;
-        case 'consolidate-erp':
-            prefill = { successorName: action.successorName, targetSystemId: action.targetSystemId };
-            break;
-        case 'procure-replacement':
-            prefill = {
-                funcId: action.functionId,
-                successorName: action.successorName,
-                newSystemLabel: action.newSystem?.label,
-                newSystemVendor: action.newSystem?.vendor,
-                annualCost: action.newSystem?.annualCost,
-                isCloud: action.newSystem?.isCloud,
-                replacesSystemId: action.replacesSystemId
-            };
-            break;
-    }
-
-    _editingActionIndex = idx;
-    openActionBuilderWithContext(action.type, prefill);
-}
-
-export function openActionBuilder() {
-    _actionBuilderStep = 1;
-    _actionBuilderType = null;
-    _editingActionIndex = null;
-    const modal = document.getElementById('actionBuilderModal');
-    if (!modal) return;
-    renderActionBuilderStep1();
-    document.getElementById('actionBuilderError').classList.add('hidden');
-    _actionBuilderOpener = document.activeElement;
-    modal.classList.remove('hidden');
-    _actionBuilderTrapCleanup = createFocusTrap(modal);
-    const closeBtn = document.getElementById('btnCloseActionBuilder');
-    if (closeBtn) closeBtn.focus();
-}
-
-/**
- * Opens the action builder modal pre-filled at step 2 for a given action type.
- * Called from Sankey context menus to skip step 1.
- * @param {string} type  Action type (e.g. 'decommission', 'extend-contract', etc.)
- * @param {Object} prefill  Fields to pre-fill: { systemId, funcId, successorName, fromSystemId, ... }
- */
-export function openActionBuilderWithContext(type, prefill = {}) {
-    _actionBuilderStep = 2;
-    _actionBuilderType = type;
-    const modal = document.getElementById('actionBuilderModal');
-    if (!modal) return;
-    document.getElementById('actionBuilderError').classList.add('hidden');
-    renderActionBuilderStep2(type);
-    if (modal.classList.contains('hidden')) {
-        _actionBuilderOpener = document.activeElement;
-    }
-    modal.classList.remove('hidden');
-    if (!_actionBuilderTrapCleanup) {
-        _actionBuilderTrapCleanup = createFocusTrap(modal);
-    }
-    const closeBtn = document.getElementById('btnCloseActionBuilder');
-    if (closeBtn) closeBtn.focus();
-
-    // Update title to indicate edit vs add
-    const titleEl = document.getElementById('actionBuilderTitle');
-    if (titleEl && _editingActionIndex !== null) {
-        titleEl.textContent = `Edit Action: ${getActionTypeName(type)}`;
-    }
-
-    // Pre-fill fields after DOM is updated
-    requestAnimationFrame(() => {
-        if (prefill.systemId) {
-            const el = document.getElementById('field_systemId');
-            if (el) el.value = prefill.systemId;
-        }
-        if (prefill.fromSystemId) {
-            const el = document.getElementById('field_fromSystemId');
-            if (el) el.value = prefill.fromSystemId;
-        }
-        if (prefill.toSystemId) {
-            const el = document.getElementById('field_toSystemId');
-            if (el) el.value = prefill.toSystemId;
-        }
-        if (prefill.newEndYear != null) {
-            const el = document.getElementById('field_newEndYear');
-            if (el) el.value = prefill.newEndYear;
-        }
-        if (prefill.newEndMonth != null) {
-            const el = document.getElementById('field_newEndMonth');
-            if (el) el.value = prefill.newEndMonth;
-        }
-        if (prefill.userCount != null) {
-            const el = document.getElementById('field_userCount');
-            if (el) el.value = prefill.userCount;
-        }
-        if (prefill.newSystemLabel != null) {
-            const el = document.getElementById('field_newSystemLabel');
-            if (el) el.value = prefill.newSystemLabel;
-        }
-        if (prefill.newSystemVendor != null) {
-            const el = document.getElementById('field_newSystemVendor');
-            if (el) el.value = prefill.newSystemVendor;
-        }
-        if (prefill.annualCost != null) {
-            const el = document.getElementById('field_annualCost');
-            if (el) el.value = prefill.annualCost;
-        }
-        if (prefill.isCloud != null) {
-            const el = document.getElementById('field_isCloud');
-            if (el) el.checked = !!prefill.isCloud;
-        }
-        if (prefill.replacesSystemId != null) {
-            const el = document.getElementById('field_replacesSystemId');
-            if (el) el.value = prefill.replacesSystemId;
-        }
-        if (prefill.funcId) {
-            const funcEl = document.getElementById('field_funcId');
-            if (funcEl) {
-                funcEl.value = prefill.funcId;
-                funcEl.dispatchEvent(new Event('change'));
-            }
-        }
-        if (prefill.successorName) {
-            const succEl = document.getElementById('field_successorName');
-            if (succEl) {
-                succEl.value = prefill.successorName;
-                succEl.dispatchEvent(new Event('change'));
-            }
-        }
-        // For consolidate: targetSystemId must wait for the systems dropdown to populate async
-        if (type === 'consolidate' && prefill.targetSystemId) {
-            requestAnimationFrame(() => {
-                const el = document.getElementById('field_targetSystemId');
-                if (el) el.value = prefill.targetSystemId;
-            });
-        }
-        // For split-shared-service: populate split rows
-        if (type === 'split-shared-service' && prefill.splits && prefill.splits.length > 0) {
-            // Clear default rows
-            const splitRows = document.getElementById('splitRows');
-            if (splitRows) {
-                splitRows.innerHTML = '';
-                _splitRowCount = 0;
-                prefill.splits.forEach(split => {
-                    addSplitRow();
-                    const rows = splitRows.querySelectorAll('.split-row');
-                    const row = rows[rows.length - 1];
-                    if (row) {
-                        const succSel = row.querySelector('.split-successor');
-                        const labelInp = row.querySelector('.split-label');
-                        if (succSel) succSel.value = split.successorName;
-                        if (labelInp) labelInp.value = split.label;
-                    }
-                });
-            }
-        }
-        // For disaggregate: populate split rows
-        if (type === 'disaggregate' && prefill.disaggSplits && prefill.disaggSplits.length > 0) {
-            const disaggSplitRows = document.getElementById('disaggSplitRows');
-            if (disaggSplitRows) {
-                disaggSplitRows.innerHTML = '';
-                _disaggSplitRowCount = 0;
-                prefill.disaggSplits.forEach(split => {
-                    addDisaggSplitRow();
-                    const rows = disaggSplitRows.querySelectorAll('.disagg-split-row');
-                    const row = rows[rows.length - 1];
-                    if (row) {
-                        const succSel = row.querySelector('.disagg-split-successor');
-                        const labelInp = row.querySelector('.disagg-split-label');
-                        if (succSel) succSel.value = split.successorName;
-                        if (labelInp) labelInp.value = split.label;
-                    }
-                });
-            }
-        }
-        // For consolidate-erp: trigger ERP systems update
-        if (type === 'consolidate-erp' && prefill.successorName) {
-            requestAnimationFrame(() => {
-                updateErpSystems();
-                if (prefill.targetSystemId) {
-                    requestAnimationFrame(() => {
-                        const el = document.getElementById('field_targetSystemId');
-                        if (el) { el.value = prefill.targetSystemId; updateErpReviewTable(); }
-                    });
-                }
-            });
-        }
-    });
-}
-
-function renderActionBuilderStep1() {
-    _actionBuilderStep = 1;
-    const content = document.getElementById('actionBuilderContent');
-    if (!content) return;
-
-    const types = [
-        { id: 'consolidate', label: 'Consolidate Systems', desc: 'Choose one system to keep for a function; decommission others' },
-        { id: 'consolidate-erp', label: 'Consolidate ERP', desc: 'Choose one ERP as the corporate platform for a successor — consolidates across all functions the ERP serves' },
-        { id: 'decommission', label: 'Decommission System', desc: 'Remove a system entirely' },
-        { id: 'extend-contract', label: 'Extend Contract', desc: "Change a system's contract end date" },
-        { id: 'migrate-users', label: 'Migrate Users', desc: 'Move users from one system to another' },
-        { id: 'split-shared-service', label: 'Split Shared Service', desc: 'Unwind a voluntary shared service partnership — split into separate instances per successor (equal division)' },
-        { id: 'disaggregate', label: 'Disaggregate County System', desc: 'Split a county/shared-predecessor system across successor authorities (equal division)' },
-        { id: 'procure-replacement', label: 'Procure Replacement', desc: 'Add a new system to replace an existing one' }
-    ];
-
-    let html = '<p class="text-sm font-bold mb-4 text-gray-700">Step 1 of 2: Select the type of action to simulate</p>';
-    html += '<div class="space-y-2">';
-    types.forEach(t => {
-        html += `<label class="flex items-start gap-3 p-3 border-2 border-gray-300 cursor-pointer hover:border-[#f47738] has-[:checked]:border-[#f47738] has-[:checked]:bg-[#fff3cd]">
-            <input type="radio" name="actionType" value="${t.id}" class="mt-1">
-            <div>
-                <span class="font-bold text-sm">${escHtml(t.label)}</span>
-                <p class="text-xs text-gray-600 mt-0.5">${escHtml(t.desc)}</p>
-            </div>
-        </label>`;
-    });
-    html += '</div>';
-    html += '<div class="mt-4"><button onclick="window._simActionBuilderNext()" class="gds-btn px-4 py-2 text-sm font-bold">Next: Configure &rarr;</button></div>';
-
-    content.innerHTML = html;
-    document.getElementById('actionBuilderTitle').textContent = 'Add Simulation Action';
-    document.getElementById('btnApplyAction').style.display = 'none';
-}
-
-export function actionBuilderNext() {
-    if (_actionBuilderStep === 1) {
-        const selected = document.querySelector('input[name="actionType"]:checked');
-        if (!selected) {
-            showActionBuilderError('Please select an action type.');
-            return;
-        }
-        _actionBuilderType = selected.value;
-        _actionBuilderStep = 2;
-        renderActionBuilderStep2(_actionBuilderType);
-    }
-}
-
-function getSimulatedNodes() {
-    if (!state.simulationState) return [];
-    const impact = state.simulationState.lastImpact;
-    if (impact && impact.simulationResult) {
-        return impact.simulationResult.nodes;
-    }
-    // No actions applied yet — use baseline
-    return state.simulationState.baselineNodes;
-}
-
-function getSimulatedITSystems() {
-    return getSimulatedNodes().filter(n => n.type === 'ITSystem');
-}
-
-function systemOptionLabel(s) {
-    const parts = [s.label];
-    if (s._sourceCouncil) parts.push(s._sourceCouncil);
-    const meta = [];
-    if (typeof s.users === 'number') meta.push(`${s.users.toLocaleString()} users`);
-    if (typeof s.annualCost === 'number') meta.push(`£${s.annualCost.toLocaleString()}/yr`);
-    if (s.vendor) meta.push(s.vendor);
-    if (s.sharedWith && s.sharedWith.length > 0) meta.push('shared');
-    if (meta.length > 0) parts.push(meta.join(', '));
-    return parts.join(' — ');
-}
-
-function renderActionBuilderStep2(type) {
-    const content = document.getElementById('actionBuilderContent');
-    if (!content) return;
-
-    document.getElementById('actionBuilderTitle').textContent = `Add Action: ${getActionTypeName(type)}`;
-    document.getElementById('btnApplyAction').style.display = '';
-
-    const systems = getSimulatedITSystems();
-    const lgaFunctions = Array.from(state.lgaFunctionMap.values()).sort((a, b) => a.label.localeCompare(b.label));
-    const successors = (state.transitionStructure && state.transitionStructure.successors) ? state.transitionStructure.successors : [];
-
-    let html = `<p class="text-sm text-gray-600 mb-4"><button onclick="window._simActionBuilderBack()" class="text-[#1d70b8] underline font-bold text-sm">&larr; Back</button></p>`;
-    html += '<div class="space-y-4" id="actionBuilderForm">';
-
-    if (type === 'consolidate') {
-        html += buildSelectField('funcId', 'Function', lgaFunctions.map(f => ({ value: f.lgaId, label: f.label })), '', 'onchange="window._simUpdateConsolidateSystems()"');
-        html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })), '', 'onchange="window._simUpdateConsolidateSystems()"');
-        html += `<div id="consolidateSystemField">${buildSelectField('targetSystemId', 'Target System (keep)', [], 'Select a function and successor first')}</div>`;
-    } else if (type === 'decommission') {
-        html += buildSystemSelect('systemId', 'System to decommission', systems);
-    } else if (type === 'extend-contract') {
-        html += buildSystemSelect('systemId', 'System', systems);
-        html += `<div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-bold mb-1">New End Year</label>
-                <input type="number" id="field_newEndYear" min="2025" max="2040" value="2030" class="border-2 border-[#0b0c0c] p-2 text-sm w-full">
-            </div>
-            <div>
-                <label class="block text-sm font-bold mb-1">New End Month</label>
-                <select id="field_newEndMonth" class="border-2 border-[#0b0c0c] p-2 text-sm w-full">
-                    ${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
-                </select>
-            </div>
-        </div>`;
-    } else if (type === 'migrate-users') {
-        const systemsWithUsers = systems.filter(s => (s.users || 0) > 0);
-        html += buildSystemSelect('fromSystemId', 'From System', systemsWithUsers);
-        html += buildSystemSelect('toSystemId', 'To System', systems);
-        html += `<div>
-            <label class="block text-sm font-bold mb-1">User Count to Migrate</label>
-            <input type="number" id="field_userCount" min="1" value="100" class="border-2 border-[#0b0c0c] p-2 text-sm w-48">
-        </div>`;
-    } else if (type === 'split-shared-service') {
-        const sharedSystems = systems.filter(s => s.sharedWith && s.sharedWith.length > 0);
-        html += buildSystemSelect('systemId', 'System to split',
-            sharedSystems.length > 0 ? sharedSystems : systems
-        );
-        html += `<div id="splitsContainer">
-            <label class="block text-sm font-bold mb-2">Splits (one per successor)</label>
-            <div id="splitRows" class="space-y-2"></div>
-            <button type="button" onclick="window._simAddSplitRow()" class="mt-2 gds-btn-secondary px-3 py-1.5 text-xs font-bold">+ Add Split</button>
-        </div>`;
-    } else if (type === 'disaggregate') {
-        // Filter to systems with isDisaggregation flag, fall back to all systems
-        const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
-            ? state.simulationState.lastImpact.afterAllocation
-            : (state.simulationState && state.simulationState.baselineAllocation)
-                ? state.simulationState.baselineAllocation
-                : null;
-        let disaggSystems = [];
-        if (allocMap) {
-            allocMap.forEach((funcMap) => {
-                funcMap.forEach((allocations) => {
-                    allocations.forEach(a => {
-                        if (a.isDisaggregation && a.system && !disaggSystems.find(s => s.id === a.system.id)) {
-                            const sys = systems.find(s => s.id === a.system.id);
-                            if (sys) disaggSystems.push(sys);
-                        }
-                    });
-                });
-            });
-        }
-        const systemsToShow = disaggSystems.length > 0 ? disaggSystems : systems;
-        html += buildSystemSelect('systemId', 'System to disaggregate', systemsToShow, '', 'onchange="window._simUpdateDisaggregateAdvisory()"');
-        html += `<div id="disaggAdvisory"></div>`;
-        html += `<div id="disaggSplitsContainer">
-            <label class="block text-sm font-bold mb-2">Splits (one per successor)</label>
-            <div id="disaggSplitRows" class="space-y-2"></div>
-            <button type="button" onclick="window._simAddDisaggSplitRow()" class="mt-2 gds-btn-secondary px-3 py-1.5 text-xs font-bold">+ Add Split</button>
-        </div>`;
-    } else if (type === 'consolidate-erp') {
-        html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })), '', 'onchange="window._simUpdateErpSystems()"');
-        html += `<div id="erpSystemField">${buildSelectField('targetSystemId', 'Target ERP (keep)', [], 'Select a successor first')}</div>`;
-        html += `<div id="erpReviewTable"></div>`;
-    } else if (type === 'procure-replacement') {
-        html += buildSelectField('funcId', 'Function', lgaFunctions.map(f => ({ value: f.lgaId, label: f.label })));
-        html += buildSelectField('successorName', 'Successor Authority', successors.map(s => ({ value: s.name, label: s.name })));
-        html += `<div><label class="block text-sm font-bold mb-1">New System Label</label>
-            <input type="text" id="field_newSystemLabel" class="border-2 border-[#0b0c0c] p-2 text-sm w-full" placeholder="e.g. Capita Revenues Cloud"></div>`;
-        html += `<div><label class="block text-sm font-bold mb-1">Vendor</label>
-            <input type="text" id="field_newSystemVendor" class="border-2 border-[#0b0c0c] p-2 text-sm w-full" placeholder="e.g. Capita"></div>`;
-        html += `<div><label class="block text-sm font-bold mb-1">Annual Cost (£)</label>
-            <input type="number" id="field_annualCost" min="0" class="border-2 border-[#0b0c0c] p-2 text-sm w-48" placeholder="e.g. 150000"></div>`;
-        html += `<div class="flex items-center gap-2"><input type="checkbox" id="field_isCloud" checked class="w-4 h-4"><label for="field_isCloud" class="text-sm font-bold">Cloud-hosted</label></div>`;
-        html += buildSystemSelect('replacesSystemId', 'Replaces (optional)', systems, 'None — new procurement');
-    }
-
-    html += '</div>';
-    content.innerHTML = html;
-
-    // Initialise split rows for split-shared-service
-    if (type === 'split-shared-service') {
-        addSplitRow();
-        addSplitRow();
-    }
-
-    // Initialise split rows for disaggregate
-    if (type === 'disaggregate') {
-        addDisaggSplitRow();
-        addDisaggSplitRow();
-    }
-}
-
-function buildSelectField(id, label, options, placeholder, extraAttrs) {
-    const ph = placeholder ? `<option value="">${escHtml(placeholder)}</option>` : '';
-    const opts = options.map(o => `<option value="${escHtml(String(o.value))}">${escHtml(o.label)}</option>`).join('');
-    return `<div>
-        <label for="field_${id}" class="block text-sm font-bold mb-1">${escHtml(label)}</label>
-        <select id="field_${id}" class="border-2 border-[#0b0c0c] p-2 text-sm w-full" ${extraAttrs || ''}>${ph}${opts}</select>
-    </div>`;
-}
-
-function buildSystemSelect(id, label, systems, placeholder, extraAttrs) {
-    // Group systems by _sourceCouncil
-    const groups = new Map();
-    systems.forEach(s => {
-        const council = s._sourceCouncil || 'Unknown';
-        if (!groups.has(council)) groups.set(council, []);
-        groups.get(council).push(s);
-    });
-
-    // Sort councils alphabetically, systems within each group alphabetically
-    const sortedCouncils = [...groups.keys()].sort();
-
-    let optsHtml = '';
-    if (placeholder) {
-        optsHtml += `<option value="">${escHtml(placeholder)}</option>`;
-    }
-
-    if (sortedCouncils.length <= 1) {
-        // No grouping needed — single council or no council info
-        const allSystems = systems.slice().sort((a, b) => (a.label || '').localeCompare(b.label || ''));
-        optsHtml += allSystems.map(s =>
-            `<option value="${escHtml(s.id)}">${escHtml(systemOptionLabel(s))}</option>`
-        ).join('');
-    } else {
-        sortedCouncils.forEach(council => {
-            const councilSystems = groups.get(council).slice().sort((a, b) => (a.label || '').localeCompare(b.label || ''));
-            optsHtml += `<optgroup label="${escHtml(council)}">`;
-            optsHtml += councilSystems.map(s =>
-                `<option value="${escHtml(s.id)}">${escHtml(systemOptionLabel(s))}</option>`
-            ).join('');
-            optsHtml += '</optgroup>';
-        });
-    }
-
-    return `<div>
-        <label for="field_${id}" class="block text-sm font-bold mb-1">${escHtml(label)}</label>
-        <select id="field_${id}" class="border-2 border-[#0b0c0c] p-2 text-sm w-full" ${extraAttrs || ''}>${optsHtml}</select>
-    </div>`;
-}
-
-let _splitRowCount = 0;
-
-function addSplitRow() {
-    const container = document.getElementById('splitRows');
-    if (!container) return;
-    const successors = (state.transitionStructure && state.transitionStructure.successors) ? state.transitionStructure.successors : [];
-    const idx = _splitRowCount++;
-    const row = document.createElement('div');
-    row.className = 'flex gap-2 items-center split-row';
-    row.dataset.idx = idx;
-    // Default each row to a different successor where possible
-    const defaultIdx = Math.min(idx, successors.length - 1);
-    const succOpts = successors.map((s, i) => `<option value="${escHtml(s.name)}"${i === defaultIdx ? ' selected' : ''}>${escHtml(s.name)}</option>`).join('');
-    const splitId = `split_${idx}`;
-    row.innerHTML = `
-        <div class="flex-shrink-0 w-48">
-            <label for="${splitId}_succ" class="sr-only">Successor authority for split ${idx + 1}</label>
-            <select id="${splitId}_succ" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full split-successor">${succOpts}</select>
-        </div>
-        <div class="flex-1">
-            <label for="${splitId}_label" class="sr-only">Instance label for split ${idx + 1}</label>
-            <input id="${splitId}_label" type="text" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full split-label" placeholder="Instance label (e.g. System (North))">
-        </div>
-        <button type="button" onclick="this.closest('.split-row').remove()" class="text-[#d4351c] font-bold text-lg leading-none" aria-label="Remove split ${idx + 1}">&times;</button>
-    `;
-    container.appendChild(row);
-}
-
-let _disaggSplitRowCount = 0;
-
-function addDisaggSplitRow() {
-    const container = document.getElementById('disaggSplitRows');
-    if (!container) return;
-    const successors = (state.transitionStructure && state.transitionStructure.successors) ? state.transitionStructure.successors : [];
-    const idx = _disaggSplitRowCount++;
-    const row = document.createElement('div');
-    row.className = 'flex gap-2 items-center disagg-split-row';
-    row.dataset.idx = idx;
-    const defaultIdx = Math.min(idx, successors.length - 1);
-    const succOpts = successors.map((s, i) => `<option value="${escHtml(s.name)}"${i === defaultIdx ? ' selected' : ''}>${escHtml(s.name)}</option>`).join('');
-    const splitId = `disagg_${idx}`;
-    row.innerHTML = `
-        <div class="flex-shrink-0 w-48">
-            <label for="${splitId}_succ" class="sr-only">Successor authority for disagg split ${idx + 1}</label>
-            <select id="${splitId}_succ" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full disagg-split-successor">${succOpts}</select>
-        </div>
-        <div class="flex-1">
-            <label for="${splitId}_label" class="sr-only">Instance label for disagg split ${idx + 1}</label>
-            <input id="${splitId}_label" type="text" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full disagg-split-label" placeholder="Instance label (e.g. System (North))">
-        </div>
-        <button type="button" onclick="this.closest('.disagg-split-row').remove()" class="text-[#d4351c] font-bold text-lg leading-none" aria-label="Remove disagg split ${idx + 1}">&times;</button>
-    `;
-    container.appendChild(row);
-}
-
-function updateDisaggregateAdvisory() {
-    const systemId = document.getElementById('field_systemId')?.value;
-    const advisory = document.getElementById('disaggAdvisory');
-    if (!advisory) return;
-    if (!systemId) { advisory.innerHTML = ''; return; }
-
-    const sys = getSimulatedITSystems().find(s => s.id === systemId);
-    if (!sys) { advisory.innerHTML = ''; return; }
-
-    let html = '';
-    if (sys.dataPartitioning === 'Monolithic') {
-        html += `<div class="mt-2 p-2 bg-red-50 border-l-4 border-l-[#d4351c] text-xs text-[#d4351c]">
-            <strong>Monolithic data:</strong> This system has monolithic data partitioning. Splitting the contract does not split the data. A data extraction and partitioning strategy must be developed before disaggregation.
-        </div>`;
-    }
-    if (sys.portability === 'Low') {
-        html += `<div class="mt-2 p-2 bg-amber-50 border-l-4 border-l-[#f47738] text-xs">
-            <strong>Low portability:</strong> Vendor-specific data formats may require specialist ETL tooling for partition.
-        </div>`;
-    }
-    if (sys.isERP) {
-        html += `<div class="mt-2 p-2 bg-amber-50 border-l-4 border-l-[#f47738] text-xs">
-            <strong>ERP system:</strong> This system serves multiple functions. All functions will be affected by disaggregation. Consider making the ERP consolidation decision first, then disaggregate the winning platform.
-        </div>`;
-    }
-    advisory.innerHTML = html;
-}
-
-function updateErpSystems() {
-    const successorName = document.getElementById('field_successorName')?.value;
-    const erpFieldContainer = document.getElementById('erpSystemField');
-    const reviewTable = document.getElementById('erpReviewTable');
-    if (!erpFieldContainer) return;
-
-    if (!successorName) {
-        erpFieldContainer.innerHTML = buildSelectField('targetSystemId', 'Target ERP (keep)', [], 'Select a successor first');
-        if (reviewTable) reviewTable.innerHTML = '';
-        return;
-    }
-
-    const systems = getSimulatedITSystems();
-    // Filter to ERP systems allocated to this successor
-    const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
-        ? state.simulationState.lastImpact.afterAllocation
-        : (state.simulationState && state.simulationState.baselineAllocation)
-            ? state.simulationState.baselineAllocation
-            : null;
-
-    let successorSystemIds = new Set();
-    if (allocMap && allocMap.has(successorName)) {
-        allocMap.get(successorName).forEach((allocations) => {
-            allocations.forEach(a => {
-                if (a.system) successorSystemIds.add(a.system.id);
-            });
-        });
-    }
-
-    const erpSystems = systems.filter(s => s.isERP && (successorSystemIds.size === 0 || successorSystemIds.has(s.id)));
-
-    if (erpSystems.length === 0) {
-        erpFieldContainer.innerHTML = buildSelectField('targetSystemId', 'Target ERP (keep)', [], 'No ERP systems found for this successor');
-        if (reviewTable) reviewTable.innerHTML = '';
-        return;
-    }
-
-    const erpOptions = erpSystems.map(s => {
-        const meta = [];
-        if (s.vendor) meta.push(s.vendor);
-        if (typeof s.users === 'number') meta.push(`${s.users.toLocaleString()} users`);
-        if (typeof s.annualCost === 'number') meta.push(`£${s.annualCost.toLocaleString()}/yr`);
-        const label = s.label + (meta.length > 0 ? ` (${meta.join(', ')})` : '');
-        return { value: s.id, label };
-    });
-
-    erpFieldContainer.innerHTML = buildSelectField('targetSystemId', 'Target ERP (keep)', erpOptions, '', 'onchange="window._simUpdateErpReviewTable()"');
-    if (reviewTable) reviewTable.innerHTML = '';
-}
-
-function updateErpReviewTable() {
-    const successorName = document.getElementById('field_successorName')?.value;
-    const targetSystemId = document.getElementById('field_targetSystemId')?.value;
-    const reviewTable = document.getElementById('erpReviewTable');
-    if (!reviewTable || !successorName || !targetSystemId) { if (reviewTable) reviewTable.innerHTML = ''; return; }
-
-    const simNodes = getSimulatedNodes();
-    const simEdges = state.simulationState
-        ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
-        : [];
-
-    // Find lgaFunctionIds the target ERP serves
-    const targetFuncNodeIds = new Set();
-    simEdges.forEach(e => {
-        if (e.source === targetSystemId && e.relationship === 'REALIZES') {
-            targetFuncNodeIds.add(e.target);
-        }
-    });
-
-    if (targetFuncNodeIds.size === 0) {
-        reviewTable.innerHTML = '<div class="mt-3 text-xs text-gray-600 italic">This ERP has no REALIZES edges in the current simulated state.</div>';
-        return;
-    }
-
-    // Build function rows
-    const rows = [];
-    const seenFuncIds = new Set();
-
-    targetFuncNodeIds.forEach(fnNodeId => {
-        const fnNode = simNodes.find(n => n.id === fnNodeId);
-        if (!fnNode || !fnNode.lgaFunctionId) return;
-        const funcId = fnNode.lgaFunctionId;
-        if (seenFuncIds.has(funcId)) return;
-        seenFuncIds.add(funcId);
-
-        const funcEntry = state.lgaFunctionMap && state.lgaFunctionMap.get(funcId);
-        const funcLabel = funcEntry ? funcEntry.label : (fnNode.label || funcId);
-
-        // Get all systems for this function+successor
-        const cellSystemIds = getConsolidateCellSystemIds(funcId, successorName);
-        const competingSystems = getSimulatedITSystems().filter(s => cellSystemIds.includes(s.id) && s.id !== targetSystemId);
-
-        rows.push({ funcId, funcLabel, competingSystems });
-    });
-
-    if (rows.length === 0) {
-        reviewTable.innerHTML = '<div class="mt-3 text-xs text-gray-600 italic">No functions found for this ERP in this successor.</div>';
-        return;
-    }
-
-    let html = `<div class="mt-4">
-        <div class="text-sm font-bold mb-2">Affected functions &amp; competing systems</div>
-        <div class="text-xs text-gray-600 mb-2">Checked systems will be removed (consolidated onto the selected ERP). Uncheck to keep alongside the ERP.</div>
-        <table class="w-full text-xs border-collapse">
-            <thead>
-                <tr class="text-left text-gray-500 border-b border-gray-200">
-                    <th scope="col" class="pb-1 pr-2 font-semibold">Function</th>
-                    <th scope="col" class="pb-1 pr-2 font-semibold">Competing systems (will remove)</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-    rows.forEach(({ funcId, funcLabel, competingSystems }) => {
-        if (competingSystems.length === 0) {
-            html += `<tr><td class="py-1 pr-2">${escHtml(funcLabel)}</td><td class="py-1 text-gray-500 italic">None</td></tr>`;
-        } else {
-            html += `<tr><td class="py-1 pr-2 align-top">${escHtml(funcLabel)}</td><td class="py-1">`;
-            competingSystems.forEach(s => {
-                const cbId = `erp_remove_${funcId}_${s.id}`;
-                html += `<div class="flex items-center gap-1 mb-0.5">
-                    <input type="checkbox" id="${cbId}" name="${cbId}" checked class="w-3 h-3">
-                    <label for="${cbId}" class="text-xs">${escHtml(s.label)}${s._sourceCouncil ? ' (' + escHtml(s._sourceCouncil) + ')' : ''}</label>
-                </div>`;
-            });
-            html += `</td></tr>`;
-        }
-    });
-
-    html += `</tbody></table></div>`;
-    reviewTable.innerHTML = html;
-}
-
-export function updateConsolidateSystems() {
-    const funcId = document.getElementById('field_funcId')?.value;
-    const successorName = document.getElementById('field_successorName')?.value;
-    const container = document.getElementById('consolidateSystemField');
-    if (!container) return;
-
-    if (!funcId || !successorName) {
-        container.innerHTML = buildSelectField('targetSystemId', 'Target System (keep)', [], 'Select a function and successor first');
-        return;
-    }
-
-    const systems = getSimulatedITSystems();
-    const simNodes = getSimulatedNodes();
-    const simEdges = state.simulationState
-        ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
-        : [];
-
-    // Find function nodes for this lgaFunctionId
-    const funcNodeIds = new Set(simNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === funcId).map(n => n.id));
-
-    // Find system IDs serving this function
-    const sysIdsServingFunction = new Set();
-    simEdges.forEach(e => {
-        if (e.relationship === 'REALIZES' && funcNodeIds.has(e.target)) {
-            sysIdsServingFunction.add(e.source);
-        }
-    });
-
-    // Filter to systems allocated to this successor
-    let relevantSystems = systems.filter(s => sysIdsServingFunction.has(s.id));
-
-    // Further filter by successor using allocation map (afterAllocation if available, else baselineAllocation)
-    const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
-        ? state.simulationState.lastImpact.afterAllocation
-        : (state.simulationState && state.simulationState.baselineAllocation)
-            ? state.simulationState.baselineAllocation
-            : null;
-    if (allocMap && allocMap.has(successorName) && allocMap.get(successorName).has(funcId)) {
-        const allocations = allocMap.get(successorName).get(funcId);
-        const allocIds = new Set(allocations.map(a => a.system.id));
-        relevantSystems = relevantSystems.filter(s => allocIds.has(s.id));
-    }
-
-    if (relevantSystems.length === 0) {
-        container.innerHTML = buildSelectField('targetSystemId', 'Target System (keep)', [], 'No systems found for this combination');
-        return;
-    }
-
-    container.innerHTML = buildSystemSelect('targetSystemId', 'Target System (keep)', relevantSystems);
-}
-
-function getConsolidateCellSystemIds(funcId, successorName) {
-    const systems = getSimulatedITSystems();
-    const simNodes = getSimulatedNodes();
-    const simEdges = state.simulationState
-        ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
-        : [];
-    const funcNodeIds = new Set(simNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === funcId).map(n => n.id));
-    const sysIdsServingFunction = new Set();
-    simEdges.forEach(e => {
-        if (e.relationship === 'REALIZES' && funcNodeIds.has(e.target)) {
-            sysIdsServingFunction.add(e.source);
-        }
-    });
-    let relevantSystems = systems.filter(s => sysIdsServingFunction.has(s.id));
-    // Use afterAllocation if available, else baselineAllocation for successor scoping
-    const allocMap = (state.simulationState && state.simulationState.lastImpact && state.simulationState.lastImpact.afterAllocation)
-        ? state.simulationState.lastImpact.afterAllocation
-        : (state.simulationState && state.simulationState.baselineAllocation)
-            ? state.simulationState.baselineAllocation
-            : null;
-    if (allocMap && allocMap.has(successorName) && allocMap.get(successorName).has(funcId)) {
-        const allocations = allocMap.get(successorName).get(funcId);
-        const allocIds = new Set(allocations.map(a => a.system.id));
-        relevantSystems = relevantSystems.filter(s => allocIds.has(s.id));
-    }
-    return relevantSystems.map(s => s.id);
-}
-
-function showActionBuilderError(msg) {
-    const el = document.getElementById('actionBuilderError');
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.remove('hidden');
-}
-
-function clearActionBuilderError() {
-    const el = document.getElementById('actionBuilderError');
-    if (el) el.classList.add('hidden');
-}
-
-export function applyActionFromBuilder() {
-    clearActionBuilderError();
-    if (!state.simulationState) return;
-
-    const type = _actionBuilderType;
-    let action = null;
-
-    try {
-        if (type === 'consolidate') {
-            const funcId = document.getElementById('field_funcId')?.value;
-            const successorName = document.getElementById('field_successorName')?.value;
-            const targetSystemId = document.getElementById('field_targetSystemId')?.value;
-            if (!funcId || !successorName || !targetSystemId) {
-                showActionBuilderError('Please fill in all fields.');
-                return;
-            }
-            // Compute removeSystemIds: all systems in this cell except the target
-            const removeSystemIds = getConsolidateCellSystemIds(funcId, successorName)
-                .filter(id => id !== targetSystemId);
-            action = { type: 'consolidate', functionId: funcId, successorName, targetSystemId, removeSystemIds };
-
-        } else if (type === 'decommission') {
-            const systemId = document.getElementById('field_systemId')?.value;
-            if (!systemId) { showActionBuilderError('Please select a system.'); return; }
-            action = { type: 'decommission', systemId };
-
-        } else if (type === 'extend-contract') {
-            const systemId = document.getElementById('field_systemId')?.value;
-            const newEndYear = parseInt(document.getElementById('field_newEndYear')?.value, 10);
-            const newEndMonth = parseInt(document.getElementById('field_newEndMonth')?.value, 10);
-            if (!systemId || !newEndYear || !newEndMonth) { showActionBuilderError('Please fill in all fields.'); return; }
-            action = { type: 'extend-contract', systemId, newEndYear, newEndMonth };
-
-        } else if (type === 'migrate-users') {
-            const fromSystemId = document.getElementById('field_fromSystemId')?.value;
-            const toSystemId = document.getElementById('field_toSystemId')?.value;
-            const userCount = parseInt(document.getElementById('field_userCount')?.value, 10);
-            if (!fromSystemId || !toSystemId || !userCount || userCount <= 0) {
-                showActionBuilderError('Please fill in all fields with valid values.');
-                return;
-            }
-            if (fromSystemId === toSystemId) { showActionBuilderError('From and To systems must be different.'); return; }
-            action = { type: 'migrate-users', fromSystemId, toSystemId, userCount };
-
-        } else if (type === 'split-shared-service') {
-            const systemId = document.getElementById('field_systemId')?.value;
-            if (!systemId) { showActionBuilderError('Please select a system.'); return; }
-            const splitRows = document.querySelectorAll('#splitRows .split-row');
-            const splits = [];
-            splitRows.forEach(row => {
-                const successorName = row.querySelector('.split-successor')?.value;
-                const label = row.querySelector('.split-label')?.value;
-                if (successorName && label) splits.push({ successorName, label });
-            });
-            if (splits.length < 2) {
-                showActionBuilderError('At least 2 split instances are required.');
-                return;
-            }
-            action = { type: 'split-shared-service', systemId, splits };
-
-        } else if (type === 'disaggregate') {
-            const systemId = document.getElementById('field_systemId')?.value;
-            if (!systemId) { showActionBuilderError('Please select a system.'); return; }
-            const splitRows = document.querySelectorAll('#disaggSplitRows .disagg-split-row');
-            const splits = [];
-            splitRows.forEach(row => {
-                const successorName = row.querySelector('.disagg-split-successor')?.value;
-                const label = row.querySelector('.disagg-split-label')?.value;
-                if (successorName && label) splits.push({ successorName, label });
-            });
-            if (splits.length < 2) {
-                showActionBuilderError('At least 2 split instances are required.');
-                return;
-            }
-            action = { type: 'disaggregate', systemId, splits };
-
-        } else if (type === 'consolidate-erp') {
-            const successorName = document.getElementById('field_successorName')?.value;
-            const targetSystemId = document.getElementById('field_targetSystemId')?.value;
-            if (!successorName || !targetSystemId) {
-                showActionBuilderError('Please select a successor and target ERP.');
-                return;
-            }
-
-            const simNodes = getSimulatedNodes();
-            const simEdges = state.simulationState
-                ? (state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.simulationState.baselineEdges)
-                : [];
-
-            // Find lgaFunctionIds the target ERP serves
-            const targetFuncNodeIds = new Set();
-            simEdges.forEach(e => {
-                if (e.source === targetSystemId && e.relationship === 'REALIZES') {
-                    targetFuncNodeIds.add(e.target);
-                }
-            });
-
-            const affectedFunctionIds = [];
-            const removedPerFunction = {};
-
-            targetFuncNodeIds.forEach(fnNodeId => {
-                const fnNode = simNodes.find(n => n.id === fnNodeId);
-                if (!fnNode || !fnNode.lgaFunctionId) return;
-                const funcId = fnNode.lgaFunctionId;
-                if (affectedFunctionIds.includes(funcId)) return; // dedupe
-
-                affectedFunctionIds.push(funcId);
-
-                const cellSystemIds = getConsolidateCellSystemIds(funcId, successorName);
-                const removeIds = cellSystemIds.filter(id => {
-                    if (id === targetSystemId) return false;
-                    const checkbox = document.getElementById(`erp_remove_${funcId}_${id}`);
-                    return !checkbox || checkbox.checked; // Default: remove (checked)
-                });
-
-                if (removeIds.length > 0) {
-                    removedPerFunction[funcId] = removeIds;
-                }
-            });
-
-            action = { type: 'consolidate-erp', successorName, targetSystemId, affectedFunctionIds, removedPerFunction };
-
-        } else if (type === 'procure-replacement') {
-            const funcId = document.getElementById('field_funcId')?.value;
-            const successorName = document.getElementById('field_successorName')?.value;
-            const label = document.getElementById('field_newSystemLabel')?.value?.trim();
-            const vendor = document.getElementById('field_newSystemVendor')?.value?.trim();
-            const annualCostRaw = document.getElementById('field_annualCost')?.value;
-            const isCloud = document.getElementById('field_isCloud')?.checked;
-            const replacesSystemId = document.getElementById('field_replacesSystemId')?.value || null;
-
-            if (!funcId || !label) { showActionBuilderError('Function and system label are required.'); return; }
-            const newSystem = {
-                id: 'sim-' + Math.random().toString(36).slice(2, 10),
-                label,
-                vendor: vendor || null,
-                annualCost: annualCostRaw ? parseInt(annualCostRaw, 10) : null,
-                isCloud: !!isCloud,
-                _sourceCouncil: successorName || 'Simulated',
-                targetAuthorities: successorName ? [successorName] : []
-            };
-            action = { type: 'procure-replacement', functionId: funcId, successorName, newSystem, replacesSystemId };
-        }
-    } catch (err) {
-        showActionBuilderError('Error building action: ' + err.message);
-        return;
-    }
-
-    if (!action) return;
-
-    if (_editingActionIndex !== null) {
-        state.simulationState.actions[_editingActionIndex] = action;
-        _editingActionIndex = null;
-    } else {
-        state.simulationState.actions.push(action);
-    }
-    document.getElementById('actionBuilderModal').classList.add('hidden');
-    recomputeSimulation();
-}
 
 // ===================================================================
 // HELPERS
 // ===================================================================
 
-function getActionTypeName(type) {
-    const names = {
-        'consolidate': 'Consolidate Systems',
-        'consolidate-erp': 'Consolidate ERP',
-        'decommission': 'Decommission System',
-        'extend-contract': 'Extend Contract',
-        'migrate-users': 'Migrate Users',
-        'split-shared-service': 'Split Shared Service',
-        'disaggregate': 'Disaggregate County System',
-        'procure-replacement': 'Procure Replacement'
-    };
-    return names[type] || type;
-}
+/**
+ * Builds a human-readable decision-language description for an obligation.
+ * Used in the obligation detail modal to replace "Action: consolidate" language.
+ *
+ * @param {Object} obl  A SimulationObligation
+ * @returns {string|null}  Human-readable description or null if no description available
+ */
+function buildDecisionDescription(obl) {
+    const funcLabel = obl.functionLabel || obl.functionId || 'this function';
+    const successor = (obl.affectedSuccessors && obl.affectedSuccessors[0]) || null;
+    const successorText = successor ? ` for ${successor}` : '';
 
-function getActionLabel(action) {
-    switch (action.type) {
-        case 'consolidate': {
-            const funcEntry = state.lgaFunctionMap.get(action.functionId);
-            const funcLabel = funcEntry ? funcEntry.label : action.functionId;
-            const sys = getSimulatedITSystems().find(s => s.id === action.targetSystemId)
-                || state.simulationState.baselineNodes.find(n => n.id === action.targetSystemId);
-            const sysLabel = sys ? sys.label : action.targetSystemId;
-            return `Consolidate ${funcLabel} in ${action.successorName} \u2192 keep ${sysLabel}`;
+    switch (obl.actionType) {
+        case 'consolidate':
+        case 'choose': {
+            // "Decision: chose [target system] for [function] ([successor])"
+            const targetLabel = obl.toSystem ? obl.toSystem.label : 'selected system';
+            return `Decision: chose ${targetLabel} for ${funcLabel}${successorText}`;
         }
-        case 'decommission': {
-            const sys = state.simulationState.baselineNodes.find(n => n.id === action.systemId);
-            return `Decommission ${sys ? sys.label : action.systemId}`;
+        case 'procure-replacement':
+        case 'procure': {
+            const targetLabel = obl.toSystem ? obl.toSystem.label : 'procured replacement';
+            return `Decision: procure ${targetLabel} for ${funcLabel}${successorText}`;
         }
-        case 'extend-contract': {
-            const sys = state.simulationState.baselineNodes.find(n => n.id === action.systemId);
-            return `Extend ${sys ? sys.label : action.systemId} \u2192 ${action.newEndMonth}/${action.newEndYear}`;
-        }
-        case 'migrate-users': {
-            const from = state.simulationState.baselineNodes.find(n => n.id === action.fromSystemId);
-            const to = state.simulationState.baselineNodes.find(n => n.id === action.toSystemId);
-            return `Migrate ${action.userCount} users: ${from ? from.label : action.fromSystemId} \u2192 ${to ? to.label : action.toSystemId}`;
-        }
-        case 'split-shared-service': {
-            const sys = state.simulationState.baselineNodes.find(n => n.id === action.systemId);
-            const n = action.splits ? action.splits.length : '?';
-            return `Split ${sys ? sys.label : action.systemId} \u2192 ${n} instances`;
+        case 'defer': {
+            return `Decision: deferred ${funcLabel}${successorText} — running systems in parallel`;
         }
         case 'disaggregate': {
-            const sys = state.simulationState.baselineNodes.find(n => n.id === action.systemId);
-            const n = action.splits ? action.splits.length : '?';
-            return `Disaggregate ${sys ? sys.label : action.systemId} \u2192 ${n} instances`;
+            const splitTarget = obl.toSystem ? obl.toSystem.label : 'successor instance';
+            return `Decision: disaggregate — split into ${splitTarget}${successorText}`;
         }
-        case 'consolidate-erp': {
-            const sys = getSimulatedITSystems().find(s => s.id === action.targetSystemId)
-                || state.simulationState.baselineNodes.find(n => n.id === action.targetSystemId);
-            const sysLabel = sys ? sys.label : action.targetSystemId;
-            const funcCount = action.affectedFunctionIds ? action.affectedFunctionIds.length : '?';
-            return `ERP Consolidation: keep ${sysLabel} in ${action.successorName} (${funcCount} functions)`;
-        }
-        case 'procure-replacement': {
-            const funcEntry = state.lgaFunctionMap.get(action.functionId);
-            const funcLabel = funcEntry ? funcEntry.label : action.functionId;
-            const label = action.newSystem ? action.newSystem.label : '?';
-            const successor = action.successorName || '';
-            return successor ? `Procure ${label} for ${funcLabel} \u2192 ${successor}` : `Procure ${label} for ${funcLabel}`;
+        case 'split-shared-service': {
+            return `Decision: split shared service for ${funcLabel}${successorText}`;
         }
         default:
-            return action.type;
+            return null;
     }
 }
 
@@ -1781,67 +1125,36 @@ function createFocusTrap(modalEl) {
 // ===================================================================
 
 // Track opener elements for focus return
-let _actionBuilderOpener = null;
 let _obligationDetailOpener = null;
-let _actionBuilderTrapCleanup = null;
 let _obligationDetailTrapCleanup = null;
 
-// --- Wire action builder modal close/apply buttons ---
-const actionBuilderModal = document.getElementById('actionBuilderModal');
-if (actionBuilderModal) {
-    const closeActionBuilderModal = () => {
-        actionBuilderModal.classList.add('hidden');
-        _editingActionIndex = null;
-        if (_actionBuilderTrapCleanup) { _actionBuilderTrapCleanup(); _actionBuilderTrapCleanup = null; }
-        if (_actionBuilderOpener && typeof _actionBuilderOpener.focus === 'function') {
-            _actionBuilderOpener.focus();
-            _actionBuilderOpener = null;
-        }
-    };
-    document.getElementById('btnCloseActionBuilder').addEventListener('click', closeActionBuilderModal);
-    document.getElementById('btnCancelAction').addEventListener('click', closeActionBuilderModal);
-    document.getElementById('btnApplyAction').addEventListener('click', applyActionFromBuilder);
-    actionBuilderModal.addEventListener('click', (e) => {
-        if (e.target === actionBuilderModal) closeActionBuilderModal();
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !actionBuilderModal.classList.contains('hidden')) {
-            closeActionBuilderModal();
-        }
-    });
-}
-
+// Decision summary window hooks
 window._simExit = exitSimulation;
-window._simOpenActionBuilder = openActionBuilder;
-window._simOpenActionBuilderWithContext = openActionBuilderWithContext;
-window._simEditAction = editAction;
-window._simRemoveAction = function(idx) {
+window._simClearAllDecisions = function() {
     if (!state.simulationState) return;
-    state.simulationState.actions.splice(idx, 1);
+    state.simulationState.decisions = new Map();
+    state.simulationState.projectedActions = [];
+    state.simulationState.lastImpact = null;
     recomputeSimulation();
 };
-window._simClearAll = function() {
-    if (!state.simulationState) return;
-    state.simulationState.actions = [];
-    recomputeSimulation();
-};
-window._simActionBuilderNext = actionBuilderNext;
-window._simActionBuilderBack = function() {
-    _actionBuilderStep = 1;
-    _actionBuilderType = null;
-    _editingActionIndex = null;
-    renderActionBuilderStep1();
-};
-window._simUpdateConsolidateSystems = updateConsolidateSystems;
-window._simAddSplitRow = addSplitRow;
-window._simAddDisaggSplitRow = addDisaggSplitRow;
-window._simUpdateDisaggregateAdvisory = updateDisaggregateAdvisory;
-window._simUpdateErpSystems = updateErpSystems;
-window._simUpdateErpReviewTable = updateErpReviewTable;
 window._simToggleActionPanel = function() {
     _actionPanelCollapsed = !_actionPanelCollapsed;
     renderSimulationWorkspace();
 };
+
+
+// Helper hooks for Sankey context menu to access allocation data and function labels
+window._simGetAllocationMap = function() {
+    if (!state.simulationState) return null;
+    return state.simulationState.baselineAllocation || state.successorAllocationMap || null;
+};
+window._simGetFunctionLabel = function(funcId) {
+    if (!state.lgaFunctionMap) return funcId;
+    const entry = state.lgaFunctionMap.get(funcId);
+    return entry ? entry.label : funcId;
+};
+
+// Sankey panel hooks
 window._simSankeyBack = function() {
     _sankeyDrillDown = null;
     _sankeyCouncilFilter = null;

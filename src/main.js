@@ -27,9 +27,10 @@ import { openImportWizard, closeImportWizard, handleImportNext, handleImportBack
 import { openArchEditor, wireEditArchBtn, generateId } from './features/arch-editor.js';
 import {
     enterSimulation, exitSimulation, recomputeSimulation,
-    renderSimulationWorkspace, renderBeforeAfterMetrics,
-    openActionBuilder, applyActionFromBuilder
+    renderSimulationWorkspace, renderBeforeAfterMetrics
 } from './features/simulation-panel.js';
+import { openDecisionPanel } from './features/decision-panel.js';
+import { getDecisionKey } from './simulation/decisions.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -768,7 +769,7 @@ perspectiveSelect.addEventListener('change', (e) => {
     state.activePerspective = e.target.value;
     const analysisModalEl = document.getElementById('analysisModal');
     if (analysisModalEl) analysisModalEl.classList.add('hidden');
-    if (state.simulationState && state.simulationState.actions.length > 0) {
+    if (state.simulationState && (state.simulationState.decisions?.size > 0 || state.simulationState.actions?.length > 0)) {
         recomputeSimulation();
     } else {
         renderDashboard();
@@ -1187,7 +1188,32 @@ export function renderDashboard() {
                 }
             }
 
-            let rowHTML = `<td class="font-bold text-base bg-white border-r">${breadcrumbHtml}${tierBadgeHtml}<br>${lgaFunc.label}<br><span class="text-[10px] font-normal text-gray-400 font-mono">esd:${lgaFunc.lgaId}</span>${crossTierHtml}</td>`;
+            // Decision progress for function label column (shown when simulation is active)
+            let decisionProgressHtml = '';
+            if (state.simulationState) {
+                const successorNames_dp = state.transitionStructure ? state.transitionStructure.successors.map(s => s.name) : [];
+                const allocMap_dp = state.simulationState.baselineAllocation || state.successorAllocationMap;
+                const decisions_dp = state.simulationState.decisions || new Map();
+                let decidableCount = 0, decidedCount_dp = 0, allDecided = true;
+                successorNames_dp.forEach(sn => {
+                    const sm = allocMap_dp ? allocMap_dp.get(sn) : null;
+                    const cellAllocs = sm ? (sm.get(lgaFunc.lgaId) || []) : [];
+                    if (cellAllocs.length >= 2) {
+                        decidableCount++;
+                        const dec = decisions_dp.get(getDecisionKey(lgaFunc.lgaId, sn));
+                        if (dec) { decidedCount_dp++; } else { allDecided = false; }
+                    }
+                });
+                if (decidableCount > 0) {
+                    if (allDecided && decidedCount_dp === decidableCount) {
+                        decisionProgressHtml = `<span class="block mt-1 text-[10px] font-bold text-[#00703c]">&#10003; All decided (${decidedCount_dp}/${decidableCount})</span>`;
+                    } else {
+                        decisionProgressHtml = `<span class="block mt-1 text-[10px] text-gray-500">${decidedCount_dp} of ${decidableCount} decided</span>`;
+                    }
+                }
+            }
+
+            let rowHTML = `<td class="font-bold text-base bg-white border-r">${breadcrumbHtml}${tierBadgeHtml}<br>${lgaFunc.label}<br><span class="text-[10px] font-normal text-gray-400 font-mono">esd:${lgaFunc.lgaId}</span>${crossTierHtml}${decisionProgressHtml}</td>`;
 
             // --- Successor columns ---
             // Collect all allocations across successors for the analysis column
@@ -1266,7 +1292,55 @@ export function renderDashboard() {
                         });
                     }
 
-                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
+                    // Decision affordances (shown when simulation is active in transition mode)
+                    let decisionAffordanceHtml = '';
+                    if (state.simulationState) {
+                        const decisions_cell = state.simulationState.decisions || new Map();
+                        const decKey = getDecisionKey(lgaFunc.lgaId, successorName);
+                        const existingDecision = decisions_cell.get(decKey);
+
+                        // Register function+successor for lookup in onclick via a data registry
+                        // Using data attributes on the button to avoid inline string injection
+                        const funcId_safe = escHtml(lgaFunc.lgaId);
+                        const succName_safe = escHtml(successorName);
+
+                        if (existingDecision) {
+                            // Show decision badge + Edit link
+                            let badgeHtml = '';
+                            if (existingDecision.systemChoice === 'choose') {
+                                const retainedId = existingDecision.retainedSystemIds && existingDecision.retainedSystemIds.length > 0
+                                    ? existingDecision.retainedSystemIds[0] : null;
+                                const retainedNode = retainedId && state.simulationState.baselineNodes
+                                    ? state.simulationState.baselineNodes.find(n => n.id === retainedId) : null;
+                                const sysLabel = retainedNode ? retainedNode.label : 'system';
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-800">Chose: ${escHtml(sysLabel)}</span>`;
+                            } else if (existingDecision.systemChoice === 'defer') {
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Deferred</span>`;
+                            } else if (existingDecision.systemChoice === 'procure') {
+                                const procLabel = existingDecision.procuredSystem ? existingDecision.procuredSystem.label : 'New System';
+                                badgeHtml = `<span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Procure: ${escHtml(procLabel)}</span>`;
+                            }
+                            decisionAffordanceHtml = `<div class="mt-2 flex items-center gap-2 flex-wrap">
+                                ${badgeHtml}
+                                <button class="text-xs text-[#1d70b8] underline sim-decide-btn"
+                                        data-func-id="${funcId_safe}" data-successor="${succName_safe}"
+                                        type="button">Edit</button>
+                            </div>`;
+                        } else if (cellAllocations.length >= 2) {
+                            // Undecided cell with competing systems: show Decide link
+                            decisionAffordanceHtml = `<div class="mt-2">
+                                <button class="text-xs font-bold text-[#1d70b8] underline sim-decide-btn"
+                                        data-func-id="${funcId_safe}" data-successor="${succName_safe}"
+                                        type="button">Decide</button>
+                            </div>`;
+                        }
+                    }
+
+                    // decisionAffordanceHtml goes BEFORE system cards so Decide/Edit is visible at the top
+                    const decisionAffordanceTop = decisionAffordanceHtml
+                        ? decisionAffordanceHtml.replace('mt-2', 'mb-2')
+                        : '';
+                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
 
                     // Collect for analysis
                     const taggedAllocations = cellAllocations.map(a => ({ ...a, _successorName: successorName }));
@@ -1300,6 +1374,23 @@ export function renderDashboard() {
             tr.innerHTML = rowHTML;
             body.appendChild(tr);
         });
+
+        // Wire up "Decide" / "Edit" button clicks via event delegation on the matrix body.
+        // We use a module-level named handler so we can remove and re-add it on each render,
+        // avoiding duplicate listeners as renderDashboard is called multiple times.
+        if (body._simDecideHandler) {
+            body.removeEventListener('click', body._simDecideHandler);
+        }
+        body._simDecideHandler = function(e) {
+            const btn = e.target.closest('.sim-decide-btn');
+            if (!btn) return;
+            const funcId = btn.dataset.funcId;
+            const successorName = btn.dataset.successor;
+            if (funcId && successorName) {
+                openDecisionPanel(funcId, successorName);
+            }
+        };
+        body.addEventListener('click', body._simDecideHandler);
 
         if(state.activePersona !== 'architect') drawTimeline(systems, councilsArray);
         renderCriticalPathPanel();
@@ -2170,3 +2261,6 @@ window.toggleHeaderCollapse = toggleHeaderCollapse;
 window.toggleBannerCollapse = toggleBannerCollapse;
 window.openDocModal = openDocModal;
 window.openAnalysisModal = openAnalysisModal;
+// Decision Panel: exposed here as well (decision-panel.js also sets window._simOpenDecision
+// but this keeps openDecisionPanel available from main scope for Phase 3 matrix wiring)
+window.openDecisionPanel = openDecisionPanel;

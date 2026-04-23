@@ -4,5 +4,11 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.js'],
     globals: true,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 2,
+      },
+    },
   },
 });

@@ -3,7 +3,7 @@
  *
  * Action object shapes (discriminated union on `type`):
  *
- * { type: 'consolidate', functionId: string, successorName: string, targetSystemId: string, removeSystemIds?: string[] }
+ * { type: 'consolidate', functionId: string, successorName: string, targetSystemId: string, removeSystemIds?: string[], scopeFunctionNodeIds?: string[] }
  * { type: 'consolidate-erp', successorName: string, targetSystemId: string, affectedFunctionIds: string[], removedPerFunction: Object }
  * { type: 'decommission', systemId: string }
  * { type: 'extend-contract', systemId: string, newEndYear: number, newEndMonth: number }
@@ -30,6 +30,11 @@ import { generateObligations, generateDisaggregationObligations } from './obliga
  * @param {Array} actions
  * @param {Map|null} [baselineAllocation]  Baseline successor allocation map (for obligation generation)
  * @param {Map|null} [lgaFunctionMap]  LGA function map (for obligation labels)
+ *
+ * Action object shapes (discriminated union on `type`):
+ * consolidate now supports an optional `severOnly: string[]` field — systems in this
+ * array have their REALIZES edge to the target function removed but their node and
+ * other edges are preserved (used for ERP systems that still serve other functions).
  */
 export function applyAllActions(baselineNodes, baselineEdges, actions, baselineAllocation, lgaFunctionMap) {
     // Deep-copy baseline
@@ -130,6 +135,10 @@ export function applyConsolidate(nodes, edges, action) {
     const warnings = [];
     const { functionId, targetSystemId, removeSystemIds, successorName } = action;
 
+    // severOnly: systems whose REALIZES edge to this function is removed, but the system
+    // node and all other edges are preserved. Used for ERP systems that still serve other functions.
+    const severOnlySet = new Set(action.severOnly || []);
+
     // Find target system
     const targetIdx = nodes.findIndex(n => n.id === targetSystemId && n.type === 'ITSystem');
     if (targetIdx === -1) {
@@ -145,28 +154,47 @@ export function applyConsolidate(nodes, edges, action) {
         return { nodes, edges, warnings: [`Consolidate: no function nodes found for lgaFunctionId ${functionId}`] };
     }
 
-    let systemsToRemove;
+    // Scoped function node IDs for sever-only edge removal (when provided by projector).
+    // Limits sever-only edge removal to function nodes reachable from systems in the
+    // current (successor, function) cell — prevents severing edges to other successors'
+    // function nodes that share the same lgaFunctionId but are different graph nodes.
+    const severScopeFuncIds = action.scopeFunctionNodeIds
+        ? new Set(action.scopeFunctionNodeIds)
+        : funcNodeIds;
+
+    let systemsToRemoveAll;
     if (removeSystemIds && removeSystemIds.length > 0) {
-        // Scoped consolidation: only remove explicitly listed systems
-        systemsToRemove = new Set(removeSystemIds.filter(id => id !== targetSystemId));
+        // Scoped consolidation: only act on explicitly listed systems
+        systemsToRemoveAll = new Set(removeSystemIds.filter(id => id !== targetSystemId));
     } else {
-        // Global fallback: remove all systems serving this function except target
+        // Global fallback: act on all systems serving this function except target
         const systemIdsServingFunction = new Set();
         edges.forEach(e => {
             if (e.relationship === 'REALIZES' && funcNodeIds.has(e.target)) {
                 systemIdsServingFunction.add(e.source);
             }
         });
-        systemsToRemove = new Set([...systemIdsServingFunction].filter(id => id !== targetSystemId));
+        systemsToRemoveAll = new Set([...systemIdsServingFunction].filter(id => id !== targetSystemId));
     }
 
-    if (systemsToRemove.size === 0) {
+    if (systemsToRemoveAll.size === 0 && severOnlySet.size === 0) {
         return { nodes, edges, warnings: [] }; // Nothing to consolidate
     }
 
-    // Transfer users from removed systems to target
+    // Partition: systems in severOnly are edge-severed only; others are fully removed
+    const toFullyRemove = new Set([...systemsToRemoveAll].filter(id => !severOnlySet.has(id)));
+    const toSeverEdgesOnly = new Set([...systemsToRemoveAll].filter(id => severOnlySet.has(id)));
+
+    // Also handle severOnly IDs that weren't in removeSystemIds (explicit sever-only set)
+    severOnlySet.forEach(id => {
+        if (id !== targetSystemId && !toSeverEdgesOnly.has(id)) {
+            toSeverEdgesOnly.add(id);
+        }
+    });
+
+    // Transfer users from FULLY removed systems to target (not from sever-only systems)
     let transferredUsers = 0;
-    systemsToRemove.forEach(sysId => {
+    toFullyRemove.forEach(sysId => {
         const sys = nodes.find(n => n.id === sysId);
         if (sys && typeof sys.users === 'number') {
             transferredUsers += sys.users;
@@ -176,21 +204,35 @@ export function applyConsolidate(nodes, edges, action) {
         nodes[targetIdx].users += transferredUsers;
     }
 
-    // Remove the systems
-    nodes = nodes.filter(n => !systemsToRemove.has(n.id));
+    // Fully remove systems that are not sever-only
+    nodes = nodes.filter(n => !toFullyRemove.has(n.id));
 
-    // Remove edges from removed systems
-    edges = edges.filter(e => !systemsToRemove.has(e.source));
+    // Remove ALL edges from fully removed systems
+    edges = edges.filter(e => !toFullyRemove.has(e.source));
+
+    // For sever-only systems: remove ONLY their REALIZES edges to this function's nodes
+    // (preserve the system node and all other edges)
+    // Use severScopeFuncIds instead of funcNodeIds to limit removal to this cell's
+    // function nodes, preventing cross-successor edge removal.
+    if (toSeverEdgesOnly.size > 0) {
+        edges = edges.filter(e => {
+            // Keep the edge unless: it's from a sever-only system AND it's a REALIZES edge to this function's scope
+            const isSeverSource = toSeverEdgesOnly.has(e.source);
+            const isRealizesEdge = e.relationship === 'REALIZES';
+            const targetIsThisFunction = severScopeFuncIds.has(e.target);
+            return !(isSeverSource && isRealizesEdge && targetIsThisFunction);
+        });
+    }
 
     // Check for unserved functions at the lgaFunctionId level.
     // After cross-council consolidation, individual Function nodes from removed councils
     // may lose their realizer, but the function is still served if ANY node with the same
     // lgaFunctionId has a realizer (e.g. the target system's own council's Function node).
-    const anyRealizer = Array.from(funcNodeIds).some(fnId =>
+    const anyRealizer = Array.from(severScopeFuncIds).some(fnId =>
         edges.some(e => e.relationship === 'REALIZES' && e.target === fnId)
     );
     if (!anyRealizer) {
-        const fnNode = nodes.find(n => funcNodeIds.has(n.id));
+        const fnNode = nodes.find(n => severScopeFuncIds.has(n.id));
         const label = fnNode ? fnNode.label : functionId;
         const scope = successorName ? ` in ${successorName}` : '';
         warnings.push(`Consolidate: function ${label} (${functionId}) may be unserved${scope} after consolidation`);

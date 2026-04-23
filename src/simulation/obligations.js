@@ -15,7 +15,7 @@
 /**
  * @typedef {Object} SimulationObligation
  * @property {string} id
- * @property {'data-migration'|'function-gap'|'cross-successor-impact'|'data-partition'} type
+ * @property {'data-migration'|'function-gap'|'cross-successor-impact'|'data-partition'|'deferral-cost'} type
  * @property {number} actionIndex
  * @property {string} actionType
  * @property {Object} fromSystem
@@ -32,6 +32,11 @@
  * @property {string|null} contractEndDate
  * @property {number|null} noticePeriod
  * @property {boolean} resolved
+ *
+ * Additional fields for type 'deferral-cost':
+ * @property {Array<{id: string, label: string, annualCost: number, users: number}>} [parallelSystems]
+ * @property {number} [combinedAnnualCost]
+ * @property {Array<{systemId: string, label: string, currentEnd: string, extendedTo: string}>} [contractExtensionsNeeded]
  */
 
 /**
@@ -207,6 +212,129 @@ export function generateDisaggregationObligations(originalSystem, action, action
 }
 
 /**
+ * Generates obligations for a 'defer' decision.
+ *
+ * A deferral obligation tracks the ongoing cost and operational risk of running
+ * competing systems in parallel while a consolidation decision is delayed. Deferrals
+ * are inherently unresolved — the obligation persists until a consolidation decision
+ * is made.
+ *
+ * @param {FunctionDecision} decision  The defer decision
+ * @param {Map|null} baselineAllocation  Map<successorName, Map<lgaFunctionId, SystemAllocation[]>>
+ * @param {Map|null} lgaFunctionMap  Map<lgaFunctionId, { label, ... }>
+ * @returns {SimulationObligation[]}
+ */
+export function generateDeferralObligations(decision, baselineAllocation, lgaFunctionMap) {
+    const obligations = [];
+    if (!baselineAllocation || !decision) return obligations;
+
+    const { functionId, successorName } = decision;
+
+    const successorMap = baselineAllocation.get(successorName);
+    if (!successorMap) return obligations;
+
+    const allocations = successorMap.get(functionId);
+    if (!allocations || allocations.length === 0) return obligations;
+
+    const funcEntry = lgaFunctionMap && lgaFunctionMap.get(functionId);
+    const funcLabel = funcEntry ? funcEntry.label : functionId;
+
+    // Gather parallel systems data
+    const parallelSystems = [];
+    let combinedAnnualCost = 0;
+    let totalUsers = 0;
+    let hasMonolithic = false;
+    let hasLowPortability = false;
+    let hasERP = false;
+    let hasOnPrem = false;
+    const contractExtensionsNeeded = [];
+
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const horizonYear = currentYear + 2;
+
+    for (const alloc of allocations) {
+        const sys = alloc.system;
+        if (!sys) continue;
+
+        const annualCost = typeof sys.annualCost === 'number' ? sys.annualCost : 0;
+        const users = typeof sys.users === 'number' ? sys.users : 0;
+
+        parallelSystems.push({
+            id: sys.id,
+            label: sys.label || sys.id,
+            annualCost,
+            users
+        });
+
+        combinedAnnualCost += annualCost;
+        totalUsers += users;
+
+        if (sys.dataPartitioning === 'Monolithic') hasMonolithic = true;
+        if (sys.portability === 'Low') hasLowPortability = true;
+        if (sys.isERP) hasERP = true;
+        if (!sys.isCloud) hasOnPrem = true;
+
+        // Check if contract extension is needed (expires within deferral horizon)
+        if (sys.endYear && sys.endYear <= horizonYear) {
+            const currentEnd = sys.endYear
+                ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}`
+                : null;
+            const extendedEndYear = horizonYear + 1;
+            const extendedTo = `${extendedEndYear}-${String(sys.endMonth || 3).padStart(2, '0')}`;
+            contractExtensionsNeeded.push({
+                systemId: sys.id,
+                label: sys.label || sys.id,
+                currentEnd,
+                extendedTo
+            });
+        }
+    }
+
+    if (parallelSystems.length === 0) return obligations;
+
+    obligations.push({
+        id: `obl-defer-${functionId}-${successorName.replace(/\s+/g, '-').toLowerCase()}`,
+        type: 'deferral-cost',
+        actionIndex: -1,            // Not tied to a specific action index
+        actionType: 'defer',
+        fromSystem: parallelSystems.length > 0 ? {
+            id: parallelSystems[0].id,
+            label: parallelSystems[0].label,
+            council: 'Multiple (deferred)',
+            vendor: null,
+            users: totalUsers,
+            annualCost: combinedAnnualCost,
+            dataPartitioning: hasMonolithic ? 'Monolithic' : 'Segmented',
+            portability: hasLowPortability ? 'Low' : 'Medium',
+            isERP: hasERP,
+            isCloud: !hasOnPrem,
+            endYear: null,
+            endMonth: null,
+            noticePeriod: null
+        } : null,
+        toSystem: null,             // No target — decision is deferred
+        affectedSuccessors: [successorName],
+        functionId,
+        functionLabel: funcLabel,
+        isMonolithic: hasMonolithic,
+        isLowPortability: hasLowPortability,
+        isERP: hasERP,
+        isOnPrem: hasOnPrem,
+        userCount: totalUsers,
+        annualCost: combinedAnnualCost,
+        contractEndDate: null,
+        noticePeriod: null,
+        resolved: false,            // Deferrals are inherently unresolved
+        parallelSystems,
+        combinedAnnualCost,
+        contractExtensionsNeeded
+    });
+
+    return obligations;
+}
+
+/**
  * Computes obligation severity using the active persona's signal weights.
  * The same obligation shows as high-severity for a data-focused persona
  * (architect) but lower for a commercial persona.
@@ -238,6 +366,21 @@ export function computeObligationSeverity(obl, weights) {
 
     // Data partition obligations (disaggregation) — always significant complexity
     if (obl.type === 'data-partition') score += 1;
+
+    // Deferral obligations — ongoing parallel running cost accumulates risk
+    if (obl.type === 'deferral-cost') {
+        // Multiple parallel systems indicate higher consolidation complexity
+        const parallelCount = (obl.parallelSystems || []).length;
+        if (parallelCount >= 3) score += 3;
+        else if (parallelCount >= 2) score += 2;
+        else score += 1;
+
+        // Contract extensions needed indicate imminent cost pressure
+        const extensionCount = (obl.contractExtensionsNeeded || []).length;
+        if (extensionCount > 0 && weights.contractUrgency > 0) {
+            score += weights.contractUrgency;
+        }
+    }
 
     if (score >= 5) return 'high';
     if (score >= 2) return 'medium';
@@ -304,6 +447,37 @@ export function generateMigrationScopeBullets(obl) {
         } else {
             bullets.push('Segmented data — geographic partition may be achievable through configuration or tenant separation');
         }
+    }
+
+    // Deferral-cost specific bullets
+    if (obl.type === 'deferral-cost') {
+        const parallelCount = (obl.parallelSystems || []).length;
+        if (parallelCount > 1) {
+            bullets.push(`${parallelCount} systems running in parallel — consolidation decision deferred`);
+        } else {
+            bullets.push('System retained without consolidation — ongoing running cost continues');
+        }
+
+        if (obl.combinedAnnualCost > 0) {
+            const costLabel = obl.combinedAnnualCost >= 1000000
+                ? `\u00A3${(obl.combinedAnnualCost / 1000000).toFixed(1)}M`
+                : `\u00A3${Math.round(obl.combinedAnnualCost / 1000)}k`;
+            bullets.push(`Combined ongoing cost: ${costLabel}/yr`);
+        }
+
+        const extensionsNeeded = obl.contractExtensionsNeeded || [];
+        if (extensionsNeeded.length > 0) {
+            const systemNames = extensionsNeeded.map(e => e.label).join(', ');
+            bullets.push(`Contract extension(s) required: ${systemNames}`);
+        }
+
+        if (obl.isERP) {
+            bullets.push('ERP system(s) involved — deferral may affect multiple functions');
+        }
+
+        // Always unresolved for deferral
+        bullets.push('Deferral is not a permanent solution — consolidation decision required to close this obligation');
+        return bullets;
     }
 
     // Unresolved

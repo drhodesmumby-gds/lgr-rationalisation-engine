@@ -165,7 +165,7 @@ export function renderSankeyDiagram(containerEl, data, options = {}) {
         return;
     }
 
-    const { onAction, onDrillDown, sizeMode, viewMode, overlay = 'default', obligations = [], vestingDate = null } = options;
+    const { onAction, onDrillDown, sizeMode, viewMode, overlay = 'default', obligations = [], vestingDate = null, successorName = null } = options;
 
     // Build predecessor colour index for consistent colouring
     const predecessorNames = rawNodes.filter(n => n.nodeType === 'predecessor').map(n => n.label);
@@ -462,12 +462,12 @@ export function renderSankeyDiagram(containerEl, data, options = {}) {
             if (d.nodeType === 'successor' && onDrillDown) {
                 onDrillDown(d.label);
             } else if (d.nodeType === 'system' || d.nodeType === 'function') {
-                handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, sizeMode);
+                handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, sizeMode, successorName);
             }
         })
         .on('contextmenu', function(event, d) {
             event.preventDefault();
-            handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, sizeMode);
+            handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, sizeMode, successorName);
         });
 
     // Node labels — left or right side depending on position
@@ -564,11 +564,28 @@ export function renderSankeyDiagram(containerEl, data, options = {}) {
             if (dropTarget === 'decommission') {
                 if (onAction) onAction({ type: 'decommission', systemId: d.systemId });
             } else if (dropTarget && dropTarget.nodeType === 'system' && dropTarget !== d) {
-                if (window._simOpenActionBuilderWithContext) {
-                    window._simOpenActionBuilderWithContext('migrate-users', {
-                        fromSystemId: d.systemId,
-                        toSystemId: dropTarget.systemId
-                    });
+                // System-to-system drag: open Decision Panel for the functions this system serves
+                // so the user can make a decision about which system to keep.
+                // If we're in a function drill-down view, we have a successorName to use.
+                if (typeof window._simOpenDecision === 'function' && typeof window._simGetAllocationMap === 'function') {
+                    const allocMap = window._simGetAllocationMap();
+                    // Find a successor and function where both systems appear
+                    // This is a best-effort heuristic for the drag UX
+                    if (allocMap) {
+                        let opened = false;
+                        allocMap.forEach((funcMap, succName) => {
+                            if (opened) return;
+                            funcMap.forEach((allocations, funcId) => {
+                                if (opened) return;
+                                const hasSource = allocations.some(a => a.system && a.system.id === d.systemId);
+                                const hasTarget = allocations.some(a => a.system && a.system.id === dropTarget.systemId);
+                                if (hasSource && hasTarget) {
+                                    window._simOpenDecision(funcId, succName);
+                                    opened = true;
+                                }
+                            });
+                        });
+                    }
                 }
             }
         });
@@ -605,8 +622,16 @@ function findDropTarget(event, draggedNode, nodes, decommZoneRect) {
 
 /**
  * Handles click/right-click context menu on a Sankey node.
+ *
+ * @param {Event} event
+ * @param {Object} d  D3 datum — Sankey node
+ * @param {HTMLElement} containerEl
+ * @param {Function} onAction
+ * @param {Function} onDrillDown
+ * @param {string} sizeMode
+ * @param {string|null} successorName  Current successor name (set when in function drill-down view)
  */
-function handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, sizeMode) {
+function handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, sizeMode, successorName) {
     // Position relative to the container
     const rect = containerEl.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -628,60 +653,67 @@ function handleNodeContextMenu(event, d, containerEl, onAction, onDrillDown, siz
             }
         ];
     } else if (d.nodeType === 'system') {
-        const sysId = d.systemId;
-        const sysLabel = d.label;
-        items = [
-            {
-                label: 'Decommission',
-                action: () => {
-                    if (onAction) onAction({ type: 'decommission', systemId: sysId });
-                }
-            },
-            {
-                label: 'Extend Contract...',
-                action: () => {
-                    if (window._simOpenActionBuilderWithContext) {
-                        window._simOpenActionBuilderWithContext('extend-contract', { systemId: sysId });
-                    }
-                }
-            },
-            {
-                label: 'Migrate Users...',
-                action: () => {
-                    if (window._simOpenActionBuilderWithContext) {
-                        window._simOpenActionBuilderWithContext('migrate-users', { fromSystemId: sysId });
-                    }
-                }
-            },
-            {
-                label: 'Split Shared Service...',
-                action: () => {
-                    if (window._simOpenActionBuilderWithContext) {
-                        window._simOpenActionBuilderWithContext('split-shared-service', { systemId: sysId });
-                    }
+        // In function drill-down view, we have a successorName.
+        // Find all functions this system serves in this successor so we can offer "Decide for [function]" items.
+        if (successorName && typeof window._simOpenDecision === 'function') {
+            // Look up which functions this system serves via the allocation map
+            const funcItems = [];
+            if (window._simGetAllocationMap) {
+                const allocMap = window._simGetAllocationMap();
+                const funcMap = allocMap ? allocMap.get(successorName) : null;
+                if (funcMap) {
+                    funcMap.forEach((allocations, funcId) => {
+                        const servesFunc = allocations.some(a => a.system && a.system.id === d.systemId);
+                        if (servesFunc) {
+                            // Resolve function label
+                            const funcLabel = window._simGetFunctionLabel ? window._simGetFunctionLabel(funcId) : funcId;
+                            funcItems.push({
+                                label: `Decide: ${funcLabel}`,
+                                action: () => { window._simOpenDecision(funcId, successorName); }
+                            });
+                        }
+                    });
                 }
             }
-        ];
+
+            if (funcItems.length > 0) {
+                items = funcItems;
+            } else {
+                // Fallback: generic decide item (no funcId lookup available)
+                items = [
+                    {
+                        label: 'Open Decision Panel',
+                        action: () => { /* no funcId to pass, no-op */ }
+                    }
+                ];
+            }
+        } else {
+            // Estate-level view or no Decision Panel available — no actions
+            items = [
+                { label: 'Drill into successor for decisions', action: () => {} }
+            ];
+        }
     } else if (d.nodeType === 'function') {
+        // Function nodes always have lgaFunctionId.
+        // In function drill-down view, successorName is the current successor.
         const funcId = d.lgaFunctionId;
-        items = [
-            {
-                label: 'Consolidate in...',
-                action: () => {
-                    if (window._simOpenActionBuilderWithContext) {
-                        window._simOpenActionBuilderWithContext('consolidate', { funcId });
-                    }
+        if (funcId && successorName && typeof window._simOpenDecision === 'function') {
+            items = [
+                {
+                    label: 'Make decision for this function',
+                    action: () => { window._simOpenDecision(funcId, successorName); }
                 }
-            },
-            {
-                label: 'Procure Replacement...',
-                action: () => {
-                    if (window._simOpenActionBuilderWithContext) {
-                        window._simOpenActionBuilderWithContext('procure-replacement', { funcId });
-                    }
-                }
-            }
-        ];
+            ];
+        } else if (funcId && typeof window._simOpenDecision === 'function') {
+            // Estate view: no specific successor yet — inform user to drill down
+            items = [
+                { label: 'Drill into a successor to make decisions', action: () => {} }
+            ];
+        } else {
+            items = [
+                { label: 'View details (info only)', action: () => {} }
+            ];
+        }
     }
 
     if (items.length > 0) {
