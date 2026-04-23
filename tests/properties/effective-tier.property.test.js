@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { computeEffectiveTier } from '../../src/analysis/metrics.js';
+import { DEFAULT_TIER_MAP } from '../../src/constants/tier-map.js';
 
 /**
  * Property 4: Effective tier computation
@@ -9,10 +10,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 3.3, 3.6
  */
-
-const ctx = extractEngine();
-const computeEffectiveTier = ctx.computeEffectiveTier;
-const DEFAULT_TIER_MAP = ctx.DEFAULT_TIER_MAP;
 
 // ---------------------------------------------------------------------------
 // Constants

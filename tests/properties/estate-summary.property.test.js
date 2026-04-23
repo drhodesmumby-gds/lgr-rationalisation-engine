@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { computeEstateSummaryMetrics } from '../../src/analysis/metrics.js';
+import { buildSuccessorAllocation, detectSharedServiceBoundary } from '../../src/analysis/allocation.js';
 import { arbEstate } from '../generators/arbEstate.js';
 
 /**
@@ -10,11 +11,6 @@ import { arbEstate } from '../generators/arbEstate.js';
  *
  * Validates: Requirements 8.2, 8.3, 8.4, 8.5, 8.6, 8.7
  */
-
-const ctx = extractEngine();
-const computeEstateSummaryMetrics = ctx.computeEstateSummaryMetrics;
-const buildSuccessorAllocation = ctx.buildSuccessorAllocation;
-const detectSharedServiceBoundary = ctx.detectSharedServiceBoundary;
 
 const estateArb = arbEstate({ buildSuccessorAllocation, detectSharedServiceBoundary });
 

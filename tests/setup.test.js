@@ -1,31 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { extractEngine } from './helpers/extract.js';
+import { LGA_FUNCTIONS } from '../src/constants/lga-functions.js';
+import { getLgaFunction, getLgaBreadcrumb } from '../src/taxonomy.js';
+import { SIGNAL_DEFS, PERSONA_DEFAULT_WEIGHTS } from '../src/constants/signals.js';
 
 describe('test infrastructure', () => {
   it('vitest runs a trivial test', () => {
     expect(1 + 1).toBe(2);
   });
 
-  it('extractEngine() loads the HTML script block', () => {
-    const ctx = extractEngine();
-    // The engine defines LGA_FUNCTIONS as a const array with 176 entries
-    expect(ctx.LGA_FUNCTIONS).toBeDefined();
-    expect(Array.isArray(ctx.LGA_FUNCTIONS)).toBe(true);
-    expect(ctx.LGA_FUNCTIONS.length).toBe(176);
+  it('LGA_FUNCTIONS has 176 entries', () => {
+    expect(LGA_FUNCTIONS).toBeDefined();
+    expect(Array.isArray(LGA_FUNCTIONS)).toBe(true);
+    expect(LGA_FUNCTIONS.length).toBe(176);
   });
 
-  it('extractEngine() exposes top-level functions', () => {
-    const ctx = extractEngine();
-    // getLgaFunction is defined as a top-level function in the script block
-    expect(typeof ctx.getLgaFunction).toBe('function');
-    expect(typeof ctx.getLgaBreadcrumb).toBe('function');
+  it('getLgaFunction and getLgaBreadcrumb are functions', () => {
+    expect(typeof getLgaFunction).toBe('function');
+    expect(typeof getLgaBreadcrumb).toBe('function');
   });
 
-  it('extractEngine() exposes signal definitions and persona weights', () => {
-    const ctx = extractEngine();
-    expect(ctx.SIGNAL_DEFS).toBeDefined();
-    expect(Array.isArray(ctx.SIGNAL_DEFS)).toBe(true);
-    expect(ctx.PERSONA_DEFAULT_WEIGHTS).toBeDefined();
-    expect(ctx.PERSONA_DEFAULT_WEIGHTS.executive).toBeDefined();
+  it('SIGNAL_DEFS and PERSONA_DEFAULT_WEIGHTS exist and have expected shape', () => {
+    expect(SIGNAL_DEFS).toBeDefined();
+    expect(Array.isArray(SIGNAL_DEFS)).toBe(true);
+    expect(PERSONA_DEFAULT_WEIGHTS).toBeDefined();
+    expect(PERSONA_DEFAULT_WEIGHTS.executive).toBeDefined();
   });
 });

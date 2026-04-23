@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { buildSuccessorAllocation } from '../../src/analysis/allocation.js';
 
 /**
  * Property 12: Transition structure round-trip
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 1.1, 1.8
  */
-
-const ctx = extractEngine();
-const buildSuccessorAllocation = ctx.buildSuccessorAllocation;
 
 // ---------------------------------------------------------------------------
 // Generators

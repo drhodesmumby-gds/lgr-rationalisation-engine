@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { detectSharedServiceBoundary } from '../../src/analysis/allocation.js';
 
 /**
  * Property 8: Shared service boundary detection
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 6.3, 6.4
  */
-
-const ctx = extractEngine();
-const detectSharedServiceBoundary = ctx.detectSharedServiceBoundary;
 
 // ---------------------------------------------------------------------------
 // Generators

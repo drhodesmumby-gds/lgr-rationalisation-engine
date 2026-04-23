@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { computeSignals } from '../../src/analysis/signals.js';
+import { state } from '../../src/state.js';
 import { arbITSystem } from '../generators/arbITSystem.js';
 
 /**
@@ -16,8 +17,6 @@ import { arbITSystem } from '../generators/arbITSystem.js';
  * values (contractUrgency uses new Date() internally).
  */
 
-const ctx = extractEngine();
-const computeSignals = ctx.computeSignals;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -61,9 +60,9 @@ function hasPrototypeVendorCollision(systems) {
  * Reset the engine globals to a known-good discovery mode state before each test.
  */
 function setDiscoveryMode() {
-  ctx.transitionStructure = null;
-  ctx.operatingMode = 'discovery';
-  ctx.signalWeights = {
+  state.transitionStructure = null;
+  state.operatingMode = 'discovery';
+  state.signalWeights = {
     contractUrgency: 3,
     userVolume: 2,
     dataMonolith: 2,
@@ -227,7 +226,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbMonolithArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, dataMonolith: 2 };
+        const weights = { ...state.signalWeights, dataMonolith: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('dataMonolith');
       }),
@@ -245,7 +244,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbErpArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, dataMonolith: 2 };
+        const weights = { ...state.signalWeights, dataMonolith: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('dataMonolith');
       }),
@@ -265,7 +264,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbCleanArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, dataMonolith: 2 };
+        const weights = { ...state.signalWeights, dataMonolith: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).not.toContain('dataMonolith');
       }),
@@ -287,7 +286,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbOnPremArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, techDebt: 2 };
+        const weights = { ...state.signalWeights, techDebt: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('techDebt');
       }),
@@ -302,7 +301,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbCloudArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, techDebt: 2 };
+        const weights = { ...state.signalWeights, techDebt: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).not.toContain('techDebt');
       }),
@@ -320,7 +319,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbLowPortArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, dataPortability: 2 };
+        const weights = { ...state.signalWeights, dataPortability: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('dataPortability');
       }),
@@ -335,7 +334,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbMedPortArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, dataPortability: 2 };
+        const weights = { ...state.signalWeights, dataPortability: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('dataPortability');
       }),
@@ -350,7 +349,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbHighPortArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, dataPortability: 2 };
+        const weights = { ...state.signalWeights, dataPortability: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).not.toContain('dataPortability');
       }),
@@ -368,7 +367,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbArrayWithUsers, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, userVolume: 2 };
+        const weights = { ...state.signalWeights, userVolume: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('userVolume');
       }),
@@ -387,7 +386,7 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbNoUsersArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        const weights = { ...ctx.signalWeights, userVolume: 2 };
+        const weights = { ...state.signalWeights, userVolume: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).not.toContain('userVolume');
       }),
@@ -421,7 +420,7 @@ describe('computeSignals', () => {
           { id: 'sys-1', label: 'System One', type: 'ITSystem', vendor, _sourceCouncil: 'Council Alpha' },
           { id: 'sys-2', label: 'System Two', type: 'ITSystem', vendor, _sourceCouncil: 'Council Beta' },
         ];
-        const weights = { ...ctx.signalWeights, vendorDensity: 2 };
+        const weights = { ...state.signalWeights, vendorDensity: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('vendorDensity');
       }),
@@ -442,7 +441,7 @@ describe('computeSignals', () => {
             { id: 'sys-1', label: 'System One', type: 'ITSystem', vendor: vendorA, _sourceCouncil: 'Council Alpha' },
             { id: 'sys-2', label: 'System Two', type: 'ITSystem', vendor: vendorB, _sourceCouncil: 'Council Beta' },
           ];
-          const weights = { ...ctx.signalWeights, vendorDensity: 2 };
+          const weights = { ...state.signalWeights, vendorDensity: 2 };
           const signalIds = computeSignals(systems, weights).map(s => s.id);
           expect(signalIds).not.toContain('vendorDensity');
         }
@@ -465,9 +464,9 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbSharedArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        ctx.operatingMode = 'discovery';
-        ctx.transitionStructure = null;
-        const weights = { ...ctx.signalWeights, sharedService: 2 };
+        state.operatingMode = 'discovery';
+        state.transitionStructure = null;
+        const weights = { ...state.signalWeights, sharedService: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('sharedService');
       }),
@@ -486,9 +485,9 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbNoShareArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        ctx.operatingMode = 'discovery';
-        ctx.transitionStructure = null;
-        const weights = { ...ctx.signalWeights, sharedService: 2 };
+        state.operatingMode = 'discovery';
+        state.transitionStructure = null;
+        const weights = { ...state.signalWeights, sharedService: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).not.toContain('sharedService');
       }),
@@ -526,9 +525,9 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbSharedArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        ctx.operatingMode = 'transition';
-        ctx.transitionStructure = transitionStructure;
-        const weights = { ...ctx.signalWeights, sharedService: 2 };
+        state.operatingMode = 'transition';
+        state.transitionStructure = transitionStructure;
+        const weights = { ...state.signalWeights, sharedService: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('sharedService');
       }),
@@ -553,7 +552,7 @@ describe('computeSignals', () => {
 
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 3 }), (w) => {
-        const weights = { ...ctx.signalWeights, dataMonolith: w };
+        const weights = { ...state.signalWeights, dataMonolith: w };
         const result = computeSignals(systems, weights);
         const monolithSignal = result.find(s => s.id === 'dataMonolith');
         expect(monolithSignal).toBeDefined();
@@ -578,9 +577,9 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbDatedArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        ctx.transitionStructure = null;
-        ctx.operatingMode = 'discovery';
-        const weights = { ...ctx.signalWeights, contractUrgency: 2 };
+        state.transitionStructure = null;
+        state.operatingMode = 'discovery';
+        const weights = { ...state.signalWeights, contractUrgency: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('contractUrgency');
       }),
@@ -601,9 +600,9 @@ describe('computeSignals', () => {
     fc.assert(
       fc.property(arbNoDatedArray, (systems) => {
         fc.pre(!hasPrototypeVendorCollision(systems));
-        ctx.transitionStructure = null;
-        ctx.operatingMode = 'discovery';
-        const weights = { ...ctx.signalWeights, contractUrgency: 2 };
+        state.transitionStructure = null;
+        state.operatingMode = 'discovery';
+        const weights = { ...state.signalWeights, contractUrgency: 2 };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).not.toContain('contractUrgency');
       }),
@@ -640,9 +639,9 @@ describe('computeSignals', () => {
 
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 3 }), (w) => {
-        ctx.transitionStructure = transitionStructure;
-        ctx.operatingMode = 'transition';
-        const weights = { ...ctx.signalWeights, contractUrgency: w };
+        state.transitionStructure = transitionStructure;
+        state.operatingMode = 'transition';
+        const weights = { ...state.signalWeights, contractUrgency: w };
         const signalIds = computeSignals(systems, weights).map(s => s.id);
         expect(signalIds).toContain('contractUrgency');
       }),

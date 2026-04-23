@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { detectCrossTierCollision } from '../../src/analysis/allocation.js';
 
 /**
  * Property 11: Cross-tier collision annotation
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 10.3
  */
-
-const ctx = extractEngine();
-const detectCrossTierCollision = ctx.detectCrossTierCollision;
 
 // ---------------------------------------------------------------------------
 // Constants

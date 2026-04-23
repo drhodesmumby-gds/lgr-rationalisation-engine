@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { generatePersonaQuestions } from '../../src/analysis/questions.js';
 import { arbITSystem } from '../generators/arbITSystem.js';
 
 /**
@@ -16,8 +16,6 @@ import { arbITSystem } from '../generators/arbITSystem.js';
  *   persona === null         => all three sections combined
  */
 
-const ctx = extractEngine();
-const generatePersonaQuestions = ctx.generatePersonaQuestions;
 
 // ---------------------------------------------------------------------------
 // Constants

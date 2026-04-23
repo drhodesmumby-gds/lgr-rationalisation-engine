@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { computeVendorDensityMetrics } from '../../src/analysis/signals.js';
 import { arbITSystem } from '../generators/arbITSystem.js';
 
 /**
@@ -30,8 +30,6 @@ import { arbITSystem } from '../generators/arbITSystem.js';
  *  7. Each entry's councils array contains only unique names
  */
 
-const ctx = extractEngine();
-const computeVendorDensityMetrics = ctx.computeVendorDensityMetrics;
 
 // ---------------------------------------------------------------------------
 // Helpers

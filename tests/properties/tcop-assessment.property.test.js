@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { computeTcopAssessment } from '../../src/analysis/signals.js';
 
 /**
  * Property 7: TCoP assessment correctness
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6
  */
-
-const ctx = extractEngine();
-const computeTcopAssessment = ctx.computeTcopAssessment;
 
 // ---------------------------------------------------------------------------
 // Generators

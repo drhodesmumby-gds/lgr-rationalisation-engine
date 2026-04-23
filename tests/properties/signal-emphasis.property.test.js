@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { computeSignalEmphasis } from '../../src/analysis/signals.js';
 
 /**
  * Property 6: Signal emphasis matches rationalisation pattern
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 4.7, 4.8
  */
-
-const ctx = extractEngine();
-const computeSignalEmphasis = ctx.computeSignalEmphasis;
 
 // ---------------------------------------------------------------------------
 // Constants

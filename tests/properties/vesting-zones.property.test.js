@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { classifyVestingZone } from '../../src/analysis/allocation.js';
 
 /**
  * Property 2: Vesting-anchored zone classification
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 2.1, 2.3, 2.5
  */
-
-const ctx = extractEngine();
-const classifyVestingZone = ctx.classifyVestingZone;
 
 // ---------------------------------------------------------------------------
 // Generators

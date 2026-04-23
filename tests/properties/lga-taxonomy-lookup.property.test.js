@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { getLgaFunction, getLgaBreadcrumb } from '../../src/taxonomy.js';
+import { LGA_FUNCTIONS } from '../../src/constants/lga-functions.js';
 
 /**
  * Tier 2 — Data Integrity: LGA taxonomy lookup functions
@@ -9,11 +10,6 @@ import { extractEngine } from '../helpers/extract.js';
  * baselining to resolve ESD function IDs into display labels and
  * breadcrumb paths.
  */
-
-const ctx = extractEngine();
-const getLgaFunction = ctx.getLgaFunction;
-const getLgaBreadcrumb = ctx.getLgaBreadcrumb;
-const LGA_FUNCTIONS = ctx.LGA_FUNCTIONS;
 
 // ---------------------------------------------------------------------------
 // Derived sets — computed once at module load from the real LGA_FUNCTIONS array

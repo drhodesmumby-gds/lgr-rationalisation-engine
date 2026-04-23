@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { buildSuccessorAllocation } from '../../src/analysis/allocation.js';
 
 /**
  * Property 1: Successor allocation correctness
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 1.4, 1.5, 1.6, 1.7, 7.1, 7.4
  */
-
-const ctx = extractEngine();
-const buildSuccessorAllocation = ctx.buildSuccessorAllocation;
 
 // ---------------------------------------------------------------------------
 // Helpers: build minimal but valid estates for property testing

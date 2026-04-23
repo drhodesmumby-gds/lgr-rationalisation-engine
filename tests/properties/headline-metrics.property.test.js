@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { getHeadlineMetrics } from '../../src/analysis/metrics.js';
 
 /**
  * Property tests for getHeadlineMetrics(signals, pattern)
@@ -28,8 +28,6 @@ import { extractEngine } from '../helpers/extract.js';
  *   6. When signals is non-empty, result is always non-null.
  */
 
-const ctx = extractEngine();
-const getHeadlineMetrics = ctx.getHeadlineMetrics;
 
 // ---------------------------------------------------------------------------
 // Generators

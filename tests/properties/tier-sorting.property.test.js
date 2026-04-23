@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { extractEngine } from '../helpers/extract.js';
+import { sortFunctionRows } from '../../src/analysis/metrics.js';
 
 /**
  * Property 3: Tier-based matrix sorting
@@ -9,9 +9,6 @@ import { extractEngine } from '../helpers/extract.js';
  *
  * Validates: Requirements 3.2
  */
-
-const ctx = extractEngine();
-const sortFunctionRows = ctx.sortFunctionRows;
 
 // ---------------------------------------------------------------------------
 // Generators
