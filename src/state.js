@@ -10,6 +10,7 @@ export const state = {
     operatingMode: 'discovery',
     successorAllocationMap: null,
     pendingTransitionConfig: null,
+    pendingScenario: null,
     tierMap: new Map(),
     councilTierMap: new Map(),
     distressedCouncils: new Set(),
