@@ -19,6 +19,7 @@ import { escHtml } from '../ui-helpers.js';
 import { createDecision, getDecisionKey, validateDecision } from '../simulation/decisions.js';
 import { classifyVestingZone } from '../analysis/allocation.js';
 import { recomputeSimulation } from './simulation-panel.js';
+import { showConfirm } from '../ui-notifications.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -197,7 +198,9 @@ function renderPropagatedSharedServiceView(decision, funcLabel, successorName, t
                 </button>
                 <button type="button"
                         class="text-sm px-3 py-1.5 bg-[#d4351c] text-white font-bold hover:bg-[#aa2a16]"
-                        onclick="if(confirm('Remove ${escHtml(successorName)} from the shared service arrangement? This will revert this cell to undecided.')) window._simUnlinkSharedService('${escHtml(decision.functionId)}', '${escHtml(successorName)}')">
+                        data-action="unlink-shared-service"
+                        data-function-id="${escHtml(decision.functionId)}"
+                        data-successor-name="${escHtml(successorName)}">
                     Remove from shared service
                 </button>
             </div>
@@ -1040,7 +1043,7 @@ function prefillDecision(decision, systems, successorName) {
 /**
  * Reads the modal form, creates a FunctionDecision, stores it, and recomputes.
  */
-export function applyDecisionFromPanel() {
+export async function applyDecisionFromPanel() {
     if (!state.simulationState) return;
     if (!_currentFunctionId || !_currentSuccessorName) return;
 
@@ -1186,9 +1189,16 @@ export function applyDecisionFromPanel() {
             lines.push(`${sharedSuccessor}${decommNote}`);
         }
 
-        const confirmMsg = `Establish shared service?\n\n${systemLabel} will become the shared system for ${funcLabel} across:\n${lines.map(l => `  \u2022 ${l}`).join('\n')}\n\nThis will decommission competing systems in all listed successors.`;
+        const confirmMsg = `${systemLabel} will become the shared system for ${funcLabel} across: ${lines.join(', ')}. This will decommission competing systems in all listed successors.`;
 
-        if (!confirm(confirmMsg)) {
+        const confirmed = await showConfirm({
+            containerId: 'decisionPanelNotifications',
+            title: 'Establish shared service?',
+            message: confirmMsg,
+            confirmLabel: 'Establish',
+            cancelLabel: 'Cancel'
+        });
+        if (!confirmed) {
             return;
         }
     }
@@ -1321,8 +1331,23 @@ if (_decisionPanelModal) {
     document.getElementById('btnCancelDecision').addEventListener('click', closeDecisionPanel);
     document.getElementById('btnApplyDecision').addEventListener('click', applyDecisionFromPanel);
 
-    _decisionPanelModal.addEventListener('click', (e) => {
-        if (e.target === _decisionPanelModal) closeDecisionPanel();
+    _decisionPanelModal.addEventListener('click', async (e) => {
+        if (e.target === _decisionPanelModal) { closeDecisionPanel(); return; }
+
+        // Delegated handler: unlink from shared service
+        const unlinkBtn = e.target.closest('[data-action="unlink-shared-service"]');
+        if (unlinkBtn) {
+            const functionId = unlinkBtn.getAttribute('data-function-id');
+            const successorName = unlinkBtn.getAttribute('data-successor-name');
+            const confirmed = await showConfirm({
+                containerId: 'decisionPanelNotifications',
+                title: 'Remove from shared service',
+                message: `Remove ${successorName} from the shared service arrangement? This will revert this cell to undecided.`,
+                confirmLabel: 'Remove',
+                cancelLabel: 'Cancel'
+            });
+            if (confirmed) window._simUnlinkSharedService(functionId, successorName);
+        }
     });
 
     document.addEventListener('keydown', (e) => {

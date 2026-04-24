@@ -3,6 +3,7 @@ import { LGA_FUNCTIONS } from '../constants/lga-functions.js';
 import { getLgaFunction } from '../taxonomy.js';
 import { escHtml } from '../ui-helpers.js';
 import { runBaselining, renderDashboard } from '../main.js';
+import { showNotification, showConfirm } from '../ui-notifications.js';
 
 
 function generateId() {
@@ -274,7 +275,7 @@ function buildExportData() {
 
 const archEditorModal = document.getElementById('architectureEditorModal');
 
-archEditorModal.addEventListener('click', function(e) {
+archEditorModal.addEventListener('click', async function(e) {
     // Tab switching
     if (e.target.classList.contains('arch-tab-btn')) {
         syncEditorFieldsToState();
@@ -297,7 +298,14 @@ archEditorModal.addEventListener('click', function(e) {
         if (!node) return;
         const referencedEdges = (state.archEditorState.data.edges || []).filter(edge => edge.source === node.id || edge.target === node.id);
         if (referencedEdges.length > 0) {
-            if (!confirm(`"${node.label}" is referenced by ${referencedEdges.length} edge(s). Remove node and its edges?`)) return;
+            const confirmed = await showConfirm({
+                containerId: 'archEditorNotifications',
+                title: 'Remove node',
+                message: `"${node.label}" is referenced by ${referencedEdges.length} edge(s). Remove node and its edges?`,
+                confirmLabel: 'Remove',
+                cancelLabel: 'Cancel'
+            });
+            if (!confirmed) return;
             state.archEditorState.data.edges = state.archEditorState.data.edges.filter(edge => edge.source !== node.id && edge.target !== node.id);
         }
         state.archEditorState.data.nodes.splice(nodeIdx, 1);
@@ -330,9 +338,15 @@ archEditorModal.addEventListener('click', function(e) {
         const fnEl = document.getElementById('newEdgeFunction');
         const sysId = sysEl?.value;
         const fnId = fnEl?.value;
-        if (!sysId || !fnId) { alert('Select both a system and a function.'); return; }
+        if (!sysId || !fnId) {
+            showNotification({ type: 'error', containerId: 'archEditorNotifications', message: 'Select both a system and a function node first.' });
+            return;
+        }
         const exists = (state.archEditorState.data.edges || []).some(edge => edge.source === sysId && edge.target === fnId);
-        if (exists) { alert('This edge already exists.'); return; }
+        if (exists) {
+            showNotification({ type: 'warning', containerId: 'archEditorNotifications', message: 'This edge already exists.' });
+            return;
+        }
         if (!state.archEditorState.data.edges) state.archEditorState.data.edges = [];
         state.archEditorState.data.edges.push({ source: sysId, target: fnId, relationship: 'REALIZES' });
         renderArchEditorTab('edges');

@@ -194,3 +194,34 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .obl-detail-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .obl-scope-list li { padding-left: 12px; position: relative; }
 .obl-scope-list li::before { content: "\2022"; position: absolute; left: 0; color: #505a5f; font-weight: bold; }
+
+/* Toolbar separator between button groups */
+.toolbar-separator { width: 1px; height: 28px; background-color: #b1b4b6; margin: 0 4px; flex-shrink: 0; }
+
+/* GOV.UK Skip link */
+.govuk-skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  color: #0b0c0c;
+  background-color: #ffdd00;
+  text-decoration: underline;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 100;
+}
+.govuk-skip-link:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  clip: auto;
+  padding: 10px 15px;
+  margin: 0;
+}

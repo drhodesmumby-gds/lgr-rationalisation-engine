@@ -33,6 +33,7 @@ import { openDecisionPanel } from './features/decision-panel.js';
 import { getDecisionKey } from './simulation/decisions.js';
 import { exportScenario, importScenario } from './features/scenario-manager.js';
 import { exportReport } from './features/report-export.js';
+import { showNotification, showConfirm } from './ui-notifications.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -250,7 +251,7 @@ fileInput.addEventListener('change', async (e) => {
             li.appendChild(editBtn);
             listUl.appendChild(li);
         } catch (err) {
-            alert(`Failed to parse ${file.name}`);
+            showNotification({ type: 'error', message: `Failed to parse ${file.name}. Please ensure the file is valid JSON.` });
         }
     }
 
@@ -520,7 +521,7 @@ function exportTransitionStructure() {
 
 function importTransitionStructure(json) {
     if (!json.vestingDate || !Array.isArray(json.successors)) {
-        alert('Invalid transition config: must contain vestingDate and successors array.');
+        showNotification({ type: 'error', message: 'Invalid transition config: must contain vestingDate and successors array.' });
         return;
     }
 
@@ -577,7 +578,7 @@ function detectFromArchitecture() {
     });
 
     if (authorityMap.size === 0) {
-        alert('No targetAuthorities found in uploaded architecture files.');
+        showNotification({ type: 'warning', message: 'No targetAuthorities found in uploaded architecture files.' });
         return;
     }
 
@@ -623,7 +624,7 @@ document.getElementById('transitionConfigInput').addEventListener('change', asyn
         const json = JSON.parse(text);
         importTransitionStructure(json);
     } catch (err) {
-        alert('Failed to parse JSON file. Please ensure the file is valid JSON.');
+        showNotification({ type: 'error', message: 'Failed to parse JSON file. Please ensure the file is valid JSON.' });
     }
     // Reset input so same file can be re-imported if needed
     e.target.value = '';
@@ -834,6 +835,9 @@ function updatePersonaBanner() {
     if (state.bannerCollapsed) personaBanner.classList.add('banner-collapsed');
 
     // Show/hide Simulate button based on operating mode
+    const simButtonGroup = document.getElementById('simButtonGroup');
+    const toolbarSeparator = document.getElementById('toolbarSeparator');
+
     let btnSim = document.getElementById('btnSimulate');
     if (state.operatingMode === 'transition') {
         if (!btnSim) {
@@ -848,15 +852,18 @@ function updatePersonaBanner() {
                     enterSimulation();
                 }
             });
-            const btnExport = document.getElementById('btnExportHTML');
-            if (btnExport && btnExport.parentNode) {
-                btnExport.parentNode.insertBefore(btnSim, btnExport);
-            }
+            if (simButtonGroup) simButtonGroup.appendChild(btnSim);
         }
         btnSim.classList.remove('hidden');
         btnSim.textContent = state.simulationState ? 'Exit Simulation' : 'Simulate';
+        // Always show group + separator when in transition mode (btnSim is visible)
+        if (simButtonGroup) simButtonGroup.classList.remove('hidden');
+        if (toolbarSeparator) toolbarSeparator.classList.remove('hidden');
     } else {
         if (btnSim) btnSim.classList.add('hidden');
+        // Hide the group and separator when not in transition mode
+        if (simButtonGroup) simButtonGroup.classList.add('hidden');
+        if (toolbarSeparator) toolbarSeparator.classList.add('hidden');
     }
 
     // --- Scenario management buttons (simulation mode only) ---
@@ -872,10 +879,7 @@ function updatePersonaBanner() {
             btnSaveScenario.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100';
             btnSaveScenario.textContent = 'Save Scenario';
             btnSaveScenario.addEventListener('click', () => exportScenario());
-            const btnExport = document.getElementById('btnExportHTML');
-            if (btnExport && btnExport.parentNode) {
-                btnExport.parentNode.insertBefore(btnSaveScenario, btnExport);
-            }
+            if (simButtonGroup) simButtonGroup.appendChild(btnSaveScenario);
         }
         btnSaveScenario.classList.remove('hidden');
 
@@ -902,12 +906,16 @@ function updatePersonaBanner() {
                         transitionStructure: state.transitionStructure
                     });
                     if (result.warnings.length > 0) {
-                        const proceed = confirm(
-                            `Scenario loaded with ${result.warnings.length} warning(s):\n\n` +
-                            result.warnings.slice(0, 5).join('\n') +
-                            (result.warnings.length > 5 ? `\n...and ${result.warnings.length - 5} more` : '') +
-                            '\n\nProceed anyway?'
-                        );
+                        const warningText =
+                            `Scenario loaded with ${result.warnings.length} warning(s): ` +
+                            result.warnings.slice(0, 5).join('; ') +
+                            (result.warnings.length > 5 ? ` ...and ${result.warnings.length - 5} more` : '');
+                        const proceed = await showConfirm({
+                            title: 'Scenario warnings',
+                            message: warningText + ' Proceed anyway?',
+                            confirmLabel: 'Proceed',
+                            cancelLabel: 'Cancel'
+                        });
                         if (!proceed) {
                             scenarioFileInput.value = '';
                             return;
@@ -916,18 +924,14 @@ function updatePersonaBanner() {
                     state.simulationState.decisions = result.decisions;
                     recomputeSimulation();
                 } catch (err) {
-                    alert(`Failed to load scenario: ${err.message}`);
+                    showNotification({ type: 'error', message: `Failed to load scenario: ${err.message}` });
                 }
                 scenarioFileInput.value = '';
             });
 
             document.body.appendChild(scenarioFileInput);
             btnLoadScenario.addEventListener('click', () => scenarioFileInput.click());
-
-            const btnExport = document.getElementById('btnExportHTML');
-            if (btnExport && btnExport.parentNode) {
-                btnExport.parentNode.insertBefore(btnLoadScenario, btnExport);
-            }
+            if (simButtonGroup) simButtonGroup.appendChild(btnLoadScenario);
         }
         btnLoadScenario.classList.remove('hidden');
 
@@ -938,14 +942,11 @@ function updatePersonaBanner() {
             btnExportReport.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100';
             btnExportReport.textContent = 'Export Report';
             btnExportReport.addEventListener('click', () => exportReport());
-            const btnExport = document.getElementById('btnExportHTML');
-            if (btnExport && btnExport.parentNode) {
-                btnExport.parentNode.insertBefore(btnExportReport, btnExport);
-            }
+            if (simButtonGroup) simButtonGroup.appendChild(btnExportReport);
         }
         btnExportReport.classList.remove('hidden');
     } else {
-        // Hide all scenario buttons when not in simulation
+        // Hide scenario-only buttons when not in simulation (btnSim stays shown if in transition mode)
         if (btnSaveScenario) btnSaveScenario.classList.add('hidden');
         if (btnLoadScenario) btnLoadScenario.classList.add('hidden');
         if (btnExportReport) btnExportReport.classList.add('hidden');
