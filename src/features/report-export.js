@@ -757,6 +757,20 @@ function buildVendorConsolidation(decisions) {
                 entry.systemIds.add(key);
                 entry.spend += (typeof ps.annualCost === 'number' ? ps.annualCost : 0);
             }
+        } else if (decision.systemChoice === 'defer') {
+            // Deferred systems continue running — include them in "after"
+            const allocations = getDecisionSystems(decision);
+            for (const a of allocations) {
+                const sys = a.system;
+                if (sys && sys.vendor) {
+                    if (!afterVendors.has(sys.vendor)) afterVendors.set(sys.vendor, { systemIds: new Set(), spend: 0 });
+                    const entry = afterVendors.get(sys.vendor);
+                    if (!entry.systemIds.has(sys.id)) {
+                        entry.systemIds.add(sys.id);
+                        entry.spend += (typeof sys.annualCost === 'number' ? sys.annualCost : 0);
+                    }
+                }
+            }
         }
     });
 
@@ -818,7 +832,7 @@ function buildCommercialObligations(obligations) {
     // Sort by severity (high first)
     const sorted = [...obligations].sort((a, b) => {
         const order = { high: 0, medium: 1, low: 2 };
-        return (order[computeObligationSeverity(a, weights)] || 2) - (order[computeObligationSeverity(b, weights)] || 2);
+        return (order[computeObligationSeverity(a, weights)] ?? 2) - (order[computeObligationSeverity(b, weights)] ?? 2);
     });
 
     let html = `<table>`;
@@ -1041,7 +1055,7 @@ function buildArchitectObligations(obligations) {
     // Sort by severity (high first)
     const sorted = [...obligations].sort((a, b) => {
         const order = { high: 0, medium: 1, low: 2 };
-        return (order[computeObligationSeverity(a, weights)] || 2) - (order[computeObligationSeverity(b, weights)] || 2);
+        return (order[computeObligationSeverity(a, weights)] ?? 2) - (order[computeObligationSeverity(b, weights)] ?? 2);
     });
 
     let html = `<table>`;
