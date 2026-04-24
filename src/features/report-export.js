@@ -211,7 +211,7 @@ function buildReportDocStart(persona) {
   p { margin: 0 0 8px 0; }
 
   /* Tables */
-  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin-bottom: 16px; }
   th { text-align: left; padding: 6px 10px; background: #f3f2f1; border: 1px solid #b1b4b6; font-weight: bold; }
   td { padding: 5px 10px; border: 1px solid #b1b4b6; vertical-align: top; }
   tr:nth-child(even) td { background: #f8f8f7; }
@@ -240,8 +240,8 @@ function buildReportDocStart(persona) {
     border-radius: 2px;
   }
   .sev-high { color: #d4351c; font-weight: bold; }
-  .sev-medium { color: #f47738; font-weight: bold; }
-  .sev-low { color: #6f777b; }
+  .sev-medium { color: #b54c00; font-weight: bold; }
+  .sev-low { color: #505a5f; }
 
   /* Decision blocks */
   .decision-block {
@@ -264,7 +264,7 @@ function buildReportDocStart(persona) {
   .cost-summary-table td:last-child { font-weight: bold; color: #00703c; }
 
   /* Bullet lists */
-  ul.scope-bullets { margin: 4px 0 4px 18px; padding: 0; font-size: 12px; color: #505a5f; }
+  ul.scope-bullets { margin: 4px 0 4px 18px; padding: 0; font-size: 13px; color: #505a5f; }
   ul.scope-bullets li { margin-bottom: 2px; }
 
   /* Print */
@@ -359,7 +359,7 @@ function buildEstateSummaryTable(impact) {
         `<tr><td>${escHtml(label)}</td><td>${escHtml(String(beforeVal))}</td><td>${escHtml(String(afterVal))}</td><td>${escHtml(String(deltaVal))}</td></tr>`;
 
     let html = `<table>`;
-    html += `<thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Change</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Metric</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Change</th></tr></thead>`;
     html += `<tbody>`;
 
     html += row(
@@ -425,7 +425,7 @@ function buildDecisionsByTier(decisions, obligations, weights) {
         html += `<h3><span class="tier-badge" style="background:${escHtml(colour)};">${escHtml(tierLabel(tier))}</span> (${decList.length} decision${decList.length !== 1 ? 's' : ''})</h3>`;
 
         html += `<table>`;
-        html += `<thead><tr><th>Function</th><th>Successor</th><th>Decision</th><th>System</th><th>Obligations</th></tr></thead>`;
+        html += `<thead><tr><th scope="col">Function</th><th scope="col">Successor</th><th scope="col">Decision</th><th scope="col">System</th><th scope="col">Obligations</th></tr></thead>`;
         html += `<tbody>`;
 
         for (const decision of decList) {
@@ -477,7 +477,7 @@ function buildCriticalObligations(obligations, weights) {
     }
 
     let html = `<table>`;
-    html += `<thead><tr><th>Function</th><th>System</th><th>Type</th><th>Successors Affected</th><th>Notes</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Function</th><th scope="col">System</th><th scope="col">Type</th><th scope="col">Successors Affected</th><th scope="col">Notes</th></tr></thead>`;
     html += `<tbody>`;
 
     for (const obl of critical) {
@@ -514,8 +514,8 @@ function buildGovernanceArrangements(obligations, includeBullets) {
 
     let html = `<table>`;
     const headers = includeBullets
-        ? `<tr><th>Function</th><th>Shared Service</th><th>Host Authority</th><th>Participating Successors</th><th>Governance Points</th></tr>`
-        : `<tr><th>Function</th><th>Shared Service</th><th>Host Authority</th><th>Participating Successors</th></tr>`;
+        ? `<tr><th scope="col">Function</th><th scope="col">Shared Service</th><th scope="col">Host Authority</th><th scope="col">Participating Successors</th><th scope="col">Governance Points</th></tr>`
+        : `<tr><th scope="col">Function</th><th scope="col">Shared Service</th><th scope="col">Host Authority</th><th scope="col">Participating Successors</th></tr>`;
     html += `<thead>${headers}</thead>`;
     html += `<tbody>`;
 
@@ -599,7 +599,8 @@ function buildCostSummary(impact) {
     html += `<tbody>`;
     html += `<tr><td>Total current spend (annual)</td><td>${escHtml(currentSpend)}</td></tr>`;
     html += `<tr><td>Projected spend (annual)</td><td>${escHtml(projectedSpend)}</td></tr>`;
-    html += `<tr><td>Estimated change</td><td style="color:${delta.totalAnnualSpend !== null && delta.totalAnnualSpend < 0 ? '#00703c' : '#d4351c'};">${escHtml(savings)}</td></tr>`;
+    const changeColour = delta.totalAnnualSpend === null || delta.totalAnnualSpend === 0 ? '#0b0c0c' : delta.totalAnnualSpend < 0 ? '#00703c' : '#d4351c';
+    html += `<tr><td>Estimated change</td><td style="color:${changeColour};">${escHtml(savings)}</td></tr>`;
     html += `</tbody></table>`;
     return html;
 }
@@ -643,6 +644,22 @@ function buildDecisionsWithContractDetail(decisions) {
                 html += `Contract ends: ${escHtml(formatContractEnd(sys.endYear, sys.endMonth))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Notice: ${sys.noticePeriod ? sys.noticePeriod + ' months' : '—'}`;
                 html += `</p>`;
+                // Notice trigger date
+                if (sys.endYear && typeof sys.noticePeriod === 'number' && sys.noticePeriod > 0) {
+                    const endTotalMonths = sys.endYear * 12 + (sys.endMonth || 12);
+                    const triggerTotalMonths = endTotalMonths - sys.noticePeriod;
+                    const triggerYear = Math.floor((triggerTotalMonths - 1) / 12);
+                    const triggerMonth = ((triggerTotalMonths - 1) % 12) + 1;
+                    const triggerDate = `${triggerYear}-${String(triggerMonth).padStart(2, '0')}`;
+                    const now = new Date();
+                    const nowMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
+                    const isOverdue = triggerTotalMonths < nowMonth;
+                    const triggerColour = isOverdue ? '#d4351c' : '#0b0c0c';
+                    html += `<p style="margin:2px 0;font-size:13px;color:${triggerColour};font-weight:bold;">`;
+                    html += `Notice trigger date: ${escHtml(triggerDate)}`;
+                    if (isOverdue) html += ` — OVERDUE`;
+                    html += `</p>`;
+                }
             }
         } else if (decision.systemChoice === 'procure' && decision.procuredSystem) {
             const ps = decision.procuredSystem;
@@ -695,23 +712,27 @@ function buildVendorConsolidation(decisions) {
         return '<p style="color:#505a5f;">No allocation data available.</p>';
     }
 
-    // Count "before" vendors (all systems in baseline)
-    const beforeVendors = new Map(); // vendor -> Set of system IDs
+    // Count "before" vendors with system count and spend
+    const beforeVendors = new Map(); // vendor -> { systemIds: Set, spend: number }
     baselineAlloc.forEach(funcMap => {
         funcMap.forEach(allocations => {
             for (const a of allocations) {
                 if (a.system && a.system.vendor) {
                     if (!beforeVendors.has(a.system.vendor)) {
-                        beforeVendors.set(a.system.vendor, new Set());
+                        beforeVendors.set(a.system.vendor, { systemIds: new Set(), spend: 0 });
                     }
-                    beforeVendors.get(a.system.vendor).add(a.system.id);
+                    const entry = beforeVendors.get(a.system.vendor);
+                    if (!entry.systemIds.has(a.system.id)) {
+                        entry.systemIds.add(a.system.id);
+                        entry.spend += (typeof a.system.annualCost === 'number' ? a.system.annualCost : 0);
+                    }
                 }
             }
         });
     });
 
-    // Count "after" vendors (retained + procured)
-    const afterVendors = new Map(); // vendor -> Set of system labels
+    // Count "after" vendors (retained + procured) with spend
+    const afterVendors = new Map(); // vendor -> { systemIds: Set, spend: number }
     decisions.forEach(decision => {
         if (decision.systemChoice === 'choose') {
             const allocations = getDecisionSystems(decision);
@@ -719,14 +740,23 @@ function buildVendorConsolidation(decisions) {
             for (const ra of retained) {
                 const sys = ra.system;
                 if (sys.vendor) {
-                    if (!afterVendors.has(sys.vendor)) afterVendors.set(sys.vendor, new Set());
-                    afterVendors.get(sys.vendor).add(sys.id);
+                    if (!afterVendors.has(sys.vendor)) afterVendors.set(sys.vendor, { systemIds: new Set(), spend: 0 });
+                    const entry = afterVendors.get(sys.vendor);
+                    if (!entry.systemIds.has(sys.id)) {
+                        entry.systemIds.add(sys.id);
+                        entry.spend += (typeof sys.annualCost === 'number' ? sys.annualCost : 0);
+                    }
                 }
             }
         } else if (decision.systemChoice === 'procure' && decision.procuredSystem && decision.procuredSystem.vendor) {
-            const vendor = decision.procuredSystem.vendor;
-            if (!afterVendors.has(vendor)) afterVendors.set(vendor, new Set());
-            afterVendors.get(vendor).add(`${decision.functionId}::${decision.successorName}`);
+            const ps = decision.procuredSystem;
+            const key = `${decision.functionId}::${decision.successorName}`;
+            if (!afterVendors.has(ps.vendor)) afterVendors.set(ps.vendor, { systemIds: new Set(), spend: 0 });
+            const entry = afterVendors.get(ps.vendor);
+            if (!entry.systemIds.has(key)) {
+                entry.systemIds.add(key);
+                entry.spend += (typeof ps.annualCost === 'number' ? ps.annualCost : 0);
+            }
         }
     });
 
@@ -737,25 +767,34 @@ function buildVendorConsolidation(decisions) {
     }
 
     let html = `<table>`;
-    html += `<thead><tr><th>Vendor</th><th>Before (systems)</th><th>After (systems)</th><th>Change</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Vendor</th><th scope="col">Before (systems)</th><th scope="col">Before (spend)</th><th scope="col">After (systems)</th><th scope="col">After (spend)</th><th scope="col">Spend change</th></tr></thead>`;
     html += `<tbody>`;
 
     const vendorRows = [];
     allVendors.forEach(vendor => {
-        const before = (beforeVendors.get(vendor) || new Set()).size;
-        const after = (afterVendors.get(vendor) || new Set()).size;
-        vendorRows.push({ vendor, before, after, delta: after - before });
+        const bv = beforeVendors.get(vendor) || { systemIds: new Set(), spend: 0 };
+        const av = afterVendors.get(vendor) || { systemIds: new Set(), spend: 0 };
+        vendorRows.push({
+            vendor,
+            beforeCount: bv.systemIds.size,
+            beforeSpend: bv.spend,
+            afterCount: av.systemIds.size,
+            afterSpend: av.spend,
+            spendDelta: av.spend - bv.spend
+        });
     });
 
-    vendorRows.sort((a, b) => b.before - a.before);
+    vendorRows.sort((a, b) => b.beforeSpend - a.beforeSpend);
 
     for (const row of vendorRows) {
-        const deltaStr = row.delta !== 0 ? formatDelta(row.delta) : '0';
-        const deltaColour = row.delta < 0 ? '#00703c' : row.delta > 0 ? '#d4351c' : '#0b0c0c';
+        const deltaStr = row.spendDelta !== 0 ? formatSpendDelta(row.spendDelta) : '—';
+        const deltaColour = row.spendDelta < 0 ? '#00703c' : row.spendDelta > 0 ? '#d4351c' : '#0b0c0c';
         html += `<tr>`;
         html += `<td>${escHtml(row.vendor)}</td>`;
-        html += `<td>${row.before}</td>`;
-        html += `<td>${row.after}</td>`;
+        html += `<td>${row.beforeCount}</td>`;
+        html += `<td>${escHtml(formatCost(row.beforeSpend))}</td>`;
+        html += `<td>${row.afterCount}</td>`;
+        html += `<td>${escHtml(formatCost(row.afterSpend))}</td>`;
         html += `<td style="color:${escHtml(deltaColour)};">${escHtml(deltaStr)}</td>`;
         html += `</tr>`;
     }
@@ -774,18 +813,28 @@ function buildCommercialObligations(obligations) {
         return '<p style="color:#505a5f;">No obligations recorded.</p>';
     }
 
+    const weights = state.signalWeights || {};
+
+    // Sort by severity (high first)
+    const sorted = [...obligations].sort((a, b) => {
+        const order = { high: 0, medium: 1, low: 2 };
+        return (order[computeObligationSeverity(a, weights)] || 2) - (order[computeObligationSeverity(b, weights)] || 2);
+    });
+
     let html = `<table>`;
-    html += `<thead><tr><th>Function</th><th>From System</th><th>To System</th><th>Type</th><th>Cost</th><th>Contract End</th><th>Vendor</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Function</th><th scope="col">From System</th><th scope="col">To System</th><th scope="col">Type</th><th scope="col">Severity</th><th scope="col">Cost</th><th scope="col">Contract End</th><th scope="col">Vendor</th></tr></thead>`;
     html += `<tbody>`;
 
-    for (const obl of obligations) {
+    for (const obl of sorted) {
         const fs = obl.fromSystem;
         const ts = obl.toSystem;
+        const sev = computeObligationSeverity(obl, weights);
         html += `<tr>`;
         html += `<td>${escHtml(obl.functionLabel || obl.functionId || '—')}</td>`;
         html += `<td>${escHtml(fs ? fs.label : '—')}</td>`;
         html += `<td>${escHtml(ts ? ts.label : '—')}</td>`;
         html += `<td>${escHtml(obl.type)}</td>`;
+        html += `<td><span class="sev-${sev}">${escHtml(sev)}</span></td>`;
         html += `<td>${escHtml(fs ? formatCost(fs.annualCost) : '—')}</td>`;
         html += `<td>${escHtml(obl.contractEndDate || '—')}</td>`;
         html += `<td>${escHtml(fs && fs.vendor ? fs.vendor : '—')}</td>`;
@@ -843,34 +892,55 @@ function buildTechnicalSummary() {
         return '<p style="color:#505a5f;">No allocation data available.</p>';
     }
 
-    // Count technical characteristics across all systems in baseline
-    const seenIds = new Set();
-    let monolithicCount = 0;
-    let lowPortabilityCount = 0;
-    let erpCount = 0;
-    let onPremCount = 0;
-
-    baselineAlloc.forEach(funcMap => {
-        funcMap.forEach(allocations => {
-            for (const a of allocations) {
-                const sys = a.system;
-                if (!sys || seenIds.has(sys.id)) continue;
-                seenIds.add(sys.id);
-                if (sys.dataPartitioning === 'Monolithic') monolithicCount++;
-                if (sys.portability === 'Low') lowPortabilityCount++;
-                if (sys.isERP) erpCount++;
-                if (!sys.isCloud) onPremCount++;
-            }
+    // Count from baseline
+    function countTechCharacteristics(alloc) {
+        const seenIds = new Set();
+        let monolithic = 0, lowPortability = 0, erp = 0, onPrem = 0;
+        alloc.forEach(funcMap => {
+            funcMap.forEach(allocations => {
+                for (const a of allocations) {
+                    const sys = a.system;
+                    if (!sys || seenIds.has(sys.id)) continue;
+                    seenIds.add(sys.id);
+                    if (sys.dataPartitioning === 'Monolithic') monolithic++;
+                    if (sys.portability === 'Low') lowPortability++;
+                    if (sys.isERP) erp++;
+                    if (!sys.isCloud) onPrem++;
+                }
+            });
         });
-    });
+        return { monolithic, lowPortability, erp, onPrem, total: seenIds.size };
+    }
+
+    const before = countTechCharacteristics(baselineAlloc);
+
+    // Try to get post-simulation allocation
+    const impact = state.simulationState && state.simulationState.lastImpact;
+    const afterAlloc = impact && impact.afterAllocation;
+    const after = afterAlloc ? countTechCharacteristics(afterAlloc) : null;
+
+    const row = (label, beforeVal, afterVal) => {
+        if (after !== null) {
+            const delta = afterVal - beforeVal;
+            const deltaStr = delta !== 0 ? (delta > 0 ? `+${delta}` : `${delta}`) : '0';
+            const deltaColour = delta < 0 ? '#00703c' : delta > 0 ? '#d4351c' : '#0b0c0c';
+            return `<tr><td>${escHtml(label)}</td><td>${beforeVal}</td><td>${afterVal}</td><td style="color:${deltaColour};">${escHtml(deltaStr)}</td></tr>`;
+        }
+        return `<tr><td>${escHtml(label)}</td><td>${beforeVal}</td></tr>`;
+    };
 
     let html = `<table class="cost-summary-table">`;
+    if (after !== null) {
+        html += `<thead><tr><th scope="col">Characteristic</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Change</th></tr></thead>`;
+    } else {
+        html += `<thead><tr><th scope="col">Characteristic</th><th scope="col">Count</th></tr></thead>`;
+    }
     html += `<tbody>`;
-    html += `<tr><td>Monolithic data stores</td><td>${monolithicCount}</td></tr>`;
-    html += `<tr><td>Low portability systems</td><td>${lowPortabilityCount}</td></tr>`;
-    html += `<tr><td>ERP platforms</td><td>${erpCount}</td></tr>`;
-    html += `<tr><td>On-premise systems</td><td>${onPremCount}</td></tr>`;
-    html += `<tr><td>Total unique systems assessed</td><td>${seenIds.size}</td></tr>`;
+    html += row('Monolithic data stores', before.monolithic, after ? after.monolithic : null);
+    html += row('Low portability systems', before.lowPortability, after ? after.lowPortability : null);
+    html += row('ERP platforms', before.erp, after ? after.erp : null);
+    html += row('On-premise systems', before.onPrem, after ? after.onPrem : null);
+    html += row('Total unique systems', before.total, after ? after.total : null);
     html += `</tbody></table>`;
     return html;
 }
@@ -966,11 +1036,19 @@ function buildArchitectObligations(obligations) {
         return '<p style="color:#505a5f;">No obligations recorded.</p>';
     }
 
+    const weights = state.signalWeights || {};
+
+    // Sort by severity (high first)
+    const sorted = [...obligations].sort((a, b) => {
+        const order = { high: 0, medium: 1, low: 2 };
+        return (order[computeObligationSeverity(a, weights)] || 2) - (order[computeObligationSeverity(b, weights)] || 2);
+    });
+
     let html = `<table>`;
-    html += `<thead><tr><th>Function</th><th>From System</th><th>Monolithic</th><th>Low Portability</th><th>ERP</th><th>On-Prem</th><th>Migration Scope</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Function</th><th scope="col">From System</th><th scope="col">Severity</th><th scope="col">Monolithic</th><th scope="col">Low Portability</th><th scope="col">ERP</th><th scope="col">On-Prem</th><th scope="col">Migration Scope</th></tr></thead>`;
     html += `<tbody>`;
 
-    for (const obl of obligations) {
+    for (const obl of sorted) {
         const fs = obl.fromSystem;
         const bullets = generateMigrationScopeBullets(obl);
         const scopeHtml = bullets.length > 0
@@ -979,10 +1057,12 @@ function buildArchitectObligations(obligations) {
 
         const yesStyle = 'color:#d4351c;font-weight:bold;';
         const noStyle = 'color:#505a5f;';
+        const sev = computeObligationSeverity(obl, weights);
 
         html += `<tr>`;
         html += `<td>${escHtml(obl.functionLabel || obl.functionId || '—')}</td>`;
         html += `<td>${escHtml(fs ? fs.label : '—')}</td>`;
+        html += `<td><span class="sev-${sev}">${escHtml(sev)}</span></td>`;
         html += `<td style="${obl.isMonolithic ? yesStyle : noStyle}">${obl.isMonolithic ? 'Yes' : 'No'}</td>`;
         html += `<td style="${obl.isLowPortability ? yesStyle : noStyle}">${obl.isLowPortability ? 'Yes' : 'No'}</td>`;
         html += `<td style="${obl.isERP ? yesStyle : noStyle}">${obl.isERP ? 'Yes' : 'No'}</td>`;
@@ -1005,20 +1085,24 @@ function buildArchitectObligations(obligations) {
 function buildArchitectReport(decisions, impact, obligations) {
     let html = '';
 
-    // Section 1: Technical Summary
-    html += `<h2>1. Technical Summary</h2>`;
+    // Section 1: Estate Impact Summary
+    html += `<h2>1. Estate Impact Summary</h2>`;
+    html += buildEstateSummaryTable(impact);
+
+    // Section 2: Technical Summary
+    html += `<h2>2. Technical Summary</h2>`;
     html += buildTechnicalSummary();
 
-    // Section 2: Decisions with Data Complexity
-    html += `<h2>2. Decisions with Data Complexity</h2>`;
+    // Section 3: Decisions with Data Complexity
+    html += `<h2>3. Decisions with Data Complexity</h2>`;
     html += buildDecisionsWithDataComplexity(decisions);
 
-    // Section 3: Obligations
-    html += `<h2>3. Obligations</h2>`;
+    // Section 4: Obligations
+    html += `<h2>4. Obligations</h2>`;
     html += buildArchitectObligations(obligations);
 
-    // Section 4: Governance Arrangements
-    html += `<h2>4. Governance Arrangements</h2>`;
+    // Section 5: Governance Arrangements
+    html += `<h2>5. Governance Arrangements</h2>`;
     html += buildGovernanceArrangements(obligations, true);
 
     return html;
@@ -1048,7 +1132,7 @@ export function exportReport() {
     if (!state.simulationState) {
         html += buildReportHeader(persona, decisions);
         html += `<div style="border:2px solid #f47738;padding:16px;background:#fff7e6;margin-top:24px;">`;
-        html += `<p style="font-weight:bold;color:#f47738;">No simulation results to export. Make decisions first.</p>`;
+        html += `<p style="font-weight:bold;color:#0b0c0c;">No simulation results to export. Make decisions first.</p>`;
         html += `<p>Open the Simulation workspace, make at least one function decision, then export again.</p>`;
         html += `</div>`;
         html += buildReportDocEnd();
