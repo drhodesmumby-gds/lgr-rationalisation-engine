@@ -157,6 +157,29 @@ Features:
 - **Contract timeline** — all systems with contract dates, centred on the vesting date, with notice period zones striped in red
 - **Perspective filtering** — view the estate through a specific successor's lens; non-relevant systems are dimmed
 
+### Simulation Mode
+
+From Stage 3, enter **simulation mode** to model rationalisation decisions and see their projected impact on the estate. The simulation engine operates as a decision-driven pipeline: users make high-level decisions per function, and the engine translates them into concrete actions with full impact analysis.
+
+**Decision model.** Each function decision captures two axes:
+- **System choice** — *Choose* (retain specific systems, decommission others), *Procure* (replace with a new system), or *Defer* (no decision yet)
+- **Operating model boundary** — *Disaggregate* (split shared system across successors), *Maintain shared service*, *Establish shared service* (create new cross-successor arrangement), or *None*
+
+**Action types.** Decisions are projected into concrete actions: consolidate, decommission, extend contract, migrate users, split shared service, procure replacement, consolidate ERP (multi-function), disaggregate, and establish shared service.
+
+**Impact analysis.** The simulation workspace shows:
+- Before/after estate metrics (system count, annual spend, pre-vesting triggers, disaggregation count) with deltas
+- Per-decision obligation generation (data migration plans, governance arrangements, shared service obligations)
+- Cross-successor decommission preview when removing systems from shared predecessors
+- Ghost cards in the matrix showing removed systems with strikethrough styling
+
+**Scenario management.** Decisions can be exported as JSON scenario files and re-imported to reconstruct the full projected impact. Scenario files uploaded at Stage 1 alongside architecture data are auto-detected and loaded when simulation is entered.
+
+**Report export.** Persona-tailored HTML reports can be exported from simulation mode:
+- **Executive** — cost/timeline summary, estate posture changes, decision overview
+- **Commercial** — contract detail per decision, procurement action timeline (date-ordered), deferred system notice triggers with vesting-relative framing, vendor consolidation
+- **Architect** — technical posture narrative synthesis, obligation tables with migration severity and data complexity flags, system-level detail
+
 ---
 
 ## The signal system

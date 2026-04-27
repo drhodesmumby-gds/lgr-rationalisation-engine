@@ -243,8 +243,31 @@ Each scenario includes council architecture files, a transition configuration, a
 
 ---
 
+## Simulation mode
+
+From the Stage 3 dashboard, the tool enters **simulation mode** where teams can model rationalisation decisions and see their projected impact before committing.
+
+For each function in each successor authority, two questions are answered:
+
+1. **Which system(s) should the successor use?** — Choose from existing systems, procure a replacement, or defer the decision
+2. **What happens to the operating model boundary?** — Disaggregate a shared system, maintain an existing shared service, or establish a new shared arrangement across successors
+
+The tool translates these decisions into concrete actions and shows the consequences:
+
+- **Before/after estate metrics** — how system count, annual spend, and risk indicators change with each decision
+- **Data migration obligations** — what data needs to move, from which system, with severity based on data complexity (monolithic vs segmented, portability, ERP status)
+- **Governance obligations** — what shared service arrangements need formal governance, including cross-successor coordination requirements
+- **Cross-successor impact** — when a decision in one successor affects systems shared with another, the tool surfaces the spillover
+
+Decisions can be **saved as scenario files** and shared with colleagues. When a scenario file is loaded, the full projected impact is reconstructed — no need to re-enter decisions.
+
 ## Export capabilities
 
+- **Persona-tailored report export** — generate HTML reports tailored to each audience from simulation mode:
+  - *Executive*: cost/timeline summary, estate posture changes, decision overview
+  - *Commercial*: contract detail per decision, date-ordered procurement action timeline with vesting-relative deadlines, deferred system notice triggers, vendor consolidation analysis
+  - *Architect*: technical posture narrative (e.g. "ERP footprint reduces from 4 to 2"), obligation tables with migration severity and data complexity flags
+- **Scenario export/import** — save and load decision sets as JSON for sharing and iteration
 - **Transition configuration** — export and import the transition structure as JSON, enabling reuse across sessions and sharing between team members
 - **HTML export** — generate a self-contained HTML file of the full Stage 3 analysis, suitable for offline sharing with stakeholders who do not have access to the tool
 - **Architecture JSON** — export modified architecture data from the visual editor, enabling councils to build their architecture description iteratively and reuse it across sessions
@@ -276,3 +299,7 @@ This tool demonstrates several things that are difficult to achieve with spreads
 - **TCoP alignment checking**: systems are automatically assessed against the Technology Code of Practice, giving immediate governance visibility
 - **Automatic priority adjustment**: tier promotion ensures commercially urgent services are not hidden in a low-priority tier
 - **Flexible data ingestion**: the import wizard meets councils where they are — whether they have structured architecture data, spreadsheets, or nothing at all
+- **Decision modelling with projected impact**: rationalisation decisions can be modelled before committing, with full before/after impact analysis on cost, system count, and risk indicators
+- **Obligation generation**: data migration and governance obligations are automatically generated from decisions, with severity grading based on data complexity
+- **Procurement timeline intelligence**: notice trigger dates are framed relative to the vesting date (e.g., "6 months before vesting"), and a date-ordered procurement action timeline gives Commercial teams a single view of all upcoming contract actions
+- **Scenario portability**: decision sets export as JSON and can be shared, reloaded, and reported on without re-entering decisions

@@ -310,7 +310,7 @@ Display on the contract timeline. Flag systems whose notice windows overlap with
 
 ## 6. Medium-Term Development
 
-Significant schema or analysis additions. Estimated at 3–6 months.
+Significant schema or analysis additions. Some items in this section have been fully or partially implemented (marked accordingly); the rest remain on the roadmap.
 
 ### Service-level modelling
 
@@ -330,59 +330,77 @@ Implement the cross-cutting capability layer described in [Section 2](#2-cross-c
 - Separate capability rationalisation view showing blast radius of platform replacement decisions
 - Dependency mapping: when replacing a payments platform, show all functions affected
 
-### Cost modelling and financial exposure
+### Cost modelling and financial exposure *(partially implemented)*
 
-The engine currently shows per-system annual cost but doesn't aggregate to estate-level financial analysis. Add:
+The engine computes total estate cost by successor and cost deltas from simulation decisions. Before/after spend comparisons appear in the simulation impact panel and persona-tailored reports. Per-system annual cost is displayed throughout.
 
-- **Total estate cost by successor** — what each successor inherits in annual IT spend
+**Remaining:**
+
 - **Parallel running estimate** — during transition, both old and new systems run simultaneously; estimate the overlap cost
-- **Termination liability** — systems with long notice periods or early termination penalties
-- **Cost-per-user comparison** — when choosing between systems for consolidation, normalise cost by user count
+- **Termination liability** — systems with long notice periods or early termination penalties; no penalty field in system schema
+- **Cost-per-user normalisation** — when choosing between systems for consolidation, show cost normalised by user count
 
-### Decision annotation and audit trail
+### Decision annotation and audit trail *(partially implemented)*
 
-Allow users to attach decisions and rationale to function cells:
+The engine captures structured decisions via the `FunctionDecision` model (`src/simulation/decisions.js`). Each decision records: function ID, successor, system choice (choose/procure/defer), operating model boundary (disaggregate/maintain-shared/establish-shared), retained system IDs, contract extensions, and a timestamp. Decisions are serialised to JSON via scenario export and can be re-imported to reconstruct the full projected impact.
 
-```json
-{
-  "functionId": "142",
-  "successor": "North Essex Unitary",
-  "decision": "Consolidate on Bartec (from Braintree DC)",
-  "rationale": "Largest user base, cloud-hosted, high portability. TCoP aligned.",
-  "decidedBy": "Architecture Board",
-  "date": "2026-09-15"
-}
-```
+**Remaining:**
 
-Export includes annotations so the decision register is self-documenting. This transforms the tool from a one-time analysis into a living transition record.
+- **Rationale field** — free-text justification for why a decision was made (e.g., "Largest user base, cloud-hosted, high portability")
+- **decidedBy field** — attribution to a person or governance body (e.g., "Architecture Board")
+- **UI for entering rationale** — the decision panel currently captures the technical decision but not the narrative justification
 
-### Transition simulation engine
+Adding these fields to the `FunctionDecision` schema and the decision panel UI would transform scenario exports into self-documenting decision registers suitable for governance audit trails.
 
-Move beyond analysis into **forward-looking decision modelling**. Once data and transition config are loaded, users should be able to select actions across the reorganisation and see a model of the impacts.
+### Transition simulation engine *(implemented)*
 
-**The concept.** The current tool answers "what does the estate look like?" The simulation engine answers "what happens if we do *this*?" Users select concrete actions — consolidate on System A, decommission System B, migrate users from C to D, extend contract E — and the engine recalculates the entire estate model to show the consequences.
+The simulation engine is fully implemented across five core modules in `src/simulation/`:
 
-**Action types:**
+| Module | Size | Purpose |
+|---|---|---|
+| `actions.js` | 28 KB | Applies simulation actions to the estate model |
+| `projector.js` | 22 KB | Translates high-level decisions into concrete action sequences |
+| `obligations.js` | 25 KB | Generates data migration and governance obligations from actions |
+| `impact.js` | 4 KB | Computes before/after estate metrics and deltas |
+| `decisions.js` | 7 KB | FunctionDecision model with validation |
 
-| Action | Effect on model |
+Supporting UI in `src/features/`:
+- `decision-panel.js` (73 KB) — full modal decision UI with system comparison, ERP impact analysis, and operating model boundary selection
+- `simulation-panel.js` — simulation workspace with before/after metrics, decision list, and Sankey flow visualisation
+- `scenario-manager.js` — scenario save/load with validation and auto-detection at Stage 1
+- `report-export.js` — persona-tailored HTML report export (Executive, Commercial, Architect) with procurement timeline, technical posture narrative, obligation tables, and vesting-relative date framing
+
+**Implemented action types:**
+
+| Action | Implementation |
 |---|---|
-| **Consolidate on System X** | Removes competing systems from the successor allocation; recalculates cost, user volume, vendor density; shows migration burden for decommissioned systems |
-| **Decommission System Y** | Removes system from estate; flags any functions left unserved; recalculates estate metrics |
-| **Extend contract** | Moves contract end date; recalculates vesting zone and notice trigger; may demote tier priority |
-| **Migrate users** | Transfers user count between systems; recalculates anchor status and user volume signal |
-| **Split shared service** | Creates two instances from one shared system; assigns each to a successor; recalculates boundary crossing |
-| **Procure replacement** | Adds a new system to a successor with estimated cost, users, and timeline; marks predecessor system for decommission |
+| **Consolidate on System X** | `applyConsolidate()` — retains chosen systems, decommissions others, generates migration obligations |
+| **Decommission System Y** | `applyDecommission()` — removes system, recalculates estate metrics |
+| **Extend contract** | `extend-contract` action — moves contract end date, recalculates vesting zone |
+| **Migrate users** | `migrate-users` action — transfers user counts between systems |
+| **Split shared service** | `applySplitSharedService()` — creates successor-specific instances from shared system |
+| **Procure replacement** | `applyProcureReplacement()` — adds new system, marks predecessors for decommission |
+| **Consolidate ERP** | `consolidate-erp` — multi-function ERP consolidation with cross-function blast radius |
+| **Disaggregate** | `disaggregate` — data partitioning across successor authorities |
+| **Establish shared service** | `establish-shared-service` — creates new shared arrangements across successors |
 
-**Impact analysis.** After each action (or batch of actions), the engine should show:
-- **Before/after estate summary** — system count, total cost, collision count, pre-vesting triggers
-- **Changed signals** — which signals improve or worsen as a result of the action
-- **Timeline impact** — how procurement and migration activities fit against the vesting date and notice windows
-- **Dependency cascade** — if a decommissioned system is depended on by other systems (see system dependency tracking), flag the cascade
-- **Cost delta** — net change in annual IT spend, plus estimated one-off migration/procurement costs
+**Implemented impact analysis:**
+- Before/after estate summary (system count, total spend, collision count, pre-vesting triggers, disaggregation count)
+- Cost delta with currency formatting
+- Per-decision obligation generation (migration plan, governance arrangements, shared service obligations)
+- Cross-successor decommission preview (warns when removing a system affects other successors via shared predecessors)
 
-**Scenario comparison.** Save named scenarios ("Option A: consolidate on NEC", "Option B: procure new cloud platform") and compare side-by-side across key metrics. This enables programme boards to evaluate trade-offs quantitatively rather than debating in the abstract.
+**Scenario management:**
+- Save decisions as JSON with metadata (persona, vesting date, successor names, decision count)
+- Load and validate scenarios with warning banners for environment mismatches
+- Auto-detect scenario files uploaded at Stage 1 alongside architecture data
+- Impact fully reconstructed from decisions on import (no computed state persisted)
 
-**Decision capture.** When a scenario is approved, its actions become the decision record — feeding directly into the decision annotation system (see above). The simulation becomes the audit trail: "we chose Option A because it reduced annual cost by £200k and avoided a pre-vesting procurement cycle."
+**Remaining:**
+
+- **Scenario comparison** — save and compare named scenarios side-by-side across key metrics. Currently scenarios can be saved and loaded individually, but there is no UI for loading two scenarios simultaneously and comparing them.
+- **Cross-successor impact visibility** — when a simulation action in successor A removes a system from a shared predecessor, the system disappears from successor B's allocation with no per-successor breakdown of the impact. The cross-successor decommission preview partially addresses this but full per-successor metric deltas are not yet computed.
+- **Dependency cascade** — no `DEPENDS_ON` edge type between systems (see system dependency tracking below), so blast radius from system removal is not modelled
 
 ### System dependency tracking
 
@@ -451,20 +469,20 @@ How the engine's current and planned capabilities map against the two reference 
 | **ESD service taxonomy** | Not modelled | Service-level nodes | Not referenced | Not referenced |
 | **Cross-cutting capabilities** | Not modelled | Capability nodes (LGAM-aligned) | Not modelled | Core layer (9 capabilities) |
 | **System-level detail** | Full (vendor, cost, contract, portability) | + confidence annotations | High-level guidance | Deliberately excluded |
-| **Disaggregation** | Pattern classification (4 patterns) | + service-level partitioning | Legal/technical/operational guidance | Not addressed |
-| **Shared services** | Boundary detection, unwinding signal | + dependency tracking | Unwinding guidance | Dependency modelling only |
-| **Cost modelling** | Per-system annual cost | + estate-level financial exposure | "Eye-wateringly expensive" | Not addressed |
+| **Disaggregation** | Pattern classification (4 patterns); first-class simulation action with obligation generation | + service-level partitioning, partitioningMethod field | Legal/technical/operational guidance | Not addressed |
+| **Shared services** | Boundary detection, unwinding signal, establish/maintain/disaggregate decisions, cross-successor preview | + dependency tracking | Unwinding guidance | Dependency modelling only |
+| **Cost modelling** | Per-system annual cost; estate-level before/after spend with deltas; procurement action timeline | + parallel running estimate, termination liability | "Eye-wateringly expensive" | Not addressed |
 | **Data quality** | Self-reported, no validation | + confidence metadata | Process outcome, not precondition | Not addressed |
 | **Cyber readiness** | Out of scope | Out of scope | Dedicated theme | Forthcoming |
-| **Stakeholder alignment** | Three personas | + decision annotations | Dedicated theme | "Shared language" principle |
+| **Stakeholder alignment** | Three personas with configurable signal weights; persona-tailored report export (Executive, Commercial, Architect) | + decision rationale/attribution | Dedicated theme | "Shared language" principle |
 | **Tier prioritisation** | Tier 1/2/3 with promotion | Unchanged | Statutory-first sequencing | Not addressed |
-| **Vesting timeline** | Vesting zones, critical path | + programme milestones | Thematic sequencing | Not addressed |
+| **Vesting timeline** | Vesting zones, critical path, vesting-relative date framing in reports | + programme milestones | Thematic sequencing | Not addressed |
 | **TCoP alignment** | Points 3, 4, 5, 9, 11 | Unchanged | Not explicit | Forthcoming in wider model |
-| **Governance/compliance** | TCoP assessment only | + playbook phase tracking | Implied | Forthcoming |
-| **Vendor engagement** | Vendor density signal | Unchanged | Case studies | Core purpose |
+| **Governance/compliance** | TCoP assessment; migration and governance obligation generation | + playbook phase tracking | Implied | Forthcoming |
+| **Vendor engagement** | Vendor density signal; vendor consolidation in reports | Unchanged | Case studies | Core purpose |
 | **Target-state planning** | Not modelled | LGAM overlay (long-term) | Not modelled | Core purpose |
-| **Transition simulation** | Not modelled | Action modelling, scenario comparison, impact analysis | Not addressed | Not addressed |
-| **CMDB integration** | CSV/Excel with auto-detect | ServiceNow/LeanIX presets, relationship table import | Not addressed | Not addressed |
+| **Transition simulation** | Full action engine (9 action types), decision capture, impact analysis, scenario save/load, obligation generation, persona-tailored report export | + scenario comparison, cross-successor impact visibility, dependency cascade | Not addressed | Not addressed |
+| **CMDB integration** | CSV/Excel with auto-detect, clipboard paste, manual entry | + ServiceNow/LeanIX presets, relationship table import | Not addressed | Not addressed |
 
 ---
 
