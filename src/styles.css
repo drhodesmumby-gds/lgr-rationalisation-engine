@@ -198,6 +198,12 @@ header.header-collapsed .header-subtitle { display: none !important; }
 /* Toolbar separator between button groups */
 .toolbar-separator { width: 1px; height: 28px; background-color: #b1b4b6; margin: 0 4px; flex-shrink: 0; }
 
+/* System card collapse/expand */
+.system-card-wrapper { position: relative; }
+.system-card-collapsed { transition: background-color 0.1s; }
+.system-card-collapsed:hover { background-color: #f3f2f1; }
+.system-card-collapsed .gds-tag { vertical-align: middle; }
+
 /* GOV.UK Skip link */
 .govuk-skip-link {
   position: absolute;

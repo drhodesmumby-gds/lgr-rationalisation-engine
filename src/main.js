@@ -61,6 +61,16 @@ function toggleBannerCollapse() {
     document.getElementById('btnCollapseBanner').setAttribute('title', state.bannerCollapsed ? 'Expand banner' : 'Collapse banner');
 }
 
+// Card collapse state helper
+// Returns true if the given system card should currently show in expanded state.
+// The global default (state.cardCollapseState) is inverted for IDs in state.expandedCards.
+function isCardExpanded(sysId) {
+    if (state.cardCollapseState === 'expanded') {
+        return !state.expandedCards.has(sysId); // expanded is default, set tracks collapsed exceptions
+    }
+    return state.expandedCards.has(sysId); // collapsed is default, set tracks expanded exceptions
+}
+
 function openDocModal(key) {
     const doc = DOCUMENTATION[key];
     if (!doc) return;
@@ -808,6 +818,18 @@ document.getElementById('filterCollisionSelect').addEventListener('change', func
     renderDashboard();
 });
 
+// Global card expand/collapse controls (WI-5)
+document.getElementById('btnExpandAllCards')?.addEventListener('click', () => {
+    state.cardCollapseState = 'expanded';
+    state.expandedCards.clear();
+    renderDashboard();
+});
+document.getElementById('btnCollapseAllCards')?.addEventListener('click', () => {
+    state.cardCollapseState = 'collapsed';
+    state.expandedCards.clear();
+    renderDashboard();
+});
+
 function updatePersonaBanner() {
     if (state.activePersona === 'commercial') {
         personaTitle.textContent = "Commercial & Transition View";
@@ -1464,7 +1486,15 @@ export function renderDashboard() {
                     const decisionAffordanceTop = decisionAffordanceHtml
                         ? decisionAffordanceHtml.replace('mt-2', 'mb-2')
                         : '';
-                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
+                    // Cell-level expand/collapse toggle (WI-4) for multi-system cells
+                    let cellExpandToggleHtml = '';
+                    if (cellSystems.length >= 2) {
+                        const cellSysIds = cellSystems.map(s => escHtml(s.id)).join(',');
+                        const anyCollapsed = cellSystems.some(s => !isCardExpanded(s.id));
+                        const toggleLabel = anyCollapsed ? `Expand all (${cellSystems.length})` : `Collapse all (${cellSystems.length})`;
+                        cellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${cellSysIds}" type="button">${toggleLabel}</button>`;
+                    }
+                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}${cellExpandToggleHtml}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
 
                     // Collect for analysis
                     const taggedAllocations = cellAllocations.map(a => ({ ...a, _successorName: successorName }));
@@ -1585,7 +1615,14 @@ export function renderDashboard() {
             const isSelected = state.activePerspective === 'all' || state.activePerspective === council;
             const tdClass = isSelected ? 'border-r col-highlight bg-white' : 'bg-gray-50 border-r col-dimmed';
 
-            rowHTML += `<td class="${tdClass} p-3">${buildSystemCard(councilSystems, state.activePersona, anchorSystem)}</td>`;
+            let discCellExpandToggleHtml = '';
+            if (councilSystems.length >= 2) {
+                const discSysIds = councilSystems.map(s => escHtml(s.id)).join(',');
+                const discAnyCollapsed = councilSystems.some(s => !isCardExpanded(s.id));
+                const discToggleLabel = discAnyCollapsed ? `Expand all (${councilSystems.length})` : `Collapse all (${councilSystems.length})`;
+                discCellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${discSysIds}" type="button">${discToggleLabel}</button>`;
+            }
+            rowHTML += `<td class="${tdClass} p-3">${discCellExpandToggleHtml}${buildSystemCard(councilSystems, state.activePersona, anchorSystem)}</td>`;
         });
 
         let analysisSystems = relevantSystems;
@@ -1638,6 +1675,88 @@ export function renderDashboard() {
             checkTooltipFlip(hovered);
         });
     }
+
+    // --- Card collapse event delegation (WI-3/WI-4) ---
+    // Wire on the matrix body; also handles cell-level expand/collapse toggles.
+    if (body._cardCollapseHandler) {
+        body.removeEventListener('click', body._cardCollapseHandler);
+    }
+    body._cardCollapseHandler = function(e) {
+        // Cell-level expand/collapse toggle (WI-4)
+        const cellToggle = e.target.closest('.cell-expand-toggle');
+        if (cellToggle) {
+            const ids = cellToggle.dataset.cellSystemIds ? cellToggle.dataset.cellSystemIds.split(',').filter(Boolean) : [];
+            const anyCollapsed = ids.some(id => !isCardExpanded(id));
+            ids.forEach(id => {
+                if (anyCollapsed) {
+                    // Expand all
+                    if (state.cardCollapseState === 'collapsed') {
+                        state.expandedCards.add(id);
+                    } else {
+                        state.expandedCards.delete(id);
+                    }
+                } else {
+                    // Collapse all
+                    if (state.cardCollapseState === 'collapsed') {
+                        state.expandedCards.delete(id);
+                    } else {
+                        state.expandedCards.add(id);
+                    }
+                }
+            });
+            // Update all wrappers in this cell
+            const cell = cellToggle.closest('td') || cellToggle.parentElement;
+            cell.querySelectorAll('.system-card-wrapper').forEach(wrapper => {
+                const sysId = wrapper.dataset.systemId;
+                const isExp = isCardExpanded(sysId);
+                const col = wrapper.querySelector('.system-card-collapsed');
+                const exp = wrapper.querySelector('.system-card-expanded');
+                if (col) { col.classList.toggle('hidden', isExp); col.setAttribute('aria-expanded', String(isExp)); }
+                if (exp) exp.classList.toggle('hidden', !isExp);
+            });
+            cellToggle.textContent = anyCollapsed ? `Collapse all (${ids.length})` : `Expand all (${ids.length})`;
+            return;
+        }
+
+        // Don't intercept clicks on interactive elements inside expanded cards
+        if (e.target.closest('a, button, select, input, .sim-decide-btn')) return;
+
+        const wrapper = e.target.closest('.system-card-wrapper');
+        if (!wrapper) return;
+        const sysId = wrapper.dataset.systemId;
+        if (!sysId) return;
+
+        // Toggle in state
+        if (state.expandedCards.has(sysId)) {
+            state.expandedCards.delete(sysId);
+        } else {
+            state.expandedCards.add(sysId);
+        }
+
+        // Toggle visibility in-place (no full re-render)
+        const collapsed = wrapper.querySelector('.system-card-collapsed');
+        const expanded = wrapper.querySelector('.system-card-expanded');
+        const isNowExpanded = isCardExpanded(sysId);
+        if (collapsed) collapsed.classList.toggle('hidden', isNowExpanded);
+        if (expanded) expanded.classList.toggle('hidden', !isNowExpanded);
+        if (collapsed) collapsed.setAttribute('aria-expanded', String(isNowExpanded));
+    };
+    body.addEventListener('click', body._cardCollapseHandler);
+
+    // Keyboard handler for collapsed cards (Enter/Space)
+    if (body._cardKeyHandler) {
+        body.removeEventListener('keydown', body._cardKeyHandler);
+    }
+    body._cardKeyHandler = function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const collapsed = e.target.closest('.system-card-collapsed');
+            if (collapsed) {
+                e.preventDefault();
+                collapsed.click();
+            }
+        }
+    };
+    body.addEventListener('keydown', body._cardKeyHandler);
 }
 
 function renderCriticalPathPanel() {
@@ -1689,15 +1808,43 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
     sysList.forEach((sys, idx) => {
         const isAnchor = anchorSystem && sys.id === anchorSystem.id;
         const borderClass = isAnchor ? 'border-[#ffdd00] border-2' : (persona === 'architect' && sys.dataPartitioning === 'Monolithic' ? 'border-[#53284f] border-l-4' : 'border-gray-300');
-        
+        const alloc = allocations ? allocations[idx] : null;
+        const isDistressed = sys._sourceCouncil && state.distressedCouncils.has(sys._sourceCouncil);
+        const isShared = sys.sharedWith && Array.isArray(sys.sharedWith) && sys.sharedWith.length > 0;
+        const isERP = !!sys.isERP;
+
+        // --- Collapsed summary line ---
+        const isExpanded = isCardExpanded(sys.id);
+        const collapsedHidden = isExpanded ? ' hidden' : '';
+        const expandedHidden = isExpanded ? '' : ' hidden';
+        const costStr = sys.cost ? sys.cost : (sys.annualCost ? `£${sys.annualCost >= 1000000 ? (sys.annualCost/1000000).toFixed(1)+'m' : sys.annualCost >= 1000 ? (sys.annualCost/1000).toFixed(0)+'k' : sys.annualCost}` : '');
+        let miniBadges = '';
+        if (isERP)      miniBadges += `<span class="gds-tag tag-red" style="font-size:9px;padding:1px 4px;line-height:1.2;">ERP</span>`;
+        if (isShared)   miniBadges += `<span class="gds-tag tag-blue" style="font-size:9px;padding:1px 4px;line-height:1.2;">Shared</span>`;
+        if (isAnchor)   miniBadges += `<span class="gds-tag tag-orange" style="font-size:9px;padding:1px 4px;line-height:1.2;">Anchor</span>`;
+        if (isDistressed) miniBadges += `<span class="gds-tag tag-red" style="font-size:9px;padding:1px 4px;line-height:1.2;">Distress</span>`;
+
+        html += `<div class="system-card-wrapper" data-system-id="${escHtml(sys.id)}">`;
+
+        // Collapsed summary row
+        html += `<div class="system-card-collapsed flex items-center gap-2 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline-[3px] focus:outline-[#ffdd00]${collapsedHidden}"
+             tabindex="0" role="button" aria-expanded="${isExpanded}" aria-label="Expand ${escHtml(sys.label)} details">`;
+        html += `<span class="text-xs text-gray-400 shrink-0">&#x25B8;</span>`;
+        html += `<span class="text-sm font-bold text-[#0b0c0c] truncate flex-1">${sys.label}</span>`;
+        if (sys.vendor) html += `<span class="text-xs text-gray-500 shrink-0">${escHtml(sys.vendor)}</span>`;
+        if (costStr)    html += `<span class="text-xs text-gray-500 shrink-0">${escHtml(costStr)}</span>`;
+        if (miniBadges) html += `<span class="flex items-center gap-1 shrink-0">${miniBadges}</span>`;
+        html += `</div>`;
+
+        // Expanded full card (existing markup, unchanged)
+        html += `<div class="system-card-expanded${expandedHidden}">`;
         html += `<div class="mb-3 bg-white p-3 border shadow-sm ${borderClass} relative">`;
-        
+
         if (isAnchor) html += `<div class="absolute -top-2 -right-2 anchor-badge">${wrapWithTooltip('Anchor System', DOMAIN_TERMS['Anchor System'])}</div>`;
-        
-        html += `<strong class="block mb-1 text-[#0b0c0c] text-base">${sys.label}</strong>`;
+
+        html += `<div class="flex items-center gap-1 mb-1"><span class="text-xs text-gray-400 shrink-0 cursor-pointer" title="Collapse">&#x25BE;</span><strong class="block text-[#0b0c0c] text-base">${sys.label}</strong></div>`;
 
         // Provenance label — show source predecessor in transition mode
-        const alloc = allocations ? allocations[idx] : null;
         if (alloc && alloc.sourceCouncil) {
             html += `<span class="block text-[10px] text-gray-500 italic mb-1">from ${alloc.sourceCouncil}</span>`;
         }
@@ -1710,12 +1857,12 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         }
 
         // Financial distress warning banner (Requirement 9.2)
-        if (sys._sourceCouncil && state.distressedCouncils.has(sys._sourceCouncil)) {
-            html += `<div class="mb-2 p-2 border-l-4 border-l-[#d4351c] bg-red-50"><p class="text-xs font-bold text-[#d4351c]">⚠ Predecessor in financial distress — verify system currency, support status, and licence compliance.</p></div>`;
+        if (isDistressed) {
+            html += `<div class="mb-2 p-2 border-l-4 border-l-[#d4351c] bg-red-50"><p class="text-xs font-bold text-[#d4351c]">&#9888; Predecessor in financial distress — verify system currency, support status, and licence compliance.</p></div>`;
         }
 
         // Shared service indicator (Requirement 6.2)
-        if (sys.sharedWith && Array.isArray(sys.sharedWith) && sys.sharedWith.length > 0) {
+        if (isShared) {
             html += `<div class="mb-2 flex items-center gap-1">
                 <span class="gds-tag tag-blue" style="font-size:10px;padding:2px 6px;">${wrapWithTooltip('Shared service', DOMAIN_TERMS['Shared Service'])}</span>
                 <span class="text-[11px] text-gray-600">with ${sys.sharedWith.join(', ')}</span>
@@ -1723,25 +1870,24 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         }
 
         html += `<div class="flex gap-2 text-[11px] text-gray-600 font-bold uppercase tracking-wide mb-3">
-                    <span class="tooltip-label" title="Scale/Gravity">👥 ${sys.users ? sys.users.toLocaleString() : '??'} Users</span>
-                    ${sys.vendor ? `<span class="tooltip-label" title="Software Vendor">🏢 ${sys.vendor}</span>` : ''}
+                    <span class="tooltip-label" title="Scale/Gravity">&#128101; ${sys.users ? sys.users.toLocaleString() : '??'} Users</span>
+                    ${sys.vendor ? `<span class="tooltip-label" title="Software Vendor">&#127970; ${sys.vendor}</span>` : ''}
                  </div>`;
 
         // Disaggregation flag for partial predecessors (Requirement 7)
-        // Check allocation metadata if provided, otherwise fall back to sys property
         const showDisaggregationFlag = alloc ? alloc.needsAllocationReview : sys.needsAllocationReview;
         if (showDisaggregationFlag) {
             let flagHtml = `<div class="mb-3 p-2 border-l-4 border-l-[#f47738] bg-yellow-50">`;
-            flagHtml += `<p class="text-xs font-bold text-[#0b0c0c]">⚠ Partial predecessor — this system may serve multiple successors. Allocation review required.</p>`;
+            flagHtml += `<p class="text-xs font-bold text-[#0b0c0c]">&#9888; Partial predecessor — this system may serve multiple successors. Allocation review required.</p>`;
             if (sys.dataPartitioning === 'Monolithic') {
-                flagHtml += `<p class="text-xs font-bold text-[#d4351c] mt-1">⚠ Highest-risk combination: monolithic data requiring disaggregation</p>`;
+                flagHtml += `<p class="text-xs font-bold text-[#d4351c] mt-1">&#9888; Highest-risk combination: monolithic data requiring disaggregation</p>`;
             } else if (sys.dataPartitioning === 'Segmented') {
                 flagHtml += `<p class="text-xs text-[#1d70b8] mt-1">Geographic data partitioning may be feasible</p>`;
             }
             flagHtml += `</div>`;
             html += flagHtml;
         }
-        
+
         if (persona === 'commercial' || persona === 'executive') {
             const noticeMonths = sys.noticePeriod || 0;
             const expStr = `${String(sys.endMonth || 1).padStart(2,'0')}/${sys.endYear || 2025}`;
@@ -1751,15 +1897,15 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
             html += `
                 <div class="text-xs mt-2 border-t pt-3 space-y-3">
                     <div class="flex justify-between gap-4 items-start w-full">
-                        <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="Annual operating cost">Cost</span> 
+                        <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="Annual operating cost">Cost</span>
                         <strong class="text-right max-w-[60%] break-words">${sys.cost || 'N/A'}</strong>
                     </div>
                     <div class="flex justify-between gap-4 items-start w-full">
-                        <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="End date / Notice Period">Contract</span> 
+                        <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="End date / Notice Period">Contract</span>
                         <span class="${riskColor} text-right max-w-[60%] break-words">${expStr} <br><span class="text-[10px] text-gray-500 font-normal">(${noticeMonths}mo notice)</span></span>
                     </div>
                 </div>`;
-        } 
+        }
         if (persona === 'architect' || persona === 'executive') {
             const cloudLabel = sys.isCloud ? 'Cloud' : 'On-Prem';
             const cloudTooltip = sys.isCloud ? 'Externally hosted SaaS or Cloud architecture.' : 'Locally hosted on physical council servers.';
@@ -1779,7 +1925,9 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
                     </div>
                 </div>`;
         }
-        html += `</div>`;
+        html += `</div>`; // close full card inner div
+        html += `</div>`; // close system-card-expanded
+        html += `</div>`; // close system-card-wrapper
     });
     return html;
 }
