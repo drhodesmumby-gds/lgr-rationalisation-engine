@@ -176,6 +176,84 @@ function formatSeverityCounts(counts) {
     return parts.length > 0 ? parts.join(', ') : 'none';
 }
 
+/**
+ * Computes the notice trigger date for a system contract.
+ * @param {{ endYear?: number, endMonth?: number, noticePeriod?: number }} sys
+ * @returns {{ triggerDate: string, triggerTotalMonths: number, isOverdue: boolean } | null}
+ */
+export function computeNoticeTrigger(sys) {
+    if (!sys.endYear || typeof sys.noticePeriod !== 'number' || sys.noticePeriod <= 0) return null;
+    const endTotalMonths = sys.endYear * 12 + (sys.endMonth || 12);
+    const triggerTotalMonths = endTotalMonths - sys.noticePeriod;
+    const triggerYear = Math.floor((triggerTotalMonths - 1) / 12);
+    const triggerMonth = ((triggerTotalMonths - 1) % 12) + 1;
+    const triggerDate = `${triggerYear}-${String(triggerMonth).padStart(2, '0')}`;
+    const now = new Date();
+    const nowMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
+    return { triggerDate, triggerTotalMonths, isOverdue: triggerTotalMonths < nowMonth };
+}
+
+/**
+ * Formats a trigger total-months value relative to a vesting date.
+ * @param {number} triggerTotalMonths
+ * @param {string|null|undefined} vestingDateStr
+ * @returns {string|null}
+ */
+export function formatVestingRelative(triggerTotalMonths, vestingDateStr) {
+    if (!vestingDateStr) return null;
+    const vDate = new Date(vestingDateStr);
+    const vestingMonth = vDate.getFullYear() * 12 + (vDate.getMonth() + 1);
+    const diff = vestingMonth - triggerTotalMonths;
+    if (diff > 0) return `${diff} month${diff !== 1 ? 's' : ''} before vesting`;
+    if (diff < 0) return `${Math.abs(diff)} month${Math.abs(diff) !== 1 ? 's' : ''} after vesting`;
+    return 'vesting month';
+}
+
+/**
+ * Generates bullet-point narrative comparing before/after technical posture.
+ * @param {{ monolithic: number, lowPortability: number, erp: number, onPrem: number, total: number }} before
+ * @param {{ monolithic: number, lowPortability: number, erp: number, onPrem: number, total: number }} after
+ * @returns {string[]}
+ */
+export function generatePostureNarrative(before, after) {
+    const bullets = [];
+
+    if (before.erp !== after.erp) {
+        const verb = after.erp < before.erp ? 'reduces' : 'increases';
+        bullets.push(`ERP footprint ${verb} from ${before.erp} to ${after.erp}`);
+    }
+
+    if (before.monolithic !== after.monolithic) {
+        const verb = after.monolithic < before.monolithic ? 'drop' : 'increase';
+        bullets.push(`Monolithic data stores ${verb} from ${before.monolithic} to ${after.monolithic}`);
+    }
+
+    if (before.onPrem !== after.onPrem) {
+        const verb = after.onPrem < before.onPrem ? 'reduce' : 'increase';
+        bullets.push(`On-premise systems ${verb} from ${before.onPrem} to ${after.onPrem}`);
+    }
+
+    if (before.lowPortability !== after.lowPortability) {
+        const verb = after.lowPortability < before.lowPortability ? 'reduce' : 'increase';
+        bullets.push(`Low portability systems ${verb} from ${before.lowPortability} to ${after.lowPortability}`);
+    }
+
+    if (before.total !== after.total) {
+        const verb = after.total < before.total ? 'reduce' : 'increase';
+        bullets.push(`Total unique systems ${verb} from ${before.total} to ${after.total}`);
+    }
+
+    if (before.total > 0 || after.total > 0) {
+        const beforeCloud = before.total > 0 ? Math.round(((before.total - before.onPrem) / before.total) * 100) : 0;
+        const afterCloud = after.total > 0 ? Math.round(((after.total - after.onPrem) / after.total) * 100) : 0;
+        if (beforeCloud !== afterCloud) {
+            bullets.push(`Cloud hosting proportion moves from ${beforeCloud}% to ${afterCloud}%`);
+        }
+    }
+
+    return bullets;
+}
+
 // ===================================================================
 // HTML DOCUMENT SCAFFOLDING
 // ===================================================================
@@ -645,20 +723,18 @@ function buildDecisionsWithContractDetail(decisions) {
                 html += `Notice: ${sys.noticePeriod ? sys.noticePeriod + ' months' : '—'}`;
                 html += `</p>`;
                 // Notice trigger date
-                if (sys.endYear && typeof sys.noticePeriod === 'number' && sys.noticePeriod > 0) {
-                    const endTotalMonths = sys.endYear * 12 + (sys.endMonth || 12);
-                    const triggerTotalMonths = endTotalMonths - sys.noticePeriod;
-                    const triggerYear = Math.floor((triggerTotalMonths - 1) / 12);
-                    const triggerMonth = ((triggerTotalMonths - 1) % 12) + 1;
-                    const triggerDate = `${triggerYear}-${String(triggerMonth).padStart(2, '0')}`;
-                    const now = new Date();
-                    const nowMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
-                    const isOverdue = triggerTotalMonths < nowMonth;
-                    const triggerColour = isOverdue ? '#d4351c' : '#0b0c0c';
-                    html += `<p style="margin:2px 0;font-size:13px;color:${triggerColour};font-weight:bold;">`;
-                    html += `Notice trigger date: ${escHtml(triggerDate)}`;
-                    if (isOverdue) html += ` — OVERDUE`;
-                    html += `</p>`;
+                {
+                    const trigger = computeNoticeTrigger(sys);
+                    if (trigger) {
+                        const vesting = state.transitionStructure ? state.transitionStructure.vestingDate : null;
+                        const relative = formatVestingRelative(trigger.triggerTotalMonths, vesting);
+                        const triggerColour = trigger.isOverdue ? '#d4351c' : '#0b0c0c';
+                        html += `<p style="margin:2px 0;font-size:13px;color:${triggerColour};font-weight:bold;">`;
+                        html += `Notice trigger: ${escHtml(trigger.triggerDate)}`;
+                        if (relative) html += ` (${escHtml(relative)})`;
+                        if (trigger.isOverdue) html += ` — OVERDUE`;
+                        html += `</p>`;
+                    }
                 }
             }
         } else if (decision.systemChoice === 'procure' && decision.procuredSystem) {
@@ -671,6 +747,35 @@ function buildDecisionsWithContractDetail(decisions) {
             html += `</p>`;
         } else if (decision.systemChoice === 'defer') {
             html += `<p style="margin:2px 0;"><strong>Decision:</strong> Defer — no consolidation decision made</p>`;
+            // Show deferred systems with notice trigger intelligence
+            if (allocations.length > 0) {
+                html += `<p style="margin:6px 0 2px 0;font-size:12px;font-weight:bold;">Systems running in parallel (${allocations.length}):</p>`;
+                html += `<ul style="margin:0 0 0 16px;padding:0;font-size:12px;color:#505a5f;">`;
+                for (const a of allocations) {
+                    const sys = a.system;
+                    if (!sys) continue;
+                    const parts = [];
+                    if (sys.vendor) parts.push(`vendor: ${sys.vendor}`);
+                    if (sys.annualCost) parts.push(`${formatCost(sys.annualCost)}/yr`);
+                    const contractEnd = formatContractEnd(sys.endYear, sys.endMonth);
+                    if (contractEnd !== '—') parts.push(`contract ends: ${contractEnd}`);
+                    html += `<li>${escHtml(sys.label || sys.id)}`;
+                    if (parts.length > 0) html += ` (${escHtml(parts.join(', '))})`;
+                    const trigger = computeNoticeTrigger(sys);
+                    if (trigger) {
+                        const vesting = state.transitionStructure ? state.transitionStructure.vestingDate : null;
+                        const relative = formatVestingRelative(trigger.triggerTotalMonths, vesting);
+                        const triggerColour = trigger.isOverdue ? '#d4351c' : '#b54c00';
+                        html += ` <span style="color:${triggerColour};font-weight:bold;">`;
+                        html += `Notice trigger: ${escHtml(trigger.triggerDate)}`;
+                        if (relative) html += ` (${escHtml(relative)})`;
+                        if (trigger.isOverdue) html += ` — OVERDUE`;
+                        html += `</span>`;
+                    }
+                    html += `</li>`;
+                }
+                html += `</ul>`;
+            }
         }
 
         // Decommissioned systems
@@ -860,6 +965,101 @@ function buildCommercialObligations(obligations) {
 }
 
 /**
+ * Builds a date-ordered procurement action timeline table from all decisions.
+ * @param {Map} decisions
+ * @returns {string}
+ */
+function buildProcurementTimeline(decisions) {
+    const vesting = state.transitionStructure ? state.transitionStructure.vestingDate : null;
+    const rows = [];
+
+    decisions.forEach(decision => {
+        const funcEntry = state.lgaFunctionMap.get(decision.functionId);
+        const funcLabel = funcEntry ? funcEntry.label : decision.functionId;
+        const allocations = getDecisionSystems(decision);
+
+        if (decision.systemChoice === 'choose') {
+            const retainedIds = new Set(decision.retainedSystemIds);
+            for (const a of allocations) {
+                const sys = a.system;
+                if (!sys) continue;
+                const isRetained = retainedIds.has(sys.id);
+                const actionType = isRetained ? 'Novate / renew' : 'Serve notice / exit';
+                const trigger = computeNoticeTrigger(sys);
+                if (!trigger) continue;
+                const relative = formatVestingRelative(trigger.triggerTotalMonths, vesting);
+                rows.push({
+                    triggerDate: trigger.triggerDate,
+                    triggerTotalMonths: trigger.triggerTotalMonths,
+                    vestingRelative: relative,
+                    systemLabel: sys.label || sys.id,
+                    vendor: sys.vendor || '—',
+                    functionLabel: funcLabel,
+                    successorName: decision.successorName,
+                    actionType,
+                    isOverdue: trigger.isOverdue
+                });
+            }
+        } else if (decision.systemChoice === 'defer') {
+            for (const a of allocations) {
+                const sys = a.system;
+                if (!sys) continue;
+                const trigger = computeNoticeTrigger(sys);
+                if (!trigger) continue;
+                const relative = formatVestingRelative(trigger.triggerTotalMonths, vesting);
+                rows.push({
+                    triggerDate: trigger.triggerDate,
+                    triggerTotalMonths: trigger.triggerTotalMonths,
+                    vestingRelative: relative,
+                    systemLabel: sys.label || sys.id,
+                    vendor: sys.vendor || '—',
+                    functionLabel: funcLabel,
+                    successorName: decision.successorName,
+                    actionType: 'Decision needed (deferred)',
+                    isOverdue: trigger.isOverdue
+                });
+            }
+            // procure decisions: skip (no existing contract)
+        }
+    });
+
+    if (rows.length === 0) {
+        return '<p style="color:#505a5f;">No upcoming contract actions identified.</p>';
+    }
+
+    // Sort by trigger date ascending
+    rows.sort((a, b) => a.triggerTotalMonths - b.triggerTotalMonths);
+
+    let html = `<table>`;
+    html += `<thead><tr>`;
+    html += `<th scope="col">Notice Trigger</th>`;
+    html += `<th scope="col">Vesting Context</th>`;
+    html += `<th scope="col">System</th>`;
+    html += `<th scope="col">Vendor</th>`;
+    html += `<th scope="col">Function</th>`;
+    html += `<th scope="col">Successor</th>`;
+    html += `<th scope="col">Action Required</th>`;
+    html += `</tr></thead>`;
+    html += `<tbody>`;
+
+    for (const row of rows) {
+        const triggerStyle = row.isOverdue ? 'color:#d4351c;font-weight:bold;' : '';
+        html += `<tr>`;
+        html += `<td style="${triggerStyle}">${escHtml(row.triggerDate)}${row.isOverdue ? ' — OVERDUE' : ''}</td>`;
+        html += `<td>${escHtml(row.vestingRelative || '—')}</td>`;
+        html += `<td>${escHtml(row.systemLabel)}</td>`;
+        html += `<td>${escHtml(row.vendor)}</td>`;
+        html += `<td>${escHtml(row.functionLabel)}</td>`;
+        html += `<td>${escHtml(row.successorName)}</td>`;
+        html += `<td>${escHtml(row.actionType)}</td>`;
+        html += `</tr>`;
+    }
+
+    html += `</tbody></table>`;
+    return html;
+}
+
+/**
  * Builds the complete commercial report.
  * @param {Map} decisions
  * @param {Object|null} impact
@@ -885,8 +1085,12 @@ function buildCommercialReport(decisions, impact, obligations) {
     html += `<h2>4. Obligations</h2>`;
     html += buildCommercialObligations(obligations);
 
-    // Section 5: Governance Arrangements
-    html += `<h2>5. Governance Arrangements</h2>`;
+    // Section 5: Procurement Action Timeline
+    html += `<h2>5. Procurement Action Timeline</h2>`;
+    html += buildProcurementTimeline(decisions);
+
+    // Section 6: Governance Arrangements
+    html += `<h2>6. Governance Arrangements</h2>`;
     html += buildGovernanceArrangements(obligations, true);
 
     return html;
@@ -956,6 +1160,20 @@ function buildTechnicalSummary() {
     html += row('On-premise systems', before.onPrem, after ? after.onPrem : null);
     html += row('Total unique systems', before.total, after ? after.total : null);
     html += `</tbody></table>`;
+
+    // Add narrative synthesis when post-simulation data is available
+    if (after !== null) {
+        const bullets = generatePostureNarrative(before, after);
+        if (bullets.length > 0) {
+            html += `<div style="margin-top:12px;padding:8px 12px;background:#f3f2f1;border-left:4px solid #4c2c92;">`;
+            html += `<p style="font-weight:bold;margin:0 0 4px 0;font-size:13px;">Technical posture summary</p>`;
+            html += `<ul style="margin:0 0 0 16px;padding:0;font-size:13px;color:#0b0c0c;">`;
+            bullets.forEach(b => { html += `<li>${escHtml(b)}</li>`; });
+            html += `</ul>`;
+            html += `</div>`;
+        }
+    }
+
     return html;
 }
 
@@ -1059,11 +1277,12 @@ function buildArchitectObligations(obligations) {
     });
 
     let html = `<table>`;
-    html += `<thead><tr><th scope="col">Function</th><th scope="col">From System</th><th scope="col">Severity</th><th scope="col">Monolithic</th><th scope="col">Low Portability</th><th scope="col">ERP</th><th scope="col">On-Prem</th><th scope="col">Migration Scope</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Function</th><th scope="col">From System</th><th scope="col">To System</th><th scope="col">Severity</th><th scope="col">Monolithic</th><th scope="col">Low Portability</th><th scope="col">ERP</th><th scope="col">On-Prem</th><th scope="col">Migration Scope</th></tr></thead>`;
     html += `<tbody>`;
 
     for (const obl of sorted) {
         const fs = obl.fromSystem;
+        const ts = obl.toSystem;
         const bullets = generateMigrationScopeBullets(obl);
         const scopeHtml = bullets.length > 0
             ? `<ul class="scope-bullets">${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
@@ -1076,6 +1295,7 @@ function buildArchitectObligations(obligations) {
         html += `<tr>`;
         html += `<td>${escHtml(obl.functionLabel || obl.functionId || '—')}</td>`;
         html += `<td>${escHtml(fs ? fs.label : '—')}</td>`;
+        html += `<td>${escHtml(ts ? ts.label : '—')}</td>`;
         html += `<td><span class="sev-${sev}">${escHtml(sev)}</span></td>`;
         html += `<td style="${obl.isMonolithic ? yesStyle : noStyle}">${obl.isMonolithic ? 'Yes' : 'No'}</td>`;
         html += `<td style="${obl.isLowPortability ? yesStyle : noStyle}">${obl.isLowPortability ? 'Yes' : 'No'}</td>`;
