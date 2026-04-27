@@ -43,7 +43,7 @@ export function showNotification({ type = 'info', title, message, autoDismissMs 
       <p class="font-bold text-sm" style="color: ${config.borderColor}">${title || config.defaultTitle}</p>
       <p class="text-sm text-gray-700 mt-1">${message}</p>
     </div>
-    <button class="notification-dismiss text-gray-400 hover:text-gray-600 text-lg leading-none p-1" aria-label="Dismiss notification">&times;</button>
+    <button class="notification-dismiss text-gray-600 hover:text-gray-800 text-lg leading-none p-1" aria-label="Dismiss notification">&times;</button>
   `;
 
   el.querySelector('.notification-dismiss').addEventListener('click', () => dismissNotification(el));
@@ -68,22 +68,26 @@ export function showConfirm({ title = 'Confirm', message, confirmLabel = 'Confir
     enforceLimit(container);
     const triggerEl = document.activeElement;
 
+    // Generate a unique ID for aria-describedby linking
+    const descId = 'notification-desc-' + Date.now();
+
     const el = document.createElement('div');
     el.className = `app-notification flex items-start gap-3 p-4 mb-2 border-l-4 ${config.bgClass} rounded-r shadow-md`;
     el.style.borderLeftColor = config.borderColor;
     el.setAttribute('role', 'alertdialog');
     el.setAttribute('aria-label', title);
+    el.setAttribute('aria-describedby', descId);
 
     el.innerHTML = `
       <div class="flex-1">
         <p class="font-bold text-sm" style="color: ${config.borderColor}">${title}</p>
-        <p class="text-sm text-gray-700 mt-1">${message}</p>
+        <p id="${descId}" class="text-sm text-gray-700 mt-1">${message}</p>
         <div class="flex gap-2 mt-3">
-          <button class="confirm-btn px-3 py-1 text-sm font-bold text-white rounded" style="background-color: ${config.borderColor}">${confirmLabel}</button>
+          <button class="confirm-btn px-3 py-1 text-sm font-bold rounded" style="background-color: ${config.borderColor}; color: #0b0c0c">${confirmLabel}</button>
           <button class="cancel-btn px-3 py-1 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded">${cancelLabel}</button>
         </div>
       </div>
-      <button class="notification-dismiss text-gray-400 hover:text-gray-600 text-lg leading-none p-1" aria-label="Dismiss">&times;</button>
+      <button class="notification-dismiss text-gray-600 hover:text-gray-800 text-lg leading-none p-1" aria-label="Dismiss">&times;</button>
     `;
 
     function cleanup(result) {
@@ -97,6 +101,31 @@ export function showConfirm({ title = 'Confirm', message, confirmLabel = 'Confir
     el.querySelector('.notification-dismiss').addEventListener('click', () => cleanup(false));
 
     container.appendChild(el);
+
+    // Focus trap: keep Tab/Shift-Tab within the dialog; Escape cancels
+    const focusableEls = el.querySelectorAll('button');
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const first = focusableEls[0];
+        const last = focusableEls[focusableEls.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cleanup(false);
+      }
+    });
+
     el.querySelector('.confirm-btn').focus();
   });
 }

@@ -224,4 +224,5 @@ header.header-collapsed .header-subtitle { display: none !important; }
   clip: auto;
   padding: 10px 15px;
   margin: 0;
+  outline: 3px solid #0b0c0c;
 }
