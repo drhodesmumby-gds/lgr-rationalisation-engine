@@ -823,11 +823,17 @@ document.getElementById('btnExpandAllCards')?.addEventListener('click', () => {
     state.cardCollapseState = 'expanded';
     state.expandedCards.clear();
     renderDashboard();
+    requestAnimationFrame(() => {
+        document.getElementById('btnExpandAllCards')?.focus();
+    });
 });
 document.getElementById('btnCollapseAllCards')?.addEventListener('click', () => {
     state.cardCollapseState = 'collapsed';
     state.expandedCards.clear();
     renderDashboard();
+    requestAnimationFrame(() => {
+        document.getElementById('btnCollapseAllCards')?.focus();
+    });
 });
 
 function updatePersonaBanner() {
@@ -1492,7 +1498,7 @@ export function renderDashboard() {
                         const cellSysIds = cellSystems.map(s => escHtml(s.id)).join(',');
                         const anyCollapsed = cellSystems.some(s => !isCardExpanded(s.id));
                         const toggleLabel = anyCollapsed ? `Expand all (${cellSystems.length})` : `Collapse all (${cellSystems.length})`;
-                        cellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${cellSysIds}" type="button">${toggleLabel}</button>`;
+                        cellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${cellSysIds}" type="button" aria-expanded="${!anyCollapsed}">${toggleLabel}</button>`;
                     }
                     rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}${cellExpandToggleHtml}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
 
@@ -1620,7 +1626,7 @@ export function renderDashboard() {
                 const discSysIds = councilSystems.map(s => escHtml(s.id)).join(',');
                 const discAnyCollapsed = councilSystems.some(s => !isCardExpanded(s.id));
                 const discToggleLabel = discAnyCollapsed ? `Expand all (${councilSystems.length})` : `Collapse all (${councilSystems.length})`;
-                discCellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${discSysIds}" type="button">${discToggleLabel}</button>`;
+                discCellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${discSysIds}" type="button" aria-expanded="${!discAnyCollapsed}">${discToggleLabel}</button>`;
             }
             rowHTML += `<td class="${tdClass} p-3">${discCellExpandToggleHtml}${buildSystemCard(councilSystems, state.activePersona, anchorSystem)}</td>`;
         });
@@ -1682,6 +1688,28 @@ export function renderDashboard() {
         body.removeEventListener('click', body._cardCollapseHandler);
     }
     body._cardCollapseHandler = function(e) {
+        // Collapse button inside expanded card — handle before general button exclusion
+        const collapseBtn = e.target.closest('.system-card-expanded button[aria-label^="Collapse"]');
+        if (collapseBtn) {
+            const wrapper = collapseBtn.closest('.system-card-wrapper');
+            if (wrapper) {
+                const sysId = wrapper.dataset.systemId;
+                if (sysId) {
+                    if (state.expandedCards.has(sysId)) {
+                        state.expandedCards.delete(sysId);
+                    } else {
+                        state.expandedCards.add(sysId);
+                    }
+                    const collapsedEl = wrapper.querySelector('.system-card-collapsed');
+                    const expandedEl = wrapper.querySelector('.system-card-expanded');
+                    const isNowExpanded = isCardExpanded(sysId);
+                    if (collapsedEl) { collapsedEl.classList.toggle('hidden', isNowExpanded); collapsedEl.setAttribute('aria-expanded', String(isNowExpanded)); }
+                    if (expandedEl) expandedEl.classList.toggle('hidden', !isNowExpanded);
+                }
+            }
+            return;
+        }
+
         // Cell-level expand/collapse toggle (WI-4)
         const cellToggle = e.target.closest('.cell-expand-toggle');
         if (cellToggle) {
@@ -1715,6 +1743,7 @@ export function renderDashboard() {
                 if (exp) exp.classList.toggle('hidden', !isExp);
             });
             cellToggle.textContent = anyCollapsed ? `Collapse all (${ids.length})` : `Expand all (${ids.length})`;
+            cellToggle.setAttribute('aria-expanded', String(anyCollapsed)); // anyCollapsed was pre-toggle state; after toggle all are expanded when anyCollapsed was true
             return;
         }
 
@@ -1819,17 +1848,17 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         const expandedHidden = isExpanded ? '' : ' hidden';
         const costStr = sys.cost ? sys.cost : (sys.annualCost ? `£${sys.annualCost >= 1000000 ? (sys.annualCost/1000000).toFixed(1)+'m' : sys.annualCost >= 1000 ? (sys.annualCost/1000).toFixed(0)+'k' : sys.annualCost}` : '');
         let miniBadges = '';
-        if (isERP)      miniBadges += `<span class="gds-tag tag-red" style="font-size:9px;padding:1px 4px;line-height:1.2;">ERP</span>`;
-        if (isShared)   miniBadges += `<span class="gds-tag tag-blue" style="font-size:9px;padding:1px 4px;line-height:1.2;">Shared</span>`;
-        if (isAnchor)   miniBadges += `<span class="gds-tag tag-orange" style="font-size:9px;padding:1px 4px;line-height:1.2;">Anchor</span>`;
-        if (isDistressed) miniBadges += `<span class="gds-tag tag-red" style="font-size:9px;padding:1px 4px;line-height:1.2;">Distress</span>`;
+        if (isERP)      miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">ERP</span>`;
+        if (isShared)   miniBadges += `<span class="gds-tag tag-blue" style="font-size:11px;padding:2px 5px;line-height:1.2;">Shared</span>`;
+        if (isAnchor)   miniBadges += `<span class="gds-tag tag-orange" style="font-size:11px;padding:2px 5px;line-height:1.2;">Anchor</span>`;
+        if (isDistressed) miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">Distress</span>`;
 
         html += `<div class="system-card-wrapper" data-system-id="${escHtml(sys.id)}">`;
 
         // Collapsed summary row
-        html += `<div class="system-card-collapsed flex items-center gap-2 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline-[3px] focus:outline-[#ffdd00]${collapsedHidden}"
-             tabindex="0" role="button" aria-expanded="${isExpanded}" aria-label="Expand ${escHtml(sys.label)} details">`;
-        html += `<span class="text-xs text-gray-400 shrink-0">&#x25B8;</span>`;
+        html += `<div class="system-card-collapsed flex items-center gap-2 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline focus:outline-[3px] focus:outline-[#ffdd00]${collapsedHidden}"
+             tabindex="0" role="button" aria-expanded="${isExpanded}" aria-controls="sce-${escHtml(sys.id)}" aria-label="Expand ${escHtml(sys.label)} details">`;
+        html += `<span class="text-xs text-gray-500 shrink-0">&#x25B8;</span>`;
         html += `<span class="text-sm font-bold text-[#0b0c0c] truncate flex-1">${sys.label}</span>`;
         if (sys.vendor) html += `<span class="text-xs text-gray-500 shrink-0">${escHtml(sys.vendor)}</span>`;
         if (costStr)    html += `<span class="text-xs text-gray-500 shrink-0">${escHtml(costStr)}</span>`;
@@ -1837,12 +1866,12 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         html += `</div>`;
 
         // Expanded full card (existing markup, unchanged)
-        html += `<div class="system-card-expanded${expandedHidden}">`;
+        html += `<div class="system-card-expanded${expandedHidden}" id="sce-${escHtml(sys.id)}">`;
         html += `<div class="mb-3 bg-white p-3 border shadow-sm ${borderClass} relative">`;
 
         if (isAnchor) html += `<div class="absolute -top-2 -right-2 anchor-badge">${wrapWithTooltip('Anchor System', DOMAIN_TERMS['Anchor System'])}</div>`;
 
-        html += `<div class="flex items-center gap-1 mb-1"><span class="text-xs text-gray-400 shrink-0 cursor-pointer" title="Collapse">&#x25BE;</span><strong class="block text-[#0b0c0c] text-base">${sys.label}</strong></div>`;
+        html += `<div class="flex items-center gap-1 mb-1"><button type="button" class="text-xs text-gray-500 shrink-0 bg-transparent border-0 cursor-pointer p-0 focus:outline focus:outline-[3px] focus:outline-[#ffdd00]" aria-label="Collapse ${escHtml(sys.label)} details" tabindex="0">&#x25BE;</button><strong class="block text-[#0b0c0c] text-base">${sys.label}</strong></div>`;
 
         // Provenance label — show source predecessor in transition mode
         if (alloc && alloc.sourceCouncil) {
