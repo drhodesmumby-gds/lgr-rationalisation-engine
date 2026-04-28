@@ -235,14 +235,12 @@
                         </div>
                     </div>
 
-                    <!-- Scrollable matrix area -->
-                    <div class="flex-1 overflow-auto p-4 md:p-6">
-                        <div class="bg-white shadow-sm overflow-x-auto border border-gray-300">
-                            <table class="gds-table" id="dashboardMatrix">
-                                <thead id="matrixHead"></thead>
-                                <tbody id="matrixBody"></tbody>
-                            </table>
-                        </div>
+                    <!-- Scrollable matrix area (handles both vertical + horizontal scroll) -->
+                    <div class="flex-1 overflow-auto">
+                        <table class="gds-table" id="dashboardMatrix">
+                            <thead id="matrixHead"></thead>
+                            <tbody id="matrixBody"></tbody>
+                        </table>
                     </div>
                 </div>
 
