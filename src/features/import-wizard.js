@@ -264,22 +264,22 @@ function setImportWizardError(msg) {
 
 
 function renderImportWizardStep() {
-    const state = state.importWizardState;
-    if (!state) return;
-    updateImportWizardStepBar(state.step);
+    const wiz = state.importWizardState;
+    if (!wiz) return;
+    updateImportWizardStepBar(wiz.step);
     setImportWizardError(null);
     const content = document.getElementById('importWizardContent');
     const backBtn = document.getElementById('btnImportBack');
     const nextBtn = document.getElementById('btnImportNext');
-    const isManual = state.mode === 'manual';
+    const isManual = wiz.mode === 'manual';
 
-    if (state.step === 1) {
+    if (wiz.step === 1) {
         backBtn.classList.add('invisible');
         nextBtn.textContent = 'Next';
         nextBtn.disabled = false;
         content.innerHTML = buildImportStep1HTML();
         if (!isManual) wireImportStep1DragDrop();
-    } else if (state.step === 2) {
+    } else if (wiz.step === 2) {
         backBtn.classList.remove('invisible');
         nextBtn.textContent = 'Next';
         nextBtn.disabled = false;
@@ -289,12 +289,12 @@ function renderImportWizardStep() {
             content.innerHTML = buildImportStep2HTML();
             updateImportStep2Preview();
         }
-    } else if (state.step === 3) {
+    } else if (wiz.step === 3) {
         backBtn.classList.remove('invisible');
         nextBtn.textContent = 'Next';
         nextBtn.disabled = false;
         content.innerHTML = buildImportStep3HTML();
-    } else if (state.step === 4) {
+    } else if (wiz.step === 4) {
         backBtn.classList.remove('invisible');
         nextBtn.textContent = 'Import';
         nextBtn.disabled = false;
