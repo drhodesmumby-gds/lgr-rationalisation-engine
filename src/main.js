@@ -932,7 +932,13 @@ function updatePersonaBanner() {
             if (simButtonGroup) simButtonGroup.appendChild(btnSim);
         }
         btnSim.classList.remove('hidden');
-        btnSim.textContent = state.simulationState ? 'Exit Simulation' : 'Simulate';
+        if (state.simulationState) {
+            btnSim.textContent = 'Exit Simulation';
+            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#d4351c] text-[#d4351c]';
+        } else {
+            btnSim.textContent = 'Simulate';
+            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#f47738] text-[#f47738]';
+        }
         // Always show group + separator when in transition mode (btnSim is visible)
         if (simButtonGroup) simButtonGroup.classList.remove('hidden');
         if (toolbarSeparator) toolbarSeparator.classList.remove('hidden');
@@ -1962,13 +1968,13 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         html += `<div class="system-card-wrapper" data-system-id="${escHtml(sys.id)}">`;
 
         // Collapsed summary row
-        html += `<div class="system-card-collapsed flex items-center gap-2 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline focus:outline-[3px] focus:outline-[#ffdd00] overflow-hidden${collapsedHidden}"
+        html += `<div class="system-card-collapsed flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline focus:outline-[3px] focus:outline-[#ffdd00]${collapsedHidden}"
              tabindex="0" role="button" aria-expanded="${isExpanded}" aria-controls="sce-${escHtml(sys.id)}" aria-label="Expand ${escHtml(sys.label)} details">`;
         html += `<span class="text-xs text-gray-500 shrink-0">&#x25B8;</span>`;
-        html += `<span class="text-sm font-bold text-[#0b0c0c] truncate flex-1">${sys.label}</span>`;
-        if (sys.vendor) html += `<span class="text-xs text-gray-500 shrink-0">${escHtml(sys.vendor)}</span>`;
-        if (costStr)    html += `<span class="text-xs text-gray-500 shrink-0">${escHtml(costStr)}</span>`;
-        if (miniBadges) html += `<span class="flex items-center gap-1 shrink-0">${miniBadges}</span>`;
+        html += `<span class="text-sm font-bold text-[#0b0c0c]">${escHtml(sys.label)}</span>`;
+        if (sys.vendor) html += `<span class="text-xs text-gray-500">${escHtml(sys.vendor)}</span>`;
+        if (costStr)    html += `<span class="text-xs text-gray-500">${escHtml(costStr)}</span>`;
+        if (miniBadges) html += `<span class="flex items-center gap-1 flex-wrap">${miniBadges}</span>`;
         html += `</div>`;
 
         // Expanded full card (existing markup, unchanged)

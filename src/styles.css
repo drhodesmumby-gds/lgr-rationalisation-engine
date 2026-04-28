@@ -76,7 +76,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 }
 #dashboardMatrix thead th {
     position: sticky;
-    top: 0;
+    top: 53px; /* Below the sticky matrix toolbar (~53px height) */
     z-index: 10;
     background: #0b0c0c;
     color: white;
