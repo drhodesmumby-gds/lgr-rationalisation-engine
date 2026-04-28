@@ -27,6 +27,9 @@ const IMPORT_TARGET_FIELDS = [
     { section: 'Relationships', fields: [
         { id: 'sharedWith',     label: 'Shared With',           required: false },
         { id: '_rawDepartment', label: 'Department / Service Area', required: false }
+    ]},
+    { section: 'Capabilities', fields: [
+        { id: 'capabilityType', label: 'Capability Type',       required: false }
     ]}
 ];
 
@@ -46,7 +49,8 @@ const IMPORT_AUTODETECT_RULES = [
     { field: '_rawDepartment',   test: h => /department|service area|function|directorate/i.test(h) },
     { field: 'sharedWith',       test: h => /shared/i.test(h) },
     { field: 'portability',      test: h => /portab/i.test(h) },
-    { field: 'dataPartitioning', test: h => /partition/i.test(h) }
+    { field: 'dataPartitioning', test: h => /partition/i.test(h) },
+    { field: 'capabilityType',   test: h => /capabilit|platform\s*type/i.test(h) }
 ];
 
 
@@ -105,6 +109,12 @@ function coerceImportedRow(raw, columnMap) {
     const sw = get('sharedWith');
     if (sw !== undefined && sw !== null && String(sw).trim() !== '') {
         sys.sharedWith = String(sw).split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    }
+
+    // capabilityType — array of lowercase capability IDs
+    const capRaw = get('capabilityType');
+    if (capRaw !== undefined && capRaw !== null && String(capRaw).trim() !== '') {
+        sys.capabilityType = String(capRaw).split(/[,;]/).map(s => s.trim().toLowerCase()).filter(Boolean);
     }
 
     // portability — validated enum

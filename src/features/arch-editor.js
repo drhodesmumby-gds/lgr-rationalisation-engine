@@ -124,6 +124,7 @@ function buildSystemsTab() {
             <td class="px-2 py-1 text-center"><input type="checkbox" class="arch-sys-input" ${sys.isCloud?'checked':''} data-field="isCloud" data-node-idx="${globalIdx}"></td>
             <td class="px-2 py-1 text-center"><input type="checkbox" class="arch-sys-input" ${sys.isERP?'checked':''} data-field="isERP" data-node-idx="${globalIdx}"></td>
             <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-32 arch-sys-input" value="${escHtml((sys.sharedWith||[]).join(', '))}" data-field="sharedWith" data-node-idx="${globalIdx}" placeholder="Council A, Council B"></td>
+            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-32 arch-sys-input" value="${escHtml((sys.capabilityType||[]).join(', '))}" data-field="capabilityType" data-node-idx="${globalIdx}" placeholder="payments, forms..."></td>
             <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-28 arch-sys-input" value="${escHtml(sys.owner||'')}" data-field="owner" data-node-idx="${globalIdx}"></td>
             <td class="px-2 py-1"><button class="btn-remove-sys text-[#d4351c] font-bold text-xs hover:underline" data-node-idx="${globalIdx}">Remove</button></td>
         </tr>`;
@@ -144,7 +145,7 @@ function buildSystemsTab() {
                         <th class="px-2 py-1">End Mo</th><th class="px-2 py-1">Notice</th>
                         <th class="px-2 py-1">Portability</th><th class="px-2 py-1">Data Layer</th>
                         <th class="px-2 py-1">Cloud</th><th class="px-2 py-1">ERP</th>
-                        <th class="px-2 py-1">Shared With</th><th class="px-2 py-1">Owner</th>
+                        <th class="px-2 py-1">Shared With</th><th class="px-2 py-1">Capabilities</th><th class="px-2 py-1">Owner</th>
                         <th class="px-2 py-1"></th>
                     </tr></thead>
                     <tbody id="sysTableBody">${rows}</tbody>
@@ -237,6 +238,9 @@ function syncEditorFieldsToState() {
         } else if (field === 'sharedWith') {
             const parts = input.value.split(',').map(s => s.trim()).filter(Boolean);
             node[field] = parts.length ? parts : undefined;
+        } else if (field === 'capabilityType') {
+            const arr = input.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+            node[field] = arr.length > 0 ? arr : undefined;
         } else if (input.tagName === 'SELECT' || input.type === 'text') {
             node[field] = input.value || undefined;
         }

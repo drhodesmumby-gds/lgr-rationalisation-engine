@@ -2,6 +2,7 @@
 import { LGA_FUNCTIONS } from './constants/lga-functions.js';
 import { DEFAULT_TIER_MAP } from './constants/tier-map.js';
 import { SIGNAL_DEFS, PERSONA_DEFAULT_WEIGHTS } from './constants/signals.js';
+import { LGAM_CAPABILITIES } from './constants/capabilities.js';
 import { DOMAIN_TERMS } from './constants/domain-terms.js';
 import { DOCUMENTATION } from './constants/documentation.js';
 import { getLgaFunction, getLgaBreadcrumb } from './taxonomy.js';
@@ -1135,6 +1136,60 @@ function renderEstateSummary() {
         html += '</div>'; // close Transition Risk section
     }
 
+    // --- Capability Platforms section (shown when at least 1 system has capabilityType) ---
+    var capSystems = metrics.filteredSystems.filter(function(s) {
+        return s.capabilityType && Array.isArray(s.capabilityType) && s.capabilityType.length > 0;
+    });
+    if (capSystems.length > 0) {
+        html += '<div class="mt-6">';
+        html += '<h3 class="text-lg font-bold mb-3 text-[#0e7490] border-b border-[#b1b4b6] pb-2">Capability Platforms</h3>';
+
+        // Group by capability type
+        var capGroups = new Map();
+        capSystems.forEach(function(sys) {
+            sys.capabilityType.forEach(function(cap) {
+                if (!capGroups.has(cap)) capGroups.set(cap, []);
+                capGroups.get(cap).push(sys);
+            });
+        });
+
+        // Count competing (same capability, different councils)
+        var competingCount = 0;
+        capGroups.forEach(function(groupSystems) {
+            var councils = new Set(groupSystems.map(function(s) { return s._sourceCouncil; }).filter(Boolean));
+            if (councils.size > 1) competingCount++;
+        });
+
+        // Summary metrics
+        html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">';
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]"><p class="text-3xl font-bold text-[#0b0c0c]">' + capSystems.length + '</p><p class="text-sm font-bold text-gray-700">Capability-tagged systems</p></div>';
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]"><p class="text-3xl font-bold text-[#0b0c0c]">' + capGroups.size + '</p><p class="text-sm font-bold text-gray-700">Capability types in use</p></div>';
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]"><p class="text-3xl font-bold text-[#0e7490]">' + competingCount + '</p><p class="text-sm font-bold text-gray-700">Competing platforms</p></div>';
+        html += '</div>';
+
+        // Detail table
+        html += '<div class="overflow-x-auto"><table class="gds-table text-sm">';
+        html += '<thead><tr><th>Capability</th><th>Systems</th><th>Councils</th><th>Status</th></tr></thead>';
+        html += '<tbody>';
+        [...capGroups.entries()].sort(function(a, b) { return a[0].localeCompare(b[0]); }).forEach(function(entry) {
+            var capId = entry[0];
+            var capGroupSystems = entry[1];
+            var capDef = LGAM_CAPABILITIES.find(function(c) { return c.id === capId; });
+            var label = capDef ? capDef.label : capId;
+            var councils = [...new Set(capGroupSystems.map(function(s) { return s._sourceCouncil; }).filter(Boolean))];
+            var sysNames = capGroupSystems.map(function(s) { return s.label || s.id; }).join(', ');
+            var statusTag = councils.length > 1
+                ? '<span class="gds-tag tag-orange">Competing</span>'
+                : '<span class="gds-tag tag-green">Single provider</span>';
+            html += '<tr><td class="font-bold"><span class="gds-tag tag-capability">' + escHtml(label) + '</span></td>';
+            html += '<td>' + capGroupSystems.length + ' (' + escHtml(sysNames) + ')</td>';
+            html += '<td>' + councils.map(escHtml).join(', ') + '</td>';
+            html += '<td>' + statusTag + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        html += '</div>';
+    }
+
     html += '</div>'; // close panel wrapper
 
     panel.innerHTML = html;
@@ -1183,6 +1238,11 @@ export function renderDashboard() {
 
     const councilsArray = Array.from(state.simulationState && state.simulationState.lastImpact ? new Set(activeNodes.filter(n => n._sourceCouncil).map(n => n._sourceCouncil)) : state.mergedArchitecture.councils).sort();
     const systems = activeNodes.filter(n => n.type === 'ITSystem');
+
+    // Pre-compute _functionCount for each system (number of functions it realizes)
+    systems.forEach(sys => {
+        sys._functionCount = activeEdges.filter(e => e.source === sys.id && e.relationship === 'REALIZES').length;
+    });
 
     // --- Build successor allocation map if in transition mode ---
     let localSuccessorAllocation = null;
@@ -1844,6 +1904,12 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         if (isShared)   miniBadges += `<span class="gds-tag tag-blue" style="font-size:11px;padding:2px 5px;line-height:1.2;">Shared</span>`;
         if (isAnchor)   miniBadges += `<span class="gds-tag tag-orange" style="font-size:11px;padding:2px 5px;line-height:1.2;">Anchor</span>`;
         if (isDistressed) miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">Distress</span>`;
+        if (sys.capabilityType && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0) {
+            sys.capabilityType.forEach(cap => {
+                const capDef = LGAM_CAPABILITIES.find(c => c.id === cap);
+                if (capDef) miniBadges += `<span class="gds-tag tag-capability" style="font-size:11px;padding:2px 5px;line-height:1.2;">${escHtml(capDef.label)}</span>`;
+            });
+        }
 
         html += `<div class="system-card-wrapper" data-system-id="${escHtml(sys.id)}">`;
 
@@ -1888,6 +1954,24 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
                 <span class="gds-tag tag-blue" style="font-size:10px;padding:2px 6px;">${wrapWithTooltip('Shared service', DOMAIN_TERMS['Shared Service'])}</span>
                 <span class="text-[11px] text-gray-600">with ${sys.sharedWith.join(', ')}</span>
             </div>`;
+        }
+
+        // Capability type badges (expanded view)
+        if (sys.capabilityType && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0) {
+            const capLabels = sys.capabilityType
+                .map(cap => LGAM_CAPABILITIES.find(c => c.id === cap))
+                .filter(Boolean)
+                .map(c => c.label);
+            if (capLabels.length > 0) {
+                html += `<div class="mb-2 flex items-center gap-1 flex-wrap">`;
+                capLabels.forEach(label => {
+                    html += `<span class="gds-tag tag-capability" style="font-size:10px;padding:2px 6px;">${escHtml(label)}</span>`;
+                });
+                if (sys._functionCount > 1) {
+                    html += `<span class="text-[11px] text-gray-500 italic ml-1">serves ${sys._functionCount} functions</span>`;
+                }
+                html += `</div>`;
+            }
         }
 
         html += `<div class="flex gap-2 text-[11px] text-gray-600 font-bold uppercase tracking-wide mb-3">

@@ -17,6 +17,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 .tag-orange { background-color: var(--govuk-orange); color: var(--govuk-black); }
 .tag-black { background-color: var(--govuk-black); color: white; }
 .tag-outline { background-color: #f3f2f1; color: #0b0c0c; border: 1px solid #b1b4b6; }
+.tag-capability { background-color: #0e7490; color: white; }
 
 /* Timeline */
 .timeline-track { position: relative; border-left: 2px solid #0b0c0c; margin-left: 250px; padding-bottom: 30px; margin-top: 20px;}
