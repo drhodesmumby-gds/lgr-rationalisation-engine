@@ -34,7 +34,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "wcc-sys-liquidlogic-las",
@@ -119,7 +120,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "wcc-sys-publichealth",
@@ -222,6 +224,42 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "wcc-sys-capita-pay",
+      "label": "Capita Pay360 Payment Gateway",
+      "type": "ITSystem",
+      "owner": "Westshire County Council",
+      "users": 450,
+      "vendor": "Capita",
+      "cost": "£95k/yr",
+      "annualCost": 95000,
+      "endYear": 2028,
+      "endMonth": 9,
+      "noticePeriod": 6,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
+    },
+    {
+      "id": "wcc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Westshire County Council",
+      "users": 800,
+      "vendor": "GDS",
+      "cost": "£12k/yr",
+      "annualCost": 12000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -238,6 +276,14 @@
     { "source": "wcc-sys-parking", "target": "wcc-fn-parking", "relationship": "REALIZES" },
     { "source": "wcc-sys-registration", "target": "wcc-fn-registration", "relationship": "REALIZES" },
     { "source": "wcc-sys-sports", "target": "wcc-fn-sports", "relationship": "REALIZES" },
-    { "source": "wcc-sys-trading", "target": "wcc-fn-trading", "relationship": "REALIZES" }
+    { "source": "wcc-sys-trading", "target": "wcc-fn-trading", "relationship": "REALIZES" },
+    { "source": "wcc-sys-capita-pay", "target": "wcc-fn-parking", "relationship": "REALIZES" },
+    { "source": "wcc-sys-capita-pay", "target": "wcc-fn-registration", "relationship": "REALIZES" },
+    { "source": "wcc-sys-capita-pay", "target": "wcc-fn-sports", "relationship": "REALIZES" },
+    { "source": "wcc-sys-capita-pay", "target": "wcc-fn-libraries", "relationship": "REALIZES" },
+    { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-crm", "relationship": "REALIZES" },
+    { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-highways", "relationship": "REALIZES" },
+    { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-adults", "relationship": "REALIZES" },
+    { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-parking", "relationship": "REALIZES" }
   ]
 }

@@ -148,7 +148,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["payments"]
     },
     {
       "id": "ibc-sys-jadu",
@@ -165,7 +166,44 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms", "identity"]
+    },
+    {
+      "id": "ibc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Ivybridge Borough Council",
+      "users": 200,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
+    },
+    {
+      "id": "ibc-sys-stripe",
+      "label": "Stripe Payment Processing",
+      "type": "ITSystem",
+      "owner": "Ivybridge Borough Council",
+      "users": 100,
+      "vendor": "Stripe",
+      "cost": "£15k/yr",
+      "annualCost": 15000,
+      "endYear": 2029,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
     }
   ],
   "edges": [
@@ -177,6 +215,12 @@
     { "source": "ibc-sys-civica-xpress", "target": "ibc-fn-elections", "relationship": "REALIZES" },
     { "source": "ibc-sys-xero", "target": "ibc-fn-finance", "relationship": "REALIZES" },
     { "source": "ibc-sys-workday", "target": "ibc-fn-hr", "relationship": "REALIZES" },
-    { "source": "ibc-sys-jadu", "target": "ibc-fn-crm", "relationship": "REALIZES" }
+    { "source": "ibc-sys-jadu", "target": "ibc-fn-crm", "relationship": "REALIZES" },
+    { "source": "ibc-sys-govuk-notify", "target": "ibc-fn-crm", "relationship": "REALIZES" },
+    { "source": "ibc-sys-govuk-notify", "target": "ibc-fn-waste", "relationship": "REALIZES" },
+    { "source": "ibc-sys-govuk-notify", "target": "ibc-fn-housing", "relationship": "REALIZES" },
+    { "source": "ibc-sys-stripe", "target": "ibc-fn-planning", "relationship": "REALIZES" },
+    { "source": "ibc-sys-stripe", "target": "ibc-fn-housing", "relationship": "REALIZES" },
+    { "source": "ibc-sys-stripe", "target": "ibc-fn-envhealth", "relationship": "REALIZES" }
   ]
 }
