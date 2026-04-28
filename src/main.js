@@ -1552,6 +1552,9 @@ export function renderDashboard() {
         };
         body.addEventListener('click', body._simDecideHandler);
 
+        // Wire card collapse handlers before returning (shared with discovery mode)
+        wireCardCollapseHandlers(body);
+
         if(state.activePersona !== 'architect') drawTimeline(systems, councilsArray);
         renderCriticalPathPanel();
         return;
@@ -1682,6 +1685,11 @@ export function renderDashboard() {
         });
     }
 
+    // Wire card collapse handlers for discovery mode
+    wireCardCollapseHandlers(body);
+}
+
+function wireCardCollapseHandlers(body) {
     // --- Card collapse event delegation (WI-3/WI-4) ---
     // Wire on the matrix body; also handles cell-level expand/collapse toggles.
     if (body._cardCollapseHandler) {
@@ -1717,14 +1725,12 @@ export function renderDashboard() {
             const anyCollapsed = ids.some(id => !isCardExpanded(id));
             ids.forEach(id => {
                 if (anyCollapsed) {
-                    // Expand all
                     if (state.cardCollapseState === 'collapsed') {
                         state.expandedCards.add(id);
                     } else {
                         state.expandedCards.delete(id);
                     }
                 } else {
-                    // Collapse all
                     if (state.cardCollapseState === 'collapsed') {
                         state.expandedCards.delete(id);
                     } else {
@@ -1732,7 +1738,6 @@ export function renderDashboard() {
                     }
                 }
             });
-            // Update all wrappers in this cell
             const cell = cellToggle.closest('td') || cellToggle.parentElement;
             cell.querySelectorAll('.system-card-wrapper').forEach(wrapper => {
                 const sysId = wrapper.dataset.systemId;
@@ -1743,7 +1748,7 @@ export function renderDashboard() {
                 if (exp) exp.classList.toggle('hidden', !isExp);
             });
             cellToggle.textContent = anyCollapsed ? `Collapse all (${ids.length})` : `Expand all (${ids.length})`;
-            cellToggle.setAttribute('aria-expanded', String(anyCollapsed)); // anyCollapsed was pre-toggle state; after toggle all are expanded when anyCollapsed was true
+            cellToggle.setAttribute('aria-expanded', String(anyCollapsed));
             return;
         }
 
@@ -1755,14 +1760,12 @@ export function renderDashboard() {
         const sysId = wrapper.dataset.systemId;
         if (!sysId) return;
 
-        // Toggle in state
         if (state.expandedCards.has(sysId)) {
             state.expandedCards.delete(sysId);
         } else {
             state.expandedCards.add(sysId);
         }
 
-        // Toggle visibility in-place (no full re-render)
         const collapsed = wrapper.querySelector('.system-card-collapsed');
         const expanded = wrapper.querySelector('.system-card-expanded');
         const isNowExpanded = isCardExpanded(sysId);
