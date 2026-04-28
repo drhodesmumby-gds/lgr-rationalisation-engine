@@ -190,14 +190,14 @@
                 </nav>
             </div>
 
-            <!-- Tab Panels -->
-            <div class="flex-1 overflow-hidden relative">
+            <!-- Tab Panels + Side Panel -->
+            <div class="flex-1 overflow-hidden relative flex">
+
+                <!-- Tab panel content area -->
+                <div id="tabPanelsContainer" class="flex-1 overflow-hidden relative">
 
                 <!-- Matrix Panel -->
                 <div role="tabpanel" id="panelMatrix" class="tab-panel active h-full flex flex-col">
-                    <!-- Simulation Toolbar (shown only when simulation is active) -->
-                    <div id="simulationToolbar" class="hidden"></div>
-
                     <!-- Sort/Filter Toolbar (fixed above scroll area) -->
                     <div id="matrixToolbar" class="hidden bg-[#f3f2f1] border border-[#b1b4b6] flex flex-wrap items-center gap-6 px-4 py-3 shrink-0">
                         <div class="flex items-center gap-2">
@@ -266,6 +266,11 @@
                         </div>
                     </div>
                 </div>
+
+                </div><!-- end #tabPanelsContainer -->
+
+                <!-- Simulation side panel (right-docked, persists across all tabs) -->
+                <div id="simulationSidePanel" class="sim-side-panel hidden"></div>
 
             </div>
         </div>

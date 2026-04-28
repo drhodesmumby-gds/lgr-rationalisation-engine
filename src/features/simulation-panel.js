@@ -121,7 +121,6 @@ export function recomputeSimulation() {
 // ===================================================================
 
 // Module-level UI state for workspace
-let _actionPanelCollapsed = false;
 let _sankeyDrillDown = null; // successor name for function-level, or null for estate
 let _sankeySizeMode = 'count'; // 'count' | 'cost'
 let _sankeyCouncilFilter = null; // council name to filter by, or null for all
@@ -129,40 +128,61 @@ let _sankeyFunctionFilter = null; // lgaFunctionId to filter by, or null for all
 let _sankeyOverlay = 'default'; // 'default' | 'migration' | 'cross-successor' | 'contract'
 
 /**
- * Main workspace render function. Replaces the old toolbar.
- * Renders a side-by-side layout: decision summary panel (left) + Sankey (right).
+ * Main workspace render function. Targets the right-docked #simulationSidePanel.
+ * When simulation is inactive: hides the panel.
+ * When collapsed: renders a narrow strip with badge and expand button.
+ * When expanded: renders a vertical stack with all decision content.
  */
 export function renderSimulationWorkspace() {
-    const toolbar = document.getElementById('simulationToolbar');
-    if (!toolbar) return;
+    const panel = document.getElementById('simulationSidePanel');
+    if (!panel) return;
+
+    // Hide any legacy simulationToolbar element if it still exists
+    const oldToolbar = document.getElementById('simulationToolbar');
+    if (oldToolbar) oldToolbar.classList.add('hidden');
 
     if (!state.simulationState) {
-        toolbar.classList.add('hidden');
-        toolbar.innerHTML = '';
+        panel.classList.add('hidden');
+        panel.innerHTML = '';
         return;
     }
 
+    panel.classList.remove('hidden');
+
+    if (state.simPanelCollapsed) {
+        panel.classList.add('sim-side-panel-collapsed');
+        panel.classList.remove('sim-side-panel-expanded');
+        const decisions = state.simulationState.decisions || new Map();
+        panel.innerHTML = `
+            <div class="sim-side-collapsed-content">
+                <button onclick="window._simToggleSidePanel()" class="sim-side-expand-btn" title="Expand panel" aria-label="Expand simulation panel">&#x276F;</button>
+                <span class="sim-side-badge">${decisions.size}</span>
+                <span class="sim-side-label">Decisions</span>
+            </div>
+        `;
+        return;
+    }
+
+    panel.classList.remove('sim-side-panel-collapsed');
+    panel.classList.add('sim-side-panel-expanded');
+
     const impact = state.simulationState.lastImpact;
 
-    // Build the workspace shell
-    toolbar.innerHTML = `
-        <div class="sim-workspace">
-            <span class="sim-mode-banner">SIMULATION MODE</span>
-            <div class="sim-workspace-layout">
-                <div id="simActionPanel" class="sim-action-panel${_actionPanelCollapsed ? ' sim-panel-collapsed' : ''}"></div>
-                <div id="simSankeyPanel" class="sim-sankey-panel"></div>
-            </div>
-        </div>
-    `;
-    toolbar.classList.remove('hidden');
+    // Build the side panel shell: orange header + scrollable content area
+    let html = '';
+    html += `<div class="bg-[#f47738] text-white px-3 py-2 flex items-center justify-between shrink-0">`;
+    html += `<span class="text-sm font-bold uppercase tracking-wide">Simulation</span>`;
+    html += `<button onclick="window._simToggleSidePanel()" class="text-white hover:text-gray-200 font-bold text-lg p-1" title="Collapse panel" aria-label="Collapse simulation panel">&#x276E;</button>`;
+    html += `</div>`;
+    html += `<div class="sim-side-panel-content"></div>`;
 
-    // Render decision summary panel content
-    const actionPanel = toolbar.querySelector('#simActionPanel');
-    renderDecisionSummary(actionPanel, impact);
+    panel.innerHTML = html;
 
-    // Render Sankey panel content
-    const sankeyPanel = toolbar.querySelector('#simSankeyPanel');
-    renderSankeyPanel(sankeyPanel);
+    // Fill the content area using the existing renderDecisionSummary logic
+    const contentEl = panel.querySelector('.sim-side-panel-content');
+    if (contentEl) {
+        renderDecisionSummary(contentEl, impact);
+    }
 }
 
 // Keep backward-compatible alias
@@ -316,17 +336,6 @@ function resolveSystemLabel(systemId) {
  * @param {Object|null} impact
  */
 function renderDecisionSummary(el, impact) {
-    if (_actionPanelCollapsed) {
-        const decisions = state.simulationState ? state.simulationState.decisions : new Map();
-        el.innerHTML = `
-            <div class="sim-panel-collapsed-content">
-                <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Expand panel" aria-label="Expand decision panel">&#x276F;</button>
-                <span class="sim-panel-collapsed-badge">${decisions.size}</span>
-            </div>
-        `;
-        return;
-    }
-
     const decisions = state.simulationState ? (state.simulationState.decisions || new Map()) : new Map();
     const totalDecidable = countDecidableFunctions();
     const decidedCount = decisions.size;
@@ -462,7 +471,6 @@ function renderDecisionSummary(el, impact) {
     el.innerHTML = `
         <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold uppercase tracking-wide text-[#0b0c0c]">Decisions</span>
-            <button onclick="window._simToggleActionPanel()" class="sim-panel-collapse-btn" title="Collapse panel" aria-label="Collapse decision panel">&#x276E;</button>
         </div>
         ${progressBarHtml}
         <div class="mt-2 pt-2 border-t border-gray-200">
@@ -1244,8 +1252,8 @@ window._simClearAllDecisions = function() {
     state.simulationState.lastImpact = null;
     recomputeSimulation();
 };
-window._simToggleActionPanel = function() {
-    _actionPanelCollapsed = !_actionPanelCollapsed;
+window._simToggleSidePanel = function() {
+    state.simPanelCollapsed = !state.simPanelCollapsed;
     renderSimulationWorkspace();
 };
 

@@ -24,4 +24,5 @@ export const state = {
     cardCollapseState: 'collapsed',  // 'collapsed' | 'expanded' — global default
     expandedCards: new Set(),         // Set of system IDs individually toggled to opposite of default
     activeTab: 'matrix',              // 'matrix' | 'overview' | 'timeline'
+    simPanelCollapsed: false,
 };
