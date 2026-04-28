@@ -71,12 +71,19 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 .tooltip-wrapper:focus-within .tooltip-content { visibility: visible; opacity: 1; }
 
 /* Sticky matrix headers */
+#dashboardMatrix {
+    table-layout: fixed;
+}
 #dashboardMatrix thead th {
     position: sticky;
     top: 0;
     z-index: 10;
     background: #0b0c0c;
     color: white;
+    overflow: hidden;
+}
+#dashboardMatrix td {
+    overflow: hidden;
 }
 #dashboardMatrix thead th:first-child,
 #dashboardMatrix tbody td:first-child {

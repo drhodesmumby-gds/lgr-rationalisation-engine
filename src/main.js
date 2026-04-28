@@ -1338,8 +1338,8 @@ export function renderDashboard() {
         let hHTML = `<tr><th class="w-[200px] shadow-[0_2px_0_#b1b4b6]">Standard Function</th>`;
         successorNames.forEach(name => {
             const isSelected = state.activePerspective === 'all' || state.activePerspective === name;
-            const thClass = isSelected ? 'w-[280px] th-highlight' : 'w-[280px] shadow-[0_2px_0_#b1b4b6] col-dimmed';
-            hHTML += `<th class="${thClass}">${name}</th>`;
+            const thClass = isSelected ? 'w-[240px] th-highlight' : 'w-[240px] shadow-[0_2px_0_#b1b4b6] col-dimmed';
+            hHTML += `<th class="${thClass}">${escHtml(name)}</th>`;
         });
         hHTML += `<th class="w-[400px] shadow-[0_2px_0_#b1b4b6]">Analysis & Strategic Considerations</th></tr>`;
         head.innerHTML = hHTML;
@@ -1629,7 +1629,7 @@ export function renderDashboard() {
     let hHTML = `<tr><th class="w-[200px] shadow-[0_2px_0_#b1b4b6]">Standard Function</th>`;
     councilsArray.forEach(c => {
         const isSelected = state.activePerspective === 'all' || state.activePerspective === c;
-        const thClass = isSelected ? 'w-[280px] th-highlight' : 'w-[280px] shadow-[0_2px_0_#b1b4b6] col-dimmed';
+        const thClass = isSelected ? 'w-[240px] th-highlight' : 'w-[240px] shadow-[0_2px_0_#b1b4b6] col-dimmed';
         const tierLabel = state.councilTierMap.get(c);
         const tierHtml = tierLabel ? `<br><span style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;opacity:0.85;">${tierLabel.toUpperCase()}</span>` : '';
         const distressHtml = state.distressedCouncils.has(c) ? `<br><span style="font-size:11px;color:#d4351c;font-weight:bold;cursor:help;" title="Predecessor in financial distress — verify system currency, support status, and licence compliance.">⚠ Financial distress</span>` : '';
@@ -1914,7 +1914,7 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         html += `<div class="system-card-wrapper" data-system-id="${escHtml(sys.id)}">`;
 
         // Collapsed summary row
-        html += `<div class="system-card-collapsed flex items-center gap-2 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline focus:outline-[3px] focus:outline-[#ffdd00]${collapsedHidden}"
+        html += `<div class="system-card-collapsed flex items-center gap-2 py-1.5 px-2 bg-white border border-gray-200 rounded mb-1 cursor-pointer hover:bg-gray-50 focus:outline focus:outline-[3px] focus:outline-[#ffdd00] overflow-hidden${collapsedHidden}"
              tabindex="0" role="button" aria-expanded="${isExpanded}" aria-controls="sce-${escHtml(sys.id)}" aria-label="Expand ${escHtml(sys.label)} details">`;
         html += `<span class="text-xs text-gray-500 shrink-0">&#x25B8;</span>`;
         html += `<span class="text-sm font-bold text-[#0b0c0c] truncate flex-1">${sys.label}</span>`;
