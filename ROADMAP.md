@@ -213,7 +213,7 @@ The engine and LGAM occupy different but complementary roles:
 | **Taxonomy** | Own business/corporate area classification | ESD Standard Function Taxonomy (176 functions) |
 | **Transition planning** | Not addressed | Core purpose — vesting zones, rationalisation patterns, tier prioritisation |
 | **System detail** | Deliberately excluded | Core data — vendors, costs, portability, data layer |
-| **Cross-cutting capabilities** | Modelled as a distinct layer | Not currently modelled (see [Section 2](#2-cross-cutting-capabilities-lgam-capabilities-layer)) |
+| **Cross-cutting capabilities** | Modelled as a distinct layer | `capabilityType` array on ITSystem nodes using LGAM vocabulary; capability summary panel with competing platform detection (see [Section 2](#2-cross-cutting-capabilities-lgam-capabilities-layer)) |
 
 ### Integration opportunities
 
@@ -321,14 +321,23 @@ Implement the full schema extension described in [Section 1](#1-service-level-mo
 - Expandable service sub-rows within function rows
 - Progressive refinement: start at function level, drill down to services where councils have mapped them
 
-### Capability-level modelling
+### Capability-level modelling *(partially implemented)*
 
-Implement the cross-cutting capability layer described in [Section 2](#2-cross-cutting-capabilities-lgam-capabilities-layer):
-- Capability node type with LGAM-aligned vocabulary (payments, forms, identity, workflow, booking, email, SMS, telephony, AI)
-- `ENABLES` edges from capabilities to functions/services
-- `REALIZES` edges from systems to capabilities
-- Separate capability rationalisation view showing blast radius of platform replacement decisions
-- Dependency mapping: when replacing a payments platform, show all functions affected
+The capability layer is modelled as an optional `capabilityType` array on ITSystem nodes (not a new node type), using the LGAM vocabulary of 9 values: payments, forms, identity, workflow, booking, email, sms, telephony, ai. Systems use existing REALIZES edges to connect to multiple functions.
+
+**Implemented (capabilities-1):**
+- `capabilityType` array on ITSystem schema, fully backward-compatible
+- LGAM vocabulary constant (`src/constants/capabilities.js`)
+- Capability badges on system cards (collapsed and expanded views) with teal styling
+- Capability Platforms summary panel in estate summary (competing vs single-provider detection)
+- Architecture editor: Capabilities column for tagging systems
+- Import wizard: column detection and array coercion for CSV/Excel
+- Cross-function annotation: "serves N functions" on capability systems in expanded cards
+
+**Remaining (capabilities-2):**
+- Simulation obligation generation when a capability system is decommissioned (capability gap obligations for dependent functions)
+- Blast radius preview before confirming decisions affecting capability systems
+- Report export integration (capability impact in Architect/Commercial reports)
 
 ### Cost modelling and financial exposure *(partially implemented)*
 
@@ -467,7 +476,7 @@ How the engine's current and planned capabilities map against the two reference 
 |---|---|---|---|---|
 | **ESD function taxonomy** | Embedded, mandatory | Unchanged | Assumed | Not referenced |
 | **ESD service taxonomy** | Not modelled | Service-level nodes | Not referenced | Not referenced |
-| **Cross-cutting capabilities** | Not modelled | Capability nodes (LGAM-aligned) | Not modelled | Core layer (9 capabilities) |
+| **Cross-cutting capabilities** | LGAM-aligned capabilityType array on systems; capability summary panel; competing platform detection | + simulation blast radius obligations | Not modelled | Core layer (9 capabilities) |
 | **System-level detail** | Full (vendor, cost, contract, portability) | + confidence annotations | High-level guidance | Deliberately excluded |
 | **Disaggregation** | Pattern classification (4 patterns); first-class simulation action with obligation generation | + service-level partitioning, partitioningMethod field | Legal/technical/operational guidance | Not addressed |
 | **Shared services** | Boundary detection, unwinding signal, establish/maintain/disaggregate decisions, cross-successor preview | + dependency tracking | Unwinding guidance | Dependency modelling only |
