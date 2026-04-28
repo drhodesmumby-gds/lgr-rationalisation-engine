@@ -289,8 +289,23 @@ function decisionLabel(decision, systemLabel) {
  */
 function resolveSystemLabel(systemId) {
     if (!state.simulationState) return systemId;
-    const node = state.simulationState.baselineNodes.find(n => n.id === systemId);
-    return node ? node.label : systemId;
+    // Check baseline nodes first
+    const baseNode = state.simulationState.baselineNodes.find(n => n.id === systemId);
+    if (baseNode) return baseNode.label;
+    // Check simulated nodes (includes procured systems)
+    if (state.simulationState.lastImpact) {
+        const simNode = state.simulationState.lastImpact.simulationResult.nodes.find(n => n.id === systemId);
+        if (simNode) return simNode.label;
+    }
+    // Check decisions for procured system labels
+    if (state.simulationState.decisions) {
+        for (const dec of state.simulationState.decisions.values()) {
+            if (dec.procuredSystem && dec.procuredSystem.id === systemId) {
+                return dec.procuredSystem.label;
+            }
+        }
+    }
+    return systemId;
 }
 
 /**
