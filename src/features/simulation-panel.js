@@ -363,10 +363,16 @@ function renderDecisionSummary(el, impact) {
                 : (dec.sharedWithSuccessors && dec.sharedWithSuccessors.length > 0
                     ? ` <span class="text-[10px] text-gray-400">(shared with ${dec.sharedWithSuccessors.length})</span>`
                     : '');
-            return `<div class="text-xs py-0.5 border-b border-gray-100 last:border-0">
-                <span class="font-bold">${escHtml(funcLabel)}</span>
-                <span class="text-gray-500"> (${escHtml(dec.successorName)})</span>${sharedTag}
-                <span class="block text-gray-700">&rarr; ${escHtml(dLabel)}</span>
+            const safeFuncId = escHtml(dec.functionId);
+            const safeSucc = escHtml(dec.successorName);
+            return `<div class="text-xs py-1 border-b border-gray-100 last:border-0 flex items-start gap-1">
+                <div class="flex-1">
+                    <span class="font-bold">${escHtml(funcLabel)}</span>
+                    <span class="text-gray-500"> (${safeSucc})</span>${sharedTag}
+                    <span class="block text-gray-700">&rarr; ${escHtml(dLabel)}</span>
+                </div>
+                <button onclick="window._simOpenDecision('${safeFuncId}', '${safeSucc}')" class="text-gray-400 hover:text-[#1d70b8] p-0.5" title="Edit decision" aria-label="Edit decision for ${escHtml(funcLabel)}">&#9998;</button>
+                <button onclick="window._simRemoveDecision('${safeFuncId}', '${safeSucc}')" class="text-gray-400 hover:text-[#d4351c] p-0.5" title="Remove decision" aria-label="Remove decision for ${escHtml(funcLabel)}">&times;</button>
             </div>`;
         }).join('');
     }
@@ -1213,6 +1219,24 @@ let _obligationDetailTrapCleanup = null;
 
 // Decision summary window hooks
 window._simExit = exitSimulation;
+window._simRemoveDecision = function(functionId, successorName) {
+    if (!state.simulationState || !state.simulationState.decisions) return;
+    const key = `${functionId}::${successorName}`;
+    const dec = state.simulationState.decisions.get(key);
+    if (!dec) return;
+    // Also remove propagated shared-service decisions if this was the primary
+    if (dec.sharedWithSuccessors && dec.sharedWithSuccessors.length > 0) {
+        dec.sharedWithSuccessors.forEach(otherSucc => {
+            const propKey = `${functionId}::${otherSucc}`;
+            const propDec = state.simulationState.decisions.get(propKey);
+            if (propDec && propDec.sharedServiceOrigin) {
+                state.simulationState.decisions.delete(propKey);
+            }
+        });
+    }
+    state.simulationState.decisions.delete(key);
+    recomputeSimulation();
+};
 window._simClearAllDecisions = function() {
     if (!state.simulationState) return;
     state.simulationState.decisions = new Map();
