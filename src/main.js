@@ -1500,7 +1500,8 @@ export function renderDashboard() {
                         const toggleLabel = anyCollapsed ? `Expand all (${cellSystems.length})` : `Collapse all (${cellSystems.length})`;
                         cellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${cellSysIds}" type="button" aria-expanded="${!anyCollapsed}">${toggleLabel}</button>`;
                     }
-                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}${cellExpandToggleHtml}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
+                    const expandToggleBlock = cellExpandToggleHtml ? `<div class="mt-1">${cellExpandToggleHtml}</div>` : '';
+                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}${expandToggleBlock}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
 
                     // Collect for analysis
                     const taggedAllocations = cellAllocations.map(a => ({ ...a, _successorName: successorName }));
@@ -1631,7 +1632,8 @@ export function renderDashboard() {
                 const discToggleLabel = discAnyCollapsed ? `Expand all (${councilSystems.length})` : `Collapse all (${councilSystems.length})`;
                 discCellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${discSysIds}" type="button" aria-expanded="${!discAnyCollapsed}">${discToggleLabel}</button>`;
             }
-            rowHTML += `<td class="${tdClass} p-3">${discCellExpandToggleHtml}${buildSystemCard(councilSystems, state.activePersona, anchorSystem)}</td>`;
+            const discExpandBlock = discCellExpandToggleHtml ? `<div class="mb-1">${discCellExpandToggleHtml}</div>` : '';
+            rowHTML += `<td class="${tdClass} p-3">${discExpandBlock}${buildSystemCard(councilSystems, state.activePersona, anchorSystem)}</td>`;
         });
 
         let analysisSystems = relevantSystems;
