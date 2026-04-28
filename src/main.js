@@ -1661,31 +1661,8 @@ export function renderDashboard() {
     if(state.activePersona !== 'architect') drawTimeline(systems, councilsArray);
     renderCriticalPathPanel();
 
-    // Flip tooltips below trigger when near top of scrollable matrix container
-    const matrixContainer = document.querySelector('#dashboardMatrix')?.closest('.overflow-auto');
-    if (matrixContainer && !matrixContainer._tooltipFlipWired) {
-        matrixContainer._tooltipFlipWired = true;
-        function checkTooltipFlip(tw) {
-            if (!tw) return;
-            const cRect = matrixContainer.getBoundingClientRect();
-            const tRect = tw.getBoundingClientRect();
-            if (tRect.top - cRect.top < 140) tw.classList.add('tooltip-below');
-            else tw.classList.remove('tooltip-below');
-        }
-        // Use mouseover (bubbles) instead of mouseenter (doesn't bubble reliably in capture)
-        matrixContainer.addEventListener('mouseover', function(e) {
-            checkTooltipFlip(e.target.closest('.tooltip-wrapper'));
-        });
-        matrixContainer.addEventListener('mouseout', function(e) {
-            const tw = e.target.closest('.tooltip-wrapper');
-            if (tw) tw.classList.remove('tooltip-below');
-        });
-        // Re-check on scroll in case user scrolls while hovering
-        matrixContainer.addEventListener('scroll', function() {
-            const hovered = matrixContainer.querySelector('.tooltip-wrapper:hover');
-            checkTooltipFlip(hovered);
-        });
-    }
+    // Tooltips always position below the trigger element (set in CSS).
+    // No flip logic needed.
 
     // Wire card collapse handlers for discovery mode
     wireCardCollapseHandlers(body);
@@ -1754,18 +1731,28 @@ function wireCardCollapseHandlers(body) {
             return;
         }
 
-        // Don't intercept clicks on interactive elements inside expanded cards
+        // Only handle clicks on collapsed cards to expand — collapsing expanded
+        // cards is handled by the dedicated collapse button (above).
+        // Don't intercept clicks on interactive elements.
         if (e.target.closest('a, button, select, input, .sim-decide-btn')) return;
 
-        const wrapper = e.target.closest('.system-card-wrapper');
+        // Only expand from collapsed state — clicking inside an expanded card
+        // should not collapse it (allows text selection, element focus, etc.)
+        const collapsedCard = e.target.closest('.system-card-collapsed');
+        if (!collapsedCard) return;
+
+        const wrapper = collapsedCard.closest('.system-card-wrapper');
         if (!wrapper) return;
         const sysId = wrapper.dataset.systemId;
         if (!sysId) return;
 
-        if (state.expandedCards.has(sysId)) {
-            state.expandedCards.delete(sysId);
-        } else {
+        // Expand only
+        if (!isCardExpanded(sysId)) {
             state.expandedCards.add(sysId);
+        } else {
+            // Already expanded — should not reach here since collapsed card is hidden,
+            // but handle edge case by toggling
+            state.expandedCards.delete(sysId);
         }
 
         const collapsed = wrapper.querySelector('.system-card-collapsed');
