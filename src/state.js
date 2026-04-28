@@ -23,4 +23,5 @@ export const state = {
     importWizardState: null,
     cardCollapseState: 'collapsed',  // 'collapsed' | 'expanded' — global default
     expandedCards: new Set(),         // Set of system IDs individually toggled to opposite of default
+    activeTab: 'matrix',              // 'matrix' | 'overview' | 'timeline'
 };

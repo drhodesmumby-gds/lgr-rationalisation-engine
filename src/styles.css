@@ -210,6 +210,29 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .system-card-collapsed:hover { background-color: #f3f2f1; }
 .system-card-collapsed .gds-tag { vertical-align: middle; }
 
+/* Dashboard tabs */
+.dashboard-tab {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #505a5f;
+    background: none;
+    border: none;
+    border-bottom: 4px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.dashboard-tab:hover {
+    color: #0b0c0c;
+    border-bottom-color: #b1b4b6;
+}
+.dashboard-tab.active {
+    color: #0b0c0c;
+    border-bottom-color: #1d70b8;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
 /* GOV.UK Skip link */
 .govuk-skip-link {
   position: absolute;

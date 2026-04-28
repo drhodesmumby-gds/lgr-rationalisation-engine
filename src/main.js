@@ -819,6 +819,46 @@ document.getElementById('filterCollisionSelect').addEventListener('change', func
     renderDashboard();
 });
 
+// --- Dashboard tab switching ---
+function switchDashboardTab(tabId) {
+    state.activeTab = tabId;
+    const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
+    // Update tab buttons
+    document.querySelectorAll('.dashboard-tab').forEach(btn => {
+        const isActive = btn.id === `tab${capitalize(tabId)}`;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', String(isActive));
+    });
+    // Update tab panels (visibility controlled purely via CSS .tab-panel / .tab-panel.active)
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        const isActive = panel.id === `panel${capitalize(tabId)}`;
+        panel.classList.toggle('active', isActive);
+    });
+}
+
+document.getElementById('tabMatrix')?.addEventListener('click', () => switchDashboardTab('matrix'));
+document.getElementById('tabOverview')?.addEventListener('click', () => switchDashboardTab('overview'));
+document.getElementById('tabTimeline')?.addEventListener('click', () => switchDashboardTab('timeline'));
+
+// Keyboard navigation between visible tabs (arrow keys)
+document.getElementById('dashboardTabBar')?.addEventListener('keydown', (e) => {
+    const allTabs = ['tabMatrix', 'tabOverview', 'tabTimeline'];
+    const visibleTabs = allTabs.filter(id => {
+        const el = document.getElementById(id);
+        return el && !el.hidden && el.style.display !== 'none';
+    });
+    const currentIdx = visibleTabs.indexOf(document.activeElement?.id);
+    if (currentIdx === -1) return;
+    let nextIdx = currentIdx;
+    if (e.key === 'ArrowRight') nextIdx = (currentIdx + 1) % visibleTabs.length;
+    else if (e.key === 'ArrowLeft') nextIdx = (currentIdx - 1 + visibleTabs.length) % visibleTabs.length;
+    else return;
+    e.preventDefault();
+    const nextTab = document.getElementById(visibleTabs[nextIdx]);
+    nextTab.focus();
+    nextTab.click();
+});
+
 // Global card expand/collapse controls (WI-5)
 document.getElementById('btnExpandAllCards')?.addEventListener('click', () => {
     state.cardCollapseState = 'expanded';
@@ -844,21 +884,29 @@ function updatePersonaBanner() {
         personaBanner.className = "bg-[#eef7e6] border-b-2 border-[#00703c] p-4 flex gap-4 items-start transition-colors shrink-0";
         personaIcon.className = "w-8 h-8 text-[#00703c] shrink-0";
         personaDesc.textContent = "Focusing on notice periods, vendor density mapping, and procurement consolidation.";
-        timelineSection.classList.remove('hidden');
+        // Show Timeline tab for non-architect personas
+        const tabTimelineComm = document.getElementById('tabTimeline');
+        if (tabTimelineComm) tabTimelineComm.style.display = '';
     } else if (state.activePersona === 'architect') {
         personaTitle.textContent = "Enterprise Architect View";
         personaTitle.className = "font-bold text-lg text-[#53284f]";
         personaBanner.className = "bg-[#fbf5fb] border-b-2 border-[#53284f] p-4 flex gap-4 items-start transition-colors shrink-0";
         personaIcon.className = "w-8 h-8 text-[#53284f] shrink-0";
         personaDesc.textContent = "Focusing on anchor systems (gravity), tech debt, data monoliths, and API portability.";
-        timelineSection.classList.add('hidden');
+        // Hide Timeline tab for architect persona
+        const tabTimeline = document.getElementById('tabTimeline');
+        if (tabTimeline) tabTimeline.style.display = 'none';
+        // If currently on timeline tab, switch to matrix
+        if (state.activeTab === 'timeline') switchDashboardTab('matrix');
     } else if (state.activePersona === 'executive') {
         personaTitle.textContent = "Executive Board View (Consolidated)";
         personaTitle.className = "font-bold text-lg text-[#0b0c0c]";
         personaBanner.className = "bg-[#f3f2f1] border-b-2 border-[#0b0c0c] p-4 flex gap-4 items-start transition-colors shrink-0";
         personaIcon.className = "w-8 h-8 text-[#0b0c0c] shrink-0";
         personaDesc.textContent = "Synthesizing Day 1 survival, contract lock-ins, and strategic transition horizons.";
-        timelineSection.classList.remove('hidden');
+        // Show Timeline tab for non-architect personas
+        const tabTimeline = document.getElementById('tabTimeline');
+        if (tabTimeline) tabTimeline.style.display = '';
     }
     // Re-apply collapsed state after className overwrite
     if (state.bannerCollapsed) personaBanner.classList.add('banner-collapsed');
@@ -2542,10 +2590,12 @@ function exportToHTML() {
         matrixHtml = matrixEl.outerHTML;
     }
 
-    // --- Clone the timeline (if visible) ---
+    // --- Clone the timeline (visible for non-architect personas) ---
     var timelineHtml = '';
     var timelineSec = document.getElementById('timelineSection');
-    if (timelineSec && !timelineSec.classList.contains('hidden')) {
+    var tabTimeline = document.getElementById('tabTimeline');
+    // Include timeline in export if the Timeline tab is not hidden (i.e. non-architect persona)
+    if (timelineSec && tabTimeline && tabTimeline.style.display !== 'none') {
         timelineHtml = timelineSec.innerHTML;
     }
 
