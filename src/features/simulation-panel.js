@@ -126,6 +126,7 @@ let _sankeySizeMode = 'count'; // 'count' | 'cost'
 let _sankeyCouncilFilter = null; // council name to filter by, or null for all
 let _sankeyFunctionFilter = null; // lgaFunctionId to filter by, or null for all
 let _sankeyOverlay = 'default'; // 'default' | 'migration' | 'cross-successor' | 'contract'
+let _sankeyRenderTarget = null; // the element the Sankey overlay is currently rendering into
 
 /**
  * Main workspace render function. Targets the right-docked #simulationSidePanel.
@@ -483,6 +484,9 @@ function renderDecisionSummary(el, impact) {
         ${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ''}
         ${obligationsHtml}
         <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2">
+            ${!!(state.simulationState?.baselineAllocation || state.successorAllocationMap)
+                ? `<button onclick="window._simOpenSankeyOverlay()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left border-[#1d70b8] text-[#1d70b8]">View flow diagram</button>`
+                : ''}
             ${decidedCount > 0 ? `<button onclick="window._simClearAllDecisions()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left">Clear All Decisions</button>` : ''}
             <button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold border-[#d4351c] text-[#d4351c] w-full text-left">Exit Simulation</button>
         </div>
@@ -601,13 +605,21 @@ function renderSankeyPanel(el) {
         },
         onDrillDown: (successorName) => {
             _sankeyDrillDown = successorName;
-            renderSimulationWorkspace();
+            if (_sankeyRenderTarget) {
+                renderSankeyPanel(_sankeyRenderTarget);
+            } else {
+                renderSimulationWorkspace();
+            }
         },
         onBack: () => {
             _sankeyDrillDown = null;
             _sankeyCouncilFilter = null;
             _sankeyFunctionFilter = null;
-            renderSimulationWorkspace();
+            if (_sankeyRenderTarget) {
+                renderSankeyPanel(_sankeyRenderTarget);
+            } else {
+                renderSimulationWorkspace();
+            }
         }
     });
 
@@ -1218,12 +1230,72 @@ function createFocusTrap(modalEl) {
 }
 
 // ===================================================================
+// SANKEY OVERLAY MODAL
+// ===================================================================
+
+let _sankeyOverlayOpener = null;
+
+function openSankeyOverlay() {
+    const modal = document.getElementById('sankeyOverlayModal');
+    if (!modal) return;
+    _sankeyOverlayOpener = document.activeElement;
+    modal.classList.remove('hidden');
+
+    // Render Sankey into the overlay content
+    const content = document.getElementById('sankeyOverlayContent');
+    if (content) {
+        _sankeyRenderTarget = content;
+        renderSankeyPanel(content);
+    }
+
+    // Focus the close button
+    document.getElementById('btnCloseSankeyOverlay')?.focus();
+}
+
+function closeSankeyOverlay() {
+    const modal = document.getElementById('sankeyOverlayModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+
+    // Clear content and render target
+    const content = document.getElementById('sankeyOverlayContent');
+    if (content) content.innerHTML = '';
+    _sankeyRenderTarget = null;
+
+    // Return focus to opener
+    if (_sankeyOverlayOpener && typeof _sankeyOverlayOpener.focus === 'function') {
+        _sankeyOverlayOpener.focus();
+    }
+    _sankeyOverlayOpener = null;
+}
+
+// Wire Sankey overlay close handlers
+const sankeyOverlayModal = document.getElementById('sankeyOverlayModal');
+if (sankeyOverlayModal) {
+    document.getElementById('btnCloseSankeyOverlay')?.addEventListener('click', closeSankeyOverlay);
+    sankeyOverlayModal.addEventListener('click', (e) => {
+        if (e.target === sankeyOverlayModal) closeSankeyOverlay();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (!sankeyOverlayModal.classList.contains('hidden')) {
+                e.preventDefault();
+                closeSankeyOverlay();
+            }
+        }
+    });
+}
+
+// ===================================================================
 // GLOBAL WINDOW HOOKS (called from inline HTML onclick handlers)
 // ===================================================================
 
 // Track opener elements for focus return
 let _obligationDetailOpener = null;
 let _obligationDetailTrapCleanup = null;
+
+// Sankey overlay window hook
+window._simOpenSankeyOverlay = openSankeyOverlay;
 
 // Decision summary window hooks
 window._simExit = exitSimulation;
@@ -1274,23 +1346,23 @@ window._simSankeyBack = function() {
     _sankeyDrillDown = null;
     _sankeyCouncilFilter = null;
     _sankeyFunctionFilter = null;
-    renderSimulationWorkspace();
+    if (_sankeyRenderTarget) renderSankeyPanel(_sankeyRenderTarget);
 };
 window._simSankeySetSize = function(mode) {
     _sankeySizeMode = mode;
-    renderSimulationWorkspace();
+    if (_sankeyRenderTarget) renderSankeyPanel(_sankeyRenderTarget);
 };
 window._simSankeyFilterCouncil = function(council) {
     _sankeyCouncilFilter = council || null;
-    renderSimulationWorkspace();
+    if (_sankeyRenderTarget) renderSankeyPanel(_sankeyRenderTarget);
 };
 window._simSankeyFilterFunction = function(funcId) {
     _sankeyFunctionFilter = funcId || null;
-    renderSimulationWorkspace();
+    if (_sankeyRenderTarget) renderSankeyPanel(_sankeyRenderTarget);
 };
 window._simSankeySetOverlay = function(overlay) {
     _sankeyOverlay = overlay || 'default';
-    renderSimulationWorkspace();
+    if (_sankeyRenderTarget) renderSankeyPanel(_sankeyRenderTarget);
 };
 window._simGetSignalWeights = function() {
     return state.signalWeights || {};

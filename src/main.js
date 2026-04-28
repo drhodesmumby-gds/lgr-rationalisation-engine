@@ -828,6 +828,7 @@ function switchDashboardTab(tabId) {
         const isActive = btn.id === `tab${capitalize(tabId)}`;
         btn.classList.toggle('active', isActive);
         btn.setAttribute('aria-selected', String(isActive));
+        btn.setAttribute('tabindex', isActive ? '0' : '-1');
     });
     // Update tab panels (visibility controlled purely via CSS .tab-panel / .tab-panel.active)
     document.querySelectorAll('.tab-panel').forEach(panel => {

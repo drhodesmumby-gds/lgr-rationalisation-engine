@@ -230,6 +230,12 @@ header.header-collapsed .header-subtitle { display: none !important; }
     color: #0b0c0c;
     border-bottom-color: #1d70b8;
 }
+.dashboard-tab:focus-visible {
+    outline: 3px solid #ffdd00;
+    outline-offset: 0;
+    box-shadow: inset 0 -4px 0 0 #0b0c0c;
+    border-bottom-color: transparent;
+}
 .tab-panel:not(.active) { display: none !important; }
 
 /* Simulation Side Panel (nav-2) */

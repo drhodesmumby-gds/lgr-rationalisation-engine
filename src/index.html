@@ -184,9 +184,9 @@
             <!-- Tab Bar -->
             <div id="dashboardTabBar" class="bg-white border-b border-[#b1b4b6] px-4 shrink-0">
                 <nav class="flex gap-0" role="tablist" aria-label="Dashboard sections">
-                    <button role="tab" id="tabMatrix" class="dashboard-tab active" aria-selected="true" aria-controls="panelMatrix">Matrix</button>
-                    <button role="tab" id="tabOverview" class="dashboard-tab" aria-selected="false" aria-controls="panelOverview">Overview</button>
-                    <button role="tab" id="tabTimeline" class="dashboard-tab" aria-selected="false" aria-controls="panelTimeline">Timeline</button>
+                    <button role="tab" id="tabMatrix" class="dashboard-tab active" aria-selected="true" aria-controls="panelMatrix" tabindex="0">Matrix</button>
+                    <button role="tab" id="tabOverview" class="dashboard-tab" aria-selected="false" aria-controls="panelOverview" tabindex="-1">Overview</button>
+                    <button role="tab" id="tabTimeline" class="dashboard-tab" aria-selected="false" aria-controls="panelTimeline" tabindex="-1">Timeline</button>
                 </nav>
             </div>
 
@@ -570,6 +570,18 @@
                     <button id="btnApplyDecision" class="gds-btn" type="button">Apply Decision</button>
                     <button id="btnCancelDecision" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Cancel</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- SANKEY OVERLAY MODAL -->
+        <div id="sankeyOverlayModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50"
+             role="dialog" aria-modal="true" aria-labelledby="sankeyOverlayTitle">
+            <div class="bg-white w-[95vw] h-[90vh] mx-4 p-6 border-t-8 border-[#1d70b8] shadow-2xl relative flex flex-col">
+                <div class="flex items-center justify-between mb-4 shrink-0">
+                    <h2 id="sankeyOverlayTitle" class="text-2xl font-bold">System Flow Diagram</h2>
+                    <button id="btnCloseSankeyOverlay" class="text-gray-500 hover:text-black font-bold text-xl" aria-label="Close flow diagram">&times;</button>
+                </div>
+                <div id="sankeyOverlayContent" class="flex-1 overflow-auto"></div>
             </div>
         </div>
 
