@@ -230,8 +230,7 @@ header.header-collapsed .header-subtitle { display: none !important; }
     color: #0b0c0c;
     border-bottom-color: #1d70b8;
 }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+.tab-panel:not(.active) { display: none !important; }
 
 /* GOV.UK Skip link */
 .govuk-skip-link {
