@@ -341,9 +341,9 @@ The capability layer is modelled as an optional `capabilityType` array on ITSyst
 - Severity boost for payments (PCI-DSS) and identity (authentication) capability gaps
 - Matrix pattern classification and decidable counts exclude capability systems
 
-**Remaining:**
-- Blast radius preview before confirming decisions affecting capability systems
-- Report export integration (capability impact in Architect/Commercial reports)
+**Implemented (capabilities-3):**
+- Blast radius preview in decision panel — `<details>` disclosure per capability system listing affected functions, summary banner above Apply button
+- Report export integration — Architect: Type + Capability columns in obligations table; Commercial: capability-gap type annotation + procurement timeline entries; Executive: Capability Gaps count in estate impact table
 
 ### Cost modelling and financial exposure *(partially implemented)*
 
