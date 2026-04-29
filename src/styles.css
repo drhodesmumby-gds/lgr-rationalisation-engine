@@ -281,7 +281,7 @@ header.header-collapsed .header-subtitle { display: none !important; }
 .sim-side-expand-btn:hover { background: #fef3cd; color: #f47738; }
 .sim-side-badge {
     background: #f47738;
-    color: white;
+    color: #0b0c0c;
     font-size: 14px;
     font-weight: bold;
     padding: 4px 8px;

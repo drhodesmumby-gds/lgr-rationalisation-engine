@@ -369,7 +369,7 @@ function renderDecisionSummary(el, impact) {
                 : null;
             const dLabel = decisionLabel(dec, retainedLabel);
             const sharedTag = dec.sharedServiceOrigin
-                ? ' <span class="text-[10px] font-bold text-[#f47738]">[Shared]</span>'
+                ? ' <span class="text-[10px] font-bold text-[#0b0c0c]">[Shared]</span>'
                 : (dec.sharedWithSuccessors && dec.sharedWithSuccessors.length > 0
                     ? ` <span class="text-[10px] text-gray-400">(shared with ${dec.sharedWithSuccessors.length})</span>`
                     : '');
@@ -407,14 +407,23 @@ function renderDecisionSummary(el, impact) {
             });
         }
         if (undecidedCells.length > 0) {
+            undecidedCells.sort((a, b) => {
+                const tierA = state.tierMap ? (state.tierMap.get(a.funcId) || 3) : 3;
+                const tierB = state.tierMap ? (state.tierMap.get(b.funcId) || 3) : 3;
+                return tierA - tierB; // Tier 1 first
+            });
             const SHOW_LIMIT = 10;
             const visible = undecidedCells.slice(0, SHOW_LIMIT);
             const overflow = undecidedCells.length - visible.length;
             const rows = visible.map(cell => {
                 const safeFuncId = escHtml(cell.funcId);
                 const safeSucc = escHtml(cell.succName);
+                const tier = state.tierMap ? (state.tierMap.get(cell.funcId) || 3) : 3;
+                const tierBadge = tier === 1 ? '<span class="gds-tag tag-red" style="font-size:9px;padding:1px 4px;">T1</span>'
+                    : tier === 2 ? '<span class="gds-tag tag-orange" style="font-size:9px;padding:1px 4px;">T2</span>'
+                    : '';
                 return `<div class="text-xs py-0.5 border-b border-gray-100 last:border-0 flex items-center justify-between gap-1">
-                    <span class="truncate" title="${escHtml(cell.funcLabel)} (${safeSucc})">${escHtml(cell.funcLabel)} <span class="text-gray-400">(${safeSucc})</span></span>
+                    <span class="truncate flex items-center gap-1" title="${escHtml(cell.funcLabel)} (${safeSucc})">${tierBadge}${escHtml(cell.funcLabel)} <span class="text-gray-400">(${safeSucc})</span></span>
                     <button class="text-xs font-bold text-[#1d70b8] underline whitespace-nowrap"
                             onclick="window._simOpenDecision('${safeFuncId}', '${safeSucc}')"
                             type="button">Decide</button>
@@ -802,7 +811,7 @@ function renderObligationDetailContent(obligations) {
                     <div class="text-xs text-gray-600">High severity</div>
                 </div>
                 <div class="border border-gray-300 p-3 text-center ${unresolvedCount > 0 ? 'border-l-4 border-l-[#f47738]' : ''}">
-                    <div class="text-2xl font-bold ${unresolvedCount > 0 ? 'text-[#f47738]' : ''}">${unresolvedCount}</div>
+                    <div class="text-2xl font-bold ${unresolvedCount > 0 ? 'text-[#0b0c0c]' : ''}">${unresolvedCount}</div>
                     <div class="text-xs text-gray-600">Unresolved</div>
                 </div>
                 <div class="border border-gray-300 p-3 text-center ${crossCount > 0 ? 'border-l-4 border-l-[#d4351c]' : ''}">

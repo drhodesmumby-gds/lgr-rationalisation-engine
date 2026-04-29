@@ -921,7 +921,7 @@ function updatePersonaBanner() {
         if (!btnSim) {
             btnSim = document.createElement('button');
             btnSim.id = 'btnSimulate';
-            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#f47738] text-[#f47738]';
+            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#f47738] text-[#0b0c0c]';
             btnSim.textContent = 'Simulate';
             btnSim.addEventListener('click', function() {
                 if (state.simulationState) {
@@ -938,7 +938,7 @@ function updatePersonaBanner() {
             btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#d4351c] text-[#d4351c]';
         } else {
             btnSim.textContent = 'Simulate';
-            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#f47738] text-[#f47738]';
+            btnSim.className = 'gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100 border-[#f47738] text-[#0b0c0c]';
         }
         // Always show group + separator when in transition mode (btnSim is visible)
         if (simButtonGroup) simButtonGroup.classList.remove('hidden');
@@ -1906,7 +1906,7 @@ function renderCriticalPathPanel() {
     var cpPanel = document.getElementById('criticalPathPanel');
     if (!cpPanel) return;
     var cpSystems = window._criticalPathSystems;
-    if (state.activePersona !== 'executive' || !cpSystems || cpSystems.length === 0) {
+    if ((state.activePersona !== 'executive' && state.activePersona !== 'commercial') || !cpSystems || cpSystems.length === 0) {
         cpPanel.innerHTML = '';
         return;
     }
