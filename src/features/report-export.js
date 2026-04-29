@@ -424,9 +424,10 @@ function buildReportHeader(persona, decisions) {
 /**
  * Builds the estate impact summary table.
  * @param {Object|null} impact
+ * @param {Array} [obligations]  Optional obligations array to add capability-gap count row
  * @returns {string}
  */
-function buildEstateSummaryTable(impact) {
+function buildEstateSummaryTable(impact, obligations) {
     if (!impact) {
         return '<p style="color:#505a5f;">No impact data available — run simulation first.</p>';
     }
@@ -468,6 +469,14 @@ function buildEstateSummaryTable(impact) {
             after.disaggregationCount !== null ? after.disaggregationCount : '—',
             delta.disaggregationCount !== null ? formatDelta(delta.disaggregationCount) : '—'
         );
+    }
+
+    // Capability gaps row
+    if (obligations && Array.isArray(obligations) && obligations.length > 0) {
+        const capGapCount = obligations.filter(obl => obl.type === 'capability-gap').length;
+        if (capGapCount > 0) {
+            html += `<tr><td>Capability gaps</td><td>0</td><td>${capGapCount}</td><td style="color:#d4351c;font-weight:bold;">+${capGapCount}</td></tr>`;
+        }
     }
 
     html += `</tbody></table>`;
@@ -637,7 +646,7 @@ function buildExecutiveReport(decisions, impact, obligations) {
 
     // Section 1: Estate Impact Summary
     html += `<h2>1. Estate Impact Summary</h2>`;
-    html += buildEstateSummaryTable(impact);
+    html += buildEstateSummaryTable(impact, obligations);
 
     // Section 2: Decisions by Tier
     html += `<h2>2. Decisions by Tier</h2>`;
@@ -950,9 +959,12 @@ function buildCommercialObligations(obligations) {
         const sev = computeObligationSeverity(obl, weights);
         html += `<tr>`;
         html += `<td>${escHtml(obl.functionLabel || obl.functionId || '—')}</td>`;
+        const typeDisplay = obl.type === 'capability-gap' && obl.capabilityType && obl.capabilityType.length > 0
+            ? `Capability gap (${(obl.capabilityType || []).join(', ')})`
+            : (obl.type || '').replace(/-/g, ' ');
         html += `<td>${escHtml(fs ? fs.label : '—')}</td>`;
         html += `<td>${escHtml(ts ? ts.label : '—')}</td>`;
-        html += `<td>${escHtml(obl.type)}</td>`;
+        html += `<td>${escHtml(typeDisplay)}</td>`;
         html += `<td><span class="sev-${sev}">${escHtml(sev)}</span></td>`;
         html += `<td>${escHtml(fs ? formatCost(fs.annualCost) : '—')}</td>`;
         html += `<td>${escHtml(obl.contractEndDate || '—')}</td>`;
@@ -967,10 +979,12 @@ function buildCommercialObligations(obligations) {
 /**
  * Builds a date-ordered procurement action timeline table from all decisions.
  * @param {Map} decisions
+ * @param {Array} [obligations]  Optional obligations array to add capability-gap entries
  * @returns {string}
  */
-function buildProcurementTimeline(decisions) {
-    const vesting = state.transitionStructure ? state.transitionStructure.vestingDate : null;
+function buildProcurementTimeline(decisions, obligations) {
+    const vestingDate = state.transitionStructure ? state.transitionStructure.vestingDate : null;
+    const vesting = vestingDate;
     const rows = [];
 
     decisions.forEach(decision => {
@@ -1022,6 +1036,28 @@ function buildProcurementTimeline(decisions) {
             // procure decisions: skip (no existing contract)
         }
     });
+
+    // Add capability-gap entries where the removed system has contract data
+    if (obligations && Array.isArray(obligations)) {
+        const capGapObls = obligations.filter(obl => obl.type === 'capability-gap');
+        for (const obl of capGapObls) {
+            if (!obl.fromSystem) continue;
+            const trigger = computeNoticeTrigger(obl.fromSystem);
+            if (!trigger) continue;
+            const relative = formatVestingRelative(trigger.triggerTotalMonths, vestingDate);
+            rows.push({
+                triggerDate: trigger.triggerDate,
+                triggerTotalMonths: trigger.triggerTotalMonths,
+                vestingRelative: relative,
+                systemLabel: obl.fromSystem.label || obl.fromSystem.id || '—',
+                vendor: obl.fromSystem.vendor || '—',
+                functionLabel: obl.functionLabel || '—',
+                successorName: (obl.affectedSuccessors || [])[0] || '—',
+                actionType: `Capability gap (${(obl.capabilityType || []).join(', ')})`,
+                isOverdue: trigger.isOverdue
+            });
+        }
+    }
 
     if (rows.length === 0) {
         return '<p style="color:#505a5f;">No upcoming contract actions identified.</p>';
@@ -1087,7 +1123,7 @@ function buildCommercialReport(decisions, impact, obligations) {
 
     // Section 5: Procurement Action Timeline
     html += `<h2>5. Procurement Action Timeline</h2>`;
-    html += buildProcurementTimeline(decisions);
+    html += buildProcurementTimeline(decisions, obligations);
 
     // Section 6: Governance Arrangements
     html += `<h2>6. Governance Arrangements</h2>`;
@@ -1277,7 +1313,7 @@ function buildArchitectObligations(obligations) {
     });
 
     let html = `<table>`;
-    html += `<thead><tr><th scope="col">Function</th><th scope="col">From System</th><th scope="col">To System</th><th scope="col">Severity</th><th scope="col">Monolithic</th><th scope="col">Low Portability</th><th scope="col">ERP</th><th scope="col">On-Prem</th><th scope="col">Migration Scope</th></tr></thead>`;
+    html += `<thead><tr><th scope="col">Function</th><th scope="col">From System</th><th scope="col">To System</th><th scope="col">Type</th><th scope="col">Severity</th><th scope="col">Capability</th><th scope="col">Monolithic</th><th scope="col">Low Portability</th><th scope="col">ERP</th><th scope="col">On-Prem</th><th scope="col">Migration Scope</th></tr></thead>`;
     html += `<tbody>`;
 
     for (const obl of sorted) {
@@ -1292,11 +1328,17 @@ function buildArchitectObligations(obligations) {
         const noStyle = 'color:#505a5f;';
         const sev = computeObligationSeverity(obl, weights);
 
+        const capTypeStr = obl.capabilityType && obl.capabilityType.length > 0
+            ? obl.capabilityType.join(', ')
+            : '—';
+
         html += `<tr>`;
         html += `<td>${escHtml(obl.functionLabel || obl.functionId || '—')}</td>`;
         html += `<td>${escHtml(fs ? fs.label : '—')}</td>`;
         html += `<td>${escHtml(ts ? ts.label : '—')}</td>`;
+        html += `<td>${escHtml(obl.type || '—')}</td>`;
         html += `<td><span class="sev-${sev}">${escHtml(sev)}</span></td>`;
+        html += `<td>${escHtml(capTypeStr)}</td>`;
         html += `<td style="${obl.isMonolithic ? yesStyle : noStyle}">${obl.isMonolithic ? 'Yes' : 'No'}</td>`;
         html += `<td style="${obl.isLowPortability ? yesStyle : noStyle}">${obl.isLowPortability ? 'Yes' : 'No'}</td>`;
         html += `<td style="${obl.isERP ? yesStyle : noStyle}">${obl.isERP ? 'Yes' : 'No'}</td>`;
@@ -1321,7 +1363,7 @@ function buildArchitectReport(decisions, impact, obligations) {
 
     // Section 1: Estate Impact Summary
     html += `<h2>1. Estate Impact Summary</h2>`;
-    html += buildEstateSummaryTable(impact);
+    html += buildEstateSummaryTable(impact, obligations);
 
     // Section 2: Technical Summary
     html += `<h2>2. Technical Summary</h2>`;

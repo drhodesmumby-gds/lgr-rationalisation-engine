@@ -97,7 +97,7 @@ function renderDecisionPanelContent(functionId, successorName) {
     const primarySystems = allMappedSystems.filter(s => !isCapabilitySystem(s));
     const capabilitySystems = allMappedSystems.filter(s => isCapabilitySystem(s));
 
-    // Annotate capability systems with the count of functions they serve
+    // Annotate capability systems with the count of functions they serve and affected functions list
     const baselineEdgesForCap = state.simulationState ? (state.simulationState.baselineEdges || []) : [];
     const baselineNodesForCap = state.simulationState ? (state.simulationState.baselineNodes || []) : [];
     capabilitySystems.forEach(sys => {
@@ -105,11 +105,25 @@ function renderDecisionPanelContent(functionId, successorName) {
             .filter(e => e.source === sys.id && e.relationship === 'REALIZES')
             .map(e => e.target);
         const funcIds = new Set();
+        const affectedFunctions = [];
+        const seenFuncIds = new Set();
         for (const nodeId of realizedFuncNodeIds) {
             const node = baselineNodesForCap.find(n => n.id === nodeId);
-            if (node && node.lgaFunctionId) funcIds.add(node.lgaFunctionId);
+            if (node && node.lgaFunctionId) {
+                funcIds.add(node.lgaFunctionId);
+                // Collect OTHER functions (not the current function) for blast radius
+                if (node.lgaFunctionId !== functionId && !seenFuncIds.has(node.lgaFunctionId)) {
+                    seenFuncIds.add(node.lgaFunctionId);
+                    const entry = state.lgaFunctionMap ? state.lgaFunctionMap.get(node.lgaFunctionId) : null;
+                    affectedFunctions.push({
+                        funcId: node.lgaFunctionId,
+                        label: entry ? entry.label : `Function ${node.lgaFunctionId}`
+                    });
+                }
+            }
         }
         sys._functionCount = funcIds.size || 1;
+        sys._affectedFunctions = affectedFunctions;
     });
 
     const systems = primarySystems;
@@ -167,6 +181,9 @@ function renderDecisionPanelContent(functionId, successorName) {
     if (existingDecision) {
         prefillDecision(existingDecision, systems, successorName);
     }
+
+    // Render blast radius summary banner above the Apply button
+    renderCapabilityBlastRadiusSummary(capabilitySystems);
 }
 
 // ---------------------------------------------------------------------------
@@ -372,6 +389,24 @@ function renderCapabilityPlatformsSection(capabilitySystems) {
             }).join('');
         const funcNote = sys._functionCount && sys._functionCount > 1
             ? `<span class="text-xs text-gray-500 italic">serves ${sys._functionCount} functions</span>` : '';
+
+        // Blast radius details disclosure
+        let blastRadiusHtml = '';
+        if (sys._affectedFunctions && sys._affectedFunctions.length > 0) {
+            const funcList = sys._affectedFunctions
+                .map(f => `<li>${escHtml(f.label)}</li>`)
+                .join('');
+            const count = sys._affectedFunctions.length;
+            blastRadiusHtml = `
+                <details class="mt-2 border-t border-gray-200 pt-2">
+                    <summary class="text-xs font-bold text-[#d4351c] cursor-pointer">
+                        Blast radius: ${count} other function${count !== 1 ? 's' : ''} depend on this platform
+                    </summary>
+                    <ul class="mt-1 text-xs text-gray-700 list-disc pl-4 space-y-0.5">${funcList}</ul>
+                    <p class="text-xs text-gray-500 mt-1 italic">Removing this platform would generate capability-gap obligations for each listed function.</p>
+                </details>`;
+        }
+
         return `<div class="p-3 bg-[#f0fdfa] border border-[#0e7490] rounded mb-2">
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-bold text-sm">${escHtml(sys.label || sys.id)}</span>
@@ -379,6 +414,7 @@ function renderCapabilityPlatformsSection(capabilitySystems) {
                 ${funcNote}
             </div>
             <div class="flex items-center flex-wrap mt-1">${capBadges}</div>
+            ${blastRadiusHtml}
         </div>`;
     }).join('');
 
@@ -388,6 +424,33 @@ function renderCapabilityPlatformsSection(capabilitySystems) {
             <p class="text-xs text-gray-600 mb-2">These platforms provide enabling capabilities for this function but are not alternatives for function delivery. They are managed separately.</p>
             ${cards}
         </div>`;
+}
+
+/**
+ * Renders a summary banner in the #capabilityBlastRadiusSummary div (above the Apply button)
+ * when any capability systems in the current cell serve additional functions beyond this one.
+ *
+ * @param {Array} capabilitySystems  Annotated capability systems (with _affectedFunctions)
+ */
+function renderCapabilityBlastRadiusSummary(capabilitySystems) {
+    const el = document.getElementById('capabilityBlastRadiusSummary');
+    if (!el) return;
+
+    const affected = (capabilitySystems || []).filter(s => s._affectedFunctions && s._affectedFunctions.length > 0);
+    if (affected.length === 0) {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+        return;
+    }
+
+    el.classList.remove('hidden');
+    const totalAffected = affected.reduce((sum, s) => sum + s._affectedFunctions.length, 0);
+
+    let html = `<div class="p-3 bg-[#fff7e6] border-l-4 border-l-[#f47738] text-xs mt-4">`;
+    html += `<p class="font-bold text-[#0b0c0c] mb-1">Capability platform impact</p>`;
+    html += `<p class="text-gray-700">${affected.length} capability platform${affected.length !== 1 ? 's' : ''} in this cell serve${affected.length === 1 ? 's' : ''} ${totalAffected} other function${totalAffected !== 1 ? 's' : ''}. These are managed independently from the function-delivery decision above.</p>`;
+    html += `</div>`;
+    el.innerHTML = html;
 }
 
 // ---------------------------------------------------------------------------
