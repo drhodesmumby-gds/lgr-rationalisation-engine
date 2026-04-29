@@ -390,6 +390,84 @@ export function generateSharedServiceGovernanceObligation(action, actionIndex, s
 }
 
 /**
+ * Generates capability-gap obligations when a capability system serving multiple functions
+ * is removed by a simulation action.
+ *
+ * @param {Object} removedSystem  The system being removed (must have capabilityType)
+ * @param {string|null} decisionFunctionId  The lgaFunctionId where the decision was made (excluded from obligations)
+ * @param {string|null} successorName  The successor where the decision was made
+ * @param {number} actionIndex  Index of the action that caused the removal
+ * @param {Array} baselineEdges  Original edges (baseline, not mutated)
+ * @param {Array} baselineNodes  Original nodes (baseline, not mutated)
+ * @param {Map|null} lgaFunctionMap  Function lookup map
+ * @returns {Array} Array of capability-gap obligations
+ */
+export function generateCapabilityGapObligations(removedSystem, decisionFunctionId, successorName, actionIndex, baselineEdges, baselineNodes, lgaFunctionMap) {
+    if (!removedSystem || !Array.isArray(removedSystem.capabilityType) || removedSystem.capabilityType.length === 0) {
+        return [];
+    }
+
+    // Find all functions this system serves via REALIZES edges in the baseline
+    const realizedFuncNodeIds = baselineEdges
+        .filter(e => e.source === removedSystem.id && e.relationship === 'REALIZES')
+        .map(e => e.target);
+
+    // Map node IDs to lgaFunctionIds, excluding the decision function
+    const affectedFunctionIds = new Set();
+    for (const nodeId of realizedFuncNodeIds) {
+        const node = baselineNodes.find(n => n.id === nodeId);
+        if (node && node.lgaFunctionId && node.lgaFunctionId !== decisionFunctionId) {
+            affectedFunctionIds.add(node.lgaFunctionId);
+        }
+    }
+
+    // Generate one obligation per affected function
+    const obligations = [];
+    for (const funcId of affectedFunctionIds) {
+        const funcEntry = lgaFunctionMap ? lgaFunctionMap.get(funcId) : null;
+        const funcLabel = funcEntry ? funcEntry.label : `Function ${funcId}`;
+
+        obligations.push({
+            id: `obl-capgap-${actionIndex}-${removedSystem.id}-${funcId}`,
+            type: 'capability-gap',
+            capabilityType: [...removedSystem.capabilityType],
+            actionIndex,
+            actionType: 'capability-gap',
+            fromSystem: {
+                id: removedSystem.id,
+                label: removedSystem.label || removedSystem.id,
+                vendor: removedSystem.vendor || null,
+                sourceCouncil: removedSystem._sourceCouncil || null,
+                users: 0,
+                annualCost: 0,
+                dataPartitioning: null,
+                portability: null,
+                isERP: false,
+                isCloud: !!removedSystem.isCloud,
+                endYear: null,
+                endMonth: null,
+                noticePeriod: null
+            },
+            toSystem: null,
+            affectedSuccessors: successorName ? [successorName] : [],
+            functionId: funcId,
+            functionLabel: funcLabel,
+            isMonolithic: false,
+            isLowPortability: false,
+            isERP: false,
+            isOnPrem: !removedSystem.isCloud,
+            userCount: 0,
+            annualCost: 0,
+            contractEndDate: null,
+            noticePeriod: null,
+            resolved: false
+        });
+    }
+
+    return obligations;
+}
+
+/**
  * Computes obligation severity using the active persona's signal weights.
  * The same obligation shows as high-severity for a data-focused persona
  * (architect) but lower for a commercial persona.
@@ -421,6 +499,14 @@ export function computeObligationSeverity(obl, weights) {
 
     // Data partition obligations (disaggregation) — always significant complexity
     if (obl.type === 'data-partition') score += 1;
+
+    // Capability-gap obligations — platform removed, other functions lose enabling capability
+    if (obl.type === 'capability-gap') {
+        score += 2;
+        if (obl.capabilityType && obl.capabilityType.some(c => ['payments', 'identity'].includes(c))) {
+            score += 2;
+        }
+    }
 
     // Deferral obligations — ongoing parallel running cost accumulates risk
     if (obl.type === 'deferral-cost') {
@@ -498,6 +584,21 @@ export function generateMigrationScopeBullets(obl) {
     // Cross-successor
     if (obl.type === 'cross-successor-impact') {
         bullets.push(`Cross-successor impact — removal affects ${obl.affectedSuccessors.join(', ')}`);
+    }
+
+    // Capability-gap specific
+    if (obl.type === 'capability-gap') {
+        const capLabels = (obl.capabilityType || []).join(', ');
+        bullets.push(`Capability gap: ${obl.functionLabel || obl.functionId} loses ${capLabels} capability`);
+        bullets.push(`Source platform: ${obl.fromSystem?.label || 'Unknown'} is being decommissioned`);
+        if (obl.capabilityType && obl.capabilityType.includes('payments')) {
+            bullets.push('Payments capability is PCI-DSS regulated — alternative must be compliant before cutover');
+        }
+        if (obl.capabilityType && obl.capabilityType.includes('identity')) {
+            bullets.push('Identity capability affects user authentication — alternative must be in place before access is lost');
+        }
+        bullets.push('Resolution: identify alternative capability provider or confirm function can operate without this capability');
+        return bullets;
     }
 
     // Disaggregation-specific

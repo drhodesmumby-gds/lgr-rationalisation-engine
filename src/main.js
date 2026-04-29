@@ -10,7 +10,7 @@ import { wrapWithTooltip, helpIcon, escHtml } from './ui-helpers.js';
 import {
     buildSuccessorAllocation, classifyVestingZone,
     detectSharedServiceBoundary, detectCrossTierCollision,
-    propagateFinancialDistress
+    propagateFinancialDistress, isCapabilitySystem
 } from './analysis/allocation.js';
 import {
     computeSignals, computeSignalEmphasis,
@@ -1523,11 +1523,18 @@ export function renderDashboard() {
                         rowHTML += `<td class="${tdClass} p-3"><span class="text-gray-400 italic text-sm">No system allocated</span></td>`;
                     }
                 } else {
-                    // Classify rationalisation pattern for this cell
-                    const pattern = classifyRationalisationPattern(cellAllocations);
-                    const patternTagHtml = renderPatternTag(pattern);
+                    // Partition into primary (function-delivery) and capability platform allocations
+                    const primaryAllocations = cellAllocations.filter(a => !isCapabilitySystem(a.system));
+                    const capAllocations = cellAllocations.filter(a => isCapabilitySystem(a.system));
 
-                    // Build system cards with provenance
+                    // Classify rationalisation pattern based on primary systems only
+                    const pattern = classifyRationalisationPattern(primaryAllocations);
+                    const patternTagHtml = renderPatternTag(pattern);
+                    const capAnnotation = capAllocations.length > 0
+                        ? `<span class="text-[10px] text-[#0e7490] ml-1">(+ ${capAllocations.length} capability platform${capAllocations.length > 1 ? 's' : ''})</span>`
+                        : '';
+
+                    // Build system cards with provenance (all systems — capability systems show their own badges)
                     const cellSystems = cellAllocations.map(a => a.system);
                     let systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations);
 
@@ -1593,8 +1600,8 @@ export function renderDashboard() {
                                         aria-label="${actionAriaLabel}"
                                         type="button">${actionBtnLabel}</button>
                             </div>`;
-                        } else if (cellAllocations.length >= 2) {
-                            // Undecided cell with competing systems: show Decide link
+                        } else if (primaryAllocations.length >= 2) {
+                            // Undecided cell with competing PRIMARY systems: show Decide link
                             decisionAffordanceHtml = `<div class="mt-2">
                                 <button class="text-xs font-bold text-[#1d70b8] underline sim-decide-btn"
                                         data-func-id="${funcId_safe}" data-successor="${succName_safe}"
@@ -1616,7 +1623,7 @@ export function renderDashboard() {
                         cellExpandToggleHtml = `<button class="cell-expand-toggle text-xs text-[#1d70b8] underline cursor-pointer mb-1" data-cell-system-ids="${cellSysIds}" type="button" aria-expanded="${!anyCollapsed}">${toggleLabel}</button>`;
                     }
                     const expandToggleBlock = cellExpandToggleHtml ? `<div class="mt-1">${cellExpandToggleHtml}</div>` : '';
-                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${decisionAffordanceTop}${expandToggleBlock}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
+                    rowHTML += `<td class="${tdClass}${diffClass} p-3">${patternTagHtml}${capAnnotation}${decisionAffordanceTop}${expandToggleBlock}<div class="mt-2">${systemCardsHtml}</div>${ghostCardsHtml}</td>`;
 
                     // Collect for analysis
                     const taggedAllocations = cellAllocations.map(a => ({ ...a, _successorName: successorName }));
@@ -2179,7 +2186,9 @@ function buildPersonaAnalysis(systems, persona, perspective, anchorSystem, alloc
     let weightsOverride = null;
     let pattern = null;
     if (state.operatingMode === 'transition' && allocations && allocations.length > 0) {
-        pattern = classifyRationalisationPattern(allocations);
+        // Classify pattern using primary (non-capability) systems only
+        const primaryAllocsForPattern = allocations.filter(a => !isCapabilitySystem(a.system));
+        pattern = classifyRationalisationPattern(primaryAllocsForPattern);
         const emphasized = computeSignalEmphasis(pattern, state.signalWeights);
         weightsOverride = emphasized;
     }

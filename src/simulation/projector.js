@@ -27,6 +27,7 @@
  */
 
 import { generateDeferralObligations } from './obligations.js';
+import { isCapabilitySystem } from '../analysis/allocation.js';
 
 /**
  * Projects a set of FunctionDecisions into an ordered array of legacy action objects
@@ -148,11 +149,18 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
     // Systems not retained in this decision
     const nonRetainedSystems = allSystemsInCell.filter(sysId => !retainedSet.has(sysId));
 
-    // Partition non-retained systems:
+    // Exclude capability systems from decommission — they are managed separately
+    // and should not be decommissioned as a side-effect of a function-level consolidation.
+    const nonRetainedPrimary = nonRetainedSystems.filter(sysId => {
+        const node = baselineNodes.find(n => n.id === sysId);
+        return !isCapabilitySystem(node);
+    });
+
+    // Partition non-retained PRIMARY systems:
     // - Systems retained by OTHER decisions → severOnly (remove their REALIZES edge, keep node)
     // - Systems not retained anywhere → removeSystemIds (fully decommission)
-    const severOnly = nonRetainedSystems.filter(sysId => globalRetainedSystemIds.has(sysId));
-    const removeSystemIds = nonRetainedSystems.filter(sysId => !globalRetainedSystemIds.has(sysId));
+    const severOnly = nonRetainedPrimary.filter(sysId => globalRetainedSystemIds.has(sysId));
+    const removeSystemIds = nonRetainedPrimary.filter(sysId => !globalRetainedSystemIds.has(sysId));
 
     // Use the first retained system as the target (if multiple, use first for consolidate target)
     // If no retained systems found in cell, fall back to first retainedSystemId
@@ -324,8 +332,12 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         }
     });
 
-    // Systems not retained by any decision are replaced
-    const replacedSystems = allSystemsInCell.filter(sysId => !globalRetainedSystemIds.has(sysId));
+    // Systems not retained by any decision are replaced — excluding capability systems
+    const replacedSystems = allSystemsInCell.filter(sysId => {
+        if (globalRetainedSystemIds.has(sysId)) return false;
+        const node = baselineNodes.find(n => n.id === sysId);
+        return !isCapabilitySystem(node);
+    });
 
     // Build the new system node — include targetAuthorities so buildSuccessorAllocation()
     // can allocate the procured system to the correct successor after simulation

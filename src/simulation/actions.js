@@ -23,7 +23,8 @@
  * }
  */
 
-import { generateObligations, generateDisaggregationObligations, generateSharedServiceGovernanceObligation } from './obligations.js';
+import { generateObligations, generateDisaggregationObligations, generateSharedServiceGovernanceObligation, generateCapabilityGapObligations } from './obligations.js';
+import { isCapabilitySystem } from '../analysis/allocation.js';
 
 /**
  * @param {Array} baselineNodes
@@ -53,8 +54,8 @@ export function applyAllActions(baselineNodes, baselineEdges, actions, baselineA
         const result = applyAction(nodes, edges, action);
 
         // Generate obligations for systems removed by this action
+        const removedIds = getRemovedSystemIds(beforeNodes, result.nodes);
         if (baselineAllocation) {
-            const removedIds = getRemovedSystemIds(beforeNodes, result.nodes);
             if (removedIds.size > 0) {
                 const removedSystems = beforeNodes.filter(n => removedIds.has(n.id));
                 const targetSystem = getTargetSystem(result.nodes, action);
@@ -63,6 +64,26 @@ export function applyAllActions(baselineNodes, baselineEdges, actions, baselineA
                     removedSystems, targetSystem, lgaFunctionMap
                 );
                 allObligations.push(...obligations);
+            }
+        }
+
+        // Check removed nodes for capability systems and generate capability-gap obligations
+        if (removedIds.size > 0) {
+            const removedCapSystems = [...removedIds]
+                .map(id => beforeNodes.find(n => n.id === id))
+                .filter(n => n && isCapabilitySystem(n));
+
+            for (const capSys of removedCapSystems) {
+                const capObls = generateCapabilityGapObligations(
+                    capSys,
+                    action.functionId || null,
+                    action.successorName || null,
+                    i,
+                    baselineEdges,   // original baseline edges (before deep-copy mutations)
+                    baselineNodes,   // original baseline nodes
+                    lgaFunctionMap
+                );
+                allObligations.push(...capObls);
             }
         }
 

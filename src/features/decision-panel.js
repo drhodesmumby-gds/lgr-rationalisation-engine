@@ -17,7 +17,8 @@
 import { state } from '../state.js';
 import { escHtml } from '../ui-helpers.js';
 import { createDecision, getDecisionKey, validateDecision } from '../simulation/decisions.js';
-import { classifyVestingZone } from '../analysis/allocation.js';
+import { classifyVestingZone, isCapabilitySystem } from '../analysis/allocation.js';
+import { LGAM_CAPABILITIES } from '../constants/capabilities.js';
 import { recomputeSimulation } from './simulation-panel.js';
 import { showConfirm } from '../ui-notifications.js';
 
@@ -84,13 +85,35 @@ function renderDecisionPanelContent(functionId, successorName) {
     const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
     const successorMap = allocMap ? allocMap.get(successorName) : null;
     const cellAllocations = successorMap ? (successorMap.get(functionId) || []) : [];
-    const systems = cellAllocations.map(a => ({
+    const allMappedSystems = cellAllocations.map(a => ({
         ...a.system,
         sourceCouncil: a.sourceCouncil,
+        _sourceCouncil: a.sourceCouncil,
         isDisaggregation: a.isDisaggregation || false,
         allocationType: a.allocationType
     }));
-    _allSystems = systems;
+
+    // Partition into primary (function-delivery) systems and capability platforms
+    const primarySystems = allMappedSystems.filter(s => !isCapabilitySystem(s));
+    const capabilitySystems = allMappedSystems.filter(s => isCapabilitySystem(s));
+
+    // Annotate capability systems with the count of functions they serve
+    const baselineEdgesForCap = state.simulationState ? (state.simulationState.baselineEdges || []) : [];
+    const baselineNodesForCap = state.simulationState ? (state.simulationState.baselineNodes || []) : [];
+    capabilitySystems.forEach(sys => {
+        const realizedFuncNodeIds = baselineEdgesForCap
+            .filter(e => e.source === sys.id && e.relationship === 'REALIZES')
+            .map(e => e.target);
+        const funcIds = new Set();
+        for (const nodeId of realizedFuncNodeIds) {
+            const node = baselineNodesForCap.find(n => n.id === nodeId);
+            if (node && node.lgaFunctionId) funcIds.add(node.lgaFunctionId);
+        }
+        sys._functionCount = funcIds.size || 1;
+    });
+
+    const systems = primarySystems;
+    _allSystems = primarySystems;
 
     // Check for an existing decision (edit mode)
     const decisions = state.simulationState.decisions;
@@ -132,7 +155,10 @@ function renderDecisionPanelContent(functionId, successorName) {
     const hasErp = systems.some(s => s.isERP);
     const erpHtml = hasErp ? renderErpImpactSection(systems, successorName, functionId) : '';
 
-    content.innerHTML = headerHtml + systemCardsHtml + axis1Html + axis2Html + erpHtml;
+    // Build capability platforms section
+    const capPlatformsHtml = renderCapabilityPlatformsSection(capabilitySystems);
+
+    content.innerHTML = headerHtml + systemCardsHtml + axis1Html + axis2Html + erpHtml + capPlatformsHtml;
 
     // Wire Axis 1 radio change to update dynamic sections
     wireAxisOneInteractivity(systems, successorName, existingDecision);
@@ -322,6 +348,46 @@ function renderSystemCard(sys, vestingDate, isHorizontal) {
             ${disaggNote}
         </div>
     `;
+}
+
+// ---------------------------------------------------------------------------
+// Capability Platforms section
+// ---------------------------------------------------------------------------
+
+/**
+ * Renders the "Supporting Capability Platforms" section for systems with capabilityType set.
+ * These are not alternatives for function delivery and are not shown as radio choices.
+ *
+ * @param {Array} capabilitySystems  Systems with capabilityType array
+ * @returns {string} HTML, or empty string if no capability systems
+ */
+function renderCapabilityPlatformsSection(capabilitySystems) {
+    if (!capabilitySystems || capabilitySystems.length === 0) return '';
+
+    const cards = capabilitySystems.map(sys => {
+        const capBadges = (sys.capabilityType || [])
+            .map(cap => {
+                const def = LGAM_CAPABILITIES.find(c => c.id === cap);
+                return def ? `<span class="inline-block text-[10px] px-1.5 py-0.5 bg-[#e0f2fe] text-[#0e7490] font-bold border border-[#0e7490] mr-1 mb-1">${escHtml(def.label)}</span>` : '';
+            }).join('');
+        const funcNote = sys._functionCount && sys._functionCount > 1
+            ? `<span class="text-xs text-gray-500 italic">serves ${sys._functionCount} functions</span>` : '';
+        return `<div class="p-3 bg-[#f0fdfa] border border-[#0e7490] rounded mb-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-sm">${escHtml(sys.label || sys.id)}</span>
+                <span class="text-xs text-gray-500">${escHtml(sys.sourceCouncil || sys._sourceCouncil || '')}</span>
+                ${funcNote}
+            </div>
+            <div class="flex items-center flex-wrap mt-1">${capBadges}</div>
+        </div>`;
+    }).join('');
+
+    return `
+        <div class="mt-6 mb-4">
+            <h3 class="font-bold text-sm uppercase tracking-wide text-[#0e7490] mb-2">Supporting Capability Platforms (${capabilitySystems.length})</h3>
+            <p class="text-xs text-gray-600 mb-2">These platforms provide enabling capabilities for this function but are not alternatives for function delivery. They are managed separately.</p>
+            ${cards}
+        </div>`;
 }
 
 // ---------------------------------------------------------------------------

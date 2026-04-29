@@ -276,6 +276,13 @@ export function detectCrossTierCollision(systems, councilTierMap) {
     return { crossTier: true, tiers: Array.from(tiers) };
 }
 
+// --- Capability system check (pure function) ---
+// Returns true if the system has capabilityType set (is a capability platform,
+// not a function-delivery system).
+export function isCapabilitySystem(sys) {
+    return sys != null && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0;
+}
+
 // --- Financial distress propagation (pure function) ---
 // Accepts a list of council metadata objects [{ councilName, financialDistress }, ...]
 // Returns a Set<councilName> of councils with financialDistress: true
