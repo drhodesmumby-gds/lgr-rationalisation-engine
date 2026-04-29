@@ -227,7 +227,33 @@ The engine and LGAM occupy different but complementary roles:
 
 ## 5. Near-Term Enhancements
 
-Items that address immediate capability gaps within the existing architecture. Estimated at 2–3 development sprints.
+Items that address immediate capability gaps within the existing architecture. Prioritised from persona testing (2026-04-29).
+
+### Baseline estate report (pre-simulation)
+
+All three personas (Executive, Commercial, Architect) need a report that works BEFORE simulation decisions are made. Currently the tool requires entering simulation mode and making decisions before any export is available, blocking initial board briefings, procurement landscape assessments, and architectural risk profiles.
+
+- **Executive**: estate profile, risk summary, decisions needed, successor comparison
+- **Commercial**: contract landscape, all notice triggers, vendor relationships, spend by successor
+- **Architect**: technical posture, data complexity assessment, TCoP gaps, capability platform map
+
+This is the single highest-priority gap across all personas.
+
+### Per-successor metrics breakdown
+
+The estate summary currently shows aggregate metrics. Users want side-by-side comparison: "West Elmhurst inherits X systems, £Y spend, Z pre-vesting triggers vs Ivy Hatherley inherits A systems, £B spend, C triggers." The allocation map already contains this data — it needs aggregation and display in the Overview tab.
+
+### RAG synthesis for programme governance
+
+Every programme board pack needs a Red/Amber/Green status. The tool has all inputs needed (decision progress, pre-vesting triggers outstanding, Tier 1 undecided count) but does not synthesise them. Add per-successor RAG computation based on weighted criteria and display in the estate summary + executive report.
+
+### Days-until-vesting countdown
+
+Add a countdown metric alongside the vesting date in the estate summary. "347 days until vesting" creates urgency in a way that "2027-04-01" does not.
+
+### Legacy modal ARIA upgrade
+
+Six older modals (Glossary, Signal Options, Tier Mapping, Analysis Detail, Documentation, Architecture Editor) lack `role="dialog"`, `aria-modal="true"`, focus trap, and Escape key handler. The pattern is already implemented for newer modals (Decision Panel, Obligation Detail, Sankey Overlay, Import Wizard) — needs retroactive application.
 
 ### Data confidence annotations
 
