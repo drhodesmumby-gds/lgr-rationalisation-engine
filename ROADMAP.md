@@ -334,8 +334,14 @@ The capability layer is modelled as an optional `capabilityType` array on ITSyst
 - Import wizard: column detection and array coercion for CSV/Excel
 - Cross-function annotation: "serves N functions" on capability systems in expanded cards
 
-**Remaining (capabilities-2):**
-- Simulation obligation generation when a capability system is decommissioned (capability gap obligations for dependent functions)
+**Implemented (capabilities-2):**
+- Capability systems filtered from decision panel alternatives (shown in separate "Supporting Capability Platforms" section)
+- Projector excludes capability systems from implicit decommission on consolidation decisions
+- Capability-gap obligation generation when a capability system is removed (one per affected function)
+- Severity boost for payments (PCI-DSS) and identity (authentication) capability gaps
+- Matrix pattern classification and decidable counts exclude capability systems
+
+**Remaining:**
 - Blast radius preview before confirming decisions affecting capability systems
 - Report export integration (capability impact in Architect/Commercial reports)
 
