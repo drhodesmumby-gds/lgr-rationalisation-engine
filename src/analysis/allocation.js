@@ -277,8 +277,9 @@ export function detectCrossTierCollision(systems, councilTierMap) {
 }
 
 // --- Capability system check (pure function) ---
-// Returns true if the system has capabilityType set (is a capability platform,
-// not a function-delivery system).
+// Returns true if the system declares capabilityType (provides shared capabilities).
+// NOTE: A system with capabilityType can ALSO be a function-delivery system (via REALIZES edges).
+// This check is used for display annotation only, NOT for filtering from decisions.
 export function isCapabilitySystem(sys) {
     return sys != null && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0;
 }

@@ -14,6 +14,8 @@ export const state = {
     tierMap: new Map(),
     councilTierMap: new Map(),
     distressedCouncils: new Set(),
+    capabilityDependencies: new Map(),  // consumerId → Set<providerId>
+    capabilityProviders: new Map(),     // providerId → Map<consumerId, capabilities[]>
     activeSortMode: 'tier',
     activeFilters: { tier: 'all', collision: 'all' },
     archEditorState: null,

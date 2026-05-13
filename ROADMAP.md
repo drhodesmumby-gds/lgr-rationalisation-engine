@@ -10,6 +10,34 @@ Items are grouped by horizon:
 
 ---
 
+## Current State (May 2026)
+
+### Recently completed
+
+| Feature | Sprint(s) | Description |
+|---|---|---|
+| **Tabbed navigation** | nav-1 through nav-3 | Stage 3 redesigned from vertical scroll to fixed-viewport tabbed layout (Matrix, Overview, Timeline) with sticky headers and independent scroll per tab |
+| **Simulation side panel** | nav-2 | Right-docked collapsible panel (360px) persisting across tabs with decision summary, progress, metrics, and undecided function list |
+| **Sankey overlay** | nav-3 | Flow diagram moved from inline to full-viewport-width on-demand overlay accessible from side panel |
+| **Collapsible system cards** | cards-1 | Default collapsed single-line view, click to expand, "Expand all" per cell, deliberate collapse action |
+| **Capability modelling** | capabilities-1/2/3 | LGAM-aligned capabilityType array, capability summary panel, blast radius preview, gap obligations, filtered from decision alternatives |
+| **Scenario management** | scenario-mgmt | JSON export/import, auto-detect at Stage 1, impact reconstructed from decisions |
+| **Persona-tailored reports** | report-export | Executive, Commercial, Architect reports with procurement timeline, posture narrative, obligation tables |
+| **Import wizard** | import-wizard | CSV/Excel with auto-column-detection, clipboard paste, guided manual entry, ESD function suggestions |
+| **Quick wins (testing phase)** | quick-wins | Critical path for Commercial persona, aria-labelledby on tabs, orange contrast fixes, tier sort for undecided functions |
+
+### Strategic context
+
+The rationalisation engine is an experimental prototype built during GDS Local's research into LGR technology transitions. It sits within a broader product journey:
+
+1. **LGAM** (Local Government Architecture Model) — a shared vocabulary for describing council technology (in beta)
+2. **EA Platform** — a hosted tool for councils to map their estate against the LGAM (preparing for tender)
+3. **Rationalisation Engine** — reconciles multiple council estates during LGR and models transition decisions (this tool)
+
+The EA platform creates structured data supply; the rationalisation engine creates demand for it. LGR is the forcing function that makes EA platform adoption urgent. See `docs/ea-platform-decision-paper.md` for the full options analysis on how these products relate and where the rationalisation engine might sit organisationally.
+
+---
+
 ## 1. Service-Level Modelling
 
 ### The problem
@@ -113,9 +141,13 @@ These don't map to a single ESD function. The engine currently models a payments
 
 Replacing a payments gateway has blast radius across every service that takes payments. If two merging councils have different payments platforms, the "consolidation" decision affects not just the payments team but every service team that depends on it. The current function-level view doesn't show this dependency.
 
-### Proposed approach
+### Current implementation
 
-Add an optional `Capability` node type aligned with the LGAM vocabulary:
+A simpler first implementation is complete (see [Section 6 — Capability-level modelling](#capability-level-modelling-partially-implemented) for full details). Rather than introducing a new `Capability` node type, capability systems are modelled as regular `ITSystem` nodes with a `capabilityType` array using the LGAM vocabulary. They connect to functions via standard `REALIZES` edges. The engine detects them, filters them from decision alternatives, generates gap obligations on removal, and surfaces blast radius in the decision panel.
+
+### Future: explicit capability nodes
+
+A richer model would add a dedicated `Capability` node type:
 
 ```json
 {
@@ -134,7 +166,7 @@ New edge type:
 { "source": "sys-capita-pay", "target": "cap-payments", "relationship": "REALIZES" }
 ```
 
-This creates a second analysis dimension in the matrix: alongside function-level rationalisation ("which system per function?"), the engine can run capability-level rationalisation ("which shared platform per capability?"). Capability rows would show all the functions that depend on each platform, making the blast radius of replacement decisions explicit.
+This would create a second analysis dimension in the matrix: alongside function-level rationalisation ("which system per function?"), the engine could run capability-level rationalisation ("which shared platform per capability?"). Capability rows would show all the functions that depend on each platform, making the blast radius of replacement decisions explicit. This remains a future enhancement — the current `capabilityType` array approach covers the most important use cases without schema complexity.
 
 ---
 

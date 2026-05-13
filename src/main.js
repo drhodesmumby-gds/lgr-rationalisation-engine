@@ -34,6 +34,7 @@ import { openDecisionPanel } from './features/decision-panel.js';
 import { getDecisionKey } from './simulation/decisions.js';
 import { exportScenario, importScenario } from './features/scenario-manager.js';
 import { exportReport } from './features/report-export.js';
+import { exportBaselineReport } from './features/baseline-report.js';
 import { showNotification, showConfirm } from './ui-notifications.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
@@ -772,6 +773,28 @@ export function runBaselining() {
     } else {
         errArea.classList.add('hidden');
     }
+
+    // Populate state.tierMap from DEFAULT_TIER_MAP for all mapped functions
+    state.tierMap.clear();
+    state.lgaFunctionMap.forEach((entry, fId) => {
+        state.tierMap.set(fId, DEFAULT_TIER_MAP.get(fId) || 2);
+    });
+
+    // Build capability dependency graph from CONSUMES_CAPABILITY edges
+    state.capabilityDependencies.clear();
+    state.capabilityProviders.clear();
+    state.mergedArchitecture.edges.forEach(edge => {
+        if (edge.relationship === 'CONSUMES_CAPABILITY') {
+            // consumer → provider
+            if (!state.capabilityDependencies.has(edge.source))
+                state.capabilityDependencies.set(edge.source, new Set());
+            state.capabilityDependencies.get(edge.source).add(edge.target);
+            // provider → {consumer, capabilities}
+            if (!state.capabilityProviders.has(edge.target))
+                state.capabilityProviders.set(edge.target, new Map());
+            state.capabilityProviders.get(edge.target).set(edge.source, edge.capabilities || []);
+        }
+    });
 }
 
 document.getElementById('btnGenerateMatrix').addEventListener('click', () => {
@@ -1523,12 +1546,10 @@ export function renderDashboard() {
                         rowHTML += `<td class="${tdClass} p-3"><span class="text-gray-400 italic text-sm">No system allocated</span></td>`;
                     }
                 } else {
-                    // Partition into primary (function-delivery) and capability platform allocations
-                    const primaryAllocations = cellAllocations.filter(a => !isCapabilitySystem(a.system));
+                    // Classify rationalisation pattern using all allocations (all are function-delivery via REALIZES edges)
+                    // Capability systems can also REALIZE functions
+                    const pattern = classifyRationalisationPattern(cellAllocations);
                     const capAllocations = cellAllocations.filter(a => isCapabilitySystem(a.system));
-
-                    // Classify rationalisation pattern based on primary systems only
-                    const pattern = classifyRationalisationPattern(primaryAllocations);
                     const patternTagHtml = renderPatternTag(pattern);
                     const capAnnotation = capAllocations.length > 0
                         ? `<span class="text-[10px] text-[#0e7490] ml-1">(+ ${capAllocations.length} capability platform${capAllocations.length > 1 ? 's' : ''})</span>`
@@ -1600,8 +1621,8 @@ export function renderDashboard() {
                                         aria-label="${actionAriaLabel}"
                                         type="button">${actionBtnLabel}</button>
                             </div>`;
-                        } else if (primaryAllocations.length >= 2) {
-                            // Undecided cell with competing PRIMARY systems: show Decide link
+                        } else if (cellAllocations.length >= 2) {
+                            // Undecided cell with competing systems: show Decide link
                             decisionAffordanceHtml = `<div class="mt-2">
                                 <button class="text-xs font-bold text-[#1d70b8] underline sim-decide-btn"
                                         data-func-id="${funcId_safe}" data-successor="${succName_safe}"
@@ -2186,9 +2207,8 @@ function buildPersonaAnalysis(systems, persona, perspective, anchorSystem, alloc
     let weightsOverride = null;
     let pattern = null;
     if (state.operatingMode === 'transition' && allocations && allocations.length > 0) {
-        // Classify pattern using primary (non-capability) systems only
-        const primaryAllocsForPattern = allocations.filter(a => !isCapabilitySystem(a.system));
-        pattern = classifyRationalisationPattern(primaryAllocsForPattern);
+        // Classify pattern using all allocations
+        pattern = classifyRationalisationPattern(allocations);
         const emphasized = computeSignalEmphasis(pattern, state.signalWeights);
         weightsOverride = emphasized;
     }
@@ -2534,147 +2554,8 @@ document.getElementById('btnLoadDemo').addEventListener('click', () => {
     });
 });
 
-// --- Export to HTML ---
-document.getElementById('btnExportHTML').addEventListener('click', exportToHTML);
-
-function exportToHTML() {
-    // --- Collect inline styles from the main document ---
-    var styleContent = '';
-    var styleEls = document.querySelectorAll('style');
-    for (var i = 0; i < styleEls.length; i++) {
-        styleContent += styleEls[i].textContent + '\n';
-    }
-
-    // --- Build metadata header ---
-    var personaLabels = {
-        executive: 'Executive / Transition Board',
-        commercial: 'Commercial / Transition Director',
-        architect: 'Enterprise Architect (CTO)'
-    };
-    var weightLabels = ['Off', 'Low', 'Medium', 'High'];
-    var now = new Date();
-    var timestamp = now.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
-
-    var metaHtml = '<div style="border-bottom:3px solid #0b0c0c;padding-bottom:16px;margin-bottom:24px;">';
-    metaHtml += '<h1 style="font-size:24px;font-weight:bold;margin:0 0 4px 0;">LGR Transition Workspace — Export</h1>';
-    metaHtml += '<p style="font-size:13px;color:#505a5f;margin:0 0 12px 0;">Generated ' + timestamp + '</p>';
-
-    metaHtml += '<table style="border-collapse:collapse;font-size:13px;margin-bottom:12px;">';
-    metaHtml += '<tr><td style="padding:2px 12px 2px 0;font-weight:bold;">Active Persona</td><td>' + (personaLabels[state.activePersona] || state.activePersona) + '</td></tr>';
-    metaHtml += '<tr><td style="padding:2px 12px 2px 0;font-weight:bold;">Operating Mode</td><td>' + (state.operatingMode === 'transition' ? 'Transition Planning' : 'Estate Discovery') + '</td></tr>';
-
-    if (state.transitionStructure) {
-        metaHtml += '<tr><td style="padding:2px 12px 2px 0;font-weight:bold;">Vesting Date</td><td>' + (state.transitionStructure.vestingDate || 'Not set') + '</td></tr>';
-        if (state.transitionStructure.successors && state.transitionStructure.successors.length > 0) {
-            var successorNames = state.transitionStructure.successors.map(function(s) { return s.name; }).join(', ');
-            metaHtml += '<tr><td style="padding:2px 12px 2px 0;font-weight:bold;">Successors</td><td>' + successorNames + '</td></tr>';
-        }
-    }
-    metaHtml += '</table>';
-
-    // Signal weights table
-    metaHtml += '<div style="margin-top:8px;">';
-    metaHtml += '<p style="font-weight:bold;font-size:13px;margin:0 0 4px 0;">Signal Weights</p>';
-    metaHtml += '<table style="border-collapse:collapse;font-size:12px;">';
-    metaHtml += '<tr style="border-bottom:2px solid #0b0c0c;">';
-    metaHtml += '<th style="text-align:left;padding:4px 12px 4px 0;">Signal</th>';
-    metaHtml += '<th style="text-align:left;padding:4px 8px;">Weight</th></tr>';
-    for (var s = 0; s < SIGNAL_DEFS.length; s++) {
-        var sig = SIGNAL_DEFS[s];
-        var w = state.signalWeights[sig.id];
-        if (w === undefined) w = 0;
-        metaHtml += '<tr style="border-bottom:1px solid #b1b4b6;">';
-        metaHtml += '<td style="padding:3px 12px 3px 0;">' + sig.label + '</td>';
-        metaHtml += '<td style="padding:3px 8px;">' + (weightLabels[w] || w) + '</td></tr>';
-    }
-    metaHtml += '</table>';
-    metaHtml += '</div>';
-
-    metaHtml += '</div>';
-
-    // --- Clone estate summary panel ---
-    var summaryHtml = '';
-    var summaryPanel = document.getElementById('estateSummaryPanel');
-    if (summaryPanel && !summaryPanel.classList.contains('hidden')) {
-        summaryHtml = summaryPanel.innerHTML;
-    }
-
-    // --- Clone the matrix ---
-    var matrixHtml = '';
-    var matrixEl = document.getElementById('dashboardMatrix');
-    if (matrixEl) {
-        matrixHtml = matrixEl.outerHTML;
-    }
-
-    // --- Clone the timeline (visible for non-architect personas) ---
-    var timelineHtml = '';
-    var timelineSec = document.getElementById('timelineSection');
-    var tabTimeline = document.getElementById('tabTimeline');
-    // Include timeline in export if the Timeline tab is not hidden (i.e. non-architect persona)
-    if (timelineSec && tabTimeline && tabTimeline.style.display !== 'none') {
-        timelineHtml = timelineSec.innerHTML;
-    }
-
-    // --- Assemble the standalone HTML document ---
-    var exportDoc = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
-    exportDoc += '<meta charset="UTF-8">\n';
-    exportDoc += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
-    exportDoc += '<title>LGR Transition Workspace — Export</title>\n';
-    exportDoc += '<style>\n';
-    // Inline all styles — no CDN dependency
-    exportDoc += '  :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }\n';
-    exportDoc += '  body { font-family: "Arial", sans-serif; color: #0b0c0c; background-color: #fff; margin: 0; padding: 24px; }\n';
-    exportDoc += styleContent;
-    // Tailwind utility overrides for offline use
-    exportDoc += '  .text-2xl { font-size: 1.5rem; } .text-3xl { font-size: 1.875rem; } .text-xl { font-size: 1.25rem; } .text-lg { font-size: 1.125rem; } .text-sm { font-size: 0.875rem; } .text-xs { font-size: 0.75rem; }\n';
-    exportDoc += '  .font-bold { font-weight: bold; } .font-normal { font-weight: normal; }\n';
-    exportDoc += '  .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 0.75rem; } .mb-4 { margin-bottom: 1rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; }\n';
-    exportDoc += '  .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; }\n';
-    exportDoc += '  .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; } .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }\n';
-    exportDoc += '  .gap-4 { gap: 1rem; } .gap-2 { gap: 0.5rem; }\n';
-    exportDoc += '  .grid { display: grid; } .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }\n';
-    exportDoc += '  .border { border: 1px solid #b1b4b6; } .border-t-4 { border-top: 4px solid; } .border-l-4 { border-left: 4px solid; }\n';
-    exportDoc += '  .border-gray-300 { border-color: #d1d5db; }\n';
-    exportDoc += '  .bg-white { background-color: #fff; } .bg-red-50 { background-color: #fef2f2; } .bg-green-50 { background-color: #f0fdf4; } .bg-blue-50 { background-color: #eff6ff; }\n';
-    exportDoc += '  .text-gray-700 { color: #374151; } .text-gray-600 { color: #4b5563; } .text-gray-800 { color: #1f2937; }\n';
-    exportDoc += '  .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }\n';
-    exportDoc += '  .space-y-12 > * + * { margin-top: 3rem; }\n';
-    exportDoc += '  .space-y-2 > * + * { margin-top: 0.5rem; }\n';
-    exportDoc += '  .overflow-x-auto { overflow-x: auto; }\n';
-    exportDoc += '  .hidden { display: none; }\n';
-    exportDoc += '  .inline-block { display: inline-block; }\n';
-    exportDoc += '  .block { display: block; }\n';
-    exportDoc += '  @media print { body { padding: 12px; } .gds-table th { position: static; } }\n';
-    exportDoc += '</style>\n';
-    exportDoc += '</head>\n<body>\n';
-
-    // Metadata header
-    exportDoc += metaHtml;
-
-    // Estate summary
-    if (summaryHtml) {
-        exportDoc += '<div style="margin-bottom:24px;">' + summaryHtml + '</div>\n';
-    }
-
-    // Matrix
-    if (matrixHtml) {
-        exportDoc += '<div style="margin-bottom:24px;overflow-x:auto;border:1px solid #d1d5db;">' + matrixHtml + '</div>\n';
-    }
-
-    // Timeline
-    if (timelineHtml) {
-        exportDoc += '<div style="padding:24px;border-top:4px solid #0b0c0c;margin-bottom:24px;">' + timelineHtml + '</div>\n';
-    }
-
-    exportDoc += '</body>\n</html>';
-
-    // --- Open in a new window ---
-    var exportWindow = window.open('', '_blank');
-    if (exportWindow) {
-        exportWindow.document.write(exportDoc);
-        exportWindow.document.close();
-    }
-}
+// --- Baseline Report ---
+document.getElementById('btnBaselineReport').addEventListener('click', exportBaselineReport);
 
 document.getElementById('btnReset').addEventListener('click', () => {
     state.rawUploads = [];

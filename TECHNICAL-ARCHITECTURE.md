@@ -86,6 +86,7 @@ Council input files describe an IT landscape as a directed graph:
 - **Function nodes** — a service capability mapped to an ESD taxonomy ID via `lgaFunctionId`
 - **ITSystem nodes** — a concrete software system with associated metadata (users, cost, contract, portability, data layer characteristics)
 - **REALIZES edges** — directed from `ITSystem → Function`; one system can realize multiple functions; one function can be served by multiple systems
+- **CONSUMES_CAPABILITY edges** — directed from `ITSystem → ITSystem` (platform); indicates that a consumer system depends on capabilities provided by a platform system; carries optional `capabilities` array (e.g., `["payments", "forms"]`)
 
 At ingest time, a `_sourceCouncil` property is added to every node and edge to track provenance through the unified `mergedArchitecture` graph.
 

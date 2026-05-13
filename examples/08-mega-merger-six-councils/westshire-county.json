@@ -284,6 +284,9 @@
     { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-crm", "relationship": "REALIZES" },
     { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-highways", "relationship": "REALIZES" },
     { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-adults", "relationship": "REALIZES" },
-    { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-parking", "relationship": "REALIZES" }
+    { "source": "wcc-sys-govuk-notify", "target": "wcc-fn-parking", "relationship": "REALIZES" },
+    { "source": "wcc-sys-liquidlogic-las", "target": "wcc-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wcc-sys-liquidlogic-ehm", "target": "wcc-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wcc-sys-confirm", "target": "wcc-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] }
   ]
 }

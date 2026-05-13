@@ -87,11 +87,19 @@ Each council prepares a JSON file following the schema below. The engine enforce
 
 ### Edge
 
+Two relationship types are supported:
+
+#### REALIZES edge
 ```json
 { "source": "system-id", "target": "function-id", "relationship": "REALIZES" }
 ```
+Maps an IT system to the business function it delivers. One or more systems can REALIZE the same function within a council (e.g. an ERP covering both finance and HR appears in two rows).
 
-One or more systems can REALIZE the same function within a council (e.g. an ERP covering both finance and HR appears in two rows).
+#### CONSUMES_CAPABILITY edge
+```json
+{ "source": "consumer-system-id", "target": "platform-system-id", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "forms"] }
+```
+Indicates that a consumer system depends on capabilities provided by a platform system (e.g., a case management system consuming payment processing from an ERP). The `capabilities` array is optional and describes which capabilities are consumed.
 
 ### Transition configuration
 
