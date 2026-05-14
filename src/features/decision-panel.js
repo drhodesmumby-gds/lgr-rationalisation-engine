@@ -466,21 +466,60 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
     const existingChoice = existingDecision ? existingDecision.systemChoice : null;
 
     // Build choose options (one per system, as radio buttons with label)
-    const chooseOptions = systems.length > 0 ? systems.map(sys => {
+    // Split into simple systems (no capability providers) and complex (have dependants)
+    const providers = state.capabilityProviders;
+
+    function buildSystemRadioItem(sys) {
         const isErp = sys.isERP || false;
+        // Capability provider annotation for complex systems
+        let capAnnotation = '';
+        if (providers && providers.has(sys.id)) {
+            const consumers = providers.get(sys.id); // Map<consumerId, capabilities[]>
+            const consumerCount = consumers.size;
+            const allCaps = new Set();
+            consumers.forEach(caps => caps.forEach(c => allCaps.add(c)));
+            const capLabels = [...allCaps].map(capId => {
+                const def = LGAM_CAPABILITIES.find(c => c.id === capId);
+                return def ? def.label : capId;
+            }).join(', ');
+            const systemWord = consumerCount === 1 ? 'system' : 'systems';
+            capAnnotation = `
+                <div class="ml-0 mt-0.5 text-xs text-[#0e7490]">
+                    <span class="font-bold">&#9888;</span> Also provides: ${escHtml(capLabels)} &mdash; used by ${consumerCount} ${systemWord}
+                </div>`;
+        }
         return `
             <div class="flex items-start gap-2 mt-2">
                 <input type="radio" name="chooseSystem" id="chooseSystem_${escHtml(sys.id)}"
                        value="${escHtml(sys.id)}" class="mt-0.5">
-                <label for="chooseSystem_${escHtml(sys.id)}" class="text-sm cursor-pointer">
+                <label for="chooseSystem_${escHtml(sys.id)}" class="text-sm cursor-pointer flex-1">
                     <strong>${escHtml(sys.label || 'Unnamed')}</strong>
                     ${isErp ? '<span class="ml-1 text-xs text-[#d4351c] font-bold">(ERP)</span>' : ''}
                     <span class="text-gray-500 text-xs ml-1">${escHtml(sys.sourceCouncil || '')}</span>
                     ${sys.users != null ? `<span class="text-gray-500 text-xs ml-1">· ${Number(sys.users).toLocaleString()} users</span>` : ''}
+                    ${capAnnotation}
                 </label>
             </div>
         `;
-    }).join('') : '<p class="text-sm text-gray-500 italic mt-1">No systems available to choose.</p>';
+    }
+
+    let chooseOptions;
+    if (systems.length === 0) {
+        chooseOptions = '<p class="text-sm text-gray-500 italic mt-1">No systems available to choose.</p>';
+    } else {
+        const simpleSystems = systems.filter(sys => !(providers && providers.has(sys.id)));
+        const complexSystems = systems.filter(sys => providers && providers.has(sys.id));
+
+        const simpleHtml = simpleSystems.map(buildSystemRadioItem).join('');
+        let complexHtml = '';
+        if (complexSystems.length > 0) {
+            const divider = simpleSystems.length > 0
+                ? '<p class="text-xs font-bold text-[#0e7490] mt-3 mb-1">Systems with capability dependencies:</p>'
+                : '';
+            complexHtml = divider + complexSystems.map(buildSystemRadioItem).join('');
+        }
+        chooseOptions = simpleHtml + complexHtml;
+    }
 
     // Decommission preview (shown when a system is chosen)
     const decommissionPreviewHtml = `
@@ -488,6 +527,7 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
             <span class="font-bold text-[#d4351c]">Will decommission:</span>
             <div id="decommissionList" class="mt-1"></div>
         </div>
+        <div id="capabilityBlastPreview" class="hidden"></div>
     `;
 
     // Deferral contrast: a collapsible <details> section shown in the "choose" option
@@ -972,10 +1012,11 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
         if (deferRadio.checked) showAxis1Detail('defer');
     });
 
-    // Wire choose-system radio to update decommission preview
+    // Wire choose-system radio to update decommission preview and capability blast radius
     content.querySelectorAll('input[name="chooseSystem"]').forEach(radio => {
         radio.addEventListener('change', () => {
             updateDecommissionPreview(systems, radio.value, content);
+            updateCapabilityBlastPreview(systems, radio.value, content);
         });
     });
 
@@ -1029,6 +1070,60 @@ function updateDecommissionPreview(systems, chosenId, content) {
         const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP — edge severed only if serving other functions)</span>' : '';
         return `<div class="mt-0.5">${escHtml(s.label)}${erpNote}${userNote}</div>`;
     }).join('');
+}
+
+/**
+ * Updates the capability blast radius preview below the decommission list.
+ * Shows informational impact when non-chosen systems are capability providers.
+ *
+ * @param {Array} systems  All systems in the cell
+ * @param {string} chosenId  The chosen system's ID
+ * @param {Element} content  The modal content element
+ */
+function updateCapabilityBlastPreview(systems, chosenId, content) {
+    const previewEl = content.querySelector('#capabilityBlastPreview');
+    if (!previewEl) return;
+
+    const providers = state.capabilityProviders;
+    if (!providers) {
+        previewEl.classList.add('hidden');
+        previewEl.innerHTML = '';
+        return;
+    }
+
+    // Find non-chosen systems that are capability providers
+    const nonChosenProviders = systems.filter(s => s.id !== chosenId && providers.has(s.id));
+
+    if (nonChosenProviders.length === 0) {
+        previewEl.classList.add('hidden');
+        previewEl.innerHTML = '';
+        return;
+    }
+
+    // Build impact lines for each non-chosen provider
+    const impactLines = nonChosenProviders.map(sys => {
+        const consumers = providers.get(sys.id); // Map<consumerId, capabilities[]>
+        const consumerCount = consumers.size;
+        const allCaps = new Set();
+        consumers.forEach(caps => caps.forEach(c => allCaps.add(c)));
+        const capLabels = [...allCaps].map(capId => {
+            const def = LGAM_CAPABILITIES.find(c => c.id === capId);
+            return def ? def.label : capId;
+        }).join(', ');
+        const systemWord = consumerCount === 1 ? 'system' : 'systems';
+        return `<p><strong>${escHtml(sys.label || sys.id)}</strong> provides ${escHtml(capLabels)} to ${consumerCount} ${systemWord}.</p>`;
+    }).join('');
+
+    previewEl.classList.remove('hidden');
+    previewEl.innerHTML = `
+        <div class="mt-3 p-3 bg-[#e0f2fe] border-l-4 border-l-[#0e7490] text-xs">
+            <span class="font-bold text-[#0e7490]">Capability impact:</span>
+            <div class="mt-1">
+                ${impactLines}
+                <p class="text-gray-600 italic mt-1">These capabilities will need alternative provision if the above system${nonChosenProviders.length !== 1 ? 's are' : ' is'} fully decommissioned.</p>
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -1135,6 +1230,7 @@ function prefillDecision(decision, systems, successorName) {
         if (sysRadio) {
             sysRadio.checked = true;
             updateDecommissionPreview(systems, firstRetained, content);
+            updateCapabilityBlastPreview(systems, firstRetained, content);
         }
     }
 
