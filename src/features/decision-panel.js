@@ -93,11 +93,10 @@ function renderDecisionPanelContent(functionId, successorName) {
         allocationType: a.allocationType
     }));
 
-    // Partition into primary (function-delivery) systems and capability platforms
-    const primarySystems = allMappedSystems.filter(s => !isCapabilitySystem(s));
+    // All systems in this cell REALIZE the function (they were allocated via REALIZES edges).
+    // Systems with capabilityType are ALSO function-delivery systems — they appear as choices.
+    // Annotate those with capability info for blast radius display.
     const capabilitySystems = allMappedSystems.filter(s => isCapabilitySystem(s));
-
-    // Annotate capability systems with the count of functions they serve and affected functions list
     const baselineEdgesForCap = state.simulationState ? (state.simulationState.baselineEdges || []) : [];
     const baselineNodesForCap = state.simulationState ? (state.simulationState.baselineNodes || []) : [];
     capabilitySystems.forEach(sys => {
@@ -111,7 +110,6 @@ function renderDecisionPanelContent(functionId, successorName) {
             const node = baselineNodesForCap.find(n => n.id === nodeId);
             if (node && node.lgaFunctionId) {
                 funcIds.add(node.lgaFunctionId);
-                // Collect OTHER functions (not the current function) for blast radius
                 if (node.lgaFunctionId !== functionId && !seenFuncIds.has(node.lgaFunctionId)) {
                     seenFuncIds.add(node.lgaFunctionId);
                     const entry = state.lgaFunctionMap ? state.lgaFunctionMap.get(node.lgaFunctionId) : null;
@@ -126,8 +124,8 @@ function renderDecisionPanelContent(functionId, successorName) {
         sys._affectedFunctions = affectedFunctions;
     });
 
-    const systems = primarySystems;
-    _allSystems = primarySystems;
+    const systems = allMappedSystems;
+    _allSystems = allMappedSystems;
 
     // Check for an existing decision (edit mode)
     const decisions = state.simulationState.decisions;
@@ -169,8 +167,12 @@ function renderDecisionPanelContent(functionId, successorName) {
     const hasErp = systems.some(s => s.isERP);
     const erpHtml = hasErp ? renderErpImpactSection(systems, successorName, functionId) : '';
 
-    // Build capability platforms section
-    const capPlatformsHtml = renderCapabilityPlatformsSection(capabilitySystems);
+    // Capability platforms section: only show for systems that are NOT already in the radio choices.
+    // Since all systems in the cell REALIZE this function, they're all shown as choices.
+    // The section is now informational — shows blast radius context for capability-providing systems.
+    const capPlatformsHtml = capabilitySystems.length > 0
+        ? renderCapabilityPlatformsSection(capabilitySystems)
+        : '';
 
     content.innerHTML = headerHtml + systemCardsHtml + axis1Html + axis2Html + erpHtml + capPlatformsHtml;
 
@@ -420,8 +422,8 @@ function renderCapabilityPlatformsSection(capabilitySystems) {
 
     return `
         <div class="mt-6 mb-4">
-            <h3 class="font-bold text-sm uppercase tracking-wide text-[#0e7490] mb-2">Supporting Capability Platforms (${capabilitySystems.length})</h3>
-            <p class="text-xs text-gray-600 mb-2">These platforms provide enabling capabilities for this function but are not alternatives for function delivery. They are managed separately.</p>
+            <h3 class="font-bold text-sm uppercase tracking-wide text-[#0e7490] mb-2">Capability Dependencies (${capabilitySystems.length} system${capabilitySystems.length !== 1 ? 's' : ''})</h3>
+            <p class="text-xs text-gray-600 mb-2">These systems also provide shared capabilities to other systems. Decommissioning them may create capability gaps elsewhere.</p>
             ${cards}
         </div>`;
 }

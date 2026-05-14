@@ -1552,7 +1552,7 @@ export function renderDashboard() {
                     const capAllocations = cellAllocations.filter(a => isCapabilitySystem(a.system));
                     const patternTagHtml = renderPatternTag(pattern);
                     const capAnnotation = capAllocations.length > 0
-                        ? `<span class="text-[10px] text-[#0e7490] ml-1">(+ ${capAllocations.length} capability platform${capAllocations.length > 1 ? 's' : ''})</span>`
+                        ? `<span class="text-[10px] text-[#0e7490] ml-1">(${capAllocations.length} also provide${capAllocations.length === 1 ? 's' : ''} capabilities)</span>`
                         : '';
 
                     // Build system cards with provenance (all systems — capability systems show their own badges)
@@ -1621,8 +1621,8 @@ export function renderDashboard() {
                                         aria-label="${actionAriaLabel}"
                                         type="button">${actionBtnLabel}</button>
                             </div>`;
-                        } else if (cellAllocations.length >= 2) {
-                            // Undecided cell with competing systems: show Decide link
+                        } else if (cellAllocations.length >= 1) {
+                            // Any undecided cell with systems: user can choose, procure, or defer
                             decisionAffordanceHtml = `<div class="mt-2">
                                 <button class="text-xs font-bold text-[#1d70b8] underline sim-decide-btn"
                                         data-func-id="${funcId_safe}" data-successor="${succName_safe}"

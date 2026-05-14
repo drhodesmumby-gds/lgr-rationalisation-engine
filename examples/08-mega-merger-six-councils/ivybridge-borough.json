@@ -216,16 +216,13 @@
     { "source": "ibc-sys-xero", "target": "ibc-fn-finance", "relationship": "REALIZES" },
     { "source": "ibc-sys-workday", "target": "ibc-fn-hr", "relationship": "REALIZES" },
     { "source": "ibc-sys-jadu", "target": "ibc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ibc-sys-govuk-notify", "target": "ibc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ibc-sys-govuk-notify", "target": "ibc-fn-waste", "relationship": "REALIZES" },
-    { "source": "ibc-sys-govuk-notify", "target": "ibc-fn-housing", "relationship": "REALIZES" },
-    { "source": "ibc-sys-stripe", "target": "ibc-fn-planning", "relationship": "REALIZES" },
-    { "source": "ibc-sys-stripe", "target": "ibc-fn-housing", "relationship": "REALIZES" },
-    { "source": "ibc-sys-stripe", "target": "ibc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "ibc-sys-arcus-planning", "target": "ibc-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
     { "source": "ibc-sys-arcus-housing", "target": "ibc-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
     { "source": "ibc-sys-arcus-env", "target": "ibc-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
     { "source": "ibc-sys-arcus-planning", "target": "ibc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
+    { "source": "ibc-sys-arcus-waste", "target": "ibc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "ibc-sys-arcus-housing", "target": "ibc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ibc-sys-jadu", "target": "ibc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
     { "source": "ibc-sys-arcus-housing", "target": "ibc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
   ]
 }

@@ -149,18 +149,49 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
     // Systems not retained in this decision
     const nonRetainedSystems = allSystemsInCell.filter(sysId => !retainedSet.has(sysId));
 
-    // Exclude capability systems from decommission — they are managed separately
-    // and should not be decommissioned as a side-effect of a function-level consolidation.
-    const nonRetainedPrimary = nonRetainedSystems.filter(sysId => {
-        const node = baselineNodes.find(n => n.id === sysId);
-        return !isCapabilitySystem(node);
+    // Compute scope: which function nodes belong to THIS (function, successor) cell.
+    // Used both for partitioning (sever vs remove) and for the consolidate action.
+    const cellSystemIds = new Set(allSystemsInCell);
+    const candidateFuncNodeIds = new Set(
+        baselineNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === functionId).map(n => n.id)
+    );
+    const systemsInOtherSuccessors = new Set();
+    if (baselineAllocation) {
+        baselineAllocation.forEach((funcMap, otherSuccessorName) => {
+            if (otherSuccessorName === successorName) return;
+            const otherAllocations = funcMap.get(functionId);
+            if (!otherAllocations) return;
+            otherAllocations.forEach(a => {
+                if (a.system && a.system.id) systemsInOtherSuccessors.add(a.system.id);
+            });
+        });
+    }
+    const exclusiveCellSystemIds = new Set(
+        [...cellSystemIds].filter(id => !systemsInOtherSuccessors.has(id))
+    );
+    const sourceSystemIds = exclusiveCellSystemIds.size > 0 ? exclusiveCellSystemIds : cellSystemIds;
+    const scopeFuncNodeIds = new Set();
+    baselineEdges.forEach(e => {
+        if (sourceSystemIds.has(e.source) && e.relationship === 'REALIZES' && candidateFuncNodeIds.has(e.target)) {
+            scopeFuncNodeIds.add(e.target);
+        }
     });
 
-    // Partition non-retained PRIMARY systems:
-    // - Systems retained by OTHER decisions → severOnly (remove their REALIZES edge, keep node)
-    // - Systems not retained anywhere → removeSystemIds (fully decommission)
-    const severOnly = nonRetainedPrimary.filter(sysId => globalRetainedSystemIds.has(sysId));
-    const removeSystemIds = nonRetainedPrimary.filter(sysId => !globalRetainedSystemIds.has(sysId));
+    // Partition non-retained systems:
+    // - severOnly: system has REALIZES edges OUTSIDE this cell's scope (serves other functions
+    //   or other successors) OR is retained by another decision. Only sever the edge to this cell.
+    // - removeSystemIds: system has NO REALIZES edges outside this scope — safe to fully remove.
+    const severOnly = nonRetainedSystems.filter(sysId => {
+        if (globalRetainedSystemIds.has(sysId)) return true;
+        // Check if system has any REALIZES edges outside this cell's function scope
+        return baselineEdges.some(e =>
+            e.source === sysId &&
+            e.relationship === 'REALIZES' &&
+            !scopeFuncNodeIds.has(e.target)
+        );
+    });
+    const severOnlySet = new Set(severOnly);
+    const removeSystemIds = nonRetainedSystems.filter(sysId => !severOnlySet.has(sysId));
 
     // Use the first retained system as the target (if multiple, use first for consolidate target)
     // If no retained systems found in cell, fall back to first retainedSystemId
@@ -245,50 +276,7 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
         consolidateAction.severOnly = severOnly;
     }
 
-    // Compute scope: function node IDs that belong to this (successor, function) cell.
-    // This prevents sever-only edge removal from affecting other successors' function nodes
-    // that share the same lgaFunctionId but are different graph nodes.
-    //
-    // Strategy: use function nodes reachable EXCLUSIVELY from systems that are unique to this
-    // cell (not shared with any other successor's allocation for the same functionId).
-    // Systems shared across successors (like ERPs) are excluded from scope determination;
-    // instead we use the exclusive systems of this cell to identify its function nodes.
-    const cellSystemIds = new Set(allSystemsInCell);
-    const candidateFuncNodeIds = new Set(
-        baselineNodes.filter(n => n.type === 'Function' && n.lgaFunctionId === functionId).map(n => n.id)
-    );
-
-    // Collect system IDs present in OTHER successors' cells for this same functionId
-    const systemsInOtherSuccessors = new Set();
-    if (baselineAllocation) {
-        baselineAllocation.forEach((funcMap, otherSuccessorName) => {
-            if (otherSuccessorName === successorName) return; // skip this cell's successor
-            const otherAllocations = funcMap.get(functionId);
-            if (!otherAllocations) return;
-            otherAllocations.forEach(a => {
-                if (a.system && a.system.id) systemsInOtherSuccessors.add(a.system.id);
-            });
-        });
-    }
-
-    // Systems exclusive to this cell (not shared with other successors)
-    const exclusiveCellSystemIds = new Set(
-        [...cellSystemIds].filter(id => !systemsInOtherSuccessors.has(id))
-    );
-
-    // scopeFuncNodeIds: function nodes reachable from EXCLUSIVE systems of this cell
-    // If there are no exclusive systems (all systems are shared), fall back to all reachable
-    // function nodes that are NOT reachable from other successors' exclusive systems.
-    const scopeFuncNodeIds = new Set();
-    const sourceSystemIds = exclusiveCellSystemIds.size > 0 ? exclusiveCellSystemIds : cellSystemIds;
-    baselineEdges.forEach(e => {
-        if (sourceSystemIds.has(e.source) && e.relationship === 'REALIZES' && candidateFuncNodeIds.has(e.target)) {
-            scopeFuncNodeIds.add(e.target);
-        }
-    });
-
-    // If using exclusive systems produced scope, use it; otherwise fall back to all candidates
-    // (degenerate case: all systems are shared, no exclusive scope possible)
+    // Attach scope (computed earlier during partitioning) to the consolidate action
     if (scopeFuncNodeIds.size > 0) {
         consolidateAction.scopeFunctionNodeIds = [...scopeFuncNodeIds];
     }
@@ -332,11 +320,25 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         }
     });
 
-    // Systems not retained by any decision are replaced — excluding capability systems
+    // Partition systems: sever-only (has REALIZES edges outside this scope) vs fully replaced
+    const scopeSet = new Set(scopeFunctionNodeIds);
     const replacedSystems = allSystemsInCell.filter(sysId => {
         if (globalRetainedSystemIds.has(sysId)) return false;
-        const node = baselineNodes.find(n => n.id === sysId);
-        return !isCapabilitySystem(node);
+        // Check if system has REALIZES edges outside this cell's scope
+        const hasExternalEdges = baselineEdges.some(e =>
+            e.source === sysId &&
+            e.relationship === 'REALIZES' &&
+            !scopeSet.has(e.target)
+        );
+        return !hasExternalEdges;
+    });
+    const severOnlySystems = allSystemsInCell.filter(sysId => {
+        if (globalRetainedSystemIds.has(sysId)) return true;
+        return baselineEdges.some(e =>
+            e.source === sysId &&
+            e.relationship === 'REALIZES' &&
+            !scopeSet.has(e.target)
+        );
     });
 
     // Build the new system node — include targetAuthorities so buildSuccessorAllocation()
@@ -386,6 +388,19 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
             successorName,
             newSystem,
             replacesSystemId: null,
+            scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
+        });
+    }
+
+    // Sever edges from systems that serve other functions/successors (not fully replaced)
+    if (severOnlySystems.length > 0) {
+        actions.push({
+            type: 'consolidate',
+            functionId,
+            successorName,
+            targetSystemId: newSystem.id,
+            removeSystemIds: [],
+            severOnly: severOnlySystems,
             scopeFunctionNodeIds: scopeFunctionNodeIds.length > 0 ? scopeFunctionNodeIds : undefined
         });
     }
