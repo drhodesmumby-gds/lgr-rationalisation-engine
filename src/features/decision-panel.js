@@ -786,10 +786,10 @@ export function renderAxisTwo(systems, successorName, existingDecision) {
         : renderSplitRow({ successorName: '', label: '' }, 0) + renderSplitRow({ successorName: '', label: '' }, 1);
 
     // Individual option visibility: each option hidden unless contextually relevant OR already selected.
-    // Disaggregate: initially shown only if editing an existing disaggregate decision. Otherwise,
-    // it's shown/hidden dynamically based on whether the CHOSEN system is a disaggregation system.
+    // Disaggregate and Maintain Shared are shown/hidden dynamically based on the CHOSEN system.
+    // They start hidden and are revealed by the system radio change handler.
     const disaggHidden = (existingBoundary !== 'disaggregate') ? 'hidden' : '';
-    const maintainSharedHidden = (!hasShared && existingBoundary !== 'maintain-shared') ? 'hidden' : '';
+    const maintainSharedHidden = (existingBoundary !== 'maintain-shared') ? 'hidden' : '';
     const establishSharedHidden = (!hasMultipleSuccessors && existingBoundary !== 'establish-shared') ? 'hidden' : '';
 
     return `
@@ -1076,18 +1076,34 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
         radio.addEventListener('change', () => {
             updateDecommissionPreview(systems, radio.value, content);
             updateCapabilityBlastPreview(systems, radio.value, content);
-            // Show/hide disaggregate option based on whether chosen system is disaggregation
             const chosenSys = systems.find(s => s.id === radio.value);
+
+            // Show/hide Disaggregate based on whether chosen system is a disaggregation system
             const disaggOption = content.querySelector('#axis2Disaggregate')?.closest('.mb-2');
             if (disaggOption) {
                 const isDisagg = chosenSys && chosenSys.isDisaggregation;
                 disaggOption.classList.toggle('hidden', !isDisagg);
-                // If disaggregate was selected but system isn't disaggregation, reset to none
-                const disaggRadio = content.querySelector('#axis2Disaggregate');
-                if (!isDisagg && disaggRadio && disaggRadio.checked) {
-                    const noneRadio = content.querySelector('#axis2None');
-                    if (noneRadio) noneRadio.checked = true;
-                    if (disaggDetail) disaggDetail.classList.add('hidden');
+                if (!isDisagg) {
+                    const disaggRadio = content.querySelector('#axis2Disaggregate');
+                    if (disaggRadio && disaggRadio.checked) {
+                        const noneRadio = content.querySelector('#axis2None');
+                        if (noneRadio) noneRadio.checked = true;
+                        if (disaggDetail) disaggDetail.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Show/hide Maintain Shared based on whether chosen system has sharedWith
+            const maintainOption = content.querySelector('#axis2MaintainShared')?.closest('.mb-2');
+            if (maintainOption) {
+                const isSharedSys = chosenSys && chosenSys.sharedWith && chosenSys.sharedWith.length > 0;
+                maintainOption.classList.toggle('hidden', !isSharedSys);
+                if (!isSharedSys) {
+                    const maintainRadio = content.querySelector('#axis2MaintainShared');
+                    if (maintainRadio && maintainRadio.checked) {
+                        const noneRadio = content.querySelector('#axis2None');
+                        if (noneRadio) noneRadio.checked = true;
+                    }
                 }
             }
         });
@@ -1320,8 +1336,7 @@ function prefillDecision(decision, systems, successorName) {
         const sysRadio = content.querySelector(`input[name="chooseSystem"][value="${CSS.escape(firstRetained)}"]`);
         if (sysRadio) {
             sysRadio.checked = true;
-            updateDecommissionPreview(systems, firstRetained, content);
-            updateCapabilityBlastPreview(systems, firstRetained, content);
+            sysRadio.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
 
