@@ -785,8 +785,10 @@ export function renderAxisTwo(systems, successorName, existingDecision) {
         ? existingSplits.map((split, i) => renderSplitRow(split, i)).join('')
         : renderSplitRow({ successorName: '', label: '' }, 0) + renderSplitRow({ successorName: '', label: '' }, 1);
 
-    // Individual option visibility: each option hidden unless contextually relevant OR already selected
-    const disaggHidden = (!hasDisagg && existingBoundary !== 'disaggregate') ? 'hidden' : '';
+    // Individual option visibility: each option hidden unless contextually relevant OR already selected.
+    // Disaggregate: initially shown only if editing an existing disaggregate decision. Otherwise,
+    // it's shown/hidden dynamically based on whether the CHOSEN system is a disaggregation system.
+    const disaggHidden = (existingBoundary !== 'disaggregate') ? 'hidden' : '';
     const maintainSharedHidden = (!hasShared && existingBoundary !== 'maintain-shared') ? 'hidden' : '';
     const establishSharedHidden = (!hasMultipleSuccessors && existingBoundary !== 'establish-shared') ? 'hidden' : '';
 
@@ -1069,11 +1071,25 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
         if (deferRadio.checked) showAxis1Detail('defer');
     });
 
-    // Wire choose-system radio to update decommission preview and capability blast radius
+    // Wire choose-system radio to update decommission preview, blast radius, and boundary options
     content.querySelectorAll('input[name="chooseSystem"]').forEach(radio => {
         radio.addEventListener('change', () => {
             updateDecommissionPreview(systems, radio.value, content);
             updateCapabilityBlastPreview(systems, radio.value, content);
+            // Show/hide disaggregate option based on whether chosen system is disaggregation
+            const chosenSys = systems.find(s => s.id === radio.value);
+            const disaggOption = content.querySelector('#axis2Disaggregate')?.closest('.mb-2');
+            if (disaggOption) {
+                const isDisagg = chosenSys && chosenSys.isDisaggregation;
+                disaggOption.classList.toggle('hidden', !isDisagg);
+                // If disaggregate was selected but system isn't disaggregation, reset to none
+                const disaggRadio = content.querySelector('#axis2Disaggregate');
+                if (!isDisagg && disaggRadio && disaggRadio.checked) {
+                    const noneRadio = content.querySelector('#axis2None');
+                    if (noneRadio) noneRadio.checked = true;
+                    if (disaggDetail) disaggDetail.classList.add('hidden');
+                }
+            }
         });
     });
 
