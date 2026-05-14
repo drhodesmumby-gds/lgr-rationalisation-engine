@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { LGA_FUNCTIONS } from '../constants/lga-functions.js';
+import { LGAM_CAPABILITIES } from '../constants/capabilities.js';
 import { getLgaFunction } from '../taxonomy.js';
 import { escHtml } from '../ui-helpers.js';
 import { runBaselining, renderDashboard } from '../main.js';
@@ -164,10 +165,17 @@ function buildEdgesTab() {
     const rows = edges.map((edge, i) => {
         const srcNode = nodes.find(n => n.id === edge.source);
         const tgtNode = nodes.find(n => n.id === edge.target);
+        const isCapEdge = edge.relationship === 'CONSUMES_CAPABILITY';
+        const relLabel = isCapEdge
+            ? `<span class="font-bold text-[#0e7490]">CONSUMES &rarr;</span>`
+            : `<span class="text-gray-500">REALIZES</span>`;
+        const capBadges = isCapEdge && Array.isArray(edge.capabilities) && edge.capabilities.length
+            ? edge.capabilities.map(c => `<span class="inline-block px-1.5 py-0.5 bg-cyan-50 border border-[#0e7490] text-[#0e7490] text-xs font-bold mr-1">${escHtml(c)}</span>`).join('')
+            : '';
         return `<tr>
             <td class="px-2 py-2 text-sm">${escHtml(srcNode ? srcNode.label : edge.source)}</td>
-            <td class="px-2 py-2 text-sm text-gray-500">REALIZES</td>
-            <td class="px-2 py-2 text-sm">${escHtml(tgtNode ? tgtNode.label : edge.target)}</td>
+            <td class="px-2 py-2 text-sm">${relLabel}</td>
+            <td class="px-2 py-2 text-sm">${escHtml(tgtNode ? tgtNode.label : edge.target)}${capBadges ? `<div class="mt-1">${capBadges}</div>` : ''}</td>
             <td class="px-2 py-2"><button class="btn-remove-edge text-[#d4351c] font-bold text-xs hover:underline" data-edge-idx="${i}">Remove</button></td>
         </tr>`;
     }).join('');
@@ -175,28 +183,55 @@ function buildEdgesTab() {
     const sysOptions = systems.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.label||s.id)}</option>`).join('');
     const fnOptions = functions.map(f => `<option value="${escHtml(f.id)}">${escHtml(f.label||f.id)}</option>`).join('');
 
+    const capCheckboxes = LGAM_CAPABILITIES.map(cap =>
+        `<label class="flex items-center gap-1 text-xs cursor-pointer">
+            <input type="checkbox" class="new-edge-cap-check" value="${escHtml(cap.id)}">
+            ${escHtml(cap.label)}
+        </label>`
+    ).join('');
+
     return `
         <div class="p-2">
-            <div class="mb-4 flex items-end gap-3 flex-wrap">
-                <div>
-                    <label class="block font-bold text-xs mb-1">System</label>
-                    <select id="newEdgeSystem" class="border-2 border-[#0b0c0c] p-1 text-sm">
-                        <option value="">-- select system --</option>${sysOptions}
-                    </select>
+            <div class="mb-4 p-3 border border-[#b1b4b6] bg-gray-50 space-y-3">
+                <p class="font-bold text-xs uppercase tracking-wider text-gray-600">Add Edge</p>
+                <div class="flex items-end gap-3 flex-wrap">
+                    <div>
+                        <label class="block font-bold text-xs mb-1">Relationship Type</label>
+                        <select id="newEdgeRelType" class="border-2 border-[#0b0c0c] p-1 text-sm">
+                            <option value="REALIZES">REALIZES (system &rarr; function)</option>
+                            <option value="CONSUMES_CAPABILITY">CONSUMES_CAPABILITY (system &rarr; system)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-xs mb-1">Source System</label>
+                        <select id="newEdgeSystem" class="border-2 border-[#0b0c0c] p-1 text-sm">
+                            <option value="">-- select system --</option>${sysOptions}
+                        </select>
+                    </div>
+                    <div id="newEdgeTargetFnWrap">
+                        <label class="block font-bold text-xs mb-1">Target Function</label>
+                        <select id="newEdgeFunction" class="border-2 border-[#0b0c0c] p-1 text-sm">
+                            <option value="">-- select function --</option>${fnOptions}
+                        </select>
+                    </div>
+                    <div id="newEdgeTargetSysWrap" class="hidden">
+                        <label class="block font-bold text-xs mb-1">Provider System</label>
+                        <select id="newEdgeProviderSystem" class="border-2 border-[#0b0c0c] p-1 text-sm">
+                            <option value="">-- select system --</option>${sysOptions}
+                        </select>
+                    </div>
+                    <button id="btnAddEdge" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">+ Add Edge</button>
                 </div>
-                <div>
-                    <label class="block font-bold text-xs mb-1">Function</label>
-                    <select id="newEdgeFunction" class="border-2 border-[#0b0c0c] p-1 text-sm">
-                        <option value="">-- select function --</option>${fnOptions}
-                    </select>
+                <div id="newEdgeCapWrap" class="hidden">
+                    <label class="block font-bold text-xs mb-1 text-[#0e7490]">Capabilities consumed (optional)</label>
+                    <div class="flex flex-wrap gap-3">${capCheckboxes}</div>
                 </div>
-                <button id="btnAddEdge" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">+ Add Edge</button>
             </div>
             <table class="gds-table text-sm">
                 <thead><tr>
-                    <th class="px-2 py-2">System</th>
+                    <th class="px-2 py-2">Source System</th>
                     <th class="px-2 py-2">Relationship</th>
-                    <th class="px-2 py-2">Function</th>
+                    <th class="px-2 py-2">Target</th>
                     <th class="px-2 py-2"></th>
                 </tr></thead>
                 <tbody id="edgeTableBody">${rows}</tbody>
@@ -336,17 +371,50 @@ archEditorModal.addEventListener('click', async function(e) {
         return;
     }
 
+    // Toggle target/capabilities UI when relationship type changes
+    if (e.target.id === 'newEdgeRelType') {
+        const isConsumes = e.target.value === 'CONSUMES_CAPABILITY';
+        document.getElementById('newEdgeTargetFnWrap')?.classList.toggle('hidden', isConsumes);
+        document.getElementById('newEdgeTargetSysWrap')?.classList.toggle('hidden', !isConsumes);
+        document.getElementById('newEdgeCapWrap')?.classList.toggle('hidden', !isConsumes);
+        return;
+    }
+
     // Add Edge
     if (e.target.id === 'btnAddEdge') {
+        const relTypeEl = document.getElementById('newEdgeRelType');
+        const relType = relTypeEl?.value || 'REALIZES';
         const sysEl = document.getElementById('newEdgeSystem');
-        const fnEl = document.getElementById('newEdgeFunction');
         const sysId = sysEl?.value;
+
+        if (relType === 'CONSUMES_CAPABILITY') {
+            const providerEl = document.getElementById('newEdgeProviderSystem');
+            const providerId = providerEl?.value;
+            if (!sysId || !providerId) {
+                showNotification({ type: 'error', containerId: 'archEditorNotifications', message: 'Select both a source system and a provider system first.' });
+                return;
+            }
+            if (sysId === providerId) {
+                showNotification({ type: 'error', containerId: 'archEditorNotifications', message: 'Source and provider system must be different.' });
+                return;
+            }
+            const selectedCaps = Array.from(document.querySelectorAll('.new-edge-cap-check:checked')).map(cb => cb.value);
+            if (!state.archEditorState.data.edges) state.archEditorState.data.edges = [];
+            const newEdge = { source: sysId, target: providerId, relationship: 'CONSUMES_CAPABILITY' };
+            if (selectedCaps.length) newEdge.capabilities = selectedCaps;
+            state.archEditorState.data.edges.push(newEdge);
+            renderArchEditorTab('edges');
+            return;
+        }
+
+        // REALIZES edge
+        const fnEl = document.getElementById('newEdgeFunction');
         const fnId = fnEl?.value;
         if (!sysId || !fnId) {
             showNotification({ type: 'error', containerId: 'archEditorNotifications', message: 'Select both a system and a function node first.' });
             return;
         }
-        const exists = (state.archEditorState.data.edges || []).some(edge => edge.source === sysId && edge.target === fnId);
+        const exists = (state.archEditorState.data.edges || []).some(edge => edge.source === sysId && edge.target === fnId && edge.relationship !== 'CONSUMES_CAPABILITY');
         if (exists) {
             showNotification({ type: 'warning', containerId: 'archEditorNotifications', message: 'This edge already exists.' });
             return;

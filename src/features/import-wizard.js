@@ -29,7 +29,9 @@ const IMPORT_TARGET_FIELDS = [
         { id: '_rawDepartment', label: 'Department / Service Area', required: false }
     ]},
     { section: 'Capabilities', fields: [
-        { id: 'capabilityType', label: 'Capability Type',       required: false }
+        { id: 'capabilityType', label: 'Capability Type',       required: false },
+        { id: 'consumesFrom',   label: 'Consumes From (system)', required: false },
+        { id: 'capabilityProvided', label: 'Capabilities Provided', required: false }
     ]}
 ];
 
@@ -50,7 +52,9 @@ const IMPORT_AUTODETECT_RULES = [
     { field: 'sharedWith',       test: h => /shared/i.test(h) },
     { field: 'portability',      test: h => /portab/i.test(h) },
     { field: 'dataPartitioning', test: h => /partition/i.test(h) },
-    { field: 'capabilityType',   test: h => /capabilit|platform\s*type/i.test(h) }
+    { field: 'capabilityType',      test: h => /capabilit|platform\s*type/i.test(h) && !/consum|depends|provid/i.test(h) },
+    { field: 'consumesFrom',        test: h => /consum|depends.*on|capability.*from|platform\s*depend/i.test(h) },
+    { field: 'capabilityProvided',  test: h => /capabilit.*provid|platform.*type|provid.*capabilit/i.test(h) }
 ];
 
 
@@ -115,6 +119,24 @@ function coerceImportedRow(raw, columnMap) {
     const capRaw = get('capabilityType');
     if (capRaw !== undefined && capRaw !== null && String(capRaw).trim() !== '') {
         sys.capabilityType = String(capRaw).split(/[,;]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    }
+
+    // capabilityProvided — same semantics as capabilityType (provided capabilities)
+    const capProvRaw = get('capabilityProvided');
+    if (capProvRaw !== undefined && capProvRaw !== null && String(capProvRaw).trim() !== '') {
+        const provArr = String(capProvRaw).split(/[,;]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+        if (provArr.length) {
+            // Merge with any capabilityType already set
+            const existing = sys.capabilityType || [];
+            const merged = Array.from(new Set([...existing, ...provArr]));
+            sys.capabilityType = merged;
+        }
+    }
+
+    // consumesFrom — comma-separated list of system labels/names that this system consumes capabilities from
+    const consumesRaw = get('consumesFrom');
+    if (consumesRaw !== undefined && consumesRaw !== null && String(consumesRaw).trim() !== '') {
+        sys._consumesFrom = String(consumesRaw).split(/[,;]/).map(s => s.trim()).filter(Boolean);
     }
 
     // portability — validated enum
@@ -649,8 +671,8 @@ function wireImportStep1DragDrop() {
 
 
 function downloadTemplateCSV() {
-    const headers = ['System Name','Vendor','Owner','Annual Cost','Contract End Year','Contract End Month','Notice Period (months)','Users','Portability','Data Partitioning','Cloud Hosted','Is ERP','Shared With','Department / Service Area'];
-    const example = ['My System','Vendor Ltd','Council Name','50000','2028','3','6','100','High','Segmented','Yes','No','Other Council','Waste Management'];
+    const headers = ['System Name','Vendor','Owner','Annual Cost','Contract End Year','Contract End Month','Notice Period (months)','Users','Portability','Data Partitioning','Cloud Hosted','Is ERP','Shared With','Department / Service Area','Capability Type','Consumes From','Capabilities Provided'];
+    const example = ['My System','Vendor Ltd','Council Name','50000','2028','3','6','100','High','Segmented','Yes','No','Other Council','Waste Management','payments','Platform System','forms'];
     const csv = headers.join(',') + '\n' + example.join(',');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -842,6 +864,7 @@ function buildImportStep4HTML() {
     const unmappedSystems = systems.filter((_, i) => (assignments.get(i) || []).length === 0);
     const arch = assembleArchitecture();
     const archJson = JSON.stringify(arch, null, 2);
+    const capEdgeCount = (arch.edges || []).filter(e => e.relationship === 'CONSUMES_CAPABILITY').length;
 
     const unmappedWarning = unmappedSystems.length > 0 ? `
         <div class="p-3 bg-yellow-50 border-l-4 border-l-[#f47738] text-[#0b0c0c] text-sm">
@@ -862,7 +885,7 @@ function buildImportStep4HTML() {
             </div>
             <div class="p-3 border border-gray-200 bg-gray-50">
                 <p class="text-xs text-gray-500 font-bold uppercase mb-1">Architecture summary</p>
-                <p class="text-sm"><span class="font-bold">${systems.length}</span> systems &nbsp; <span class="font-bold">${allFnIds.size}</span> functions &nbsp; <span class="font-bold">${edgeCount}</span> REALIZES edges</p>
+                <p class="text-sm"><span class="font-bold">${systems.length}</span> systems &nbsp; <span class="font-bold">${allFnIds.size}</span> functions &nbsp; <span class="font-bold">${edgeCount}</span> REALIZES edges${capEdgeCount > 0 ? ` &nbsp; <span class="font-bold text-[#0e7490]">${capEdgeCount}</span> CONSUMES_CAPABILITY edges` : ''}</p>
                 <p class="text-sm text-gray-600">${arch.nodes.length} total nodes</p>
             </div>
         </div>
@@ -927,13 +950,16 @@ function assembleArchitecture() {
     });
 
     // Build ITSystem nodes and REALIZES edges
+    const sysNodeIdMap = new Map(); // system label (lower) -> nodeId
     s.mappedSystems.forEach((sys, idx) => {
         const sysNodeId = generateId();
         const sysNode = { id: sysNodeId, type: 'ITSystem', label: sys.label };
         ['vendor','owner','users','cost','annualCost','endYear','endMonth',
-         'noticePeriod','portability','dataPartitioning','isCloud','isERP','sharedWith'
+         'noticePeriod','portability','dataPartitioning','isCloud','isERP','sharedWith',
+         'capabilityType'
         ].forEach(f => { if (sys[f] !== undefined) sysNode[f] = sys[f]; });
         nodes.push(sysNode);
+        if (sys.label) sysNodeIdMap.set(sys.label.toLowerCase(), sysNodeId);
 
         const fnIds = s.functionAssignments.get(idx) || [];
         fnIds.forEach(fnId => {
@@ -942,6 +968,24 @@ function assembleArchitecture() {
                 target: fnNodeMap.get(fnId),
                 relationship: 'REALIZES'
             });
+        });
+    });
+
+    // Generate CONSUMES_CAPABILITY edges from _consumesFrom fields
+    // We need the sysNodeId for the source system, looked up by label after all nodes are built
+    s.mappedSystems.forEach((sys) => {
+        if (!sys._consumesFrom || !sys._consumesFrom.length) return;
+        const sourceSysId = sys.label ? sysNodeIdMap.get(sys.label.toLowerCase()) : null;
+        if (!sourceSysId) return;
+        sys._consumesFrom.forEach(providerLabel => {
+            const targetSysId = sysNodeIdMap.get(providerLabel.toLowerCase());
+            if (targetSysId && targetSysId !== sourceSysId) {
+                edges.push({
+                    source: sourceSysId,
+                    target: targetSysId,
+                    relationship: 'CONSUMES_CAPABILITY'
+                });
+            }
         });
     });
 
