@@ -2039,7 +2039,7 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
             </div>`;
         }
 
-        // Capability type badges (expanded view)
+        // Capability type badges (expanded view) + dependency consumers
         if (sys.capabilityType && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0) {
             const capLabels = sys.capabilityType
                 .map(cap => LGAM_CAPABILITIES.find(c => c.id === cap))
@@ -2047,13 +2047,29 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
                 .map(c => c.label);
             if (capLabels.length > 0) {
                 html += `<div class="mb-2 flex items-center gap-1 flex-wrap">`;
+                html += `<span class="text-[10px] font-bold text-[#0e7490] mr-1">Provides:</span>`;
                 capLabels.forEach(label => {
                     html += `<span class="gds-tag tag-capability" style="font-size:10px;padding:2px 6px;">${escHtml(label)}</span>`;
                 });
-                if (sys._functionCount > 1) {
-                    html += `<span class="text-[11px] text-gray-500 italic ml-1">serves ${sys._functionCount} functions</span>`;
-                }
                 html += `</div>`;
+                // Show which systems consume these capabilities
+                if (state.capabilityProviders && state.capabilityProviders.has(sys.id)) {
+                    const consumers = state.capabilityProviders.get(sys.id);
+                    const consumerDetails = [];
+                    consumers.forEach((caps, consumerId) => {
+                        const consumerNode = state.mergedArchitecture.nodes.find(n => n.id === consumerId);
+                        if (consumerNode) {
+                            const capList = caps.map(c => { const d = LGAM_CAPABILITIES.find(x => x.id === c); return d ? d.label : c; }).join(', ');
+                            consumerDetails.push(`${escHtml(consumerNode.label)} <span class="text-gray-400">(${escHtml(capList)})</span>`);
+                        }
+                    });
+                    if (consumerDetails.length > 0) {
+                        html += `<div class="mb-2 text-[11px] text-[#0e7490] border-l-2 border-[#0e7490] pl-2">`;
+                        html += `<span class="font-bold">Consumed by:</span> `;
+                        html += consumerDetails.join(', ');
+                        html += `</div>`;
+                    }
+                }
             }
         }
 

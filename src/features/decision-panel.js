@@ -153,6 +153,36 @@ function renderDecisionPanelContent(functionId, successorName) {
         </div>
     `;
 
+    // Cross-successor context: show what other successors have decided for this function
+    let crossSuccessorHtml = '';
+    if (state.simulationState && state.simulationState.decisions && state.transitionStructure) {
+        const otherDecisions = [];
+        state.transitionStructure.successors.forEach(s => {
+            if (s.name === successorName) return;
+            const otherKey = getDecisionKey(functionId, s.name);
+            const otherDec = state.simulationState.decisions.get(otherKey);
+            if (otherDec) {
+                let desc = '';
+                if (otherDec.systemChoice === 'choose' && otherDec.retainedSystemIds && otherDec.retainedSystemIds.length > 0) {
+                    const retainedNode = state.simulationState.baselineNodes
+                        ? state.simulationState.baselineNodes.find(n => n.id === otherDec.retainedSystemIds[0]) : null;
+                    desc = `Chose: ${retainedNode ? escHtml(retainedNode.label) : 'system'}`;
+                } else if (otherDec.systemChoice === 'procure') {
+                    desc = `Procuring: ${otherDec.procuredSystem ? escHtml(otherDec.procuredSystem.label) : 'replacement'}`;
+                } else if (otherDec.systemChoice === 'defer') {
+                    desc = 'Deferred';
+                }
+                otherDecisions.push({ successor: s.name, desc });
+            }
+        });
+        if (otherDecisions.length > 0) {
+            crossSuccessorHtml = `<div class="mb-4 p-2 bg-[#f3f2f1] border border-[#b1b4b6] text-xs">
+                <span class="font-bold">Other successors:</span>
+                ${otherDecisions.map(d => `<span class="ml-2">${escHtml(d.successor)}: <strong>${d.desc}</strong></span>`).join('')}
+            </div>`;
+        }
+    }
+
     // Build competing systems cards
     const systemCardsHtml = renderSystemComparisonCards(systems, functionId, successorName);
 
@@ -174,7 +204,7 @@ function renderDecisionPanelContent(functionId, successorName) {
         ? renderCapabilityPlatformsSection(capabilitySystems)
         : '';
 
-    content.innerHTML = headerHtml + `
+    content.innerHTML = headerHtml + crossSuccessorHtml + `
         <div class="flex gap-6 flex-1 min-h-0">
             <div class="w-2/5 overflow-y-auto border-r border-[#b1b4b6] pr-4 shrink-0">
                 ${systemCardsHtml}
