@@ -2073,6 +2073,29 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
             }
         }
 
+        // Reverse capability lookup: show what this system depends on
+        if (state.capabilityDependencies && state.capabilityDependencies.has(sys.id)) {
+            const providerIds = state.capabilityDependencies.get(sys.id);
+            const depDetails = [];
+            providerIds.forEach(providerId => {
+                const providerNode = state.mergedArchitecture.nodes.find(n => n.id === providerId);
+                if (providerNode) {
+                    // Look up which capabilities this system consumes from the provider
+                    const caps = state.capabilityProviders && state.capabilityProviders.has(providerId)
+                        ? state.capabilityProviders.get(providerId).get(sys.id) || []
+                        : [];
+                    const capList = caps.map(c => { const d = LGAM_CAPABILITIES.find(x => x.id === c); return d ? d.label : c; }).join(', ');
+                    depDetails.push(`${escHtml(providerNode.label)}${capList ? ` <span class="text-gray-400">(${escHtml(capList)})</span>` : ''}`);
+                }
+            });
+            if (depDetails.length > 0) {
+                html += `<div class="mb-2 text-[11px] text-[#6b21a8] border-l-2 border-[#6b21a8] pl-2">`;
+                html += `<span class="font-bold">Depends on:</span> `;
+                html += depDetails.join(', ');
+                html += `</div>`;
+            }
+        }
+
         html += `<div class="flex gap-2 text-[11px] text-gray-600 font-bold uppercase tracking-wide mb-3">
                     <span class="tooltip-label" title="Scale/Gravity">&#128101; ${sys.users ? sys.users.toLocaleString() : '??'} Users</span>
                     ${sys.vendor ? `<span class="tooltip-label" title="Software Vendor">&#127970; ${sys.vendor}</span>` : ''}
