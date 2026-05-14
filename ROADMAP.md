@@ -20,11 +20,24 @@ Items are grouped by horizon:
 | **Simulation side panel** | nav-2 | Right-docked collapsible panel (360px) persisting across tabs with decision summary, progress, metrics, and undecided function list |
 | **Sankey overlay** | nav-3 | Flow diagram moved from inline to full-viewport-width on-demand overlay accessible from side panel |
 | **Collapsible system cards** | cards-1 | Default collapsed single-line view, click to expand, "Expand all" per cell, deliberate collapse action |
-| **Capability modelling** | capabilities-1/2/3 | LGAM-aligned capabilityType array, capability summary panel, blast radius preview, gap obligations, filtered from decision alternatives |
+| **Capability model redesign** | capabilities-1/2/3/4 | LGAM-aligned: CONSUMES_CAPABILITY edge type, capability dependency graph, blast radius preview, scoped edge-severing projector, contextual boundary options, grouped-by-complexity decision UX |
+| **Baseline estate report** | baseline-report | Pre-simulation report for all 3 personas (estate profile, tier distribution, critical path, per-successor, risk indicators) |
+| **Decision panel redesign** | sim-decisions | Two-column layout (systems left, options right), cross-successor decision visibility, "Choose same" shortcut, migration complexity badges, contextual boundary filtering |
 | **Scenario management** | scenario-mgmt | JSON export/import, auto-detect at Stage 1, impact reconstructed from decisions |
 | **Persona-tailored reports** | report-export | Executive, Commercial, Architect reports with procurement timeline, posture narrative, obligation tables |
-| **Import wizard** | import-wizard | CSV/Excel with auto-column-detection, clipboard paste, guided manual entry, ESD function suggestions |
+| **Import wizard** | import-wizard | CSV/Excel with auto-column-detection, clipboard paste, guided manual entry, ESD function suggestions, CONSUMES_CAPABILITY edge import |
 | **Quick wins (testing phase)** | quick-wins | Critical path for Commercial persona, aria-labelledby on tabs, orange contrast fixes, tier sort for undecided functions |
+
+### Near-term backlog
+
+| Item | Priority | Description |
+|---|---|---|
+| **Per-successor metrics breakdown** | High | Side-by-side comparison in Overview tab — allocation map has data, needs aggregation and display |
+| **RAG synthesis** | High | Red/Amber/Green per-successor programme governance status from decision progress, pre-vesting triggers, Tier 1 undecided count |
+| **Days-until-vesting countdown** | Medium | Add to estate summary — "347 days until vesting" more impactful than "2027-04-01" |
+| **Legacy modal ARIA upgrade** | Medium | 6 older modals (Glossary, Signal Options, Tier Mapping, Analysis, Documentation, Architecture Editor) need role="dialog", aria-modal, focus trap, Escape key |
+| **Capability fate options** | Medium | When all functions a capability-bearing system serves are decided away, surface decouple/decommission/migrate options (currently informational only) |
+| **Cross-successor shared service propagation visibility** | Medium | When one successor establishes a shared service, the other successor's panel should show awareness of the proposal |
 
 ### Strategic context
 
