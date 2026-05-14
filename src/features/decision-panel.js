@@ -18,6 +18,7 @@ import { state } from '../state.js';
 import { escHtml } from '../ui-helpers.js';
 import { createDecision, getDecisionKey, validateDecision } from '../simulation/decisions.js';
 import { classifyVestingZone, isCapabilitySystem } from '../analysis/allocation.js';
+import { computeMigrationComplexity } from '../analysis/metrics.js';
 import { LGAM_CAPABILITIES } from '../constants/capabilities.js';
 import { recomputeSimulation } from './simulation-panel.js';
 import { showConfirm } from '../ui-notifications.js';
@@ -1175,7 +1176,11 @@ function updateDecommissionPreview(systems, chosenId, content) {
     list.innerHTML = toDecommission.map(s => {
         const userNote = s.users != null ? ` — ${Number(s.users).toLocaleString()} users to migrate` : '';
         const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP — also serves other functions, won\'t be fully decommissioned)</span>' : '';
-        return `<div class="mt-0.5">${escHtml(s.label)}${erpNote}${userNote}</div>`;
+        const mig = computeMigrationComplexity(s);
+        const migBadge = mig.score > 0
+            ? ` <span class="inline-block text-[10px] font-bold px-1 py-0.5 rounded ${mig.size === 'XL' ? 'bg-[#d4351c] text-white' : mig.size === 'L' ? 'bg-[#f47738] text-white' : mig.size === 'M' ? 'bg-[#1d70b8] text-white' : 'bg-[#00703c] text-white'}">Mig:${mig.size}</span>`
+            : '';
+        return `<div class="mt-0.5">${escHtml(s.label)}${migBadge}${erpNote}${userNote}</div>`;
     }).join('');
 }
 

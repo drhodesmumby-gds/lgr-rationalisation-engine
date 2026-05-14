@@ -283,3 +283,36 @@ export function computeEstateSummaryMetrics(mergedArch, lgaFuncMap, transStruct,
         filteredSystems: allSystems
     };
 }
+
+// --- Migration complexity indicator (pure function) ---
+// Computes a T-shirt size (S/M/L/XL) based on system properties.
+// Gives immediate context about how difficult decommission/migration would be.
+export function computeMigrationComplexity(system) {
+    if (!system) return { size: 'S', label: 'Simple', score: 0, factors: [] };
+
+    let score = 0;
+    const factors = [];
+
+    // User count
+    const users = typeof system.users === 'number' ? system.users : 0;
+    if (users >= 2000) { score += 3; factors.push(users.toLocaleString() + ' users'); }
+    else if (users >= 500) { score += 2; factors.push(users.toLocaleString() + ' users'); }
+    else if (users >= 50) { score += 1; factors.push(users.toLocaleString() + ' users'); }
+
+    // Data partitioning
+    if (system.dataPartitioning === 'Monolithic') { score += 2; factors.push('Monolithic'); }
+
+    // Hosting
+    if (system.isCloud === false) { score += 1; factors.push('On-prem'); }
+
+    // ERP
+    if (system.isERP) { score += 2; factors.push('ERP'); }
+
+    let size, label;
+    if (score <= 1) { size = 'S'; label = 'Simple'; }
+    else if (score <= 3) { size = 'M'; label = 'Moderate'; }
+    else if (score <= 5) { size = 'L'; label = 'Large'; }
+    else { size = 'XL'; label = 'Very Large'; }
+
+    return { size, label, score, factors };
+}

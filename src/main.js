@@ -19,7 +19,7 @@ import {
 import {
     computeEstateSummaryMetrics, computeEffectiveTier,
     sortFunctionRows, classifyRationalisationPattern,
-    getHeadlineMetrics
+    getHeadlineMetrics, computeMigrationComplexity
 } from './analysis/metrics.js';
 import { generatePersonaQuestions } from './analysis/questions.js';
 
@@ -1993,6 +1993,12 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
                 if (capDef) miniBadges += `<span class="gds-tag tag-capability" style="font-size:11px;padding:2px 5px;line-height:1.2;">${escHtml(capDef.label)}</span>`;
             });
         }
+        // Migration complexity badge in collapsed view (L/XL only to reduce noise)
+        const collapsedMig = computeMigrationComplexity(sys);
+        if (collapsedMig.size === 'L' || collapsedMig.size === 'XL') {
+            const migC = collapsedMig.size === 'XL' ? 'tag-red' : 'tag-orange';
+            miniBadges += `<span class="gds-tag ${migC}" style="font-size:11px;padding:2px 5px;line-height:1.2;">Mig:${collapsedMig.size}</span>`;
+        }
 
         html += `<div class="system-card-wrapper" data-system-id="${escHtml(sys.id)}">`;
 
@@ -2096,10 +2102,21 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
             }
         }
 
-        html += `<div class="flex gap-2 text-[11px] text-gray-600 font-bold uppercase tracking-wide mb-3">
+        html += `<div class="flex gap-2 flex-wrap items-center text-[11px] text-gray-600 font-bold uppercase tracking-wide mb-3">
                     <span class="tooltip-label" title="Scale/Gravity">&#128101; ${sys.users ? sys.users.toLocaleString() : '??'} Users</span>
                     ${sys.vendor ? `<span class="tooltip-label" title="Software Vendor">&#127970; ${sys.vendor}</span>` : ''}
                  </div>`;
+
+        // Migration complexity badge
+        const migComplexity = computeMigrationComplexity(sys);
+        if (migComplexity.score > 0) {
+            const migColour = migComplexity.size === 'XL' ? 'tag-red' : migComplexity.size === 'L' ? 'tag-orange' : migComplexity.size === 'M' ? 'tag-blue' : 'tag-green';
+            const migFactors = migComplexity.factors.join(' × ');
+            html += `<div class="mb-3 flex items-center gap-2">
+                <span class="gds-tag ${migColour}" style="font-size:10px;padding:2px 6px;">Migration: ${migComplexity.size}</span>
+                <span class="text-[10px] text-gray-500">${escHtml(migFactors)}</span>
+            </div>`;
+        }
 
         // Disaggregation flag for partial predecessors (Requirement 7)
         const showDisaggregationFlag = alloc ? alloc.needsAllocationReview : sys.needsAllocationReview;
