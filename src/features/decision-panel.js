@@ -157,28 +157,40 @@ function renderDecisionPanelContent(functionId, successorName) {
     let crossSuccessorHtml = '';
     if (state.simulationState && state.simulationState.decisions && state.transitionStructure) {
         const otherDecisions = [];
+        const currentSystemIds = new Set(allMappedSystems.map(s => s.id));
         state.transitionStructure.successors.forEach(s => {
             if (s.name === successorName) return;
             const otherKey = getDecisionKey(functionId, s.name);
             const otherDec = state.simulationState.decisions.get(otherKey);
             if (otherDec) {
                 let desc = '';
+                let matchableSystemId = null;
                 if (otherDec.systemChoice === 'choose' && otherDec.retainedSystemIds && otherDec.retainedSystemIds.length > 0) {
+                    const retainedId = otherDec.retainedSystemIds[0];
                     const retainedNode = state.simulationState.baselineNodes
-                        ? state.simulationState.baselineNodes.find(n => n.id === otherDec.retainedSystemIds[0]) : null;
+                        ? state.simulationState.baselineNodes.find(n => n.id === retainedId) : null;
                     desc = `Chose: ${retainedNode ? escHtml(retainedNode.label) : 'system'}`;
+                    // If the same system is available in this cell, offer to match
+                    if (currentSystemIds.has(retainedId)) {
+                        matchableSystemId = retainedId;
+                    }
                 } else if (otherDec.systemChoice === 'procure') {
                     desc = `Procuring: ${otherDec.procuredSystem ? escHtml(otherDec.procuredSystem.label) : 'replacement'}`;
                 } else if (otherDec.systemChoice === 'defer') {
                     desc = 'Deferred';
                 }
-                otherDecisions.push({ successor: s.name, desc });
+                otherDecisions.push({ successor: s.name, desc, matchableSystemId });
             }
         });
         if (otherDecisions.length > 0) {
+            const matchButtons = otherDecisions
+                .filter(d => d.matchableSystemId)
+                .map(d => `<button type="button" class="ml-2 text-[#1d70b8] underline font-bold cross-successor-match-btn" data-system-id="${escHtml(d.matchableSystemId)}">Choose same</button>`)
+                .join('');
             crossSuccessorHtml = `<div class="mb-4 p-2.5 bg-blue-50 border-l-4 border-l-[#1d70b8] text-xs">
                 <span class="font-bold text-[#1d70b8]">Other successors for this function:</span>
                 ${otherDecisions.map(d => `<span class="ml-2 text-[#0b0c0c]">${escHtml(d.successor)}: <strong>${d.desc}</strong></span>`).join('')}
+                ${matchButtons}
             </div>`;
         }
     }
@@ -1062,6 +1074,24 @@ function wireAxisOneInteractivity(systems, successorName, existingDecision) {
         radio.addEventListener('change', () => {
             updateDecommissionPreview(systems, radio.value, content);
             updateCapabilityBlastPreview(systems, radio.value, content);
+        });
+    });
+
+    // Wire "Choose same" cross-successor match buttons
+    content.querySelectorAll('.cross-successor-match-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const systemId = btn.dataset.systemId;
+            // Select "Choose existing system" in Axis 1
+            if (chooseRadio && !chooseRadio.checked) {
+                chooseRadio.checked = true;
+                showAxis1Detail('choose');
+            }
+            // Select the matching system radio
+            const sysRadio = content.querySelector(`#chooseSystem_${CSS.escape(systemId)}`);
+            if (sysRadio) {
+                sysRadio.checked = true;
+                sysRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         });
     });
 
