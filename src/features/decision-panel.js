@@ -174,7 +174,18 @@ function renderDecisionPanelContent(functionId, successorName) {
         ? renderCapabilityPlatformsSection(capabilitySystems)
         : '';
 
-    content.innerHTML = headerHtml + systemCardsHtml + axis1Html + axis2Html + erpHtml + capPlatformsHtml;
+    content.innerHTML = headerHtml + `
+        <div class="flex gap-6 flex-1 min-h-0">
+            <div class="w-2/5 overflow-y-auto border-r border-[#b1b4b6] pr-4 shrink-0">
+                ${systemCardsHtml}
+                ${capPlatformsHtml}
+            </div>
+            <div class="flex-1 overflow-y-auto pl-2">
+                ${axis1Html}
+                ${axis2Html}
+                ${erpHtml}
+            </div>
+        </div>`;
 
     // Wire Axis 1 radio change to update dynamic sections
     wireAxisOneInteractivity(systems, successorName, existingDecision);
@@ -282,12 +293,9 @@ export function renderSystemComparisonCards(systems, functionId, successorName) 
     }
 
     const vestingDate = state.transitionStructure ? state.transitionStructure.vestingDate : null;
-    const isHorizontal = systems.length <= 3;
-    const containerClass = isHorizontal
-        ? 'flex gap-3 flex-wrap'
-        : 'flex flex-col gap-3';
+    const containerClass = 'flex flex-col gap-3';
 
-    const cards = systems.map(sys => renderSystemCard(sys, vestingDate, isHorizontal)).join('');
+    const cards = systems.map(sys => renderSystemCard(sys, vestingDate, false)).join('');
 
     return `
         <div class="mb-6">
@@ -514,7 +522,7 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
         let complexHtml = '';
         if (complexSystems.length > 0) {
             const divider = simpleSystems.length > 0
-                ? '<p class="text-xs font-bold text-[#0e7490] mt-3 mb-1">Systems with capability dependencies:</p>'
+                ? '<p class="text-xs font-bold text-[#0e7490] mt-3 mb-1">Systems that provide capabilities to other systems:</p>'
                 : '';
             complexHtml = divider + complexSystems.map(buildSystemRadioItem).join('');
         }
@@ -834,12 +842,19 @@ function renderEstablishSharedSuccessorCheckboxes(currentSuccessorName, existing
 }
 
 function renderSplitRow(split, index) {
+    const successors = state.transitionStructure && state.transitionStructure.successors
+        ? state.transitionStructure.successors : [];
+    const options = successors.map(s =>
+        `<option value="${escHtml(s.name)}" ${split.successorName === s.name ? 'selected' : ''}>${escHtml(s.name)}</option>`
+    ).join('');
     return `
         <div class="flex items-center gap-2 split-row">
             <div class="flex-1">
-                <label for="splitSuccessor_${index}" class="sr-only">Successor name for split ${index + 1}</label>
-                <input type="text" id="splitSuccessor_${index}" class="border border-[#b1b4b6] p-1.5 text-xs w-full split-successor-input"
-                       placeholder="Successor name" value="${escHtml(split.successorName || '')}">
+                <label for="splitSuccessor_${index}" class="sr-only">Successor authority for split ${index + 1}</label>
+                <select id="splitSuccessor_${index}" class="border border-[#b1b4b6] p-1.5 text-xs w-full split-successor-input">
+                    <option value="">Select successor</option>
+                    ${options}
+                </select>
             </div>
             <div class="flex-1">
                 <label for="splitLabel_${index}" class="sr-only">System label for split ${index + 1}</label>
@@ -911,13 +926,13 @@ export function renderErpImpactSection(systems, successorName, currentFunctionId
             </div>`;
         }).join('');
 
-        // Bulk apply affordance: shown only when the current decision is a "choose" type
-        // and there are undecided functions this ERP covers in the same successor.
+        // Bulk apply affordance: retain this ERP across all its undecided functions.
+        // Only meaningful as a "keep the ERP" shortcut — not applicable to other system choices.
         const bulkApplyHtml = undecidedFunctions.length > 0
             ? `<div class="mt-3 p-3 bg-blue-50 border-l-4 border-l-[#1d70b8]">
-                <p class="text-sm font-bold">Apply to all ${undecidedFunctions.length} undecided function${undecidedFunctions.length !== 1 ? 's' : ''}?</p>
-                <p class="text-xs text-gray-600 mt-1">This will apply the same system choice to: ${escHtml(undecidedFunctions.map(f => f.label).join(', '))}</p>
-                <button type="button" class="gds-btn text-sm px-3 py-1.5 mt-2" onclick="window._simBulkApplyErp('${escHtml(erpSystemId)}', '${escHtml(successorName)}')">Apply to all undecided</button>
+                <p class="text-sm font-bold">Retain ${escHtml(erpSystem.label)} for all ${undecidedFunctions.length} undecided function${undecidedFunctions.length !== 1 ? 's' : ''}?</p>
+                <p class="text-xs text-gray-600 mt-1">This will keep ${escHtml(erpSystem.label)} as the chosen system for: ${escHtml(undecidedFunctions.map(f => f.label).join(', '))}</p>
+                <button type="button" class="gds-btn text-sm px-3 py-1.5 mt-2" onclick="window._simBulkApplyErp('${escHtml(erpSystemId)}', '${escHtml(successorName)}')">Retain ${escHtml(erpSystem.label)} for all</button>
             </div>`
             : '';
 
@@ -1067,7 +1082,7 @@ function updateDecommissionPreview(systems, chosenId, content) {
     preview.classList.remove('hidden');
     list.innerHTML = toDecommission.map(s => {
         const userNote = s.users != null ? ` — ${Number(s.users).toLocaleString()} users to migrate` : '';
-        const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP — edge severed only if serving other functions)</span>' : '';
+        const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP — also serves other functions, won\'t be fully decommissioned)</span>' : '';
         return `<div class="mt-0.5">${escHtml(s.label)}${erpNote}${userNote}</div>`;
     }).join('');
 }
