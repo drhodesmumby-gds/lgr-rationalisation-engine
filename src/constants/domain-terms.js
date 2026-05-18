@@ -3,7 +3,7 @@ export const DOMAIN_TERMS = {
     'Notice Period Action Zone': 'The window between contract notice deadline and contract end date. Systems in this zone require immediate procurement decisions.',
     'Vendor Density': 'Number of distinct vendors providing systems for the same function across councils. High density = procurement consolidation opportunity.',
     'Collision': 'Two or more councils have IT systems serving the same LGA standard function. Collisions require rationalisation decisions.',
-    'Rationalisation Pattern': 'The recommended approach: inherit-as-is, choose-and-consolidate, extract-and-partition, or extract-partition-and-consolidate.',
+    'Rationalisation Pattern': 'Automatically classified based on how systems are allocated across successors. Indicates the type of decision needed — from simple inheritance to complex multi-step extraction and consolidation.',
     'TCoP': 'Technology Code of Practice — UK Government framework. Points assessed: 3 (spend), 4 (open standards), 5 (cloud), 9 (modularity), 11 (commercial).',
     'Portability': 'How easily a system can be migrated. High = open APIs/REST. Medium = CSV/SQL exports. Low = proprietary lock-in.',
     'Data Layer': 'Segmented = data partitioned per successor. Monolithic = highly entangled, requires complex ETL for migration.',

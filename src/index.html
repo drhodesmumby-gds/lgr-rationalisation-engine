@@ -17,34 +17,25 @@
     <a href="#main-content" class="govuk-skip-link">Skip to main content</a>
 
     <!-- Header -->
-    <header class="bg-[#0b0c0c] text-white p-4 border-b-[6px] border-[#1d70b8] flex justify-between items-center shrink-0 z-20">
-        <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-bold">GOV.UK</h1>
-            <span class="text-xl font-normal border-l border-gray-600 pl-4 hidden md:inline header-subtitle">LGR Transition Workspace</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <button id="btnCollapseHeader" onclick="toggleHeaderCollapse()" class="bg-transparent text-white hover:text-gray-300 p-1" aria-label="Collapse header" title="Collapse header">
-                <svg class="w-5 h-5 collapse-chevron" id="headerChevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-            </button>
-            <button id="btnOpenGlossary" class="bg-transparent hover:underline px-3 py-1.5 text-sm font-bold text-white transition">Glossary</button>
-            <div id="controlsArea" class="flex flex-wrap items-center gap-4 hidden">
-                <div class="flex items-center gap-2 bg-white text-black px-3 py-1.5 border-2 border-black">
-                    <label for="perspectiveSelect" class="text-sm font-bold">Perspective:<span class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full border border-[#505a5f] text-[#505a5f] hover:text-[#1d70b8] hover:border-[#1d70b8] cursor-pointer ml-1 align-middle" onclick="openDocModal('perspectives')" title="Learn more">?</span></label>
-                    <select id="perspectiveSelect" class="border-none outline-none text-sm font-bold text-[#d4351c] cursor-pointer">
-                        <option value="all">Unitary (All Councils)</option>
-                    </select>
-                </div>
-                <div class="flex items-center gap-2 bg-white text-black px-3 py-1.5 border-2 border-black">
-                    <label for="personaSelect" class="text-sm font-bold">View Persona:<span class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full border border-[#505a5f] text-[#505a5f] hover:text-[#1d70b8] hover:border-[#1d70b8] cursor-pointer ml-1 align-middle" onclick="openDocModal('personas')" title="Learn more">?</span></label>
-                    <select id="personaSelect" class="border-none outline-none text-sm font-bold text-[#1d70b8] cursor-pointer">
-                        <option value="executive">Executive / Transition Board</option>
-                        <option value="commercial">Commercial / Transition Director</option>
-                        <option value="architect">Enterprise Architect (CTO)</option>
-                    </select>
-                </div>
-                <button id="btnOpenOptions" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Signal Options</button>
-                <button id="btnReset" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Start Over</button>
-            </div>
+    <header class="bg-[#0b0c0c] text-white px-4 py-1.5 border-b-[2px] border-[#1d70b8] flex items-center gap-4 shrink-0 z-20">
+        <h1 class="text-sm font-bold shrink-0">GOV.UK</h1>
+        <span class="text-xs font-normal border-l border-gray-600 pl-3 hidden md:inline shrink-0 header-subtitle">LGR Transition</span>
+        <div class="flex-1"></div>
+        <div id="controlsArea" class="flex items-center gap-3 hidden">
+            <label for="perspectiveSelect" class="text-[11px] text-gray-400 shrink-0">Perspective</label>
+            <select id="perspectiveSelect" class="bg-transparent border-none outline-none text-xs font-bold text-[#ff9d9d] cursor-pointer">
+                <option value="all">Unitary (All Councils)</option>
+            </select>
+            <label for="personaSelect" class="text-[11px] text-gray-400 shrink-0">Persona</label>
+            <select id="personaSelect" class="bg-transparent border-none outline-none text-xs font-bold text-[#88bbff] cursor-pointer">
+                <option value="executive">Executive / Transition Board</option>
+                <option value="commercial">Commercial / Transition Director</option>
+                <option value="architect">Enterprise Architect (CTO)</option>
+            </select>
+            <span class="text-gray-600">|</span>
+            <button id="btnOpenOptions" class="bg-transparent text-white hover:underline text-[11px] px-1">Signals</button>
+            <button id="btnOpenGlossary" class="bg-transparent text-white hover:underline text-[11px] px-1">Glossary</button>
+            <button id="btnReset" class="bg-transparent text-gray-400 hover:text-white hover:underline text-[11px] px-1">Reset</button>
         </div>
     </header>
 
@@ -159,25 +150,19 @@
         <!-- STAGE 3: PERSONA DASHBOARD -->
         <div id="stageDashboard" class="w-full h-full flex flex-col hidden bg-white">
 
-            <div id="personaBanner" class="bg-[#f3f2f1] border-b-2 border-[#0b0c0c] p-4 flex gap-4 items-start transition-colors duration-300 shrink-0">
-                <svg class="w-8 h-8 shrink-0" id="personaIcon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
-                <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                        <h2 class="font-bold text-lg" id="personaTitle">Executive View Active</h2>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <div class="flex items-center gap-2" role="group" aria-label="Analysis actions">
-                                <button id="btnBaselineReport" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Baseline Report</button>
-                                <button id="btnViewTierMapping" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">View Tier Mapping</button>
-                                <button id="btnReconfigureTransition" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">Reconfigure Transition</button>
-                            </div>
-                            <span id="toolbarSeparator" class="toolbar-separator hidden" aria-hidden="true"></span>
-                            <div id="simButtonGroup" class="flex items-center gap-2 hidden" role="group" aria-label="Simulation actions"></div>
-                            <button id="btnCollapseBanner" onclick="toggleBannerCollapse()" class="text-gray-500 hover:text-black p-1" aria-label="Collapse banner" title="Collapse banner">
-                                <svg class="w-5 h-5 collapse-chevron" id="bannerChevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                            </button>
-                        </div>
+            <div id="personaBanner" class="bg-[#f3f2f1] border-b border-[#b1b4b6] px-4 py-1.5 flex items-center gap-3 transition-colors duration-300 shrink-0">
+                <svg class="w-4 h-4 shrink-0" id="personaIcon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                <h2 class="font-bold text-xs shrink-0" id="personaTitle">Executive Board</h2>
+                <p class="text-[11px] text-gray-500 hidden" id="personaDesc"></p>
+                <div class="flex-1"></div>
+                <div class="flex items-center gap-1.5 flex-nowrap">
+                    <div class="flex items-center gap-1" role="group" aria-label="Analysis actions">
+                        <button id="btnBaselineReport" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Report</button>
+                        <button id="btnViewTierMapping" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Tiers</button>
+                        <button id="btnReconfigureTransition" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Reconfigure</button>
                     </div>
-                    <p class="text-sm text-gray-800" id="personaDesc">Consolidated view of both hard commercial expiry constraints and architectural technical debt.</p>
+                    <span id="toolbarSeparator" class="toolbar-separator hidden" aria-hidden="true"></span>
+                    <div id="simButtonGroup" class="flex items-center gap-1 hidden" role="group" aria-label="Simulation actions"></div>
                 </div>
             </div>
 
@@ -302,156 +287,74 @@
 
         <!-- GLOSSARY MODAL -->
         <div id="glossaryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-            <div class="bg-white max-w-2xl w-full p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
-                <button id="btnCloseGlossary" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
-                <h2 class="text-2xl font-bold mb-4">LGR Engine Terminology Glossary</h2>
+            <div class="bg-white max-w-2xl w-full border-t-8 border-[#1d70b8] shadow-2xl relative max-h-[80vh] flex flex-col">
+                <div class="flex items-center justify-between px-6 pt-5 pb-3">
+                    <h2 class="text-xl font-bold">Glossary</h2>
+                    <button id="btnCloseGlossary" class="text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                </div>
+                <div class="flex border-b border-[#b1b4b6] px-6 gap-0" role="tablist" aria-label="Glossary sections" id="glossaryTabBar">
+                    <button role="tab" class="glossary-tab active" aria-selected="true" data-glossary-tab="transition">Transition</button>
+                    <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="systems">Systems</button>
+                    <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="signals">Signals</button>
+                    <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="patterns">Patterns</button>
+                    <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="governance">Governance</button>
+                </div>
+                <div class="flex-1 overflow-y-auto px-6 py-4">
 
-                <div class="space-y-6 overflow-y-auto max-h-[70vh] pr-4">
-
-                    <!-- Section 1: Transition Concepts -->
-                    <div>
-                        <h3 class="font-bold text-base text-white bg-[#1d70b8] px-3 py-1.5 mb-3">Transition Concepts</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Vesting Date</p>
-                                <p class="text-sm text-gray-700">The legal date the new unitary authority comes into existence. All Tier 1 (Day 1 critical) services must be operational by this date. Contract notice deadlines are measured relative to it.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Predecessor</p>
-                                <p class="text-sm text-gray-700">An existing council that is being merged or restructured. Its IT estate, contracts, and services are inherited by one or more successor authorities.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Successor</p>
-                                <p class="text-sm text-gray-700">The new unitary authority created from the reorganisation. A predecessor can be a full predecessor (all systems transfer) or partial predecessor (systems are split across multiple successors).</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Perspective</p>
-                                <p class="text-sm text-gray-700">A filtered view of the estate. "All Councils/Successors" shows the full merged picture. Selecting a specific successor or council highlights its columns and filters analysis to that entity.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Collision</p>
-                                <p class="text-sm text-gray-700">Two or more councils have IT systems serving the same LGA standard function. Collisions require rationalisation decisions &mdash; one system must be chosen, or a disaggregation strategy defined.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Cross-tier</p>
-                                <p class="text-sm text-gray-700">Systems from councils with different tier classifications (county vs district). May represent complementary delivery across different service layers, not duplication &mdash; requires closer analysis before assuming consolidation.</p>
-                            </div>
-                        </div>
+                    <div class="glossary-panel" data-glossary-panel="transition">
+                        <dl class="space-y-3">
+                            <div><dt class="text-sm font-bold">Vesting Date</dt><dd class="text-sm text-gray-700">The legal date the new unitary authority comes into existence. All Tier 1 (Day 1 critical) services must be operational by this date. Contract notice deadlines are measured relative to it.</dd></div>
+                            <div><dt class="text-sm font-bold">Predecessor</dt><dd class="text-sm text-gray-700">An existing council being merged or restructured. Its IT estate, contracts, and services are inherited by one or more successor authorities.</dd></div>
+                            <div><dt class="text-sm font-bold">Successor</dt><dd class="text-sm text-gray-700">The new unitary authority created from the reorganisation. A predecessor can be full (all systems transfer) or partial (systems split across multiple successors).</dd></div>
+                            <div><dt class="text-sm font-bold">Perspective</dt><dd class="text-sm text-gray-700">A filtered view of the estate. "All" shows the full merged picture. Selecting a specific successor or council filters analysis to that entity.</dd></div>
+                            <div><dt class="text-sm font-bold">Collision</dt><dd class="text-sm text-gray-700">Two or more councils have IT systems serving the same function. Collisions require rationalisation decisions.</dd></div>
+                            <div><dt class="text-sm font-bold">Cross-tier</dt><dd class="text-sm text-gray-700">Systems from councils with different tier classifications (county vs district). May represent complementary delivery, not duplication.</dd></div>
+                        </dl>
                     </div>
 
-                    <!-- Section 2: System Properties -->
-                    <div>
-                        <h3 class="font-bold text-base text-white bg-[#d4351c] px-3 py-1.5 mb-3">System Properties</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Portability</p>
-                                <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-                                    <li><strong>High:</strong> Open APIs, REST/GraphQL access, or native interoperability standards. Easy machine-to-machine extraction.</li>
-                                    <li><strong>Medium:</strong> Batch extracts (CSV/XML), standard SQL database dumps, scheduled reporting modules.</li>
-                                    <li><strong>Low:</strong> Proprietary schema, vendor-paywalled extraction, or locked-in SaaS with no bulk export. High vendor hostage risk.</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Data Layer</p>
-                                <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-                                    <li><strong>Segmented:</strong> Data is structured cleanly and can be partitioned (e.g., filtered by ward or department for disaggregation).</li>
-                                    <li><strong>Monolithic:</strong> Data is highly entangled across domains. Cannot be easily unpicked. High risk for migrations/splits; requires dedicated ETL planning.</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Cloud / On-Premise</p>
-                                <p class="text-sm text-gray-700">Cloud systems are externally hosted SaaS or IaaS. On-premise systems are hosted on physical council servers and may have different migration, licensing, and support implications.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">ERP (Enterprise Resource Planning)</p>
-                                <p class="text-sm text-gray-700">Monolithic business systems covering finance, HR, and payroll. Highly entangled data structures make disaggregation complex. Assessed under TCoP Point 9 (modularity).</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Shared Service</p>
-                                <p class="text-sm text-gray-700">A system jointly operated across council boundaries. Requires unwinding or re-contracting during reorganisation. May cross successor boundaries, requiring formal service unwinding plans.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">ESD/LGA Function</p>
-                                <p class="text-sm text-gray-700">Standard function from the LGA/ESD taxonomy (176 entries). Maps council-specific service names to a common classification, enabling cross-council comparison in the matrix.</p>
-                            </div>
-                        </div>
+                    <div class="glossary-panel hidden" data-glossary-panel="systems">
+                        <dl class="space-y-3">
+                            <div><dt class="text-sm font-bold">Portability</dt><dd class="text-sm text-gray-700"><strong>High:</strong> Open APIs, native interop. <strong>Medium:</strong> Batch/CSV/SQL exports. <strong>Low:</strong> Proprietary lock-in, no bulk export.</dd></div>
+                            <div><dt class="text-sm font-bold">Data Layer</dt><dd class="text-sm text-gray-700"><strong>Segmented:</strong> Data partitions cleanly (by ward/department). <strong>Monolithic:</strong> Entangled across domains, requires ETL for splits.</dd></div>
+                            <div><dt class="text-sm font-bold">Cloud / On-Premise</dt><dd class="text-sm text-gray-700">Cloud = externally hosted SaaS/IaaS. On-premise = council servers with different migration, licensing, and support implications.</dd></div>
+                            <div><dt class="text-sm font-bold">ERP</dt><dd class="text-sm text-gray-700">Enterprise Resource Planning — monolithic business system (finance, HR, payroll). High data entanglement risk. TCoP Point 9 concern.</dd></div>
+                            <div><dt class="text-sm font-bold">Shared Service</dt><dd class="text-sm text-gray-700">A system jointly operated across council boundaries. Requires unwinding or re-contracting. May cross successor boundaries.</dd></div>
+                            <div><dt class="text-sm font-bold">Capability Platform</dt><dd class="text-sm text-gray-700">A system that provides shared capabilities (payments, notifications, forms) consumed by other systems. Decommissioning creates blast radius across dependents.</dd></div>
+                            <div><dt class="text-sm font-bold">ESD/LGA Function</dt><dd class="text-sm text-gray-700">Standard function from the LGA/ESD taxonomy (176 entries). Maps council-specific names to a common classification for cross-council comparison.</dd></div>
+                        </dl>
                     </div>
 
-                    <!-- Section 3: Analysis Signals -->
-                    <div>
-                        <h3 class="font-bold text-base text-white bg-[#53284f] px-3 py-1.5 mb-3">Analysis Signals</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Contract Urgency</p>
-                                <p class="text-sm text-gray-700">Classifies each system's contract end date relative to the vesting date into zones: Pre-vesting (red), Year 1 (amber), Natural expiry (blue), Long-tail (black). Accounts for notice period to identify the true action deadline.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Notice Period Action Zone</p>
-                                <p class="text-sm text-gray-700">Contract expiry dates are misleading. If a contract has a 12-month notice period, the true "drop-dead" decision date is 12 months before expiry. The timeline visualises this as a red striped warning zone.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">User Volume</p>
-                                <p class="text-sm text-gray-700">Relative scale of systems by reported user count. Proportionality scoring identifies when one system is significantly larger than others (anchor threshold: 50% larger than the next).</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Vendor Density</p>
-                                <p class="text-sm text-gray-700">Number of distinct vendors providing systems for the same function across councils. When the same vendor appears across multiple predecessors, there is a commercial opportunity to consolidate into a single enterprise agreement.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Tech Debt (On-premise)</p>
-                                <p class="text-sm text-gray-700">Systems hosted on council servers rather than cloud/SaaS. On-premise systems may face hosting, support, and licensing complications during transitions.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">TCoP Alignment</p>
-                                <p class="text-sm text-gray-700">Assessment against the UK Government Technology Code of Practice. Points 3 (spend), 4 (open standards), 5 (cloud first), 9 (modularity), and 11 (commercial) are evaluated from system properties.</p>
-                            </div>
-                        </div>
+                    <div class="glossary-panel hidden" data-glossary-panel="signals">
+                        <dl class="space-y-3">
+                            <div><dt class="text-sm font-bold">Contract Urgency</dt><dd class="text-sm text-gray-700">Classifies contract end dates relative to vesting: Pre-vesting (red), Year 1 (amber), Natural expiry (blue), Long-tail (black). Accounts for notice period.</dd></div>
+                            <div><dt class="text-sm font-bold">Notice Period Action Zone</dt><dd class="text-sm text-gray-700">The true decision deadline = expiry minus notice period. A 12-month notice means the decision is due 12 months before contract end.</dd></div>
+                            <div><dt class="text-sm font-bold">User Volume</dt><dd class="text-sm text-gray-700">Relative system scale by user count. Anchor threshold: one system 50%+ larger than the next largest.</dd></div>
+                            <div><dt class="text-sm font-bold">Vendor Density</dt><dd class="text-sm text-gray-700">Same vendor across multiple predecessors for a function. Commercial opportunity to consolidate into a single agreement.</dd></div>
+                            <div><dt class="text-sm font-bold">Tech Debt (On-premise)</dt><dd class="text-sm text-gray-700">Systems hosted on council servers. May face hosting, support, and licensing complications during transitions.</dd></div>
+                            <div><dt class="text-sm font-bold">Data Monolith</dt><dd class="text-sm text-gray-700">Systems with monolithic data partitioning or ERP status. High risk for disaggregation and data migration.</dd></div>
+                            <div><dt class="text-sm font-bold">Data Portability</dt><dd class="text-sm text-gray-700">Worst portability rating present. Low portability = proprietary lock-in, expensive/risky extraction.</dd></div>
+                            <div><dt class="text-sm font-bold">TCoP Alignment</dt><dd class="text-sm text-gray-700">Assessment against UK Government Technology Code of Practice. Points 3, 4, 5, 9, and 11 evaluated from system properties.</dd></div>
+                            <div><dt class="text-sm font-bold">Shared Service</dt><dd class="text-sm text-gray-700">Systems with sharedWith declarations. In transition mode, detects cross-successor boundary sharing.</dd></div>
+                        </dl>
                     </div>
 
-                    <!-- Section 4: Rationalisation Patterns -->
-                    <div>
-                        <h3 class="font-bold text-base text-white bg-[#00703c] px-3 py-1.5 mb-3">Rationalisation Patterns</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-sm font-bold text-[#00703c]">inherit-as-is</p>
-                                <p class="text-sm text-gray-700">Single system, no competition. The system continues under the new authority. Priority: confirm contract novation, verify licence, and confirm no data partitioning is needed.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#1d70b8]">choose-and-consolidate</p>
-                                <p class="text-sm text-gray-700">Multiple systems serve the same function within a successor. A selection decision is required: one system is retained and others decommissioned. User volume, cost, and portability guide the choice.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#d4351c]">extract-and-partition</p>
-                                <p class="text-sm text-gray-700">A system crosses successor boundaries and must be split. Data and/or service must be partitioned so each successor can operate independently. Highest risk for monolithic systems.</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#53284f]">extract-partition-and-consolidate</p>
-                                <p class="text-sm text-gray-700">The most complex pattern: systems must be both split across successors and consolidated within each successor. Requires sequenced delivery &mdash; partition first, then consolidate within each new authority.</p>
-                            </div>
-                        </div>
+                    <div class="glossary-panel hidden" data-glossary-panel="patterns">
+                        <dl class="space-y-3">
+                            <div class="border-l-4 border-[#00703c] pl-3"><dt class="text-sm font-bold text-[#00703c]">Inherit as-is</dt><dd class="text-sm text-gray-700">Single system, one successor. No rationalisation choice needed — but check signals for modernisation concerns (portability, TCoP, cost).</dd></div>
+                            <div class="border-l-4 border-[#1d70b8] pl-3"><dt class="text-sm font-bold text-[#1d70b8]">Choose & consolidate</dt><dd class="text-sm text-gray-700">Multiple systems compete for the same function within a successor. Signals highlight differentiators to inform which is retained.</dd></div>
+                            <div class="border-l-4 border-[#d4351c] pl-3"><dt class="text-sm font-bold text-[#d4351c]">Extract & partition</dt><dd class="text-sm text-gray-700">System spans successor boundaries — data must be separated. Monolithic data layers carry the highest extraction risk.</dd></div>
+                            <div class="border-l-4 border-[#53284f] pl-3"><dt class="text-sm font-bold text-[#53284f]">Extract, partition & consolidate</dt><dd class="text-sm text-gray-700">Most complex: split across successors AND consolidate within each. Sequence matters — partition first, then consolidate.</dd></div>
+                        </dl>
                     </div>
 
-                    <!-- Section 5: Governance & Compliance -->
-                    <div>
-                        <h3 class="font-bold text-base text-white bg-[#0b0c0c] px-3 py-1.5 mb-3">Governance &amp; Compliance</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">TCoP (Technology Code of Practice)</p>
-                                <p class="text-sm text-gray-700">UK Government's framework for technology decisions. Five points are assessed: Point 3 (spend controls / vendor lock-in), Point 4 (open standards / portability), Point 5 (cloud first), Point 9 (modularity / avoid monoliths), Point 11 (commercial / contract flexibility).</p>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Tier Classification</p>
-                                <ul class="list-disc pl-5 text-sm space-y-1 text-gray-700">
-                                    <li><strong>Tier 1 (Day 1 Critical):</strong> Statutory and safeguarding services that must be operational from vesting day.</li>
-                                    <li><strong>Tier 2 (High Priority):</strong> Important services needed post-transition but not Day 1 critical.</li>
-                                    <li><strong>Tier 3 (Post-Day 1):</strong> Services that can be transitioned after the new authority is established. Tier 3 is promoted to Tier 2 when a contract notice trigger falls before the vesting date.</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-[#0b0c0c]">Anchor System</p>
-                                <p class="text-sm text-gray-700">Declared when a system is at least 50% larger than the second-largest system by user count. Marginal differences will not trigger an anchor. An anchor system is generally the most logical migration target to minimise business disruption.</p>
-                            </div>
-                        </div>
+                    <div class="glossary-panel hidden" data-glossary-panel="governance">
+                        <dl class="space-y-3">
+                            <div><dt class="text-sm font-bold">TCoP (Technology Code of Practice)</dt><dd class="text-sm text-gray-700">UK Government framework. Assessed points: 3 (spend/lock-in), 4 (open standards), 5 (cloud first), 9 (modularity), 11 (commercial flexibility).</dd></div>
+                            <div><dt class="text-sm font-bold">Tier 1 — Day 1 Critical</dt><dd class="text-sm text-gray-700">Statutory and safeguarding services that must be operational from vesting day.</dd></div>
+                            <div><dt class="text-sm font-bold">Tier 2 — High Priority</dt><dd class="text-sm text-gray-700">Important post-transition services. Not Day 1 critical but needed early.</dd></div>
+                            <div><dt class="text-sm font-bold">Tier 3 — Post-Day 1</dt><dd class="text-sm text-gray-700">Can be transitioned after establishment. Promoted to Tier 2 when contract notice trigger falls before vesting.</dd></div>
+                            <div><dt class="text-sm font-bold">Anchor System</dt><dd class="text-sm text-gray-700">System 50%+ larger than next-largest by user count. Generally the strongest migration consolidation target.</dd></div>
+                        </dl>
                     </div>
 
                 </div>

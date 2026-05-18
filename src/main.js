@@ -104,6 +104,17 @@ btnOpenGlossary.addEventListener('click', () => glossaryModal.classList.remove('
 btnCloseGlossary.addEventListener('click', () => glossaryModal.classList.add('hidden'));
 glossaryModal.addEventListener('click', (e) => { if (e.target === glossaryModal) glossaryModal.classList.add('hidden'); });
 
+document.getElementById('glossaryTabBar').addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-glossary-tab]');
+    if (!tab) return;
+    const target = tab.dataset.glossaryTab;
+    glossaryModal.querySelectorAll('.glossary-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+    glossaryModal.querySelectorAll('.glossary-panel').forEach(p => p.classList.add('hidden'));
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    glossaryModal.querySelector(`[data-glossary-panel="${target}"]`).classList.remove('hidden');
+});
+
 // --- Documentation Modal ---
 const docModal = document.getElementById('docModal');
 const btnCloseDoc = document.getElementById('btnCloseDoc');
@@ -2192,13 +2203,29 @@ function renderPatternTag(pattern) {
 
 function renderPatternTagWithTooltip(pattern) {
     const patternConfig = {
-        'inherit-as-is':                      { colour: 'tag-green',  label: 'Inherit as-is' },
-        'choose-and-consolidate':             { colour: 'tag-blue',   label: 'Choose & consolidate' },
-        'extract-and-partition':               { colour: 'tag-red',    label: 'Extract & partition' },
-        'extract-partition-and-consolidate':   { colour: 'tag-purple', label: 'Extract, partition & consolidate' }
+        'inherit-as-is': {
+            colour: 'tag-green',
+            label: 'Inherit as-is',
+            guidance: 'Only one system is allocated here — no choice between competing alternatives. Check the signals below: a single system may still warrant replacement if it scores poorly on portability, TCoP alignment, or cost.'
+        },
+        'choose-and-consolidate': {
+            colour: 'tag-blue',
+            label: 'Choose & consolidate',
+            guidance: 'Multiple systems serve this function for the same successor. The signals highlight differentiators — user volume, contract timing, portability, and vendor density can inform which system is retained.'
+        },
+        'extract-and-partition': {
+            colour: 'tag-red',
+            label: 'Extract & partition',
+            guidance: 'This system spans successor boundaries and its data will need separation. The data layer and portability signals indicate how difficult extraction will be — monolithic systems carry the highest risk here.'
+        },
+        'extract-partition-and-consolidate': {
+            colour: 'tag-purple',
+            label: 'Extract, partition & consolidate',
+            guidance: 'Data must be separated across successors AND competing systems consolidated within each. Consider sequencing: partition first to establish clean boundaries, then consolidate within each successor.'
+        }
     };
     const config = patternConfig[pattern] || patternConfig['inherit-as-is'];
-    const tooltip = wrapWithTooltip(config.label, DOMAIN_TERMS['Rationalisation Pattern']);
+    const tooltip = wrapWithTooltip(config.label, config.guidance);
     return `<span class="gds-tag ${config.colour}">${tooltip}</span>${helpIcon('patterns')}`;
 }
 

@@ -132,26 +132,24 @@ function buildSystemsTab() {
     }).join('');
 
     return `
-        <div class="p-2">
-            <div class="flex items-center justify-between mb-3">
+        <div class="p-2 min-w-max">
+            <div class="flex items-center gap-4 mb-3 sticky top-0 z-20 bg-white py-2">
                 <span class="font-bold text-sm">${nodes.length} IT System node(s)</span>
                 <button id="btnAddSystem" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold hover:bg-gray-100">+ Add System</button>
             </div>
-            <div class="overflow-x-auto">
-                <table class="gds-table text-xs whitespace-nowrap">
-                    <thead><tr>
-                        <th class="px-2 py-1">Label</th><th class="px-2 py-1">Vendor</th>
-                        <th class="px-2 py-1">Users</th><th class="px-2 py-1">Cost</th>
-                        <th class="px-2 py-1">Annual £</th><th class="px-2 py-1">End Yr</th>
-                        <th class="px-2 py-1">End Mo</th><th class="px-2 py-1">Notice</th>
-                        <th class="px-2 py-1">Portability</th><th class="px-2 py-1">Data Layer</th>
-                        <th class="px-2 py-1">Cloud</th><th class="px-2 py-1">ERP</th>
-                        <th class="px-2 py-1">Shared With</th><th class="px-2 py-1">Capabilities</th><th class="px-2 py-1">Owner</th>
-                        <th class="px-2 py-1"></th>
-                    </tr></thead>
-                    <tbody id="sysTableBody">${rows}</tbody>
-                </table>
-            </div>
+            <table class="gds-table text-xs whitespace-nowrap [&_th]:top-[38px]">
+                <thead><tr>
+                    <th class="px-2 py-1">Label</th><th class="px-2 py-1">Vendor</th>
+                    <th class="px-2 py-1">Users</th><th class="px-2 py-1">Cost</th>
+                    <th class="px-2 py-1">Annual £</th><th class="px-2 py-1">End Yr</th>
+                    <th class="px-2 py-1">End Mo</th><th class="px-2 py-1">Notice</th>
+                    <th class="px-2 py-1">Portability</th><th class="px-2 py-1">Data Layer</th>
+                    <th class="px-2 py-1">Cloud</th><th class="px-2 py-1">ERP</th>
+                    <th class="px-2 py-1">Shared With</th><th class="px-2 py-1">Capabilities</th><th class="px-2 py-1">Owner</th>
+                    <th class="px-2 py-1"></th>
+                </tr></thead>
+                <tbody id="sysTableBody">${rows}</tbody>
+            </table>
         </div>`;
 }
 

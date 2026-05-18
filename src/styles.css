@@ -33,6 +33,15 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 .col-highlight { background-color: #e5f5ff !important; border-left: 3px solid #1d70b8; border-right: 3px solid #1d70b8; }
 .th-highlight { background-color: #1d70b8 !important; color: white !important; border-bottom: 0 !important; }
 
+/* Glossary tabs */
+.glossary-tab {
+    padding: 8px 14px; font-size: 12px; font-weight: bold; color: #505a5f;
+    background: none; border: none; border-bottom: 3px solid transparent;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.glossary-tab:hover { color: #0b0c0c; border-bottom-color: #b1b4b6; }
+.glossary-tab.active { color: #0b0c0c; border-bottom-color: #1d70b8; }
+
 /* Tooltip style for labels */
 .tooltip-label { border-bottom: 1px dotted #b1b4b6; cursor: help; }
 
@@ -60,12 +69,13 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 .tooltip-wrapper { position: relative; display: inline-block; }
 .tooltip-wrapper .tooltip-content {
     visibility: hidden; opacity: 0;
-    position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-    margin-top: 6px; padding: 8px 12px;
+    position: absolute; top: 100%; left: 0;
+    margin-top: 6px; padding: 10px 14px;
     background: white; color: #0b0c0c; border: 1px solid #b1b4b6;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-size: 13px; line-height: 1.4;
-    max-width: 300px; white-space: normal; z-index: 9999;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15); font-size: 13px; line-height: 1.5;
+    width: 280px; white-space: normal; z-index: 9999;
     pointer-events: none; transition: opacity 0.15s;
+    text-transform: none; font-weight: normal; letter-spacing: normal;
 }
 .tooltip-wrapper:hover .tooltip-content,
 .tooltip-wrapper:focus-within .tooltip-content { visibility: visible; opacity: 1; }
@@ -98,18 +108,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     background: white;
 }
 
-/* Collapsible header */
-header.header-collapsed { padding-top: 4px !important; padding-bottom: 4px !important; }
-header.header-collapsed h1 { font-size: 1rem !important; }
-header.header-collapsed .header-subtitle { display: none !important; }
+/* Collapsible header (legacy — collapse button removed but CSS kept for safety) */
 .collapse-chevron { transition: transform 0.2s; }
 .collapse-chevron.flipped { transform: rotate(180deg); }
-
-/* Collapsible persona banner */
-#personaBanner.banner-collapsed { padding: 6px 16px !important; }
-#personaBanner.banner-collapsed #personaIcon { display: none !important; }
-#personaBanner.banner-collapsed #personaDesc { display: none !important; }
-#personaBanner.banner-collapsed h2 { font-size: 0.875rem !important; }
 
 /* Simulation mode */
 .sim-toolbar { background-color: #fff3cd; border: 2px solid #f47738; border-left: 6px solid #f47738; padding: 16px; }
