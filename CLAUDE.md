@@ -17,6 +17,36 @@ npm run test:watch   # Vitest in watch mode
 
 **To run the app:** `python3 -m http.server 8765` then open `http://localhost:8765/dist/lgr-rationalisation-engine.html`. Tailwind CSS loads from CDN.
 
+## Git Workflow
+
+### Starting a session
+Run `git status` and `git log --oneline -5` first. You need to know:
+- Which branch you're on
+- Whether there are uncommitted changes from a previous session
+- What was last committed
+
+If there are uncommitted changes you didn't create, **do not discard or commit them**. Tell the user what you see (`git diff --stat`) and ask how to proceed — the changes may be half-finished work from a prior session or another agent.
+
+### Committing
+- Run `node build.js` before every commit — the build must pass.
+- Commit `dist/lgr-rationalisation-engine.html` alongside `src/` changes (it's tracked, not gitignored).
+- Stage specific files by name. Never `git add -A` or `git add .`.
+
+### Branches
+- Use feature branches for non-trivial work (new features, risky refactors).
+- Direct-to-main is acceptable for small fixes, documentation, and data updates.
+
+### Pushing
+- Always pull before pushing: `git pull --no-rebase origin main`.
+- Other Claude sessions may have pushed since your session started. If conflicts arise, prefer keeping the newer version or ask the user.
+
+### What not to commit
+- `node_modules/`, `test-results/`, `.claude/` working files.
+- The root-level `lgr-rationalisation-engine.html` is a **legacy monolith** — not the source of truth. All code edits go in `src/`.
+
+### Generator agents
+Generator agents must NOT run git commands. The team lead session handles all version control.
+
 ## Architecture
 
 Modular ES modules in `src/`, bundled by esbuild into a single self-contained HTML file (`dist/lgr-rationalisation-engine.html`). The build injects bundled JS and CSS into `src/index.html`.
