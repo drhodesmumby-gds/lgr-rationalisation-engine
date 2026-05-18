@@ -113,6 +113,7 @@ document.getElementById('glossaryTabBar').addEventListener('click', (e) => {
     tab.classList.add('active');
     tab.setAttribute('aria-selected', 'true');
     glossaryModal.querySelector(`[data-glossary-panel="${target}"]`).classList.remove('hidden');
+    if (target === 'tiers') renderGlossaryTiers();
 });
 
 // --- Documentation Modal ---
@@ -166,9 +167,95 @@ function renderTierMappingModal() {
     content.innerHTML = html;
 }
 
+function renderGlossaryTiers() {
+    const panel = document.getElementById('glossaryTiersPanel');
+    if (!panel) return;
+
+    // Build parent lookup
+    const parentMap = new Map(); // parentId → { label, children: [{id, label}] }
+    const roots = new Map(); // id → label for root categories (parentId === null)
+    LGA_FUNCTIONS.forEach(fn => {
+        if (fn.parentId === null) {
+            roots.set(fn.id, fn.label);
+        }
+    });
+
+    // Find the root ancestor for any function
+    function getRootAncestor(fn) {
+        if (fn.parentId === null) return null; // This IS a root, skip
+        let current = fn;
+        while (current.parentId !== null) {
+            const parent = LGA_FUNCTIONS.find(f => f.id === current.parentId);
+            if (!parent) break;
+            current = parent;
+        }
+        return current;
+    }
+
+    // Group functions by tier, then by root parent
+    const tierGroups = { 1: new Map(), 2: new Map(), 3: new Map() };
+
+    LGA_FUNCTIONS.forEach(fn => {
+        if (fn.parentId === null) return; // Skip root categories themselves
+        const tier = DEFAULT_TIER_MAP.get(fn.id) || 2;
+        const root = getRootAncestor(fn);
+        if (!root) return;
+        const rootLabel = root.label;
+        if (!tierGroups[tier].has(rootLabel)) {
+            tierGroups[tier].set(rootLabel, []);
+        }
+        tierGroups[tier].get(rootLabel).push(fn);
+    });
+
+    const tierMeta = {
+        1: { label: 'Tier 1 — Day 1 Critical', desc: 'Statutory and safeguarding services that must be operational from vesting day.', tagClass: 'tag-red' },
+        2: { label: 'Tier 2 — High Priority', desc: 'Services approaching contract renewal or requiring regulatory compliance attention.', tagClass: 'tag-orange' },
+        3: { label: 'Tier 3 — Post-Day 1', desc: 'Services that can run behind the veneer strategy post-vesting.', tagClass: 'tag-blue' }
+    };
+
+    let html = '<p class="text-sm text-gray-600 mb-4">Default ESD function-to-tier classification based on MHCLG Playbook prioritisation guidance. Functions not listed default to Tier 2. Tier 3 functions are promoted to Tier 2 when a contract expires before vesting.</p>';
+
+    [1, 2, 3].forEach(tier => {
+        const meta = tierMeta[tier];
+        const groupMap = tierGroups[tier];
+        // Sort categories alphabetically
+        const sortedCategories = [...groupMap.keys()].sort((a, b) => a.localeCompare(b));
+
+        html += `<div class="mb-6">`;
+        html += `<h3 class="font-bold text-base mb-2"><span class="gds-tag ${meta.tagClass} mr-2">${meta.label}</span></h3>`;
+        html += `<p class="text-xs text-gray-500 mb-3">${meta.desc}</p>`;
+
+        sortedCategories.forEach(category => {
+            const functions = groupMap.get(category).sort((a, b) => a.label.localeCompare(b.label));
+            html += `<div class="mb-4">`;
+            html += `<h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">${category}</h4>`;
+            html += `<div class="pl-3 border-l-2 border-gray-200 space-y-0.5">`;
+            functions.forEach(fn => {
+                html += `<p class="text-sm">${fn.label} <span class="text-gray-400 text-xs">(${fn.id})</span></p>`;
+            });
+            html += `</div></div>`;
+        });
+
+        // Count total functions in tier
+        let totalCount = 0;
+        groupMap.forEach(fns => totalCount += fns.length);
+        html += `<p class="text-xs text-gray-400">${totalCount} functions</p>`;
+        html += `</div>`;
+    });
+
+    panel.innerHTML = html;
+}
+
 btnViewTierMapping.addEventListener('click', () => {
-    renderTierMappingModal();
-    tierMappingModal.classList.remove('hidden');
+    // Open glossary modal and switch to tiers tab
+    glossaryModal.classList.remove('hidden');
+    glossaryModal.querySelectorAll('.glossary-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+    glossaryModal.querySelectorAll('.glossary-panel').forEach(p => p.classList.add('hidden'));
+    const tiersTab = glossaryModal.querySelector('[data-glossary-tab="tiers"]');
+    tiersTab.classList.add('active');
+    tiersTab.setAttribute('aria-selected', 'true');
+    glossaryModal.querySelector('[data-glossary-panel="tiers"]').classList.remove('hidden');
+    renderGlossaryTiers();
 });
 btnCloseTierMapping.addEventListener('click', () => tierMappingModal.classList.add('hidden'));
 tierMappingModal.addEventListener('click', (e) => { if (e.target === tierMappingModal) tierMappingModal.classList.add('hidden'); });

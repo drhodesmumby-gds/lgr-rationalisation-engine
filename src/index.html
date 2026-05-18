@@ -298,6 +298,7 @@
                     <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="signals">Signals</button>
                     <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="patterns">Patterns</button>
                     <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="governance">Governance</button>
+                    <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="tiers">Tiers</button>
                 </div>
                 <div class="flex-1 overflow-y-auto px-6 py-4">
 
@@ -314,9 +315,28 @@
 
                     <div class="glossary-panel hidden" data-glossary-panel="systems">
                         <dl class="space-y-3">
-                            <div><dt class="text-sm font-bold">Portability</dt><dd class="text-sm text-gray-700"><strong>High:</strong> Open APIs, native interop. <strong>Medium:</strong> Batch/CSV/SQL exports. <strong>Low:</strong> Proprietary lock-in, no bulk export.</dd></div>
-                            <div><dt class="text-sm font-bold">Data Layer</dt><dd class="text-sm text-gray-700"><strong>Segmented:</strong> Data partitions cleanly (by ward/department). <strong>Monolithic:</strong> Entangled across domains, requires ETL for splits.</dd></div>
-                            <div><dt class="text-sm font-bold">Cloud / On-Premise</dt><dd class="text-sm text-gray-700">Cloud = externally hosted SaaS/IaaS. On-premise = council servers with different migration, licensing, and support implications.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">Portability</dt>
+                                <dd class="text-sm text-gray-700 space-y-1">
+                                    <p><span class="inline-block w-16 text-xs font-bold text-[#00703c]">High</span> Open APIs, native interop — easy extraction</p>
+                                    <p><span class="inline-block w-16 text-xs font-bold text-[#f47738]">Medium</span> Batch/CSV/SQL exports — moderate effort</p>
+                                    <p><span class="inline-block w-16 text-xs font-bold text-[#d4351c]">Low</span> Proprietary lock-in — high vendor hostage risk</p>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Data Layer</dt>
+                                <dd class="text-sm text-gray-700 space-y-1">
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#00703c]">Segmented</span> Partitions cleanly by ward/department</p>
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#d4351c]">Monolithic</span> Entangled across domains — requires ETL</p>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Cloud / On-Premise</dt>
+                                <dd class="text-sm text-gray-700 space-y-1">
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#00703c]">Cloud</span> Externally hosted SaaS/IaaS — portable</p>
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#f47738]">On-prem</span> Council servers — migration, licensing, support risk</p>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">ERP</dt><dd class="text-sm text-gray-700">Enterprise Resource Planning — monolithic business system (finance, HR, payroll). High data entanglement risk. TCoP Point 9 concern.</dd></div>
                             <div><dt class="text-sm font-bold">Shared Service</dt><dd class="text-sm text-gray-700">A system jointly operated across council boundaries. Requires unwinding or re-contracting. May cross successor boundaries.</dd></div>
                             <div><dt class="text-sm font-bold">Capability Platform</dt><dd class="text-sm text-gray-700">A system that provides shared capabilities (payments, notifications, forms) consumed by other systems. Decommissioning creates blast radius across dependents.</dd></div>
@@ -326,13 +346,61 @@
 
                     <div class="glossary-panel hidden" data-glossary-panel="signals">
                         <dl class="space-y-3">
-                            <div><dt class="text-sm font-bold">Contract Urgency</dt><dd class="text-sm text-gray-700">Classifies contract end dates relative to vesting: Pre-vesting (red), Year 1 (amber), Natural expiry (blue), Long-tail (black). Accounts for notice period.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">Contract Urgency</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Classifies contract timing relative to vesting:
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">Pre-vesting</span></span>
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#f47738] inline-block"></span><span class="text-xs">Year 1</span></span>
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#1d70b8] inline-block"></span><span class="text-xs">Natural expiry</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#0b0c0c] inline-block"></span><span class="text-xs">Long-tail</span></span>
+                                    </span>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">Notice Period Action Zone</dt><dd class="text-sm text-gray-700">The true decision deadline = expiry minus notice period. A 12-month notice means the decision is due 12 months before contract end.</dd></div>
-                            <div><dt class="text-sm font-bold">User Volume</dt><dd class="text-sm text-gray-700">Relative system scale by user count. Anchor threshold: one system 50%+ larger than the next largest.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">User Volume</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Relative system scale by user count.
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">Anchor (50%+ larger)</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#b1b4b6] inline-block"></span><span class="text-xs">Standard</span></span>
+                                    </span>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">Vendor Density</dt><dd class="text-sm text-gray-700">Same vendor across multiple predecessors for a function. Commercial opportunity to consolidate into a single agreement.</dd></div>
-                            <div><dt class="text-sm font-bold">Tech Debt (On-premise)</dt><dd class="text-sm text-gray-700">Systems hosted on council servers. May face hosting, support, and licensing complications during transitions.</dd></div>
-                            <div><dt class="text-sm font-bold">Data Monolith</dt><dd class="text-sm text-gray-700">Systems with monolithic data partitioning or ERP status. High risk for disaggregation and data migration.</dd></div>
-                            <div><dt class="text-sm font-bold">Data Portability</dt><dd class="text-sm text-gray-700">Worst portability rating present. Low portability = proprietary lock-in, expensive/risky extraction.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">Tech Debt (On-premise)</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Systems hosted on council servers.
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">On-prem</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">Cloud</span></span>
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Data Monolith</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Systems with monolithic data partitioning or ERP status.
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">Monolithic / ERP</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">Segmented</span></span>
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Data Portability</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Worst portability rating present:
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">Low</span></span>
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#f47738] inline-block"></span><span class="text-xs">Medium</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">High</span></span>
+                                    </span>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">TCoP Alignment</dt><dd class="text-sm text-gray-700">Assessment against UK Government Technology Code of Practice. Points 3, 4, 5, 9, and 11 evaluated from system properties.</dd></div>
                             <div><dt class="text-sm font-bold">Shared Service</dt><dd class="text-sm text-gray-700">Systems with sharedWith declarations. In transition mode, detects cross-successor boundary sharing.</dd></div>
                         </dl>
@@ -356,6 +424,8 @@
                             <div><dt class="text-sm font-bold">Anchor System</dt><dd class="text-sm text-gray-700">System 50%+ larger than next-largest by user count. Generally the strongest migration consolidation target.</dd></div>
                         </dl>
                     </div>
+
+                    <div class="glossary-panel hidden" data-glossary-panel="tiers" id="glossaryTiersPanel"></div>
 
                 </div>
             </div>

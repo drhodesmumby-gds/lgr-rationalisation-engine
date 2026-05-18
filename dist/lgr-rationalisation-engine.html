@@ -33,7 +33,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 /* Timeline */
 .timeline-track { position: relative; border-left: 2px solid #0b0c0c; margin-left: 250px; padding-bottom: 30px; margin-top: 20px;}
 .timeline-bar { position: absolute; height: 28px; font-size: 12px; font-weight: bold; color: white; padding: 5px 10px; border-radius: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-right: 3px solid #0b0c0c; z-index: 2;}
-.timeline-notice-zone { position: absolute; height: 28px; background: repeating-linear-gradient(45deg, #d4351c, #d4351c 10px, #ffb2a8 10px, #ffb2a8 20px); opacity: 0.8; z-index: 1; border-top-left-radius: 2px; border-bottom-left-radius: 2px;}
+.timeline-notice-zone { position: absolute; height: 28px; background: repeating-linear-gradient(45deg, rgba(212,53,28,0.3), rgba(212,53,28,0.3) 4px, rgba(255,178,168,0.4) 4px, rgba(255,178,168,0.4) 8px); z-index: 3; border-top-left-radius: 2px; border-bottom-left-radius: 2px; border-left: 2px solid #d4351c;}
 .timeline-year-markers { position: absolute; bottom: 0; left: 0; width: 100%; height: 24px; display: flex; border-top: 2px solid #0b0c0c; background-color: #f3f2f1; }
 .year-marker { flex: 1; border-left: 2px solid #0b0c0c; position: relative; }
 .year-marker span { position: absolute; top: 4px; left: 6px; font-size: 13px; font-weight: bold; color: #505a5f;}
@@ -641,6 +641,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                     <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="signals">Signals</button>
                     <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="patterns">Patterns</button>
                     <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="governance">Governance</button>
+                    <button role="tab" class="glossary-tab" aria-selected="false" data-glossary-tab="tiers">Tiers</button>
                 </div>
                 <div class="flex-1 overflow-y-auto px-6 py-4">
 
@@ -657,9 +658,28 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 
                     <div class="glossary-panel hidden" data-glossary-panel="systems">
                         <dl class="space-y-3">
-                            <div><dt class="text-sm font-bold">Portability</dt><dd class="text-sm text-gray-700"><strong>High:</strong> Open APIs, native interop. <strong>Medium:</strong> Batch/CSV/SQL exports. <strong>Low:</strong> Proprietary lock-in, no bulk export.</dd></div>
-                            <div><dt class="text-sm font-bold">Data Layer</dt><dd class="text-sm text-gray-700"><strong>Segmented:</strong> Data partitions cleanly (by ward/department). <strong>Monolithic:</strong> Entangled across domains, requires ETL for splits.</dd></div>
-                            <div><dt class="text-sm font-bold">Cloud / On-Premise</dt><dd class="text-sm text-gray-700">Cloud = externally hosted SaaS/IaaS. On-premise = council servers with different migration, licensing, and support implications.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">Portability</dt>
+                                <dd class="text-sm text-gray-700 space-y-1">
+                                    <p><span class="inline-block w-16 text-xs font-bold text-[#00703c]">High</span> Open APIs, native interop — easy extraction</p>
+                                    <p><span class="inline-block w-16 text-xs font-bold text-[#f47738]">Medium</span> Batch/CSV/SQL exports — moderate effort</p>
+                                    <p><span class="inline-block w-16 text-xs font-bold text-[#d4351c]">Low</span> Proprietary lock-in — high vendor hostage risk</p>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Data Layer</dt>
+                                <dd class="text-sm text-gray-700 space-y-1">
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#00703c]">Segmented</span> Partitions cleanly by ward/department</p>
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#d4351c]">Monolithic</span> Entangled across domains — requires ETL</p>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Cloud / On-Premise</dt>
+                                <dd class="text-sm text-gray-700 space-y-1">
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#00703c]">Cloud</span> Externally hosted SaaS/IaaS — portable</p>
+                                    <p><span class="inline-block w-20 text-xs font-bold text-[#f47738]">On-prem</span> Council servers — migration, licensing, support risk</p>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">ERP</dt><dd class="text-sm text-gray-700">Enterprise Resource Planning — monolithic business system (finance, HR, payroll). High data entanglement risk. TCoP Point 9 concern.</dd></div>
                             <div><dt class="text-sm font-bold">Shared Service</dt><dd class="text-sm text-gray-700">A system jointly operated across council boundaries. Requires unwinding or re-contracting. May cross successor boundaries.</dd></div>
                             <div><dt class="text-sm font-bold">Capability Platform</dt><dd class="text-sm text-gray-700">A system that provides shared capabilities (payments, notifications, forms) consumed by other systems. Decommissioning creates blast radius across dependents.</dd></div>
@@ -669,13 +689,61 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 
                     <div class="glossary-panel hidden" data-glossary-panel="signals">
                         <dl class="space-y-3">
-                            <div><dt class="text-sm font-bold">Contract Urgency</dt><dd class="text-sm text-gray-700">Classifies contract end dates relative to vesting: Pre-vesting (red), Year 1 (amber), Natural expiry (blue), Long-tail (black). Accounts for notice period.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">Contract Urgency</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Classifies contract timing relative to vesting:
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">Pre-vesting</span></span>
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#f47738] inline-block"></span><span class="text-xs">Year 1</span></span>
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#1d70b8] inline-block"></span><span class="text-xs">Natural expiry</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#0b0c0c] inline-block"></span><span class="text-xs">Long-tail</span></span>
+                                    </span>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">Notice Period Action Zone</dt><dd class="text-sm text-gray-700">The true decision deadline = expiry minus notice period. A 12-month notice means the decision is due 12 months before contract end.</dd></div>
-                            <div><dt class="text-sm font-bold">User Volume</dt><dd class="text-sm text-gray-700">Relative system scale by user count. Anchor threshold: one system 50%+ larger than the next largest.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">User Volume</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Relative system scale by user count.
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">Anchor (50%+ larger)</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#b1b4b6] inline-block"></span><span class="text-xs">Standard</span></span>
+                                    </span>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">Vendor Density</dt><dd class="text-sm text-gray-700">Same vendor across multiple predecessors for a function. Commercial opportunity to consolidate into a single agreement.</dd></div>
-                            <div><dt class="text-sm font-bold">Tech Debt (On-premise)</dt><dd class="text-sm text-gray-700">Systems hosted on council servers. May face hosting, support, and licensing complications during transitions.</dd></div>
-                            <div><dt class="text-sm font-bold">Data Monolith</dt><dd class="text-sm text-gray-700">Systems with monolithic data partitioning or ERP status. High risk for disaggregation and data migration.</dd></div>
-                            <div><dt class="text-sm font-bold">Data Portability</dt><dd class="text-sm text-gray-700">Worst portability rating present. Low portability = proprietary lock-in, expensive/risky extraction.</dd></div>
+                            <div>
+                                <dt class="text-sm font-bold">Tech Debt (On-premise)</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Systems hosted on council servers.
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">On-prem</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">Cloud</span></span>
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Data Monolith</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Systems with monolithic data partitioning or ERP status.
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">Monolithic / ERP</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">Segmented</span></span>
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-bold">Data Portability</dt>
+                                <dd class="text-sm text-gray-700">
+                                    Worst portability rating present:
+                                    <span class="inline-block mt-1">
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#d4351c] inline-block"></span><span class="text-xs">Low</span></span>
+                                        <span class="inline-flex items-center gap-1 mr-2"><span class="w-2 h-2 rounded-full bg-[#f47738] inline-block"></span><span class="text-xs">Medium</span></span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#00703c] inline-block"></span><span class="text-xs">High</span></span>
+                                    </span>
+                                </dd>
+                            </div>
                             <div><dt class="text-sm font-bold">TCoP Alignment</dt><dd class="text-sm text-gray-700">Assessment against UK Government Technology Code of Practice. Points 3, 4, 5, 9, and 11 evaluated from system properties.</dd></div>
                             <div><dt class="text-sm font-bold">Shared Service</dt><dd class="text-sm text-gray-700">Systems with sharedWith declarations. In transition mode, detects cross-successor boundary sharing.</dd></div>
                         </dl>
@@ -699,6 +767,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                             <div><dt class="text-sm font-bold">Anchor System</dt><dd class="text-sm text-gray-700">System 50%+ larger than next-largest by user count. Generally the strongest migration consolidation target.</dd></div>
                         </dl>
                     </div>
+
+                    <div class="glossary-panel hidden" data-glossary-panel="tiers" id="glossaryTiersPanel"></div>
 
                 </div>
             </div>
@@ -10156,6 +10226,7 @@ tr:nth-child(even){background:#f3f2f1;}
     tab.classList.add("active");
     tab.setAttribute("aria-selected", "true");
     glossaryModal.querySelector(`[data-glossary-panel="${target}"]`).classList.remove("hidden");
+    if (target === "tiers") renderGlossaryTiers();
   });
   var docModal = document.getElementById("docModal");
   var btnCloseDoc = document.getElementById("btnCloseDoc");
@@ -10166,41 +10237,80 @@ tr:nth-child(even){background:#f3f2f1;}
   var tierMappingModal = document.getElementById("tierMappingModal");
   var btnViewTierMapping = document.getElementById("btnViewTierMapping");
   var btnCloseTierMapping = document.getElementById("btnCloseTierMapping");
-  function renderTierMappingModal() {
-    const content = document.getElementById("tierMappingContent");
-    const tierGroups = { 1: [], 2: [], 3: [] };
+  function renderGlossaryTiers() {
+    const panel = document.getElementById("glossaryTiersPanel");
+    if (!panel) return;
+    const parentMap = /* @__PURE__ */ new Map();
+    const roots = /* @__PURE__ */ new Map();
     LGA_FUNCTIONS.forEach((fn) => {
-      const tier = DEFAULT_TIER_MAP.get(fn.id) || 2;
-      tierGroups[tier].push(fn);
+      if (fn.parentId === null) {
+        roots.set(fn.id, fn.label);
+      }
     });
-    Object.values(tierGroups).forEach((group) => group.sort((a, b) => a.label.localeCompare(b.label)));
+    function getRootAncestor(fn) {
+      if (fn.parentId === null) return null;
+      let current = fn;
+      while (current.parentId !== null) {
+        const parent = LGA_FUNCTIONS.find((f) => f.id === current.parentId);
+        if (!parent) break;
+        current = parent;
+      }
+      return current;
+    }
+    const tierGroups = { 1: /* @__PURE__ */ new Map(), 2: /* @__PURE__ */ new Map(), 3: /* @__PURE__ */ new Map() };
+    LGA_FUNCTIONS.forEach((fn) => {
+      if (fn.parentId === null) return;
+      const tier = DEFAULT_TIER_MAP.get(fn.id) || 2;
+      const root = getRootAncestor(fn);
+      if (!root) return;
+      const rootLabel = root.label;
+      if (!tierGroups[tier].has(rootLabel)) {
+        tierGroups[tier].set(rootLabel, []);
+      }
+      tierGroups[tier].get(rootLabel).push(fn);
+    });
     const tierMeta = {
       1: { label: "Tier 1 \u2014 Day 1 Critical", desc: "Statutory and safeguarding services that must be operational from vesting day.", tagClass: "tag-red" },
       2: { label: "Tier 2 \u2014 High Priority", desc: "Services approaching contract renewal or requiring regulatory compliance attention.", tagClass: "tag-orange" },
       3: { label: "Tier 3 \u2014 Post-Day 1", desc: "Services that can run behind the veneer strategy post-vesting.", tagClass: "tag-blue" }
     };
-    let html = "";
+    let html = '<p class="text-sm text-gray-600 mb-4">Default ESD function-to-tier classification based on MHCLG Playbook prioritisation guidance. Functions not listed default to Tier 2. Tier 3 functions are promoted to Tier 2 when a contract expires before vesting.</p>';
     [1, 2, 3].forEach((tier) => {
       const meta = tierMeta[tier];
-      const functions = tierGroups[tier];
-      html += `<div>`;
-      html += `<h3 class="font-bold text-lg mb-1"><span class="gds-tag ${meta.tagClass} mr-2">${meta.label}</span></h3>`;
-      html += `<p class="text-sm text-gray-600 mb-3">${meta.desc}</p>`;
-      html += `<table class="w-full text-sm mb-2"><thead><tr class="border-b-2 border-[#0b0c0c]"><th class="text-left pb-1 font-bold w-20">ESD ID</th><th class="text-left pb-1 font-bold">Function</th></tr></thead><tbody>`;
-      functions.forEach((fn) => {
-        const isExplicit = DEFAULT_TIER_MAP.has(fn.id);
-        const defaultNote = !isExplicit && tier === 2 ? ' <span class="text-gray-400 text-[10px]">(default)</span>' : "";
-        html += `<tr class="border-b border-gray-100"><td class="py-1 font-mono text-gray-500">${fn.id}</td><td class="py-1">${fn.label}${defaultNote}</td></tr>`;
+      const groupMap = tierGroups[tier];
+      const sortedCategories = [...groupMap.keys()].sort((a, b) => a.localeCompare(b));
+      html += `<div class="mb-6">`;
+      html += `<h3 class="font-bold text-base mb-2"><span class="gds-tag ${meta.tagClass} mr-2">${meta.label}</span></h3>`;
+      html += `<p class="text-xs text-gray-500 mb-3">${meta.desc}</p>`;
+      sortedCategories.forEach((category) => {
+        const functions = groupMap.get(category).sort((a, b) => a.label.localeCompare(b.label));
+        html += `<div class="mb-4">`;
+        html += `<h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">${category}</h4>`;
+        html += `<div class="pl-3 border-l-2 border-gray-200 space-y-0.5">`;
+        functions.forEach((fn) => {
+          html += `<p class="text-sm">${fn.label} <span class="text-gray-400 text-xs">(${fn.id})</span></p>`;
+        });
+        html += `</div></div>`;
       });
-      html += `</tbody></table>`;
-      html += `<p class="text-xs text-gray-400">${functions.length} functions</p>`;
+      let totalCount = 0;
+      groupMap.forEach((fns) => totalCount += fns.length);
+      html += `<p class="text-xs text-gray-400">${totalCount} functions</p>`;
       html += `</div>`;
     });
-    content.innerHTML = html;
+    panel.innerHTML = html;
   }
   btnViewTierMapping.addEventListener("click", () => {
-    renderTierMappingModal();
-    tierMappingModal.classList.remove("hidden");
+    glossaryModal.classList.remove("hidden");
+    glossaryModal.querySelectorAll(".glossary-tab").forEach((t) => {
+      t.classList.remove("active");
+      t.setAttribute("aria-selected", "false");
+    });
+    glossaryModal.querySelectorAll(".glossary-panel").forEach((p) => p.classList.add("hidden"));
+    const tiersTab = glossaryModal.querySelector('[data-glossary-tab="tiers"]');
+    tiersTab.classList.add("active");
+    tiersTab.setAttribute("aria-selected", "true");
+    glossaryModal.querySelector('[data-glossary-panel="tiers"]').classList.remove("hidden");
+    renderGlossaryTiers();
   });
   btnCloseTierMapping.addEventListener("click", () => tierMappingModal.classList.add("hidden"));
   tierMappingModal.addEventListener("click", (e) => {
