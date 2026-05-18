@@ -148,7 +148,26 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
+    },
+    {
+      "id": "bwdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Birchwood District Council",
+      "users": 100,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -159,6 +178,8 @@
     { "source": "bwdc-sys-nec-eh", "target": "bwdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "bwdc-sys-capita-fin", "target": "bwdc-fn-finance", "relationship": "REALIZES" },
     { "source": "bwdc-sys-nec-hr", "target": "bwdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-inhouse-crm", "target": "bwdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "bwdc-sys-inhouse-crm", "target": "bwdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "bwdc-sys-inhouse-crm", "target": "bwdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "bwdc-sys-nec-revs", "target": "bwdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

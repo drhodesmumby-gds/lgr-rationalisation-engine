@@ -130,6 +130,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "cdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Crestfield District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -139,6 +157,9 @@
     { "source": "cdc-sys-jadu", "target": "cdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "cdc-sys-demo", "target": "cdc-fn-elections", "relationship": "REALIZES" },
     { "source": "cdc-sys-access-finance", "target": "cdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "cdc-sys-workday", "target": "cdc-fn-hr", "relationship": "REALIZES" }
+    { "source": "cdc-sys-workday", "target": "cdc-fn-hr", "relationship": "REALIZES" },
+    { "source": "cdc-sys-whitespace", "target": "cdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "cdc-sys-arcus", "target": "cdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "cdc-sys-jadu", "target": "cdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

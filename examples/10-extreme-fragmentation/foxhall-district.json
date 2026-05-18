@@ -29,7 +29,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "fdc-sys-bartec-waste",
@@ -149,6 +150,24 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "fdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Foxhall District Council",
+      "users": 130,
+      "vendor": "GDS",
+      "cost": "£6k/yr",
+      "annualCost": 6000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -160,6 +179,9 @@
     { "source": "fdc-sys-capita-housing", "target": "fdc-fn-housing", "relationship": "REALIZES" },
     { "source": "fdc-sys-civica-eh", "target": "fdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "fdc-sys-civica-elections", "target": "fdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "fdc-sys-capita-crm", "target": "fdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "fdc-sys-capita-crm", "target": "fdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "fdc-sys-capita-housing", "target": "fdc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "fdc-sys-capita-revenues", "target": "fdc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "fdc-sys-capita-crm", "target": "fdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
   ]
 }

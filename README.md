@@ -66,7 +66,8 @@ Each council prepares a JSON file following the schema below. The engine enforce
   "isCloud": true,
   "isERP": false,
   "sharedWith": ["Easton District Council"],
-  "targetAuthorities": ["North Essex Unitary"]
+  "targetAuthorities": ["North Essex Unitary"],
+  "capabilityType": ["payments"]
 }
 ```
 
@@ -84,6 +85,7 @@ Each council prepares a JSON file following the schema below. The engine enforce
 | `isERP` | boolean | Enterprise Resource Planning system (triggers additional monolithic risk treatment) |
 | `sharedWith` | string[] | Optional. Other council names sharing this system instance; triggers shared service analysis |
 | `targetAuthorities` | string[] | Optional. Explicit successor authority assignment; overrides default allocation logic |
+| `capabilityType` | string[] | Optional. Capabilities this system provides (e.g., `"payments"`, `"forms"`, `"sms"`, `"email"`, `"workflow"`); used for blast radius analysis and CONSUMES_CAPABILITY dependency tracking |
 
 ### Edge
 

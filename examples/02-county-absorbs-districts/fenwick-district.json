@@ -166,6 +166,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "fdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Fenwick District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -177,6 +195,9 @@
     { "source": "fdc-sys-idox-elections", "target": "fdc-fn-elections", "relationship": "REALIZES" },
     { "source": "fdc-sys-access-finance", "target": "fdc-fn-finance", "relationship": "REALIZES" },
     { "source": "fdc-sys-access-hr", "target": "fdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "fdc-sys-granicus", "target": "fdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "fdc-sys-granicus", "target": "fdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "fdc-sys-nec-waste", "target": "fdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "fdc-sys-idox-planning", "target": "fdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "fdc-sys-granicus", "target": "fdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
   ]
 }

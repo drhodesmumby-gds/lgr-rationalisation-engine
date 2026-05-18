@@ -151,7 +151,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "kdc-sys-jadu-eh",
@@ -169,6 +170,43 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "kdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Kingsway District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
+    },
+    {
+      "id": "kdc-sys-capita-pay360",
+      "label": "Capita Pay360 (Shared)",
+      "type": "ITSystem",
+      "owner": "Kingsway District Council",
+      "users": 60,
+      "vendor": "Capita",
+      "cost": "£85k/yr",
+      "annualCost": 85000,
+      "endYear": 2028,
+      "endMonth": 9,
+      "noticePeriod": 6,
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "sharedWith": ["Riverdale Borough Council"],
+      "capabilityType": ["payments"]
     }
   ],
   "edges": [
@@ -180,6 +218,12 @@
     { "source": "kdc-sys-mhr-itrent", "target": "kdc-fn-hr", "relationship": "REALIZES" },
     { "source": "kdc-sys-civica-elections", "target": "kdc-fn-elections", "relationship": "REALIZES" },
     { "source": "kdc-sys-jadu-eh", "target": "kdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "kdc-sys-granicus", "target": "kdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "kdc-sys-granicus", "target": "kdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "kdc-sys-nec-revenues", "target": "kdc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "kdc-sys-civica-housing", "target": "kdc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "kdc-sys-granicus", "target": "kdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "kdc-sys-bartec", "target": "kdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "kdc-sys-civica-housing", "target": "kdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "kdc-sys-arcus-planning", "target": "kdc-sys-granicus", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
   ]
 }

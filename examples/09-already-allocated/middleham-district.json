@@ -148,6 +148,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "mdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Middleham District Council",
+      "users": 120,
+      "vendor": "GDS",
+      "cost": "£6k/yr",
+      "annualCost": 6000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -158,6 +176,9 @@
     { "source": "mdc-sys-tascomi", "target": "mdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "mdc-sys-democracy-counts", "target": "mdc-fn-elections", "relationship": "REALIZES" },
     { "source": "mdc-sys-unit4", "target": "mdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "mdc-sys-access-peoplehr", "target": "mdc-fn-hr", "relationship": "REALIZES" }
+    { "source": "mdc-sys-access-peoplehr", "target": "mdc-fn-hr", "relationship": "REALIZES" },
+    { "source": "mdc-sys-capita-rev", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "mdc-sys-aareon-housing", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "mdc-sys-unit4", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

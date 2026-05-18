@@ -137,6 +137,26 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
+      "capabilityType": ["payments"],
+      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+    },
+    {
+      "id": "dbc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Dunstable Borough Council",
+      "users": 80,
+      "vendor": "GDS",
+      "cost": "£3k/yr",
+      "annualCost": 3000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"],
       "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
     }
   ],
@@ -148,6 +168,10 @@
     { "source": "dbc-sys-inhouse-eh", "target": "dbc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "dbc-sys-civica-elections", "target": "dbc-fn-elections", "relationship": "REALIZES" },
     { "source": "dbc-sys-inhouse-finance", "target": "dbc-fn-finance", "relationship": "REALIZES" },
-    { "source": "dbc-sys-inhouse-finance", "target": "dbc-fn-hr", "relationship": "REALIZES" }
+    { "source": "dbc-sys-inhouse-finance", "target": "dbc-fn-hr", "relationship": "REALIZES" },
+    { "source": "dbc-sys-nec-benefits", "target": "dbc-sys-inhouse-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "dbc-sys-capita-housing", "target": "dbc-sys-inhouse-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "dbc-sys-capita-waste", "target": "dbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "dbc-sys-capita-housing", "target": "dbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

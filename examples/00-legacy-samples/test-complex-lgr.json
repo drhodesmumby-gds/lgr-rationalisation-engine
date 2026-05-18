@@ -69,7 +69,7 @@
       "isCloud": false,
       "isERP": false
     },
-    
+
     {
       "_note": "Neighbouring authority receiving a fragment of Council A.",
       "id": "sys_c_care",
@@ -100,16 +100,54 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+
+    {
+      "_note": "Council A's shared notification platform — consumed by waste and care systems.",
+      "id": "sys_a_notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Council A (Fractured)",
+      "targetAuthorities": ["Unitary AB"],
+      "endYear": 2030,
+      "endMonth": 12,
+      "cost": "£8k/yr",
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
+    },
+    {
+      "_note": "Council A's payment gateway — used by waste system for payment collection.",
+      "id": "sys_a_pay",
+      "label": "GOV.UK Pay",
+      "type": "ITSystem",
+      "owner": "Council A (Fractured)",
+      "targetAuthorities": ["Unitary AB"],
+      "endYear": 2030,
+      "endMonth": 12,
+      "cost": "£5k/yr",
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
     }
   ],
   "edges": [
     { "source": "sys_a_waste", "target": "f_waste", "relationship": "REALIZES" },
     { "source": "sys_a_care", "target": "f_care", "relationship": "REALIZES" },
     { "source": "sys_a_highways", "target": "f_highways", "relationship": "REALIZES" },
-    
+
     { "source": "sys_b_waste", "target": "f_waste", "relationship": "REALIZES" },
-    
+
     { "source": "sys_c_care", "target": "f_care", "relationship": "REALIZES" },
-    { "source": "sys_d_care", "target": "f_care", "relationship": "REALIZES" }
+    { "source": "sys_d_care", "target": "f_care", "relationship": "REALIZES" },
+
+    { "source": "sys_a_waste", "target": "sys_a_notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "sys_a_waste", "target": "sys_a_pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "sys_a_care", "target": "sys_a_notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "sys_a_highways", "target": "sys_a_notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

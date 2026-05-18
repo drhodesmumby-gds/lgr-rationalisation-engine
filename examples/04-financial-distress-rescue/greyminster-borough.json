@@ -96,7 +96,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "gbc-sys-capita-hr",
@@ -148,6 +149,24 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "gbc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Greyminster Borough Council",
+      "users": 45,
+      "vendor": "GDS",
+      "cost": "£2k/yr",
+      "annualCost": 2000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -158,6 +177,10 @@
     { "source": "gbc-sys-oracle-finance", "target": "gbc-fn-finance", "relationship": "REALIZES" },
     { "source": "gbc-sys-capita-hr", "target": "gbc-fn-hr", "relationship": "REALIZES" },
     { "source": "gbc-sys-capita-crm", "target": "gbc-fn-crm", "relationship": "REALIZES" },
-    { "source": "gbc-sys-nec-eh", "target": "gbc-fn-envhealth", "relationship": "REALIZES" }
+    { "source": "gbc-sys-nec-eh", "target": "gbc-fn-envhealth", "relationship": "REALIZES" },
+    { "source": "gbc-sys-nec-revenues", "target": "gbc-sys-oracle-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "gbc-sys-capita-housing", "target": "gbc-sys-oracle-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "gbc-sys-capita-crm", "target": "gbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "gbc-sys-capita-waste", "target": "gbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

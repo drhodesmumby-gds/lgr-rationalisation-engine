@@ -151,7 +151,26 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
+      "capabilityType": ["forms"],
       "targetAuthorities": ["Penworth North Council"]
+    },
+    {
+      "id": "ldc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Langton District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -162,6 +181,9 @@
     { "source": "ldc-sys-idox-eh", "target": "ldc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "ldc-sys-civica-elections", "target": "ldc-fn-elections", "relationship": "REALIZES" },
     { "source": "ldc-sys-civica-fin", "target": "ldc-fn-finance", "relationship": "REALIZES" },
-    { "source": "ldc-sys-jadu", "target": "ldc-fn-crm", "relationship": "REALIZES" }
+    { "source": "ldc-sys-jadu", "target": "ldc-fn-crm", "relationship": "REALIZES" },
+    { "source": "ldc-sys-jadu", "target": "ldc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ldc-sys-nec", "target": "ldc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "ldc-sys-civica-fin", "target": "ldc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
   ]
 }

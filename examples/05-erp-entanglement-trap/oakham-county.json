@@ -99,6 +99,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "occ-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Oakham County Council",
+      "users": 500,
+      "vendor": "GDS",
+      "cost": "£10k/yr",
+      "annualCost": 10000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 3,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -109,6 +127,12 @@
     { "source": "occ-sys-liquidlogic", "target": "occ-fn-socialcare", "relationship": "REALIZES" },
     { "source": "occ-sys-confirm", "target": "occ-fn-highways", "relationship": "REALIZES" },
     { "source": "occ-sys-dynamics", "target": "occ-fn-crm", "relationship": "REALIZES" },
-    { "source": "occ-sys-civica-parking", "target": "occ-fn-parking", "relationship": "REALIZES" }
+    { "source": "occ-sys-civica-parking", "target": "occ-fn-parking", "relationship": "REALIZES" },
+    { "source": "occ-sys-liquidlogic", "target": "occ-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "occ-sys-confirm", "target": "occ-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] },
+    { "source": "occ-sys-civica-parking", "target": "occ-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "occ-sys-liquidlogic", "target": "occ-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "occ-sys-confirm", "target": "occ-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "occ-sys-dynamics", "target": "occ-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
   ]
 }

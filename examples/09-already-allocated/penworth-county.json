@@ -101,6 +101,7 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": true,
+      "capabilityType": ["payments", "workflow"],
       "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
     },
     {
@@ -138,6 +139,25 @@
       "isCloud": false,
       "isERP": false,
       "targetAuthorities": ["Penworth South Council"]
+    },
+    {
+      "id": "pcc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Penworth County Council",
+      "users": 600,
+      "vendor": "GDS",
+      "cost": "£15k/yr",
+      "annualCost": 15000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"],
+      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
     }
   ],
   "edges": [
@@ -148,6 +168,11 @@
     { "source": "pcc-sys-oracle-erp", "target": "pcc-fn-finance", "relationship": "REALIZES" },
     { "source": "pcc-sys-oracle-erp", "target": "pcc-fn-hr", "relationship": "REALIZES" },
     { "source": "pcc-sys-salesforce", "target": "pcc-fn-crm", "relationship": "REALIZES" },
-    { "source": "pcc-sys-publichealth", "target": "pcc-fn-publichealth", "relationship": "REALIZES" }
+    { "source": "pcc-sys-publichealth", "target": "pcc-fn-publichealth", "relationship": "REALIZES" },
+    { "source": "pcc-sys-liquidlogic-las", "target": "pcc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "pcc-sys-liquidlogic-ehm", "target": "pcc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "pcc-sys-confirm", "target": "pcc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "pcc-sys-salesforce", "target": "pcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "pcc-sys-liquidlogic-las", "target": "pcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

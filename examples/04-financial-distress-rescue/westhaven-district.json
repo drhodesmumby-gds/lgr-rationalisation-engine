@@ -130,7 +130,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "wdc-sys-access-eh",
@@ -148,6 +149,42 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "wdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Westhaven District Council",
+      "users": 300,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
+    },
+    {
+      "id": "wdc-sys-govuk-pay",
+      "label": "GOV.UK Pay",
+      "type": "ITSystem",
+      "owner": "Westhaven District Council",
+      "users": 120,
+      "vendor": "GDS",
+      "cost": "£4k/yr",
+      "annualCost": 4000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
     }
   ],
   "edges": [
@@ -158,6 +195,13 @@
     { "source": "wdc-sys-xero", "target": "wdc-fn-finance", "relationship": "REALIZES" },
     { "source": "wdc-sys-workday", "target": "wdc-fn-hr", "relationship": "REALIZES" },
     { "source": "wdc-sys-jadu-crm", "target": "wdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "wdc-sys-access-eh", "target": "wdc-fn-envhealth", "relationship": "REALIZES" }
+    { "source": "wdc-sys-access-eh", "target": "wdc-fn-envhealth", "relationship": "REALIZES" },
+    { "source": "wdc-sys-access-revenues", "target": "wdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wdc-sys-mri-housing", "target": "wdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wdc-sys-arcus-planning", "target": "wdc-sys-jadu-crm", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
+    { "source": "wdc-sys-arcus-waste", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "wdc-sys-mri-housing", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "wdc-sys-jadu-crm", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "wdc-sys-access-eh", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

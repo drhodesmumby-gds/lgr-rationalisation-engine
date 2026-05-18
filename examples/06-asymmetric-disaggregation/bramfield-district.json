@@ -148,7 +148,44 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
+    },
+    {
+      "id": "brdc-sys-govuk-pay",
+      "label": "GOV.UK Pay",
+      "type": "ITSystem",
+      "owner": "Bramfield District Council",
+      "users": 60,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
+    },
+    {
+      "id": "brdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Bramfield District Council",
+      "users": 180,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -160,6 +197,12 @@
     { "source": "brdc-sys-democracy-club", "target": "brdc-fn-elections", "relationship": "REALIZES" },
     { "source": "brdc-sys-sage", "target": "brdc-fn-finance", "relationship": "REALIZES" },
     { "source": "brdc-sys-sage", "target": "brdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "brdc-sys-jadu", "target": "brdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "brdc-sys-jadu", "target": "brdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "brdc-sys-arcus", "target": "brdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "brdc-sys-jadu", "target": "brdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "brdc-sys-capita-benefits", "target": "brdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "brdc-sys-jadu", "target": "brdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "brdc-sys-capita-benefits", "target": "brdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "brdc-sys-aareon", "target": "brdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

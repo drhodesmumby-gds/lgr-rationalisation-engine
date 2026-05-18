@@ -16,7 +16,7 @@
 
     {
       "_note": "Modular HR/Finance stack. Collides with the massive Oracle monolith at the county.",
-      "id": "sys_w_fin", "label": "Xero Corporate", "type": "ITSystem", "owner": "Westampton District", "vendor": "Xero", "users": 150, "endYear": 2026, "endMonth": 3, "noticePeriod": 3, "cost": "£80k/yr", "annualCost": 80000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false
+      "id": "sys_w_fin", "label": "Xero Corporate", "type": "ITSystem", "owner": "Westampton District", "vendor": "Xero", "users": 150, "endYear": 2026, "endMonth": 3, "noticePeriod": 3, "cost": "£80k/yr", "annualCost": 80000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false, "capabilityType": ["payments"]
     },
     { "id": "sys_w_hr", "label": "Workday HR", "type": "ITSystem", "owner": "Westampton District", "vendor": "Workday", "users": 200, "endYear": 2026, "endMonth": 6, "noticePeriod": 6, "cost": "£180k/yr", "annualCost": 180000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
     { "id": "sys_w_waste", "label": "Bartec Collective", "type": "ITSystem", "owner": "Westampton District", "vendor": "Bartec", "users": 120, "endYear": 2025, "endMonth": 11, "noticePeriod": 3, "cost": "£140k/yr", "annualCost": 140000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
@@ -25,7 +25,15 @@
     { "id": "sys_w_house", "label": "Capita One Housing", "type": "ITSystem", "owner": "Westampton District", "vendor": "Capita", "users": 95, "endYear": 2028, "endMonth": 4, "noticePeriod": 12, "cost": "£160k/yr", "annualCost": 160000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
     { "id": "sys_w_env", "label": "Tascomi Public Protection", "type": "ITSystem", "owner": "Westampton District", "vendor": "Idox", "users": 60, "endYear": 2027, "endMonth": 9, "noticePeriod": 6, "cost": "£75k/yr", "annualCost": 75000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
     { "id": "sys_w_elec", "label": "Xpress Register", "type": "ITSystem", "owner": "Westampton District", "vendor": "Civica", "users": 15, "endYear": 2025, "endMonth": 8, "noticePeriod": 3, "cost": "£40k/yr", "annualCost": 40000, "portability": "Medium", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false },
-    { "id": "sys_w_crm", "label": "Jadu CXM", "type": "ITSystem", "owner": "Westampton District", "vendor": "Jadu", "users": 350, "endYear": 2026, "endMonth": 1, "noticePeriod": 3, "cost": "£120k/yr", "annualCost": 120000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false }
+    { "id": "sys_w_crm", "label": "Jadu CXM", "type": "ITSystem", "owner": "Westampton District", "vendor": "Jadu", "users": 350, "endYear": 2026, "endMonth": 1, "noticePeriod": 3, "cost": "£120k/yr", "annualCost": 120000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false, "capabilityType": ["forms"] },
+    {
+      "_note": "District payment gateway for online council tax and parking payments.",
+      "id": "sys_w_stripe", "label": "Stripe", "type": "ITSystem", "owner": "Westampton District", "vendor": "Stripe", "users": 80, "endYear": 2027, "endMonth": 12, "noticePeriod": 1, "cost": "£15k/yr", "annualCost": 15000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false, "capabilityType": ["payments"]
+    },
+    {
+      "_note": "Notification platform for customer-facing alerts and reminders.",
+      "id": "sys_w_notify", "label": "GOV.UK Notify", "type": "ITSystem", "owner": "Westampton District", "vendor": "GDS", "users": 150, "endYear": 2030, "endMonth": 12, "noticePeriod": 1, "cost": "£5k/yr", "annualCost": 5000, "portability": "High", "dataPartitioning": "Segmented", "isCloud": true, "isERP": false, "capabilityType": ["sms", "email"]
+    }
   ],
   "edges": [
     { "source": "sys_w_waste", "target": "LGA_WASTE", "relationship": "REALIZES" },
@@ -36,6 +44,12 @@
     { "source": "sys_w_elec", "target": "LGA_ELEC", "relationship": "REALIZES" },
     { "source": "sys_w_fin", "target": "LGA_FIN", "relationship": "REALIZES" },
     { "source": "sys_w_hr", "target": "LGA_HR", "relationship": "REALIZES" },
-    { "source": "sys_w_crm", "target": "LGA_CRM", "relationship": "REALIZES" }
+    { "source": "sys_w_crm", "target": "LGA_CRM", "relationship": "REALIZES" },
+
+    { "source": "sys_w_crm", "target": "sys_w_notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "sys_w_crm", "target": "sys_w_stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "sys_w_revs", "target": "sys_w_stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "sys_w_waste", "target": "sys_w_notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "sys_w_house", "target": "sys_w_notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

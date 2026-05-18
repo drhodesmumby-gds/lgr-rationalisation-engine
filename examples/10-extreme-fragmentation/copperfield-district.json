@@ -166,7 +166,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "cfdc-sys-openobjects",
@@ -184,6 +185,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "cfdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Copperfield District Council",
+      "users": 200,
+      "vendor": "GDS",
+      "cost": "£9k/yr",
+      "annualCost": 9000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -196,6 +215,9 @@
     { "source": "cfdc-sys-xero", "target": "cfdc-fn-finance", "relationship": "REALIZES" },
     { "source": "cfdc-sys-workday", "target": "cfdc-fn-hr", "relationship": "REALIZES" },
     { "source": "cfdc-sys-jadu", "target": "cfdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-openobjects", "target": "cfdc-fn-parks", "relationship": "REALIZES" }
+    { "source": "cfdc-sys-openobjects", "target": "cfdc-fn-parks", "relationship": "REALIZES" },
+    { "source": "cfdc-sys-jadu", "target": "cfdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "cfdc-sys-access-benefits", "target": "cfdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "cfdc-sys-access-housing", "target": "cfdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
   ]
 }

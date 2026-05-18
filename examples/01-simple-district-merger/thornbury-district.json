@@ -130,6 +130,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "tdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Thornbury District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -139,6 +157,9 @@
     { "source": "tdc-sys-ehconnect", "target": "tdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "tdc-sys-electoraliq", "target": "tdc-fn-elections", "relationship": "REALIZES" },
     { "source": "tdc-sys-xero", "target": "tdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "tdc-sys-mhr", "target": "tdc-fn-hr", "relationship": "REALIZES" }
+    { "source": "tdc-sys-mhr", "target": "tdc-fn-hr", "relationship": "REALIZES" },
+    { "source": "tdc-sys-bartec", "target": "tdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "tdc-sys-idox", "target": "tdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "tdc-sys-ehconnect", "target": "tdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

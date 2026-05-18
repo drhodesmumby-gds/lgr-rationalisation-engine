@@ -29,7 +29,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "drbc-sys-whitespace",
@@ -149,6 +150,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "drbc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Drayton Borough Council",
+      "users": 180,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -160,6 +179,9 @@
     { "source": "drbc-sys-mri-housing", "target": "drbc-fn-housing", "relationship": "REALIZES" },
     { "source": "drbc-sys-civica-eh", "target": "drbc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "drbc-sys-civica-elections", "target": "drbc-fn-elections", "relationship": "REALIZES" },
-    { "source": "drbc-sys-salesforce", "target": "drbc-fn-crm", "relationship": "REALIZES" }
+    { "source": "drbc-sys-salesforce", "target": "drbc-fn-crm", "relationship": "REALIZES" },
+    { "source": "drbc-sys-mri-housing", "target": "drbc-sys-sap-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "drbc-sys-salesforce", "target": "drbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "drbc-sys-civica-rev", "target": "drbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }

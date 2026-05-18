@@ -115,7 +115,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": false
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "ocbc-sys-nec-hr",
@@ -184,6 +185,24 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "ocbc-sys-capita-notify",
+      "label": "Capita Secure Messaging Gateway",
+      "type": "ITSystem",
+      "owner": "Oldcastle Borough Council",
+      "users": 180,
+      "vendor": "Capita",
+      "cost": "£65k/yr",
+      "annualCost": 65000,
+      "endYear": 2030,
+      "endMonth": 6,
+      "noticePeriod": 9,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -196,6 +215,15 @@
     { "source": "ocbc-sys-nec-hr", "target": "ocbc-fn-hr", "relationship": "REALIZES" },
     { "source": "ocbc-sys-civica-crm", "target": "ocbc-fn-crm", "relationship": "REALIZES" },
     { "source": "ocbc-sys-civica-elections", "target": "ocbc-fn-elections", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-inhouse-parks", "target": "ocbc-fn-parks", "relationship": "REALIZES" }
+    { "source": "ocbc-sys-inhouse-parks", "target": "ocbc-fn-parks", "relationship": "REALIZES" },
+    { "source": "ocbc-sys-nec-benefits", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ocbc-sys-idox-planning", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ocbc-sys-capita-housing", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
+    { "source": "ocbc-sys-civica-crm", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ocbc-sys-nec-hr", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
+    { "source": "ocbc-sys-nec-benefits", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "ocbc-sys-capita-housing", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ocbc-sys-civica-crm", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ocbc-sys-capita-waste", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

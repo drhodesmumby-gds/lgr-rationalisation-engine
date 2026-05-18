@@ -166,6 +166,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "adc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Ashbury District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -177,6 +195,9 @@
     { "source": "adc-sys-elections", "target": "adc-fn-elections", "relationship": "REALIZES" },
     { "source": "adc-sys-xero", "target": "adc-fn-finance", "relationship": "REALIZES" },
     { "source": "adc-sys-workday", "target": "adc-fn-hr", "relationship": "REALIZES" },
-    { "source": "adc-sys-salesforce", "target": "adc-fn-crm", "relationship": "REALIZES" }
+    { "source": "adc-sys-salesforce", "target": "adc-fn-crm", "relationship": "REALIZES" },
+    { "source": "adc-sys-bartec", "target": "adc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "adc-sys-arcus-planning", "target": "adc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "adc-sys-salesforce", "target": "adc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
   ]
 }

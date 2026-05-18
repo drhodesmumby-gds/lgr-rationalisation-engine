@@ -37,7 +37,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "gbcc-sys-asc",
@@ -173,7 +174,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "gbcc-sys-streetcare",
@@ -276,6 +278,42 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "gbcc-sys-capita-pay360",
+      "label": "Capita Pay360",
+      "type": "ITSystem",
+      "owner": "Greater Blackwood County Council",
+      "users": 750,
+      "vendor": "Capita",
+      "cost": "£85k/yr",
+      "annualCost": 85000,
+      "endYear": 2029,
+      "endMonth": 3,
+      "noticePeriod": 6,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
+    },
+    {
+      "id": "gbcc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Greater Blackwood County Council",
+      "users": 800,
+      "vendor": "GDS",
+      "cost": "£18k/yr",
+      "annualCost": 18000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -295,6 +333,16 @@
     { "source": "gbcc-sys-ict", "target": "gbcc-fn-ict", "relationship": "REALIZES" },
     { "source": "gbcc-sys-registration", "target": "gbcc-fn-registration", "relationship": "REALIZES" },
     { "source": "gbcc-sys-emergencies", "target": "gbcc-fn-emergencies", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-sports", "target": "gbcc-fn-sports", "relationship": "REALIZES" }
+    { "source": "gbcc-sys-sports", "target": "gbcc-fn-sports", "relationship": "REALIZES" },
+    { "source": "gbcc-sys-parking", "target": "gbcc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "gbcc-sys-sports", "target": "gbcc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "gbcc-sys-libraries", "target": "gbcc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "gbcc-sys-asc", "target": "gbcc-sys-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
+    { "source": "gbcc-sys-child", "target": "gbcc-sys-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
+    { "source": "gbcc-sys-highways", "target": "gbcc-sys-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "gbcc-sys-crm", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "gbcc-sys-asc", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "gbcc-sys-streetcare", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "gbcc-sys-parking", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

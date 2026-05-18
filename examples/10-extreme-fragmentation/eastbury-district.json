@@ -184,6 +184,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "edc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Eastbury District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£7k/yr",
+      "annualCost": 7000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -196,6 +214,9 @@
     { "source": "edc-sys-nec-finance", "target": "edc-fn-finance", "relationship": "REALIZES" },
     { "source": "edc-sys-nec-hr", "target": "edc-fn-hr", "relationship": "REALIZES" },
     { "source": "edc-sys-nec-crm", "target": "edc-fn-crm", "relationship": "REALIZES" },
-    { "source": "edc-sys-nec-towncentre", "target": "edc-fn-towncentre", "relationship": "REALIZES" }
+    { "source": "edc-sys-nec-towncentre", "target": "edc-fn-towncentre", "relationship": "REALIZES" },
+    { "source": "edc-sys-nec-crm", "target": "edc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "edc-sys-nec-revenues", "target": "edc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "edc-sys-nec-housing", "target": "edc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

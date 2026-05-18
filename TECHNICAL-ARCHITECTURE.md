@@ -106,6 +106,7 @@ At ingest time, a `_sourceCouncil` property is added to every node and edge to t
 | `isERP` | boolean | Triggers additional monolithic treatment and TCoP Point 9 concern |
 | `sharedWith` | string[] | Other council names sharing this system instance; triggers shared service signal |
 | `targetAuthorities` | string[] | Explicit successor assignment; overrides default predecessor-based allocation |
+| `capabilityType` | string[] | Capabilities this system provides (e.g., payments, forms, sms); used for blast radius preview and capability dependency graph |
 
 ### Council metadata
 

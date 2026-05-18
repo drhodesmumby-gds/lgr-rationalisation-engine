@@ -29,7 +29,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "bdc-sys-bartec",
@@ -149,6 +150,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "bdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Brackley District Council",
+      "users": 120,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 3,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -160,6 +179,11 @@
     { "source": "bdc-sys-mri-orchard", "target": "bdc-fn-housing", "relationship": "REALIZES" },
     { "source": "bdc-sys-idox-envhealth", "target": "bdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "bdc-sys-civica-xpress", "target": "bdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "bdc-sys-granicus", "target": "bdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "bdc-sys-granicus", "target": "bdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "bdc-sys-bartec", "target": "bdc-sys-oracle-ebs", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "bdc-sys-nec", "target": "bdc-sys-oracle-ebs", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "bdc-sys-mri-orchard", "target": "bdc-sys-oracle-ebs", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "bdc-sys-granicus", "target": "bdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "bdc-sys-bartec", "target": "bdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

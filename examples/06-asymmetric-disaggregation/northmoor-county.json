@@ -120,6 +120,7 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": true,
+      "capabilityType": ["payments", "workflow"],
       "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
     },
     {
@@ -138,6 +139,7 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
+      "capabilityType": ["forms"],
       "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
     },
     {
@@ -157,6 +159,44 @@
       "isCloud": true,
       "isERP": false,
       "targetAuthorities": ["North Alderton Council"]
+    },
+    {
+      "id": "ncc-sys-capita-pay360",
+      "label": "Capita Pay360 Payment Gateway",
+      "type": "ITSystem",
+      "owner": "Northmoor County Council",
+      "users": 600,
+      "vendor": "Capita",
+      "cost": "£85k/yr",
+      "annualCost": 85000,
+      "endYear": 2029,
+      "endMonth": 6,
+      "noticePeriod": 6,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"],
+      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+    },
+    {
+      "id": "ncc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Northmoor County Council",
+      "users": 700,
+      "vendor": "GDS",
+      "cost": "£12k/yr",
+      "annualCost": 12000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"],
+      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
     }
   ],
   "edges": [
@@ -168,6 +208,15 @@
     { "source": "ncc-sys-oracle-erp", "target": "ncc-fn-finance", "relationship": "REALIZES" },
     { "source": "ncc-sys-oracle-erp", "target": "ncc-fn-hr", "relationship": "REALIZES" },
     { "source": "ncc-sys-dynamics", "target": "ncc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ncc-sys-access-street", "target": "ncc-fn-streetcare", "relationship": "REALIZES" }
+    { "source": "ncc-sys-access-street", "target": "ncc-fn-streetcare", "relationship": "REALIZES" },
+    { "source": "ncc-sys-liquidlogic-las", "target": "ncc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ncc-sys-liquidlogic-ehm", "target": "ncc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ncc-sys-confirm", "target": "ncc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] },
+    { "source": "ncc-sys-koha", "target": "ncc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ncc-sys-access-street", "target": "ncc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "ncc-sys-liquidlogic-las", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ncc-sys-liquidlogic-ehm", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ncc-sys-dynamics", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "ncc-sys-confirm", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

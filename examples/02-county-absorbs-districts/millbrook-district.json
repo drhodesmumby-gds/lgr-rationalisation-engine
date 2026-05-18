@@ -131,7 +131,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "mdc-sys-ms-crm",
@@ -148,7 +149,26 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
+    },
+    {
+      "id": "mdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Millbrook District Council",
+      "users": 150,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -160,6 +180,11 @@
     { "source": "mdc-sys-civica-elections", "target": "mdc-fn-elections", "relationship": "REALIZES" },
     { "source": "mdc-sys-unit4", "target": "mdc-fn-finance", "relationship": "REALIZES" },
     { "source": "mdc-sys-unit4", "target": "mdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "mdc-sys-ms-crm", "target": "mdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "mdc-sys-ms-crm", "target": "mdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "mdc-sys-civica-revenues", "target": "mdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "mdc-sys-civica-housing", "target": "mdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "mdc-sys-civica-waste", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "mdc-sys-ms-crm", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "mdc-sys-civica-planning", "target": "mdc-sys-ms-crm", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
   ]
 }

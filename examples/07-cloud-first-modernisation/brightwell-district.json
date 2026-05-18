@@ -149,7 +149,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "bwell-sys-granicus-elections",
@@ -184,6 +185,42 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "bwell-sys-stripe",
+      "label": "Stripe Payment Processing",
+      "type": "ITSystem",
+      "owner": "Brightwell District Council",
+      "users": 95,
+      "vendor": "Stripe",
+      "cost": "£18k/yr",
+      "annualCost": 18000,
+      "endYear": 2029,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
+    },
+    {
+      "id": "bwell-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Brightwell District Council",
+      "users": 310,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -196,6 +233,13 @@
     { "source": "bwell-sys-workday", "target": "bwell-fn-hr", "relationship": "REALIZES" },
     { "source": "bwell-sys-jadu", "target": "bwell-fn-crm", "relationship": "REALIZES" },
     { "source": "bwell-sys-granicus-elections", "target": "bwell-fn-elections", "relationship": "REALIZES" },
-    { "source": "bwell-sys-open-objects", "target": "bwell-fn-parks", "relationship": "REALIZES" }
+    { "source": "bwell-sys-open-objects", "target": "bwell-fn-parks", "relationship": "REALIZES" },
+    { "source": "bwell-sys-arcus-planning", "target": "bwell-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "bwell-sys-jadu", "target": "bwell-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "bwell-sys-access-benefits", "target": "bwell-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "bwell-sys-jadu", "target": "bwell-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "bwell-sys-access-benefits", "target": "bwell-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "bwell-sys-mri-cloud", "target": "bwell-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "bwell-sys-arcus-waste", "target": "bwell-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

@@ -185,6 +185,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false
+    },
+    {
+      "id": "abc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Ashford Borough Council",
+      "users": 180,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -197,6 +215,9 @@
     { "source": "abc-sys-sage", "target": "abc-fn-finance", "relationship": "REALIZES" },
     { "source": "abc-sys-itrent", "target": "abc-fn-hr", "relationship": "REALIZES" },
     { "source": "abc-sys-goss", "target": "abc-fn-crm", "relationship": "REALIZES" },
-    { "source": "abc-sys-civica-br", "target": "abc-fn-bizrates", "relationship": "REALIZES" }
+    { "source": "abc-sys-civica-br", "target": "abc-fn-bizrates", "relationship": "REALIZES" },
+    { "source": "abc-sys-goss", "target": "abc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "abc-sys-nec-revs", "target": "abc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "abc-sys-mri", "target": "abc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

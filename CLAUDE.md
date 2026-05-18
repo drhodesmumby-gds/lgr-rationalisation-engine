@@ -4,13 +4,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a single-file web application (~4,500 lines) for modelling UK Local Government Reorganisation (LGR) transitions. It helps architecture, commercial, and executive teams analyse what happens when multiple councils merge into new unitary authorities — specifically around IT system consolidation, contract timelines, disaggregation planning, and vendor rationalisation.
+A modular web application (~15,000 lines JS) for modelling UK Local Government Reorganisation (LGR) transitions. It helps architecture, commercial, and executive teams analyse what happens when multiple councils merge into new unitary authorities — specifically around IT system consolidation, contract timelines, disaggregation planning, and vendor rationalisation.
 
-**To run:** Open `lgr-rationalisation-engine.html` directly in a browser. No build step, no dependencies, no server required. Tailwind CSS loads from CDN.
+## Commands
+
+```bash
+npm run build        # Bundle src/ → dist/lgr-rationalisation-engine.html (esbuild)
+npm run dev          # Watch mode — rebuilds on src/ changes
+npm test             # Run property tests (vitest + fast-check)
+npm run test:watch   # Vitest in watch mode
+```
+
+**To run the app:** `python3 -m http.server 8765` then open `http://localhost:8765/dist/lgr-rationalisation-engine.html`. Tailwind CSS loads from CDN.
 
 ## Architecture
 
-Everything lives in `lgr-rationalisation-engine.html` — HTML structure, embedded CSS overrides, and all JavaScript (~4,472 lines). Single-file, zero-dependency by design.
+Modular ES modules in `src/`, bundled by esbuild into a single self-contained HTML file (`dist/lgr-rationalisation-engine.html`). The build injects bundled JS and CSS into `src/index.html`.
+
+```
+src/
+├── index.html              # HTML template ({{STYLES}} and {{BUNDLE}} placeholders)
+├── styles.css              # CSS custom properties and component styles
+├── main.js                 # Entry point, UI rendering, event wiring (~2600 lines)
+├── state.js                # Central state object (exported singleton)
+├── taxonomy.js             # ESD function lookups
+├── ui-helpers.js           # escHtml, wrapWithTooltip, helpIcon
+├── ui-notifications.js     # Toast notification system
+├── constants/              # Static data (LGA functions, tier map, signals, docs)
+├── analysis/               # Pure analysis functions (allocation, signals, metrics, questions)
+├── simulation/             # Decision simulation engine (actions, decisions, projector, obligations, impact)
+└── features/               # Feature modules (arch-editor, decision-panel, simulation-panel,
+                            #   import-wizard, baseline-report, report-export, scenario-manager, sankey)
+build.js                    # esbuild bundler script
+dist/                       # Build output (single HTML file, not checked in)
+```
 
 ### Application Stages
 
@@ -26,38 +53,28 @@ The tool operates as a 4-stage pipeline:
 - **Discovery mode** (`operatingMode === 'discovery'`) — Matrix columns are predecessor councils. No rationalisation patterns. Timeline uses fixed date range. Perspective filters by council name.
 - **Transition mode** (`operatingMode === 'transition'`) — Matrix columns are successor authorities. Systems allocated via `buildSuccessorAllocation()`. Rationalisation patterns classified per function. Tier promotion applies. Critical path panel shows pre-vesting decisions. Timeline centres on vesting date. Perspective filters by successor name.
 
-### Key State Variables
+### Key Modules
 
-```javascript
-// Core workspace
-let rawUploads = [];                    // Parsed council JSON payloads from file upload
-let mergedArchitecture = {              // Unified graph after baselining
-    nodes: [], edges: [], councils: new Set()
-};
-let lgaFunctionMap = new Map();         // lgaFunctionId → { lgaId, label, breadcrumb, councils, localNodeIds }
-
-// Transition planning
-let transitionStructure = null;         // { vestingDate, successors[] } or null
-let operatingMode = 'discovery';        // 'discovery' | 'transition'
-let successorAllocationMap = null;      // Map<successorName, Map<lgaFunctionId, SystemAllocation[]>>
-let pendingTransitionConfig = null;     // Auto-detected transition config from file ingest
-let tierMap = new Map();                // Map<lgaFunctionId, 1|2|3> — playbook tier per function
-let councilTierMap = new Map();         // Map<councilName, "county"|"district"|"unitary">
-let distressedCouncils = new Set();     // Set<councilName> with financialDistress: true
-
-// Analysis
-let activePersona = 'executive';        // 'executive' | 'commercial' | 'architect'
-let activePerspective = 'all';          // 'all' | councilName | successorName
-let signalWeights;                      // Current weights per signal; cloned from persona defaults
-let analysisModalData = [];             // Array of analysis cell data for modal drill-down
-
-// Sort/filter
-let activeSortMode = 'tier';            // 'tier' | 'name' | 'collision'
-let activeFilters = { tier: 'all', collision: 'all' };
-
-// Architecture editor
-let archEditorState = null;             // { uploadIdx, data } when editor is open
-```
+| Module | Description |
+|---|---|
+| `src/state.js` | Central state singleton — all mutable app state lives here |
+| `src/main.js` | Entry point: UI rendering, event wiring, pipeline orchestration |
+| `src/analysis/allocation.js` | `buildSuccessorAllocation()`, vesting zones, shared service boundary detection |
+| `src/analysis/signals.js` | `computeSignals()`, TCoP assessment, vendor density, signal emphasis |
+| `src/analysis/metrics.js` | Estate summary metrics, effective tier, rationalisation patterns, migration complexity |
+| `src/analysis/questions.js` | `generatePersonaQuestions()` — contextual insight questions per persona |
+| `src/simulation/actions.js` | Simulation action application (choose system, decommission, defer) |
+| `src/simulation/decisions.js` | Decision state management and validation |
+| `src/simulation/projector.js` | Projects simulation state from saved decisions |
+| `src/simulation/obligations.js` | Generates obligations/impacts from decisions (migration, governance, capability gap) |
+| `src/features/decision-panel.js` | Decision UI — grouped radio buttons, blast radius preview, cross-successor |
+| `src/features/simulation-panel.js` | Simulation side panel — decision list, progress, undo, scenario management |
+| `src/features/arch-editor.js` | Architecture editor modal (4 tabs: Council, Functions, Systems, Edges) |
+| `src/features/import-wizard.js` | Multi-format import (CSV, Excel, clipboard, guided manual entry) |
+| `src/features/baseline-report.js` | Pre-simulation estate report for all 3 personas |
+| `src/features/report-export.js` | Persona-tailored formatted report export |
+| `src/features/scenario-manager.js` | Save/load/export decision scenarios |
+| `src/features/sankey-diagram.js` | Sankey flow overlay for system-to-successor visualisation |
 
 **SystemAllocation structure** (returned by `buildSuccessorAllocation()`):
 ```javascript
@@ -65,71 +82,16 @@ let archEditorState = null;             // { uploadIdx, data } when editor is op
 ```
 Note: the system object is nested under `a.system`, not flattened — use `a.system.id`, `a.system.vendor`, etc.
 
-### Key Functions — Pipeline
+### Key Constants (in `src/constants/`)
 
-| Function | Line | Description |
+| Constant | File | Description |
 |---|---|---|
-| `runBaselining()` | ~1438 | Merges uploads, builds `lgaFunctionMap`, validates schema, populates `councilTierMap` and `distressedCouncils` |
-| `renderTransitionConfigPanel()` | ~1041 | Renders Stage 1.5 UI for vesting date and successor/predecessor configuration |
-| `buildSuccessorAllocation()` | ~2210 | Maps systems to successors: checks `targetAuthorities` first, falls back to predecessor mapping, marks disaggregation |
-| `renderDashboard()` | ~1738 | Iterates `lgaFunctionMap`, builds matrix table, calls signal computation and rendering |
-| `renderEstateSummary()` | ~1594 | Renders estate-wide metrics panel (system count, collisions, spend, pre-vesting triggers, etc.) |
-| `renderCriticalPathPanel()` | ~2062 | Pre-vesting contract decisions table (Executive persona only); badges: OVERDUE / URGENT |
-
-### Key Functions — Analysis
-
-| Function | Line | Description |
-|---|---|---|
-| `computeSignals()` | ~2873 | Computes all 8 signals for a set of systems with weight-based rendering |
-| `computeSignalEmphasis()` | ~2659 | Adjusts signal weights based on rationalisation pattern (extract boosts data signals, consolidate boosts comparison signals) |
-| `classifyRationalisationPattern()` | ~2492 | Classifies function row into 4 patterns: inherit-as-is / choose-and-consolidate / extract-and-partition / extract-partition-and-consolidate |
-| `computeTcopAssessment()` | ~2551 | Evaluates system against TCoP Points 3, 4, 5, 9, 11 |
-| `computeEffectiveTier()` | ~2441 | Returns tier with promotion rule (Tier 3 → 2 if notice triggers pre-vesting) |
-| `classifyVestingZone()` | ~2413 | Classifies contract position: pre-vesting / year-1 / natural-expiry / long-tail |
-| `computeEstateSummaryMetrics()` | ~2700 | Computes estate-wide metrics filtered by perspective |
-| `detectSharedServiceBoundary()` | ~2589 | Checks if shared services cross successor boundaries |
-| `detectCrossTierCollision()` | ~2615 | Detects collisions between systems from different council tiers |
-| `computeVendorDensityMetrics()` | ~2681 | Groups systems by vendor across councils for a function |
-
-### Key Functions — Rendering
-
-| Function | Line | Description |
-|---|---|---|
-| `buildSystemCard()` | ~2105 | Renders per-system metadata card with persona-aware field groups and badges (anchor, ERP, shared service, financial distress, cross-tier) |
-| `buildPersonaAnalysis()` | ~3172 | Computes signals and renders analysis cell with persona-specific insight questions |
-| `generatePersonaQuestions()` | ~3289 | Generates contextual questions based on persona, pattern, signals, and allocations |
-| `drawTimeline()` | ~3714 | Contract expiry timeline with notice period striped zones; vesting-centred in transition mode; perspective filtering via `successorAllocationMap` |
-| `exportToHTML()` | ~3884 | Exports Stage 3 as self-contained HTML file |
-| `sortFunctionRows()` | ~2471 | Sorts matrix rows by tier priority, name, or collision count |
-
-### Key Functions — Taxonomy & Helpers
-
-| Function | Line | Description |
-|---|---|---|
-| `getLgaFunction(id)` | ~570 | Looks up ESD function by ID in `LGA_FUNCTIONS` (176 entries) |
-| `getLgaBreadcrumb(id)` | ~574 | Returns `"Parent > Label"` for grandchild functions, null for direct children of root |
-| `wrapWithTooltip()` | ~645 | Renders dotted-underline span with hover/focus tooltip from `DOMAIN_TERMS` |
-| `helpIcon(docKey)` | ~650 | Renders (?) icon that opens documentation modal |
-
-### Key Functions — Architecture Editor
-
-| Function | Line | Description |
-|---|---|---|
-| `openArchEditor()` | ~4057 | Opens full-screen editor modal for a council upload |
-| `renderArchEditorTab()` | ~4071 | Renders one of 4 editor tabs (Council Info, Functions, IT Systems, Edges) |
-| `syncEditorFieldsToState()` | ~4249 | Syncs form field changes back to `archEditorState.data` |
-| `buildExportData()` | ~4288 | Builds clean JSON export from editor state |
-
-### Key Constants
-
-| Constant | Description |
-|---|---|
-| `LGA_FUNCTIONS` | 176-entry ESD taxonomy array `{id, label, parentId}`; sourced from `https://webservices.esd.org.uk/lists/functions` |
-| `DEFAULT_TIER_MAP` | `Map<lgaFunctionId, 1|2|3>` — statutory/operational priority per ESD function |
-| `SIGNAL_DEFS` | Array of 8 signal definitions `{id, label, desc}` |
-| `PERSONA_DEFAULT_WEIGHTS` | Per-persona signal weight defaults (executive/commercial/architect) |
-| `DOMAIN_TERMS` | Rich tooltip content for 16 domain terms |
-| `DOCUMENTATION` | Structured content for 7 inline documentation topics |
+| `LGA_FUNCTIONS` | `lga-functions.js` | 176-entry ESD taxonomy array `{id, label, parentId}` |
+| `DEFAULT_TIER_MAP` | `tier-map.js` | `Map<lgaFunctionId, 1|2|3>` — statutory/operational priority |
+| `SIGNAL_DEFS` / `PERSONA_DEFAULT_WEIGHTS` | `signals.js` | Signal definitions and per-persona weight defaults |
+| `LGAM_CAPABILITIES` | `capabilities.js` | Standard capability vocabulary (payments, forms, sms, etc.) |
+| `DOMAIN_TERMS` | `domain-terms.js` | Rich tooltip content for domain terminology |
+| `DOCUMENTATION` | `documentation.js` | Structured content for inline documentation modals |
 
 ### Signal System
 
@@ -196,11 +158,13 @@ Six modal types, all using the same pattern (`fixed inset-0 bg-black bg-opacity-
       "dataPartitioning": "Segmented" | "Monolithic",
       "isCloud": true, "isERP": false,
       "sharedWith": ["Other Council"],
-      "targetAuthorities": ["Successor Name"]
+      "targetAuthorities": ["Successor Name"],
+      "capabilityType": ["payments"]
     }
   ],
   "edges": [
-    { "source": "sys-1", "target": "fn-1", "relationship": "REALIZES" }
+    { "source": "sys-1", "target": "fn-1", "relationship": "REALIZES" },
+    { "source": "sys-2", "target": "sys-1", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] }
   ]
 }
 ```
@@ -242,49 +206,49 @@ Auto-detected at Stage 1 if uploaded alongside architecture files (has `successo
 
 ## Development Approach
 
+### Build System
+
+esbuild bundles `src/main.js` (and all imports) into a single IIFE, injects it along with `src/styles.css` into `src/index.html`, and writes the result to `dist/`. The output is a self-contained HTML file that can be opened directly or served over HTTP.
+
+```bash
+node build.js           # Single build
+node build.js --watch   # Watch mode (requires chokidar)
+```
+
 ### Multi-Agent Team Structure
 
-Sprint-based development uses a team lead + specialist agent pattern. The team lead (parent Opus session) orchestrates all work — it does NOT write code directly. See `.claude/team-protocol.md` for full details.
+Sprint-based development uses a team lead + specialist agent pattern. The team lead (parent Opus session) orchestrates all work — it does NOT write code directly.
 
 **Development agents:**
-- **Planner** (Opus) — Designs implementation approaches. Spawned to keep design exploration out of the team lead's context window.
-- **Generator** (Sonnet, `bypassPermissions`, `isolation: "worktree"`) — Implements code changes in an isolated worktree.
-- **Evaluator** (Sonnet, `bypassPermissions`) — Verifies implementation via Playwright MCP browser testing and `npm test`.
+- **Planner** (Opus) — Designs implementation approaches
+- **Generator** (Sonnet, `bypassPermissions`) — Implements code changes. Do NOT use `isolation: "worktree"` — changes get lost on cleanup.
+- **Evaluator** (Sonnet, `bypassPermissions`) — Verifies implementation via Playwright MCP browser testing and `npm test`
 
 **Quality agents:**
-- **Test Writer** (Sonnet) — Expands property test suite after sprints adding pure functions
-- **UX Auditor** (Sonnet) — GOV.UK Design System compliance, accessibility, responsive behaviour
+- **Test Writer** (Sonnet) — Expands property test suite for new pure functions
+- **UX Auditor** (Sonnet) — GOV.UK Design System compliance, accessibility
 - **Persona Tester** (Opus) — Tests utility from Enterprise Architect, Commercial, or Executive perspective
 
-**Sprint workflow:**
-1. DESIGN — Spawn Planner for complex work (or use plan mode for simple tasks)
-2. BUILD — `TeamCreate` → spawn Generator → wait for completion
-3. TEST — Spawn Evaluator → wait for results → iterate if needed
-4. SHIP — Commit, clean up core team
-5. QUALITY — Trigger quality agents based on what changed:
-   - UI changes → UX Auditor
-   - Analysis/signal changes → Persona Testers (up to 3 in parallel)
-   - New pure functions → Test Writer
-
 **Key rules:**
-- All communication flows through the team lead — agents never message each other
-- Team lead provides complete context in spawn prompts
-- Generator works in worktrees; Evaluator and quality agents test against main branch
 - Team lead delegates implementation, never writes code directly
-- Team lead proactively triggers quality testing after each sprint
+- Generator must NOT run git commands — team lead handles all commits
+- All communication flows through the team lead
 
 ### Testing
 
-The application is tested by serving via a local HTTP server (`python3 -m http.server 8765`) and using Playwright MCP tools for browser interaction. The `file:///` protocol is blocked by Playwright — always serve over HTTP.
+**Property tests** (pure functions):
+```bash
+npm test                          # vitest + fast-check
+```
+Tests live in `tests/properties/`. Generators in `tests/generators/`.
 
-**IMPORTANT — Browser testing must use Playwright MCP tools only.** Do NOT write custom Node.js scripts that import `playwright` or `playwright-core` from `node_modules` — the project only has `@playwright/test` as a dev dependency and direct imports will fail with `ERR_MODULE_NOT_FOUND`. Instead, use the MCP tools directly: `mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_click`, `mcp__playwright__browser_type`, `mcp__playwright__browser_file_upload`, `mcp__playwright__browser_evaluate`, `mcp__playwright__browser_take_screenshot`, `mcp__playwright__browser_wait_for`, `mcp__playwright__browser_console_messages`, etc.
+**Browser testing** — serve via `python3 -m http.server 8765` and use Playwright MCP tools. The `file:///` protocol is blocked — always serve over HTTP.
+
+**IMPORTANT:** Do NOT write custom Node.js scripts that import `playwright` from `node_modules` — only `@playwright/test` is installed. Use MCP tools directly: `mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_click`, etc.
 
 ### Documentation
 
-Four documentation files are maintained alongside the code:
 - `README.md` — technical reference for developers
 - `TECHNICAL-ARCHITECTURE.md` — detailed architecture documentation
 - `STAKEHOLDER-INTRODUCTION.md` — non-technical introduction for programme teams
-- `ROADMAP.md` — future development direction (service-level modelling, LGAM alignment, playbook alignment)
-
-These should be updated when significant features are added or changed.
+- `ROADMAP.md` — future development direction

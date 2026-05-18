@@ -148,7 +148,44 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
+    },
+    {
+      "id": "cdc-sys-govuk-pay",
+      "label": "GOV.UK Pay",
+      "type": "ITSystem",
+      "owner": "Chelworth District Council",
+      "users": 75,
+      "vendor": "GDS",
+      "cost": "£8k/yr",
+      "annualCost": 8000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["payments"]
+    },
+    {
+      "id": "cdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Chelworth District Council",
+      "users": 195,
+      "vendor": "GDS",
+      "cost": "£5k/yr",
+      "annualCost": 5000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -160,6 +197,12 @@
     { "source": "cdc-sys-civica-xpress", "target": "cdc-fn-elections", "relationship": "REALIZES" },
     { "source": "cdc-sys-workday", "target": "cdc-fn-finance", "relationship": "REALIZES" },
     { "source": "cdc-sys-workday", "target": "cdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "cdc-sys-granicus", "target": "cdc-fn-crm", "relationship": "REALIZES" }
+    { "source": "cdc-sys-granicus", "target": "cdc-fn-crm", "relationship": "REALIZES" },
+    { "source": "cdc-sys-idox", "target": "cdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "cdc-sys-granicus", "target": "cdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "cdc-sys-civica-benefits", "target": "cdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "cdc-sys-granicus", "target": "cdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "cdc-sys-civica-benefits", "target": "cdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
+    { "source": "cdc-sys-mri", "target": "cdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
   ]
 }

@@ -30,7 +30,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": true
+      "isERP": true,
+      "capabilityType": ["payments", "workflow"]
     },
     {
       "id": "wdc-sys-whitespace",
@@ -149,7 +150,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "capabilityType": ["forms"]
     },
     {
       "id": "wdc-sys-servicenow",
@@ -167,6 +169,24 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false
+    },
+    {
+      "id": "wdc-sys-govuk-notify",
+      "label": "GOV.UK Notify",
+      "type": "ITSystem",
+      "owner": "Winsford District Council",
+      "users": 180,
+      "vendor": "GDS",
+      "cost": "£6k/yr",
+      "annualCost": 6000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 1,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "capabilityType": ["sms", "email"]
     }
   ],
   "edges": [
@@ -179,6 +199,13 @@
     { "source": "wdc-sys-access-envhealth", "target": "wdc-fn-envhealth", "relationship": "REALIZES" },
     { "source": "wdc-sys-civica-xpress", "target": "wdc-fn-elections", "relationship": "REALIZES" },
     { "source": "wdc-sys-jadu", "target": "wdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "wdc-sys-servicenow", "target": "wdc-fn-ict", "relationship": "REALIZES" }
+    { "source": "wdc-sys-servicenow", "target": "wdc-fn-ict", "relationship": "REALIZES" },
+    { "source": "wdc-sys-civica-benefits", "target": "wdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wdc-sys-capita-housing", "target": "wdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wdc-sys-whitespace", "target": "wdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
+    { "source": "wdc-sys-arcus", "target": "wdc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
+    { "source": "wdc-sys-jadu", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
+    { "source": "wdc-sys-whitespace", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
+    { "source": "wdc-sys-capita-housing", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
   ]
 }
