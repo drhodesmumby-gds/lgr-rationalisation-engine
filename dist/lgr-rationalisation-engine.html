@@ -353,6 +353,40 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   outline: 3px solid #0b0c0c;
 }
 
+/* Domain cards */
+.domain-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+.domain-card {
+    background: white;
+    border: 1px solid #b1b4b6;
+    padding: 16px 16px 12px;
+    position: relative;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+}
+.domain-card:hover {
+    border-color: #0b0c0c;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.domain-card:focus-visible {
+    outline: 3px solid #ffdd00;
+    outline-offset: 0;
+}
+.domain-card-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -554,7 +588,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                                 <option value="unique">Unique only</option>
                             </select>
                         </div>
-                        <span id="matrixRowCount" class="text-sm text-gray-600 ml-auto"></span>
+                        <label class="flex items-center gap-1.5 text-xs cursor-pointer ml-auto">
+                            <input type="checkbox" id="toggleFlatMatrix">
+                            <span>Show all functions</span>
+                        </label>
+                        <span id="matrixRowCount" class="text-sm text-gray-600"></span>
                         <span class="toolbar-separator" aria-hidden="true"></span>
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-bold">Cards:</span>
@@ -1199,6 +1237,19 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (!parent || !parent.parentId) return null;
     return parent.label + " \u203A " + fn.label;
   }
+  function getRootCategoryId(id) {
+    let fn = LGA_FUNCTIONS.find((f) => f.id === id);
+    if (!fn) return null;
+    while (fn.parentId !== null) {
+      const parent = LGA_FUNCTIONS.find((f) => f.id === fn.parentId);
+      if (!parent) break;
+      fn = parent;
+    }
+    return fn.id;
+  }
+  function getRootCategories() {
+    return LGA_FUNCTIONS.filter((f) => f.parentId === null);
+  }
 
   // src/ui-helpers.js
   function wrapWithTooltip(text, tooltipContent) {
@@ -1451,6 +1502,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     // Set of system IDs individually toggled to opposite of default
     activeTab: "matrix",
     // 'matrix' | 'overview' | 'timeline'
+    matrixViewMode: "hierarchy",
+    // 'hierarchy' | 'flat'
+    activeDomainId: null,
+    // root category ID when drilled into a domain
     simPanelCollapsed: false
   };
 
@@ -10161,6 +10216,127 @@ tr:nth-child(even){background:#f3f2f1;}
     }
   }
 
+  // src/features/domain-cards.js
+  function computeDomainSummaries() {
+    const rootCategories = getRootCategories();
+    const summaries = /* @__PURE__ */ new Map();
+    rootCategories.forEach((root) => {
+      summaries.set(root.id, {
+        rootId: root.id,
+        label: root.label,
+        functionCount: 0,
+        systemCount: 0,
+        totalSpend: 0,
+        tiers: { 1: 0, 2: 0, 3: 0 },
+        decidedCount: 0,
+        decidableCount: 0,
+        preVestingTriggers: 0,
+        hasMonolithicDisagg: false,
+        _systemIds: /* @__PURE__ */ new Set()
+      });
+    });
+    for (const [lgaId, fnData] of state.lgaFunctionMap) {
+      const rootId = getRootCategoryId(lgaId);
+      if (!rootId || !summaries.has(rootId)) continue;
+      const summary = summaries.get(rootId);
+      summary.functionCount++;
+      const tier = state.tierMap && state.tierMap.get(lgaId) || DEFAULT_TIER_MAP.get(lgaId) || 2;
+      summary.tiers[tier]++;
+      const funcEdges = state.mergedArchitecture.edges.filter(
+        (e) => fnData.localNodeIds.has(e.target) && e.relationship === "REALIZES"
+      );
+      const systemNodes = funcEdges.map((e) => state.mergedArchitecture.nodes.find((n) => n.id === e.source)).filter((n) => n && n.type === "ITSystem");
+      systemNodes.forEach((sys) => {
+        if (!summary._systemIds.has(sys.id)) {
+          summary._systemIds.add(sys.id);
+          summary.systemCount++;
+          summary.totalSpend += sys.annualCost || 0;
+        }
+        if (state.transitionStructure?.vestingDate && sys.endYear && sys.noticePeriod) {
+          const vestingDate = new Date(state.transitionStructure.vestingDate);
+          const expiryDate = new Date(sys.endYear, (sys.endMonth || 1) - 1);
+          const noticeDate = new Date(expiryDate);
+          noticeDate.setMonth(noticeDate.getMonth() - sys.noticePeriod);
+          if (noticeDate < vestingDate) {
+            summary.preVestingTriggers++;
+          }
+        }
+        if (sys.dataPartitioning === "Monolithic" && state.transitionStructure?.successors) {
+          const isPartial = state.transitionStructure.successors.some(
+            (s) => s.partialPredecessors && s.partialPredecessors.includes(sys._sourceCouncil)
+          );
+          if (isPartial) summary.hasMonolithicDisagg = true;
+        }
+      });
+      if (state.simulationState?.decisions && state.operatingMode === "transition" && state.successorAllocationMap) {
+        for (const [successorName, fnMap] of state.successorAllocationMap) {
+          if (fnMap.has(lgaId)) {
+            const allocations = fnMap.get(lgaId);
+            if (allocations.length > 1) {
+              summary.decidableCount++;
+              const key = `${lgaId}::${successorName}`;
+              if (state.simulationState.decisions.has(key)) {
+                summary.decidedCount++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return Array.from(summaries.values()).filter((s) => s.functionCount > 0).sort((a, b) => {
+      if (a.tiers[1] > 0 && b.tiers[1] === 0) return -1;
+      if (b.tiers[1] > 0 && a.tiers[1] === 0) return 1;
+      const aUndecided = a.decidableCount - a.decidedCount;
+      const bUndecided = b.decidableCount - b.decidedCount;
+      if (aUndecided !== bUndecided) return bUndecided - aUndecided;
+      return b.functionCount - a.functionCount;
+    });
+  }
+  function renderDomainCards(summaries) {
+    if (summaries.length === 0) {
+      return '<p class="text-sm text-gray-500 p-4">No function data loaded.</p>';
+    }
+    const cards = summaries.map((s) => {
+      const tierColour2 = s.tiers[1] > 0 ? "#d4351c" : s.tiers[2] > 0 ? "#f47738" : "#b1b4b6";
+      const spendDisplay = s.totalSpend > 0 ? `\xA3${(s.totalSpend / 1e6).toFixed(1)}m/yr` : "";
+      const progressPct = s.decidableCount > 0 ? Math.round(s.decidedCount / s.decidableCount * 100) : -1;
+      let riskHtml = "";
+      if (s.preVestingTriggers > 0) {
+        riskHtml += `<span class="text-[11px] text-[#d4351c] font-bold block mt-1">\u25B2 ${s.preVestingTriggers} pre-vesting trigger${s.preVestingTriggers > 1 ? "s" : ""}</span>`;
+      }
+      if (s.hasMonolithicDisagg) {
+        riskHtml += `<span class="text-[11px] text-[#d4351c] font-bold block mt-0.5">\u26A0 Monolithic disaggregation</span>`;
+      }
+      let progressHtml = "";
+      if (progressPct >= 0) {
+        progressHtml = `
+                <div class="mt-2">
+                    <div class="flex justify-between text-[10px] text-gray-500 mb-0.5">
+                        <span>${s.decidedCount}/${s.decidableCount} decided</span>
+                        <span>${progressPct}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-200 overflow-hidden">
+                        <div class="h-full bg-[#00703c]" style="width:${progressPct}%"></div>
+                    </div>
+                </div>`;
+      }
+      return `
+            <button class="domain-card" data-domain-id="${s.rootId}" aria-label="${s.label}: ${s.functionCount} functions, ${s.systemCount} systems">
+                <div class="domain-card-accent" style="background-color: ${tierColour2}"></div>
+                <h3 class="text-sm font-bold mb-1">${s.label}</h3>
+                <p class="text-xs text-gray-600">${s.functionCount} functions \xB7 ${s.systemCount} systems${spendDisplay ? " \xB7 " + spendDisplay : ""}</p>
+                <div class="flex gap-1 mt-1.5 flex-wrap">
+                    ${s.tiers[1] > 0 ? `<span class="gds-tag tag-red text-[9px]">Tier 1: ${s.tiers[1]}</span>` : ""}
+                    ${s.tiers[2] > 0 ? `<span class="gds-tag tag-orange text-[9px]">Tier 2: ${s.tiers[2]}</span>` : ""}
+                    ${s.tiers[3] > 0 ? `<span class="gds-tag tag-blue text-[9px]">Tier 3: ${s.tiers[3]}</span>` : ""}
+                </div>
+                ${riskHtml}
+                ${progressHtml}
+            </button>`;
+    }).join("");
+    return `<div class="domain-cards-grid">${cards}</div>`;
+  }
+
   // src/main.js
   state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
   function toggleHeaderCollapse() {
@@ -10874,6 +11050,18 @@ tr:nth-child(even){background:#f3f2f1;}
     state.activeFilters.collision = e.target.value;
     renderDashboard();
   });
+  document.getElementById("toggleFlatMatrix").addEventListener("change", function(e) {
+    state.matrixViewMode = e.target.checked ? "flat" : "hierarchy";
+    renderDashboard();
+  });
+  document.addEventListener("click", function(e) {
+    const card = e.target.closest(".domain-card");
+    if (card) {
+      state.matrixViewMode = "flat";
+      document.getElementById("toggleFlatMatrix").checked = true;
+      renderDashboard();
+    }
+  });
   function switchDashboardTab(tabId) {
     state.activeTab = tabId;
     const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -11314,6 +11502,27 @@ tr:nth-child(even){background:#f3f2f1;}
         earliestNotice
       });
     });
+    const matrixTable = document.getElementById("dashboardMatrix");
+    let domainCardsContainer = document.getElementById("domainCardsContainer");
+    if (!domainCardsContainer) {
+      domainCardsContainer = document.createElement("div");
+      domainCardsContainer.id = "domainCardsContainer";
+      matrixTable.parentNode.insertBefore(domainCardsContainer, matrixTable);
+    }
+    const showHierarchy = state.matrixViewMode === "hierarchy" && !state.activeDomainId;
+    if (showHierarchy) {
+      const summaries = computeDomainSummaries();
+      domainCardsContainer.innerHTML = renderDomainCards(summaries);
+      domainCardsContainer.classList.remove("hidden");
+      matrixTable.classList.add("hidden");
+    } else {
+      domainCardsContainer.classList.add("hidden");
+      matrixTable.classList.remove("hidden");
+    }
+    if (showHierarchy) {
+      if (state.activePersona !== "architect") drawTimeline(systems, councilsArray);
+      return;
+    }
     let filteredRows = functionRows;
     if (state.activeFilters.tier !== "all") {
       filteredRows = filteredRows.filter(function(r) {

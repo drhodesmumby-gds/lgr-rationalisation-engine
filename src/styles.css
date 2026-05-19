@@ -341,3 +341,37 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   margin: 0;
   outline: 3px solid #0b0c0c;
 }
+
+/* Domain cards */
+.domain-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+.domain-card {
+    background: white;
+    border: 1px solid #b1b4b6;
+    padding: 16px 16px 12px;
+    position: relative;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+}
+.domain-card:hover {
+    border-color: #0b0c0c;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.domain-card:focus-visible {
+    outline: 3px solid #ffdd00;
+    outline-offset: 0;
+}
+.domain-card-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}

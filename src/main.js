@@ -35,6 +35,7 @@ import { getDecisionKey } from './simulation/decisions.js';
 import { exportScenario, importScenario } from './features/scenario-manager.js';
 import { exportReport } from './features/report-export.js';
 import { exportBaselineReport } from './features/baseline-report.js';
+import { computeDomainSummaries, renderDomainCards } from './features/domain-cards.js';
 import { showNotification, showConfirm } from './ui-notifications.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
@@ -940,6 +941,20 @@ document.getElementById('filterCollisionSelect').addEventListener('change', func
     renderDashboard();
 });
 
+document.getElementById('toggleFlatMatrix').addEventListener('change', function(e) {
+    state.matrixViewMode = e.target.checked ? 'flat' : 'hierarchy';
+    renderDashboard();
+});
+
+document.addEventListener('click', function(e) {
+    const card = e.target.closest('.domain-card');
+    if (card) {
+        state.matrixViewMode = 'flat';
+        document.getElementById('toggleFlatMatrix').checked = true;
+        renderDashboard();
+    }
+});
+
 // --- Dashboard tab switching ---
 function switchDashboardTab(tabId) {
     state.activeTab = tabId;
@@ -1483,6 +1498,31 @@ export function renderDashboard() {
             earliestNotice: earliestNotice
         });
     });
+
+    // --- Hierarchy view: domain cards ---
+    const matrixTable = document.getElementById('dashboardMatrix');
+    let domainCardsContainer = document.getElementById('domainCardsContainer');
+    if (!domainCardsContainer) {
+        domainCardsContainer = document.createElement('div');
+        domainCardsContainer.id = 'domainCardsContainer';
+        matrixTable.parentNode.insertBefore(domainCardsContainer, matrixTable);
+    }
+
+    const showHierarchy = state.matrixViewMode === 'hierarchy' && !state.activeDomainId;
+    if (showHierarchy) {
+        const summaries = computeDomainSummaries();
+        domainCardsContainer.innerHTML = renderDomainCards(summaries);
+        domainCardsContainer.classList.remove('hidden');
+        matrixTable.classList.add('hidden');
+    } else {
+        domainCardsContainer.classList.add('hidden');
+        matrixTable.classList.remove('hidden');
+    }
+
+    if (showHierarchy) {
+        if (state.activePersona !== 'architect') drawTimeline(systems, councilsArray);
+        return;
+    }
 
     // --- Apply filters before sorting ---
     let filteredRows = functionRows;
