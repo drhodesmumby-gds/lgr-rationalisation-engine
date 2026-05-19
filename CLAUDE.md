@@ -125,7 +125,7 @@ Note: the system object is nested under `a.system`, not flattened — use `a.sys
 
 ### Signal System
 
-Eight configurable signals, each with weight levels (Off=0, Low=1, Med=2, High=3):
+Ten configurable signals, each with weight levels (Off=0, Low=1, Med=2, High=3):
 
 | Signal ID | What it measures |
 |---|---|
@@ -137,6 +137,8 @@ Eight configurable signals, each with weight levels (Off=0, Low=1, Med=2, High=3
 | `techDebt` | Systems where `!isCloud` (on-premise) |
 | `tcopAlignment` | TCoP Points 3, 4, 5, 9, 11 assessment |
 | `sharedService` | `sharedWith` arrays; cross-boundary detection in transition mode |
+| `supportModel` | System maintenance sustainability — vendor SLA, community, or unsupported |
+| `sameVendorConsolidation` | All/most systems from same vendor; consolidation may be simpler |
 
 Changing persona resets weights to that persona's defaults. Weights can be manually adjusted in the Signal Options panel.
 
@@ -189,7 +191,8 @@ Six modal types, all using the same pattern (`fixed inset-0 bg-black bg-opacity-
       "isCloud": true, "isERP": false,
       "sharedWith": ["Other Council"],
       "targetAuthorities": ["Successor Name"],
-      "capabilityType": ["payments"]
+      "capabilityType": ["payments"],
+      "supportModel": "vendor-supported" | "community-supported" | "unsupported"
     }
   ],
   "edges": [
