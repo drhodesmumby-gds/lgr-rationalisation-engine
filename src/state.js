@@ -27,6 +27,7 @@ export const state = {
     expandedCards: new Set(),         // Set of system IDs individually toggled to opposite of default
     activeTab: 'matrix',              // 'matrix' | 'overview' | 'timeline'
     matrixViewMode: 'hierarchy',      // 'hierarchy' | 'flat'
-    activeDomainId: null,             // root category ID when drilled into a domain
+    activeDomainId: null,             // root category ID or custom workstream ID when drilled in
+    customWorkstreams: [],            // [{ id, name, functionIds: string[] }]
     simPanelCollapsed: false,
 };

@@ -139,5 +139,34 @@ export function renderDomainCards(summaries) {
             </button>`;
     }).join('');
 
-    return `<div class="domain-cards-grid">${cards}</div>`;
+    // Custom workstream cards
+    const workstreamCards = (state.customWorkstreams || []).map(ws => {
+        let fnCount = 0, sysCount = 0, spend = 0;
+        const sysIds = new Set();
+        ws.functionIds.forEach(lgaId => {
+            const fnData = state.lgaFunctionMap.get(lgaId);
+            if (!fnData) return;
+            fnCount++;
+            const edges = state.mergedArchitecture.edges.filter(
+                e => fnData.localNodeIds.has(e.target) && e.relationship === 'REALIZES'
+            );
+            edges.forEach(e => {
+                if (sysIds.has(e.source)) return;
+                sysIds.add(e.source);
+                const sys = state.mergedArchitecture.nodes.find(n => n.id === e.source);
+                if (sys) { sysCount++; spend += sys.annualCost || 0; }
+            });
+        });
+        if (fnCount === 0) return '';
+        const spendDisplay = spend > 0 ? ` · £${(spend / 1000000).toFixed(1)}m/yr` : '';
+        return `
+            <button class="domain-card domain-card-custom" data-domain-id="ws:${ws.id}" aria-label="${ws.name}: ${fnCount} functions, ${sysCount} systems">
+                <div class="domain-card-accent" style="background-color: #1d70b8"></div>
+                <h3 class="text-sm font-bold mb-1">${ws.name}</h3>
+                <p class="text-xs text-gray-600">${fnCount} functions · ${sysCount} systems${spendDisplay}</p>
+                <span class="text-[10px] text-[#1d70b8] font-bold mt-1 block">Custom workstream</span>
+            </button>`;
+    }).join('');
+
+    return `<div class="domain-cards-grid" role="group" aria-label="Function domains">${cards}${workstreamCards}</div>`;
 }

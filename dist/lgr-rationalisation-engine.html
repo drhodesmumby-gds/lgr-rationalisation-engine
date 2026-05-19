@@ -386,6 +386,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     right: 0;
     height: 4px;
 }
+.domain-card-custom {
+    border-style: dashed;
+}
 
     </style>
 </head>
@@ -593,6 +596,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                             <span>Show all functions</span>
                         </label>
                         <span id="matrixRowCount" class="text-sm text-gray-600"></span>
+                        <span class="toolbar-separator" aria-hidden="true"></span>
+                        <button id="btnManageWorkstreams" class="gds-btn-secondary text-xs px-2 py-1" type="button">Workstreams</button>
                         <span class="toolbar-separator" aria-hidden="true"></span>
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-bold">Cards:</span>
@@ -836,6 +841,27 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 <button id="btnCloseDoc" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
                 <h2 id="docModalTitle" class="text-2xl font-bold mb-4"></h2>
                 <div id="docModalContent" class="overflow-y-auto flex-1 space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- WORKSTREAM MANAGEMENT MODAL -->
+        <div id="workstreamModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white max-w-lg w-full mx-4 border-t-8 border-[#1d70b8] shadow-2xl relative max-h-[80vh] flex flex-col">
+                <div class="flex items-center justify-between px-6 pt-5 pb-3">
+                    <h2 class="text-lg font-bold">Custom Workstreams</h2>
+                    <button id="btnCloseWorkstreams" class="text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+                </div>
+                <div class="flex-1 overflow-y-auto px-6 py-4">
+                    <p class="text-sm text-gray-600 mb-4">Group functions into named workstreams for programme-level tracking. Workstreams appear as cards alongside the ESD taxonomy domains.</p>
+                    <div id="workstreamList" class="space-y-3 mb-4"></div>
+                    <div class="border-t border-[#b1b4b6] pt-4">
+                        <label class="text-sm font-bold block mb-1">New workstream</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="newWorkstreamName" class="border-2 border-[#0b0c0c] px-2 py-1 text-sm flex-1" placeholder="e.g. Finance Systems">
+                            <button id="btnAddWorkstream" class="gds-btn-secondary px-3 py-1 text-sm font-bold">Add</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1516,7 +1542,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     matrixViewMode: "hierarchy",
     // 'hierarchy' | 'flat'
     activeDomainId: null,
-    // root category ID when drilled into a domain
+    // root category ID or custom workstream ID when drilled in
+    customWorkstreams: [],
+    // [{ id, name, functionIds: string[] }]
     simPanelCollapsed: false
   };
 
@@ -10345,7 +10373,37 @@ tr:nth-child(even){background:#f3f2f1;}
                 ${progressHtml}
             </button>`;
     }).join("");
-    return `<div class="domain-cards-grid">${cards}</div>`;
+    const workstreamCards = (state.customWorkstreams || []).map((ws) => {
+      let fnCount = 0, sysCount = 0, spend = 0;
+      const sysIds = /* @__PURE__ */ new Set();
+      ws.functionIds.forEach((lgaId) => {
+        const fnData = state.lgaFunctionMap.get(lgaId);
+        if (!fnData) return;
+        fnCount++;
+        const edges = state.mergedArchitecture.edges.filter(
+          (e) => fnData.localNodeIds.has(e.target) && e.relationship === "REALIZES"
+        );
+        edges.forEach((e) => {
+          if (sysIds.has(e.source)) return;
+          sysIds.add(e.source);
+          const sys = state.mergedArchitecture.nodes.find((n) => n.id === e.source);
+          if (sys) {
+            sysCount++;
+            spend += sys.annualCost || 0;
+          }
+        });
+      });
+      if (fnCount === 0) return "";
+      const spendDisplay = spend > 0 ? ` \xB7 \xA3${(spend / 1e6).toFixed(1)}m/yr` : "";
+      return `
+            <button class="domain-card domain-card-custom" data-domain-id="ws:${ws.id}" aria-label="${ws.name}: ${fnCount} functions, ${sysCount} systems">
+                <div class="domain-card-accent" style="background-color: #1d70b8"></div>
+                <h3 class="text-sm font-bold mb-1">${ws.name}</h3>
+                <p class="text-xs text-gray-600">${fnCount} functions \xB7 ${sysCount} systems${spendDisplay}</p>
+                <span class="text-[10px] text-[#1d70b8] font-bold mt-1 block">Custom workstream</span>
+            </button>`;
+    }).join("");
+    return `<div class="domain-cards-grid" role="group" aria-label="Function domains">${cards}${workstreamCards}</div>`;
   }
 
   // src/main.js
@@ -11079,6 +11137,70 @@ tr:nth-child(even){background:#f3f2f1;}
       return;
     }
   });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && state.activeDomainId) {
+      state.activeDomainId = null;
+      renderDashboard();
+    }
+  });
+  var workstreamModal = document.getElementById("workstreamModal");
+  document.getElementById("btnManageWorkstreams").addEventListener("click", () => {
+    renderWorkstreamList();
+    workstreamModal.classList.remove("hidden");
+  });
+  document.getElementById("btnCloseWorkstreams").addEventListener("click", () => workstreamModal.classList.add("hidden"));
+  workstreamModal.addEventListener("click", (e) => {
+    if (e.target === workstreamModal) workstreamModal.classList.add("hidden");
+  });
+  document.getElementById("btnAddWorkstream").addEventListener("click", () => {
+    const nameEl = document.getElementById("newWorkstreamName");
+    const name = nameEl.value.trim();
+    if (!name) return;
+    state.customWorkstreams.push({ id: Date.now().toString(36), name, functionIds: [] });
+    nameEl.value = "";
+    renderWorkstreamList();
+    renderDashboard();
+  });
+  function renderWorkstreamList() {
+    const container = document.getElementById("workstreamList");
+    if (state.customWorkstreams.length === 0) {
+      container.innerHTML = '<p class="text-sm text-gray-400 italic">No custom workstreams defined.</p>';
+      return;
+    }
+    const availableFunctions = [...state.lgaFunctionMap.values()].sort((a, b) => a.label.localeCompare(b.label));
+    container.innerHTML = state.customWorkstreams.map((ws) => {
+      const fnOptions = availableFunctions.map(
+        (f) => `<option value="${f.lgaId}" ${ws.functionIds.includes(f.lgaId) ? "selected" : ""}>${f.label}</option>`
+      ).join("");
+      return `<div class="border border-[#b1b4b6] p-3">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold">${ws.name}</span>
+                <button class="text-[#d4351c] text-xs font-bold hover:underline btn-delete-ws" data-ws-id="${ws.id}">Delete</button>
+            </div>
+            <select multiple class="w-full border border-[#0b0c0c] text-xs p-1 ws-fn-select" data-ws-id="${ws.id}" size="5">
+                ${fnOptions}
+            </select>
+            <p class="text-[10px] text-gray-500 mt-1">${ws.functionIds.length} functions selected (Ctrl+click to select multiple)</p>
+        </div>`;
+    }).join("");
+    container.querySelectorAll(".btn-delete-ws").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.customWorkstreams = state.customWorkstreams.filter((w) => w.id !== btn.dataset.wsId);
+        renderWorkstreamList();
+        renderDashboard();
+      });
+    });
+    container.querySelectorAll(".ws-fn-select").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const ws = state.customWorkstreams.find((w) => w.id === sel.dataset.wsId);
+        if (ws) {
+          ws.functionIds = [...sel.selectedOptions].map((o) => o.value);
+          renderWorkstreamList();
+          renderDashboard();
+        }
+      });
+    });
+  }
   function switchDashboardTab(tabId) {
     state.activeTab = tabId;
     const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -11533,7 +11655,13 @@ tr:nth-child(even){background:#f3f2f1;}
       domainCardsContainer.classList.remove("hidden");
       matrixTable.classList.add("hidden");
     } else if (state.activeDomainId) {
-      const domainLabel = getLgaFunction(state.activeDomainId)?.label || "Domain";
+      let domainLabel;
+      if (state.activeDomainId.startsWith("ws:")) {
+        const ws = state.customWorkstreams.find((w) => w.id === state.activeDomainId.slice(3));
+        domainLabel = ws ? ws.name : "Workstream";
+      } else {
+        domainLabel = getLgaFunction(state.activeDomainId)?.label || "Domain";
+      }
       domainCardsContainer.innerHTML = `<div class="px-4 py-2 bg-[#f3f2f1] border-b border-[#b1b4b6] flex items-center gap-3">
             <button id="btnBackToDomains" class="text-[#1a65a6] underline text-sm font-bold hover:text-[#0f385c]">\u2190 All domains</button>
             <span class="text-sm font-bold">${domainLabel}</span>
@@ -11550,9 +11678,18 @@ tr:nth-child(even){background:#f3f2f1;}
     }
     let filteredRows = functionRows;
     if (state.activeDomainId) {
-      const domainDescendants = getDescendantIds(state.activeDomainId);
-      domainDescendants.add(state.activeDomainId);
-      filteredRows = filteredRows.filter((r) => domainDescendants.has(r.lgaFunc.lgaId));
+      if (state.activeDomainId.startsWith("ws:")) {
+        const wsId = state.activeDomainId.slice(3);
+        const ws = state.customWorkstreams.find((w) => w.id === wsId);
+        if (ws) {
+          const wsSet = new Set(ws.functionIds);
+          filteredRows = filteredRows.filter((r) => wsSet.has(r.lgaFunc.lgaId));
+        }
+      } else {
+        const domainDescendants = getDescendantIds(state.activeDomainId);
+        domainDescendants.add(state.activeDomainId);
+        filteredRows = filteredRows.filter((r) => domainDescendants.has(r.lgaFunc.lgaId));
+      }
     }
     if (state.activeFilters.tier !== "all") {
       filteredRows = filteredRows.filter(function(r) {

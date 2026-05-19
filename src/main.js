@@ -961,6 +961,75 @@ document.addEventListener('click', function(e) {
     }
 });
 
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && state.activeDomainId) {
+        state.activeDomainId = null;
+        renderDashboard();
+    }
+});
+
+// --- Custom Workstream Management ---
+const workstreamModal = document.getElementById('workstreamModal');
+document.getElementById('btnManageWorkstreams').addEventListener('click', () => {
+    renderWorkstreamList();
+    workstreamModal.classList.remove('hidden');
+});
+document.getElementById('btnCloseWorkstreams').addEventListener('click', () => workstreamModal.classList.add('hidden'));
+workstreamModal.addEventListener('click', (e) => { if (e.target === workstreamModal) workstreamModal.classList.add('hidden'); });
+
+document.getElementById('btnAddWorkstream').addEventListener('click', () => {
+    const nameEl = document.getElementById('newWorkstreamName');
+    const name = nameEl.value.trim();
+    if (!name) return;
+    state.customWorkstreams.push({ id: Date.now().toString(36), name, functionIds: [] });
+    nameEl.value = '';
+    renderWorkstreamList();
+    renderDashboard();
+});
+
+function renderWorkstreamList() {
+    const container = document.getElementById('workstreamList');
+    if (state.customWorkstreams.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 italic">No custom workstreams defined.</p>';
+        return;
+    }
+    const availableFunctions = [...state.lgaFunctionMap.values()].sort((a, b) => a.label.localeCompare(b.label));
+    container.innerHTML = state.customWorkstreams.map(ws => {
+        const fnOptions = availableFunctions.map(f =>
+            `<option value="${f.lgaId}" ${ws.functionIds.includes(f.lgaId) ? 'selected' : ''}>${f.label}</option>`
+        ).join('');
+        return `<div class="border border-[#b1b4b6] p-3">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold">${ws.name}</span>
+                <button class="text-[#d4351c] text-xs font-bold hover:underline btn-delete-ws" data-ws-id="${ws.id}">Delete</button>
+            </div>
+            <select multiple class="w-full border border-[#0b0c0c] text-xs p-1 ws-fn-select" data-ws-id="${ws.id}" size="5">
+                ${fnOptions}
+            </select>
+            <p class="text-[10px] text-gray-500 mt-1">${ws.functionIds.length} functions selected (Ctrl+click to select multiple)</p>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.btn-delete-ws').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.customWorkstreams = state.customWorkstreams.filter(w => w.id !== btn.dataset.wsId);
+            renderWorkstreamList();
+            renderDashboard();
+        });
+    });
+
+    container.querySelectorAll('.ws-fn-select').forEach(sel => {
+        sel.addEventListener('change', () => {
+            const ws = state.customWorkstreams.find(w => w.id === sel.dataset.wsId);
+            if (ws) {
+                ws.functionIds = [...sel.selectedOptions].map(o => o.value);
+                renderWorkstreamList();
+                renderDashboard();
+            }
+        });
+    });
+}
+
 // --- Dashboard tab switching ---
 function switchDashboardTab(tabId) {
     state.activeTab = tabId;
@@ -1521,7 +1590,13 @@ export function renderDashboard() {
         domainCardsContainer.classList.remove('hidden');
         matrixTable.classList.add('hidden');
     } else if (state.activeDomainId) {
-        const domainLabel = getLgaFunction(state.activeDomainId)?.label || 'Domain';
+        let domainLabel;
+        if (state.activeDomainId.startsWith('ws:')) {
+            const ws = state.customWorkstreams.find(w => w.id === state.activeDomainId.slice(3));
+            domainLabel = ws ? ws.name : 'Workstream';
+        } else {
+            domainLabel = getLgaFunction(state.activeDomainId)?.label || 'Domain';
+        }
         domainCardsContainer.innerHTML = `<div class="px-4 py-2 bg-[#f3f2f1] border-b border-[#b1b4b6] flex items-center gap-3">
             <button id="btnBackToDomains" class="text-[#1a65a6] underline text-sm font-bold hover:text-[#0f385c]">← All domains</button>
             <span class="text-sm font-bold">${domainLabel}</span>
@@ -1541,9 +1616,18 @@ export function renderDashboard() {
     // --- Apply domain scoping if drilled into a domain ---
     let filteredRows = functionRows;
     if (state.activeDomainId) {
-        const domainDescendants = getDescendantIds(state.activeDomainId);
-        domainDescendants.add(state.activeDomainId);
-        filteredRows = filteredRows.filter(r => domainDescendants.has(r.lgaFunc.lgaId));
+        if (state.activeDomainId.startsWith('ws:')) {
+            const wsId = state.activeDomainId.slice(3);
+            const ws = state.customWorkstreams.find(w => w.id === wsId);
+            if (ws) {
+                const wsSet = new Set(ws.functionIds);
+                filteredRows = filteredRows.filter(r => wsSet.has(r.lgaFunc.lgaId));
+            }
+        } else {
+            const domainDescendants = getDescendantIds(state.activeDomainId);
+            domainDescendants.add(state.activeDomainId);
+            filteredRows = filteredRows.filter(r => domainDescendants.has(r.lgaFunc.lgaId));
+        }
     }
 
     // --- Apply filters before sorting ---

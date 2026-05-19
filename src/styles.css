@@ -375,3 +375,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     right: 0;
     height: 4px;
 }
+.domain-card-custom {
+    border-style: dashed;
+}
