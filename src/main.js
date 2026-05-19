@@ -5,7 +5,7 @@ import { SIGNAL_DEFS, PERSONA_DEFAULT_WEIGHTS } from './constants/signals.js';
 import { LGAM_CAPABILITIES } from './constants/capabilities.js';
 import { DOMAIN_TERMS } from './constants/domain-terms.js';
 import { DOCUMENTATION } from './constants/documentation.js';
-import { getLgaFunction, getLgaBreadcrumb } from './taxonomy.js';
+import { getLgaFunction, getLgaBreadcrumb, getRootCategoryId, getDescendantIds } from './taxonomy.js';
 import { wrapWithTooltip, helpIcon, escHtml } from './ui-helpers.js';
 import {
     buildSuccessorAllocation, classifyVestingZone,
@@ -943,15 +943,21 @@ document.getElementById('filterCollisionSelect').addEventListener('change', func
 
 document.getElementById('toggleFlatMatrix').addEventListener('change', function(e) {
     state.matrixViewMode = e.target.checked ? 'flat' : 'hierarchy';
+    state.activeDomainId = null;
     renderDashboard();
 });
 
 document.addEventListener('click', function(e) {
     const card = e.target.closest('.domain-card');
     if (card) {
-        state.matrixViewMode = 'flat';
-        document.getElementById('toggleFlatMatrix').checked = true;
+        state.activeDomainId = card.dataset.domainId;
         renderDashboard();
+        return;
+    }
+    if (e.target.closest('#btnBackToDomains')) {
+        state.activeDomainId = null;
+        renderDashboard();
+        return;
     }
 });
 
@@ -1514,6 +1520,14 @@ export function renderDashboard() {
         domainCardsContainer.innerHTML = renderDomainCards(summaries);
         domainCardsContainer.classList.remove('hidden');
         matrixTable.classList.add('hidden');
+    } else if (state.activeDomainId) {
+        const domainLabel = getLgaFunction(state.activeDomainId)?.label || 'Domain';
+        domainCardsContainer.innerHTML = `<div class="px-4 py-2 bg-[#f3f2f1] border-b border-[#b1b4b6] flex items-center gap-3">
+            <button id="btnBackToDomains" class="text-[#1a65a6] underline text-sm font-bold hover:text-[#0f385c]">← All domains</button>
+            <span class="text-sm font-bold">${domainLabel}</span>
+        </div>`;
+        domainCardsContainer.classList.remove('hidden');
+        matrixTable.classList.remove('hidden');
     } else {
         domainCardsContainer.classList.add('hidden');
         matrixTable.classList.remove('hidden');
@@ -1524,8 +1538,15 @@ export function renderDashboard() {
         return;
     }
 
-    // --- Apply filters before sorting ---
+    // --- Apply domain scoping if drilled into a domain ---
     let filteredRows = functionRows;
+    if (state.activeDomainId) {
+        const domainDescendants = getDescendantIds(state.activeDomainId);
+        domainDescendants.add(state.activeDomainId);
+        filteredRows = filteredRows.filter(r => domainDescendants.has(r.lgaFunc.lgaId));
+    }
+
+    // --- Apply filters before sorting ---
     if (state.activeFilters.tier !== 'all') {
         filteredRows = filteredRows.filter(function(r) { return r.tier === parseInt(state.activeFilters.tier); });
     }

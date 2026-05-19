@@ -1247,6 +1247,17 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     return fn.id;
   }
+  function getDescendantIds(rootId) {
+    const descendants = /* @__PURE__ */ new Set();
+    function collect(parentId) {
+      LGA_FUNCTIONS.filter((f) => f.parentId === parentId).forEach((f) => {
+        descendants.add(f.id);
+        collect(f.id);
+      });
+    }
+    collect(rootId);
+    return descendants;
+  }
   function getRootCategories() {
     return LGA_FUNCTIONS.filter((f) => f.parentId === null);
   }
@@ -11052,14 +11063,20 @@ tr:nth-child(even){background:#f3f2f1;}
   });
   document.getElementById("toggleFlatMatrix").addEventListener("change", function(e) {
     state.matrixViewMode = e.target.checked ? "flat" : "hierarchy";
+    state.activeDomainId = null;
     renderDashboard();
   });
   document.addEventListener("click", function(e) {
     const card = e.target.closest(".domain-card");
     if (card) {
-      state.matrixViewMode = "flat";
-      document.getElementById("toggleFlatMatrix").checked = true;
+      state.activeDomainId = card.dataset.domainId;
       renderDashboard();
+      return;
+    }
+    if (e.target.closest("#btnBackToDomains")) {
+      state.activeDomainId = null;
+      renderDashboard();
+      return;
     }
   });
   function switchDashboardTab(tabId) {
@@ -11515,6 +11532,14 @@ tr:nth-child(even){background:#f3f2f1;}
       domainCardsContainer.innerHTML = renderDomainCards(summaries);
       domainCardsContainer.classList.remove("hidden");
       matrixTable.classList.add("hidden");
+    } else if (state.activeDomainId) {
+      const domainLabel = getLgaFunction(state.activeDomainId)?.label || "Domain";
+      domainCardsContainer.innerHTML = `<div class="px-4 py-2 bg-[#f3f2f1] border-b border-[#b1b4b6] flex items-center gap-3">
+            <button id="btnBackToDomains" class="text-[#1a65a6] underline text-sm font-bold hover:text-[#0f385c]">\u2190 All domains</button>
+            <span class="text-sm font-bold">${domainLabel}</span>
+        </div>`;
+      domainCardsContainer.classList.remove("hidden");
+      matrixTable.classList.remove("hidden");
     } else {
       domainCardsContainer.classList.add("hidden");
       matrixTable.classList.remove("hidden");
@@ -11524,6 +11549,11 @@ tr:nth-child(even){background:#f3f2f1;}
       return;
     }
     let filteredRows = functionRows;
+    if (state.activeDomainId) {
+      const domainDescendants = getDescendantIds(state.activeDomainId);
+      domainDescendants.add(state.activeDomainId);
+      filteredRows = filteredRows.filter((r) => domainDescendants.has(r.lgaFunc.lgaId));
+    }
     if (state.activeFilters.tier !== "all") {
       filteredRows = filteredRows.filter(function(r) {
         return r.tier === parseInt(state.activeFilters.tier);
