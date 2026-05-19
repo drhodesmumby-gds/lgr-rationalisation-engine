@@ -430,17 +430,14 @@ describe('Simulation Action Engine — Property Tests', () => {
         );
     });
 
-    it('Property: ProcureReplacement replaces one system when replacesSystemId is valid', () => {
+    it('Property: ProcureReplacement adds new system and severs replaced system edges for scoped functions', () => {
         fc.assert(
             fc.property(arbEstate, arbSystem, ({ nodes, edges }, newSys) => {
-                // Ensure newSys ID doesn't collide
                 if (nodes.some(n => n.id === newSys.id)) return;
 
                 const existingSys = nodes.find(n => n.type === 'ITSystem');
                 const fn = nodes.find(n => n.type === 'Function');
                 if (!existingSys || !fn) return;
-
-                const originalCount = nodes.filter(n => n.type === 'ITSystem').length;
 
                 const result = applyProcureReplacement(nodes, edges, {
                     type: 'procure-replacement',
@@ -449,10 +446,12 @@ describe('Simulation Action Engine — Property Tests', () => {
                     replacesSystemId: existingSys.id,
                 });
 
-                const resultCount = result.nodes.filter(n => n.type === 'ITSystem').length;
-                expect(resultCount).toBe(originalCount); // one added, one removed
-                expect(result.nodes.some(n => n.id === existingSys.id)).toBe(false);
+                // New system always added
                 expect(result.nodes.some(n => n.id === newSys.id)).toBe(true);
+                // Replaced system's REALIZES edges to the target function are severed
+                const fnNodeIds = new Set(nodes.filter(n => n.type === 'Function' && n.lgaFunctionId === fn.lgaFunctionId).map(n => n.id));
+                const remainingEdges = result.edges.filter(e => e.source === existingSys.id && e.relationship === 'REALIZES' && fnNodeIds.has(e.target));
+                expect(remainingEdges.length).toBe(0);
             })
         );
     });

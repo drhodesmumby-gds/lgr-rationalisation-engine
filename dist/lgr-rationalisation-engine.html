@@ -5000,8 +5000,23 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (transferredUsers > 0 && typeof nodes[targetIdx].users === "number") {
       nodes[targetIdx].users += transferredUsers;
     }
-    nodes = nodes.filter((n) => !toFullyRemove.has(n.id));
-    edges = edges.filter((e) => !toFullyRemove.has(e.source));
+    toFullyRemove.forEach((sysId) => {
+      edges = edges.filter((e) => {
+        if (e.source === sysId && e.relationship === "REALIZES" && severScopeFuncIds.has(e.target)) {
+          return false;
+        }
+        return true;
+      });
+    });
+    const actuallyRemove = /* @__PURE__ */ new Set();
+    toFullyRemove.forEach((sysId) => {
+      const hasRemaining = edges.some((e) => e.source === sysId && e.relationship === "REALIZES");
+      if (!hasRemaining) actuallyRemove.add(sysId);
+    });
+    if (actuallyRemove.size > 0) {
+      nodes = nodes.filter((n) => !actuallyRemove.has(n.id));
+      edges = edges.filter((e) => !actuallyRemove.has(e.source));
+    }
     if (toSeverEdgesOnly.size > 0) {
       edges = edges.filter((e) => {
         const isSeverSource = toSeverEdgesOnly.has(e.source);
@@ -5262,9 +5277,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       });
     });
     edges = [...edges, ...newEdges];
-    if (newEdges.length === 0) {
-      warnings.push(`EstablishSharedService: no new REALIZES edges created for system ${systemId} (all already present)`);
-    }
     return { nodes, edges, warnings };
   }
   function applyProcureReplacement(nodes, edges, action) {
@@ -5290,10 +5302,22 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       warnings.push(`ProcureReplacement: no function nodes found for lgaFunctionId ${functionId}`);
     }
     if (replacesSystemId) {
-      const decommResult = applyDecommission(nodes, edges, { type: "decommission", systemId: replacesSystemId });
-      nodes = decommResult.nodes;
-      edges = decommResult.edges;
-      warnings.push(...decommResult.warnings);
+      const scopeTargets = new Set(funcNodes.map((fn) => fn.id));
+      const beforeCount = edges.length;
+      edges = edges.filter((e) => {
+        if (e.source === replacesSystemId && e.relationship === "REALIZES" && scopeTargets.has(e.target)) {
+          return false;
+        }
+        return true;
+      });
+      if (edges.length === beforeCount) {
+        warnings.push(`ProcureReplacement: no REALIZES edges severed for replaced system ${replacesSystemId}`);
+      }
+      const hasRemainingEdges = edges.some((e) => e.source === replacesSystemId && e.relationship === "REALIZES");
+      if (!hasRemainingEdges) {
+        nodes = nodes.filter((n) => n.id !== replacesSystemId);
+        edges = edges.filter((e) => e.source !== replacesSystemId && e.target !== replacesSystemId);
+      }
     }
     return { nodes, edges, warnings };
   }
@@ -6566,7 +6590,7 @@ ${hardErrors.join("\n")}`);
       const decisions = state.simulationState.decisions || /* @__PURE__ */ new Map();
       panel.innerHTML = `
             <div class="sim-side-collapsed-content">
-                <button onclick="window._simToggleSidePanel()" class="sim-side-expand-btn" title="Expand panel" aria-label="Expand simulation panel">&#x276F;</button>
+                <button onclick="window._simToggleSidePanel()" class="sim-side-expand-btn" title="Expand panel" aria-label="Expand simulation panel">&#x276E;</button>
                 <span class="sim-side-badge">${decisions.size}</span>
                 <span class="sim-side-label">Decisions</span>
             </div>
@@ -6579,7 +6603,7 @@ ${hardErrors.join("\n")}`);
     let html = "";
     html += `<div class="bg-[#f47738] text-white px-3 py-2 flex items-center justify-between shrink-0">`;
     html += `<span class="text-sm font-bold uppercase tracking-wide">Simulation</span>`;
-    html += `<button onclick="window._simToggleSidePanel()" class="text-white hover:text-gray-200 font-bold text-lg p-1" title="Collapse panel" aria-label="Collapse simulation panel">&#x276E;</button>`;
+    html += `<button onclick="window._simToggleSidePanel()" class="text-white hover:text-gray-200 font-bold text-lg p-1" title="Collapse panel" aria-label="Collapse simulation panel">&#x276F;</button>`;
     html += `</div>`;
     html += `<div class="sim-side-panel-content"></div>`;
     panel.innerHTML = html;
@@ -10307,15 +10331,18 @@ tr:nth-child(even){background:#f3f2f1;}
           if (isPartial) summary.hasMonolithicDisagg = true;
         }
       });
-      if (state.simulationState?.decisions && state.operatingMode === "transition" && state.successorAllocationMap) {
-        for (const [successorName, fnMap] of state.successorAllocationMap) {
-          if (fnMap.has(lgaId)) {
-            const allocations = fnMap.get(lgaId);
-            if (allocations.length > 1) {
-              summary.decidableCount++;
-              const key = `${lgaId}::${successorName}`;
-              if (state.simulationState.decisions.has(key)) {
-                summary.decidedCount++;
+      if (state.simulationState?.decisions && state.operatingMode === "transition") {
+        const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+        if (allocMap) {
+          for (const [successorName, fnMap] of allocMap) {
+            if (fnMap.has(lgaId)) {
+              const allocations = fnMap.get(lgaId);
+              if (allocations.length >= 2) {
+                summary.decidableCount++;
+                const key = `${lgaId}::${successorName}`;
+                if (state.simulationState.decisions.has(key)) {
+                  summary.decidedCount++;
+                }
               }
             }
           }

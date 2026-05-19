@@ -64,15 +64,18 @@ export function computeDomainSummaries() {
             }
         });
 
-        if (state.simulationState?.decisions && state.operatingMode === 'transition' && state.successorAllocationMap) {
-            for (const [successorName, fnMap] of state.successorAllocationMap) {
-                if (fnMap.has(lgaId)) {
-                    const allocations = fnMap.get(lgaId);
-                    if (allocations.length > 1) {
-                        summary.decidableCount++;
-                        const key = `${lgaId}::${successorName}`;
-                        if (state.simulationState.decisions.has(key)) {
-                            summary.decidedCount++;
+        if (state.simulationState?.decisions && state.operatingMode === 'transition') {
+            const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+            if (allocMap) {
+                for (const [successorName, fnMap] of allocMap) {
+                    if (fnMap.has(lgaId)) {
+                        const allocations = fnMap.get(lgaId);
+                        if (allocations.length >= 2) {
+                            summary.decidableCount++;
+                            const key = `${lgaId}::${successorName}`;
+                            if (state.simulationState.decisions.has(key)) {
+                                summary.decidedCount++;
+                            }
                         }
                     }
                 }

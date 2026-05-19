@@ -225,7 +225,7 @@ export function applyConsolidate(nodes, edges, action) {
         }
     });
 
-    // Transfer users from FULLY removed systems to target (not from sever-only systems)
+    // Transfer users from removed systems to target
     let transferredUsers = 0;
     toFullyRemove.forEach(sysId => {
         const sys = nodes.find(n => n.id === sysId);
@@ -237,11 +237,27 @@ export function applyConsolidate(nodes, edges, action) {
         nodes[targetIdx].users += transferredUsers;
     }
 
-    // Fully remove systems that are not sever-only
-    nodes = nodes.filter(n => !toFullyRemove.has(n.id));
+    // Sever REALIZES edges from removed systems to THIS successor's function nodes only
+    // (preserves the system for other successors that haven't decided yet)
+    toFullyRemove.forEach(sysId => {
+        edges = edges.filter(e => {
+            if (e.source === sysId && e.relationship === 'REALIZES' && severScopeFuncIds.has(e.target)) {
+                return false;
+            }
+            return true;
+        });
+    });
 
-    // Remove ALL edges from fully removed systems
-    edges = edges.filter(e => !toFullyRemove.has(e.source));
+    // Only fully remove a system if it has NO remaining REALIZES edges anywhere
+    const actuallyRemove = new Set();
+    toFullyRemove.forEach(sysId => {
+        const hasRemaining = edges.some(e => e.source === sysId && e.relationship === 'REALIZES');
+        if (!hasRemaining) actuallyRemove.add(sysId);
+    });
+    if (actuallyRemove.size > 0) {
+        nodes = nodes.filter(n => !actuallyRemove.has(n.id));
+        edges = edges.filter(e => !actuallyRemove.has(e.source));
+    }
 
     // For sever-only systems: remove ONLY their REALIZES edges to this function's nodes
     // (preserve the system node and all other edges)
@@ -629,9 +645,8 @@ export function applyEstablishSharedService(nodes, edges, action) {
 
     edges = [...edges, ...newEdges];
 
-    if (newEdges.length === 0) {
-        warnings.push(`EstablishSharedService: no new REALIZES edges created for system ${systemId} (all already present)`);
-    }
+    // No warning when edges already exist — this is normal for systems that
+    // already serve all relevant successors before the shared service is formalised.
 
     return { nodes, edges, warnings };
 }
@@ -670,12 +685,27 @@ export function applyProcureReplacement(nodes, edges, action) {
         warnings.push(`ProcureReplacement: no function nodes found for lgaFunctionId ${functionId}`);
     }
 
-    // Decommission replaced system if specified
+    // Sever replaced system's edges for THIS successor's scope only
+    // (don't globally decommission — other successors may still need it)
     if (replacesSystemId) {
-        const decommResult = applyDecommission(nodes, edges, { type: 'decommission', systemId: replacesSystemId });
-        nodes = decommResult.nodes;
-        edges = decommResult.edges;
-        warnings.push(...decommResult.warnings);
+        const scopeTargets = new Set(funcNodes.map(fn => fn.id));
+        const beforeCount = edges.length;
+        edges = edges.filter(e => {
+            if (e.source === replacesSystemId && e.relationship === 'REALIZES' && scopeTargets.has(e.target)) {
+                return false;
+            }
+            return true;
+        });
+        if (edges.length === beforeCount) {
+            warnings.push(`ProcureReplacement: no REALIZES edges severed for replaced system ${replacesSystemId}`);
+        }
+
+        // If the replaced system has NO remaining REALIZES edges, fully remove it
+        const hasRemainingEdges = edges.some(e => e.source === replacesSystemId && e.relationship === 'REALIZES');
+        if (!hasRemainingEdges) {
+            nodes = nodes.filter(n => n.id !== replacesSystemId);
+            edges = edges.filter(e => e.source !== replacesSystemId && e.target !== replacesSystemId);
+        }
     }
 
     return { nodes, edges, warnings };

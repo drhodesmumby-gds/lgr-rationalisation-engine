@@ -156,7 +156,7 @@ export function renderSimulationWorkspace() {
         const decisions = state.simulationState.decisions || new Map();
         panel.innerHTML = `
             <div class="sim-side-collapsed-content">
-                <button onclick="window._simToggleSidePanel()" class="sim-side-expand-btn" title="Expand panel" aria-label="Expand simulation panel">&#x276F;</button>
+                <button onclick="window._simToggleSidePanel()" class="sim-side-expand-btn" title="Expand panel" aria-label="Expand simulation panel">&#x276E;</button>
                 <span class="sim-side-badge">${decisions.size}</span>
                 <span class="sim-side-label">Decisions</span>
             </div>
@@ -173,7 +173,7 @@ export function renderSimulationWorkspace() {
     let html = '';
     html += `<div class="bg-[#f47738] text-white px-3 py-2 flex items-center justify-between shrink-0">`;
     html += `<span class="text-sm font-bold uppercase tracking-wide">Simulation</span>`;
-    html += `<button onclick="window._simToggleSidePanel()" class="text-white hover:text-gray-200 font-bold text-lg p-1" title="Collapse panel" aria-label="Collapse simulation panel">&#x276E;</button>`;
+    html += `<button onclick="window._simToggleSidePanel()" class="text-white hover:text-gray-200 font-bold text-lg p-1" title="Collapse panel" aria-label="Collapse simulation panel">&#x276F;</button>`;
     html += `</div>`;
     html += `<div class="sim-side-panel-content"></div>`;
 
