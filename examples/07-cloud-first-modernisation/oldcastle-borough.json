@@ -176,6 +176,7 @@
       "owner": "Oldcastle Borough Council",
       "users": 35,
       "vendor": "In-House",
+      "supportModel": "unsupported",
       "cost": "£18k/yr",
       "annualCost": 18000,
       "endYear": 2027,

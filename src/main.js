@@ -14,7 +14,8 @@ import {
 } from './analysis/allocation.js';
 import {
     computeSignals, computeSignalEmphasis,
-    computeTcopAssessment, computeVendorDensityMetrics
+    computeTcopAssessment, computeVendorDensityMetrics,
+    classifySupportModel
 } from './analysis/signals.js';
 import {
     computeEstateSummaryMetrics, computeEffectiveTier,
@@ -2230,6 +2231,14 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         if (isShared)   miniBadges += `<span class="gds-tag tag-blue" style="font-size:11px;padding:2px 5px;line-height:1.2;">Shared</span>`;
         if (isAnchor)   miniBadges += `<span class="gds-tag tag-orange" style="font-size:11px;padding:2px 5px;line-height:1.2;">Anchor</span>`;
         if (isDistressed) miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">Distress</span>`;
+        const supportClass = classifySupportModel(sys);
+        if (supportClass.model === 'community-supported') {
+            miniBadges += `<span class="gds-tag tag-green" style="font-size:11px;padding:2px 5px;line-height:1.2;">Community</span>`;
+        } else if (supportClass.model === 'unsupported') {
+            miniBadges += `<span class="gds-tag tag-orange" style="font-size:11px;padding:2px 5px;line-height:1.2;">Unsupported</span>`;
+        } else if (supportClass.model === 'unknown' && sys.vendor === 'In-House') {
+            miniBadges += `<span class="gds-tag tag-outline" style="font-size:11px;padding:2px 5px;line-height:1.2;">In-House ?</span>`;
+        }
         if (sys.capabilityType && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0) {
             sys.capabilityType.forEach(cap => {
                 const capDef = LGAM_CAPABILITIES.find(c => c.id === cap);
@@ -2285,6 +2294,19 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
             html += `<div class="mb-2 flex items-center gap-1">
                 <span class="gds-tag tag-blue" style="font-size:10px;padding:2px 6px;">${wrapWithTooltip('Shared service', DOMAIN_TERMS['Shared Service'])}</span>
                 <span class="text-[11px] text-gray-600">with ${sys.sharedWith.join(', ')}</span>
+            </div>`;
+        }
+
+        // Support model panel (expanded view)
+        if (supportClass.model !== 'vendor-supported') {
+            const smBorderCol = supportClass.model === 'community-supported' ? 'border-l-[#00703c]'
+                : supportClass.model === 'unsupported' ? 'border-l-[#f47738]'
+                : 'border-l-[#1d70b8]';
+            const smBgCol = supportClass.model === 'community-supported' ? 'bg-green-50'
+                : supportClass.model === 'unsupported' ? 'bg-orange-50'
+                : 'bg-blue-50';
+            html += `<div class="mb-2 p-2 border-l-4 ${smBorderCol} ${smBgCol}">
+                <p class="text-xs font-bold text-[#0b0c0c]">${escHtml(supportClass.summary)}</p>
             </div>`;
         }
 

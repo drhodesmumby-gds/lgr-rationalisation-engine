@@ -177,6 +177,7 @@
       "owner": "Elmhurst District Council",
       "users": 30,
       "vendor": "In-House",
+      "supportModel": "unsupported",
       "cost": "£20k/yr",
       "annualCost": 20000,
       "endYear": 2026,

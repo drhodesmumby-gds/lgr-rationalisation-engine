@@ -19,7 +19,7 @@ export function arbITSystem({ councilNames, successorNames = [], prefix = 'sys' 
     _sourceCouncil: fc.constantFrom(...councilNames),
 
     // Optional fields
-    vendor: fc.option(fc.stringMatching(/^[A-Za-z ]{2,20}$/), { nil: undefined }),
+    vendor: fc.option(fc.constantFrom('In-House', 'SAP', 'Oracle', 'NEC', 'Capita', 'Civica', 'Microsoft', 'Idox'), { nil: undefined }),
     users: fc.option(fc.integer({ min: 1, max: 50000 }), { nil: undefined }),
     annualCost: fc.option(fc.integer({ min: 1000, max: 5000000 }), { nil: undefined }),
     endYear: fc.option(fc.integer({ min: 2024, max: 2035 }), { nil: undefined }),
@@ -34,6 +34,7 @@ export function arbITSystem({ councilNames, successorNames = [], prefix = 'sys' 
       fc.subarray(councilNames, { minLength: 0, maxLength: Math.min(councilNames.length, 3) }),
       { nil: undefined }
     ),
+    supportModel: fc.option(fc.constantFrom('vendor-supported', 'community-supported', 'unsupported'), { nil: undefined }),
     targetAuthorities: successorNames.length > 0
       ? fc.option(
           fc.subarray(successorNames, { minLength: 1, maxLength: Math.min(successorNames.length, 3) }),

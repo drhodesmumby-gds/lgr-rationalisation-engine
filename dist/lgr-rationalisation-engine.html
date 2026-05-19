@@ -1029,12 +1029,14 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     { id: "vendorDensity", label: "Vendor density", desc: "Same vendor present across multiple councils for this function" },
     { id: "techDebt", label: "On-premise systems", desc: "Systems hosted on council servers rather than cloud/SaaS" },
     { id: "tcopAlignment", label: "TCoP alignment", desc: "Assessment against Technology Code of Practice criteria" },
-    { id: "sharedService", label: "Shared service", desc: "Systems jointly operated by multiple predecessor councils" }
+    { id: "sharedService", label: "Shared service", desc: "Systems jointly operated by multiple predecessor councils" },
+    { id: "supportModel", label: "Support model", desc: "Sustainability of system maintenance \u2014 vendor SLA, community, or unsupported" },
+    { id: "sameVendorConsolidation", label: "Same-vendor consolidation", desc: "All or most systems from the same vendor \u2014 consolidation may be simpler" }
   ];
   var PERSONA_DEFAULT_WEIGHTS = {
-    executive: { contractUrgency: 3, userVolume: 2, dataMonolith: 3, dataPortability: 1, vendorDensity: 2, techDebt: 1, tcopAlignment: 1, sharedService: 2 },
-    commercial: { contractUrgency: 3, userVolume: 1, dataMonolith: 1, dataPortability: 0, vendorDensity: 3, techDebt: 0, tcopAlignment: 0, sharedService: 3 },
-    architect: { contractUrgency: 1, userVolume: 2, dataMonolith: 3, dataPortability: 3, vendorDensity: 1, techDebt: 3, tcopAlignment: 3, sharedService: 1 }
+    executive: { contractUrgency: 3, userVolume: 2, dataMonolith: 3, dataPortability: 1, vendorDensity: 2, techDebt: 1, tcopAlignment: 1, sharedService: 2, supportModel: 1, sameVendorConsolidation: 2 },
+    commercial: { contractUrgency: 3, userVolume: 1, dataMonolith: 1, dataPortability: 0, vendorDensity: 3, techDebt: 0, tcopAlignment: 0, sharedService: 3, supportModel: 1, sameVendorConsolidation: 3 },
+    architect: { contractUrgency: 1, userVolume: 2, dataMonolith: 3, dataPortability: 3, vendorDensity: 1, techDebt: 3, tcopAlignment: 3, sharedService: 1, supportModel: 2, sameVendorConsolidation: 2 }
   };
 
   // src/constants/capabilities.js
@@ -1570,6 +1572,40 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     return { alignments, concerns };
   }
+  function classifySupportModel(system) {
+    if (!system) return { model: "unknown", isExplicit: false, summary: "No system data" };
+    const validModels = ["vendor-supported", "community-supported", "unsupported"];
+    if (system.supportModel && validModels.includes(system.supportModel)) {
+      const summaries = {
+        "vendor-supported": `${system.vendor || "Vendor"} \u2014 vendor-supported with commercial SLA`,
+        "community-supported": `Community-supported \u2014 maintained collaboratively${system.sharedWith && system.sharedWith.length > 0 ? " with " + system.sharedWith.join(", ") : ""}`,
+        "unsupported": "Unsupported \u2014 no active maintenance agreement. Assess long-term viability for successor authority."
+      };
+      return { model: system.supportModel, isExplicit: true, summary: summaries[system.supportModel] };
+    }
+    if (system.vendor && system.vendor !== "In-House") {
+      return { model: "vendor-supported", isExplicit: false, summary: `${system.vendor} \u2014 vendor-supported with commercial SLA` };
+    }
+    return { model: "unknown", isExplicit: false, summary: "Support model not assessed \u2014 classify to enable sustainability analysis" };
+  }
+  function detectSameVendorConsolidation(systems) {
+    if (!systems || systems.length < 2) return null;
+    const commercialSystems = systems.filter((s) => s.vendor && s.vendor !== "In-House");
+    if (commercialSystems.length < 2) return null;
+    const vendorCounts = /* @__PURE__ */ Object.create(null);
+    commercialSystems.forEach((s) => {
+      if (!vendorCounts[s.vendor]) vendorCounts[s.vendor] = 0;
+      vendorCounts[s.vendor]++;
+    });
+    const sorted = Object.entries(vendorCounts).sort((a, b) => b[1] - a[1]);
+    const [topVendor, topCount] = sorted[0];
+    const total = commercialSystems.length;
+    const isUnanimous = topCount === total;
+    const isSupermajority = total >= 4 && topCount / total >= 0.75;
+    if (!isUnanimous && !isSupermajority) return null;
+    const insight = isUnanimous ? `All ${topCount} systems from ${topVendor} \u2014 consolidation likely simpler (compatible data formats, transferable licensing, single vendor relationship).` : `${topCount} of ${total} systems from ${topVendor} \u2014 strong vendor commonality suggests consolidation within the ${topVendor} product family may be achievable with lower migration risk.`;
+    return { vendor: topVendor, count: topCount, total, isUnanimous, insight };
+  }
   function computeSignalEmphasis(pattern, weights) {
     var result = {};
     for (var key in weights) {
@@ -1584,6 +1620,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       result.userVolume = Math.min((result.userVolume || 0) + 1, 3);
       result.vendorDensity = Math.min((result.vendorDensity || 0) + 1, 3);
       result.tcopAlignment = Math.min((result.tcopAlignment || 0) + 1, 3);
+      result.sameVendorConsolidation = Math.min((result.sameVendorConsolidation || 0) + 1, 3);
     }
     return result;
   }
@@ -1768,6 +1805,20 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         });
       }
     }
+    if (weights.sameVendorConsolidation > 0) {
+      const sameVendor = detectSameVendorConsolidation(systems);
+      if (sameVendor) {
+        signals.push({
+          id: "sameVendorConsolidation",
+          weight: weights.sameVendorConsolidation,
+          label: "Same-vendor consolidation",
+          value: sameVendor.insight,
+          tag: "tag-green",
+          border: "border-[#00703c]",
+          strong: sameVendor.isUnanimous
+        });
+      }
+    }
     if (weights.techDebt > 0) {
       const onPrem = systems.filter((s) => !s.isCloud);
       if (onPrem.length > 0) {
@@ -1875,6 +1926,45 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
             strong: false
           });
         }
+      }
+    }
+    if (weights.supportModel > 0) {
+      const classifications = systems.map((s) => ({ system: s, classification: classifySupportModel(s) }));
+      const nonVendorSupported = classifications.filter((c) => c.classification.model !== "vendor-supported");
+      if (nonVendorSupported.length > 0) {
+        const hasUnsupported = nonVendorSupported.some((c) => c.classification.model === "unsupported");
+        const hasCommunity = nonVendorSupported.some((c) => c.classification.model === "community-supported");
+        const hasUnknown = nonVendorSupported.some((c) => c.classification.model === "unknown");
+        const valueText = nonVendorSupported.map(
+          (c) => `${c.system.label}: ${c.classification.summary}`
+        ).join("; ");
+        let tag, strong, label;
+        if (hasUnsupported) {
+          tag = "tag-orange";
+          strong = true;
+          label = "Support model concern";
+        } else if (hasUnknown && !hasCommunity) {
+          tag = "tag-blue";
+          strong = false;
+          label = "Support model unknown";
+        } else if (hasCommunity && !hasUnknown) {
+          tag = "tag-green";
+          strong = false;
+          label = "Community-supported";
+        } else {
+          tag = "tag-blue";
+          strong = false;
+          label = "Support model";
+        }
+        signals.push({
+          id: "supportModel",
+          weight: weights.supportModel,
+          label,
+          value: valueText,
+          tag,
+          border: hasUnsupported ? "border-[#f47738]" : "border-[#1d70b8]",
+          strong
+        });
       }
     }
     return signals.sort((a, b) => b.weight - a.weight);
@@ -2229,12 +2319,20 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
       if (isConsolidate) {
         const anchor = anchorSystem;
-        const consolidateAnswer = anchor ? `${anchor.label} is the likely consolidation anchor based on user volume (${(anchor.users || 0).toLocaleString()} users). Portability is rated ${anchor.portability || "unknown"}. Other systems in this function should be assessed for decommission sequencing. ${savings || ""}` : `No clear anchor system is identifiable from user volume data alone. Consider assessing portability, contract timelines, and TCoP alignment to identify the preferred consolidation candidate. ${savings || ""}`;
+        const sameVendor = detectSameVendorConsolidation(systems);
+        let consolidateAnswer;
+        if (anchor) {
+          consolidateAnswer = `${anchor.label} is the likely consolidation anchor based on user volume (${(anchor.users || 0).toLocaleString()} users). Portability is rated ${anchor.portability || "unknown"}. Other systems in this function should be assessed for decommission sequencing. ${savings || ""}`;
+        } else if (sameVendor && sameVendor.isUnanimous) {
+          consolidateAnswer = `No clear anchor from user volume alone, but ${sameVendor.insight} This significantly de-risks consolidation \u2014 focus selection on contract timing, TCoP alignment, and operational maturity rather than migration complexity. ${savings || ""}`;
+        } else {
+          consolidateAnswer = `No clear anchor system is identifiable from user volume data alone. Consider assessing portability, contract timelines, and TCoP alignment to identify the preferred consolidation candidate. ${savings || ""}`;
+        }
         questions.push({
           question: "What are the consolidation options?",
           answer: consolidateAnswer,
-          indicator: anchor ? "blue" : "amber",
-          indicatorLabel: anchor ? "Anchor identified" : "Needs assessment"
+          indicator: anchor ? "blue" : sameVendor ? "green" : "amber",
+          indicatorLabel: anchor ? "Anchor identified" : sameVendor ? "Same vendor" : "Needs assessment"
         });
       }
       if (isExtract) {
@@ -2250,9 +2348,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (persona === "commercial" || persona === null) {
       if (sharedVendors.length > 0) {
         const vendorNames = sharedVendors.map(([v, sysList]) => `${v} (${sysList.length} systems)`).join(", ");
+        const sameVendor = detectSameVendorConsolidation(systems);
+        const consolidationNote = sameVendor ? ` Additionally, ${sameVendor.insight.charAt(0).toLowerCase() + sameVendor.insight.slice(1)}` : "";
         questions.push({
           question: "Can we leverage vendor commonality?",
-          answer: `Vendor commonality exists: ${vendorNames}. This may support a volume renegotiation or unified contract, reducing administrative overhead and potentially improving pricing. Engage the vendor early to understand cross-authority licensing terms.`,
+          answer: `Vendor commonality exists: ${vendorNames}. This may support a volume renegotiation or unified contract, reducing administrative overhead and potentially improving pricing. Engage the vendor early to understand cross-authority licensing terms.${consolidationNote}`,
           indicator: "green",
           indicatorLabel: "Opportunity"
         });
@@ -2324,11 +2424,20 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     if (persona === "architect" || persona === null) {
       const anchor = anchorSystem;
+      const sameVendor = detectSameVendorConsolidation(systems);
+      let anchorAnswer;
+      if (anchor) {
+        anchorAnswer = `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || "unknown"}. ${anchor.isCloud ? "Cloud-hosted." : "On-premise \u2014 cloud migration should be assessed."} ${anchor.isERP ? "ERP system \u2014 data extraction complexity is high." : ""} Validate this with TCoP alignment and contract position before committing.`;
+      } else if (sameVendor && sameVendor.isUnanimous) {
+        anchorAnswer = `No clear anchor from user volume, but all systems are from ${sameVendor.vendor}. ${sameVendor.insight} Select the anchor based on: (1) contract renewal alignment, (2) TCoP assessment, (3) data maturity within the ${sameVendor.vendor} product family.`;
+      } else {
+        anchorAnswer = `No clear anchor is identifiable from user volume data. Assess systems against: (1) data portability, (2) TCoP alignment, (3) cloud-native architecture, (4) vendor support roadmap, and (5) contract renewal timing.`;
+      }
       questions.push({
         question: "Which system should be the migration anchor?",
-        answer: anchor ? `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || "unknown"}. ${anchor.isCloud ? "Cloud-hosted." : "On-premise \u2014 cloud migration should be assessed."} ${anchor.isERP ? "ERP system \u2014 data extraction complexity is high." : ""} Validate this with TCoP alignment and contract position before committing.` : `No clear anchor is identifiable from user volume data. Assess systems against: (1) data portability, (2) TCoP alignment, (3) cloud-native architecture, (4) vendor support roadmap, and (5) contract renewal timing.`,
-        indicator: anchor ? "blue" : "amber",
-        indicatorLabel: anchor ? "Anchor identified" : "Needs assessment"
+        answer: anchorAnswer,
+        indicator: anchor ? "blue" : sameVendor ? "green" : "amber",
+        indicatorLabel: anchor ? "Anchor identified" : sameVendor ? "Same vendor" : "Needs assessment"
       });
       const dataList = systems.map((s) => {
         const flags = [];
@@ -2396,6 +2505,22 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           answer: "All systems in this function are cloud-hosted. Infrastructure migration risk is lower. Verify SaaS contracts allow successor authority access and data residency requirements are met.",
           indicator: "green",
           indicatorLabel: "Cloud-native"
+        });
+      }
+      const supportClassifications = systems.map((s) => ({ label: s.label, vendor: s.vendor, ...classifySupportModel(s) }));
+      const nonStandard = supportClassifications.filter((c) => c.model !== "vendor-supported");
+      if (nonStandard.length > 0) {
+        const smList = nonStandard.map((c) => {
+          const badgeClass = c.model === "community-supported" ? "text-[#00703c]" : c.model === "unsupported" ? "text-[#d4351c]" : "text-[#505a5f]";
+          return `<li><strong>${c.label}</strong>${c.vendor ? ` <span class="text-gray-400">(${c.vendor})</span>` : ""} \u2014 <span class="${badgeClass}">${c.summary}</span></li>`;
+        }).join("");
+        const hasUnsupported = nonStandard.some((c) => c.model === "unsupported");
+        const hasCommunity = nonStandard.some((c) => c.model === "community-supported");
+        questions.push({
+          question: "What is the support model for these systems?",
+          answer: `<ul class="mt-1 ml-4 space-y-0.5 text-sm list-disc">${smList}</ul><p class="mt-2 text-sm">${hasUnsupported ? "Unsupported systems carry long-term viability risk for the successor authority \u2014 assess staffing continuity, documentation, and whether the capability can be procured commercially." : ""} ${hasCommunity ? "Community-supported systems align with TCoP principles for collaborative development. Assess governance arrangements for the successor authority." : ""} ${!hasUnsupported && !hasCommunity ? "Support model has not been assessed for these systems. Classify each to enable sustainability analysis." : ""}</p>`,
+          indicator: hasUnsupported ? "amber" : hasCommunity ? "green" : "blue",
+          indicatorLabel: hasUnsupported ? "Sustainability risk" : hasCommunity ? "Community model" : "Needs classification"
         });
       }
       if (isExtract) {
@@ -12199,6 +12324,14 @@ tr:nth-child(even){background:#f3f2f1;}
       if (isShared) miniBadges += `<span class="gds-tag tag-blue" style="font-size:11px;padding:2px 5px;line-height:1.2;">Shared</span>`;
       if (isAnchor) miniBadges += `<span class="gds-tag tag-orange" style="font-size:11px;padding:2px 5px;line-height:1.2;">Anchor</span>`;
       if (isDistressed) miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">Distress</span>`;
+      const supportClass = classifySupportModel(sys);
+      if (supportClass.model === "community-supported") {
+        miniBadges += `<span class="gds-tag tag-green" style="font-size:11px;padding:2px 5px;line-height:1.2;">Community</span>`;
+      } else if (supportClass.model === "unsupported") {
+        miniBadges += `<span class="gds-tag tag-orange" style="font-size:11px;padding:2px 5px;line-height:1.2;">Unsupported</span>`;
+      } else if (supportClass.model === "unknown" && sys.vendor === "In-House") {
+        miniBadges += `<span class="gds-tag tag-outline" style="font-size:11px;padding:2px 5px;line-height:1.2;">In-House ?</span>`;
+      }
       if (sys.capabilityType && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0) {
         sys.capabilityType.forEach((cap) => {
           const capDef = LGAM_CAPABILITIES.find((c) => c.id === cap);
@@ -12238,6 +12371,13 @@ tr:nth-child(even){background:#f3f2f1;}
         html += `<div class="mb-2 flex items-center gap-1">
                 <span class="gds-tag tag-blue" style="font-size:10px;padding:2px 6px;">${wrapWithTooltip("Shared service", DOMAIN_TERMS["Shared Service"])}</span>
                 <span class="text-[11px] text-gray-600">with ${sys.sharedWith.join(", ")}</span>
+            </div>`;
+      }
+      if (supportClass.model !== "vendor-supported") {
+        const smBorderCol = supportClass.model === "community-supported" ? "border-l-[#00703c]" : supportClass.model === "unsupported" ? "border-l-[#f47738]" : "border-l-[#1d70b8]";
+        const smBgCol = supportClass.model === "community-supported" ? "bg-green-50" : supportClass.model === "unsupported" ? "bg-orange-50" : "bg-blue-50";
+        html += `<div class="mb-2 p-2 border-l-4 ${smBorderCol} ${smBgCol}">
+                <p class="text-xs font-bold text-[#0b0c0c]">${escHtml(supportClass.summary)}</p>
             </div>`;
       }
       if (sys.capabilityType && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0) {

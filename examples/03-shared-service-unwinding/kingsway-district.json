@@ -21,6 +21,7 @@
       "owner": "Kingsway District Council",
       "users": 95,
       "vendor": "NEC",
+      "supportModel": "community-supported",
       "cost": "£240k/yr",
       "annualCost": 240000,
       "endYear": 2028,

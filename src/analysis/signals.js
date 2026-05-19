@@ -37,6 +37,60 @@ export function computeTcopAssessment(system) {
     return { alignments: alignments, concerns: concerns };
 }
 
+// --- Support model classification (pure function) ---
+// Accepts an ITSystem node and returns its support model classification.
+// If system.supportModel is explicitly set, uses it directly.
+// Otherwise infers: commercial vendor → 'vendor-supported'; In-House/missing → 'unknown'.
+export function classifySupportModel(system) {
+    if (!system) return { model: 'unknown', isExplicit: false, summary: 'No system data' };
+
+    const validModels = ['vendor-supported', 'community-supported', 'unsupported'];
+    if (system.supportModel && validModels.includes(system.supportModel)) {
+        const summaries = {
+            'vendor-supported': `${system.vendor || 'Vendor'} — vendor-supported with commercial SLA`,
+            'community-supported': `Community-supported — maintained collaboratively${system.sharedWith && system.sharedWith.length > 0 ? ' with ' + system.sharedWith.join(', ') : ''}`,
+            'unsupported': 'Unsupported — no active maintenance agreement. Assess long-term viability for successor authority.'
+        };
+        return { model: system.supportModel, isExplicit: true, summary: summaries[system.supportModel] };
+    }
+
+    if (system.vendor && system.vendor !== 'In-House') {
+        return { model: 'vendor-supported', isExplicit: false, summary: `${system.vendor} — vendor-supported with commercial SLA` };
+    }
+
+    return { model: 'unknown', isExplicit: false, summary: 'Support model not assessed — classify to enable sustainability analysis' };
+}
+
+// --- Same-vendor consolidation detection (pure function) ---
+// Detects whether all or most commercial systems in a set are from the same vendor.
+export function detectSameVendorConsolidation(systems) {
+    if (!systems || systems.length < 2) return null;
+
+    const commercialSystems = systems.filter(s => s.vendor && s.vendor !== 'In-House');
+    if (commercialSystems.length < 2) return null;
+
+    const vendorCounts = Object.create(null);
+    commercialSystems.forEach(s => {
+        if (!vendorCounts[s.vendor]) vendorCounts[s.vendor] = 0;
+        vendorCounts[s.vendor]++;
+    });
+
+    const sorted = Object.entries(vendorCounts).sort((a, b) => b[1] - a[1]);
+    const [topVendor, topCount] = sorted[0];
+    const total = commercialSystems.length;
+
+    const isUnanimous = topCount === total;
+    const isSupermajority = total >= 4 && (topCount / total) >= 0.75;
+
+    if (!isUnanimous && !isSupermajority) return null;
+
+    const insight = isUnanimous
+        ? `All ${topCount} systems from ${topVendor} — consolidation likely simpler (compatible data formats, transferable licensing, single vendor relationship).`
+        : `${topCount} of ${total} systems from ${topVendor} — strong vendor commonality suggests consolidation within the ${topVendor} product family may be achievable with lower migration risk.`;
+
+    return { vendor: topVendor, count: topCount, total, isUnanimous, insight };
+}
+
 // --- Signal emphasis (display-time adjustment per rationalisation pattern) ---
 // Accepts a RationalisationPattern string and the current signalWeights object.
 // Returns a NEW weights object with emphasis adjustments applied (does not mutate input).
@@ -58,6 +112,7 @@ export function computeSignalEmphasis(pattern, weights) {
         result.userVolume = Math.min((result.userVolume || 0) + 1, 3);
         result.vendorDensity = Math.min((result.vendorDensity || 0) + 1, 3);
         result.tcopAlignment = Math.min((result.tcopAlignment || 0) + 1, 3);
+        result.sameVendorConsolidation = Math.min((result.sameVendorConsolidation || 0) + 1, 3);
     }
     // inherit-as-is → no changes
 
@@ -217,6 +272,16 @@ export function computeSignals(systems, weightsOverride) {
         }
     }
 
+    // Same-vendor consolidation opportunity
+    if (weights.sameVendorConsolidation > 0) {
+        const sameVendor = detectSameVendorConsolidation(systems);
+        if (sameVendor) {
+            signals.push({ id: 'sameVendorConsolidation', weight: weights.sameVendorConsolidation,
+                label: 'Same-vendor consolidation', value: sameVendor.insight,
+                tag: 'tag-green', border: 'border-[#00703c]', strong: sameVendor.isUnanimous });
+        }
+    }
+
     // On-premise tech debt
     if (weights.techDebt > 0) {
         const onPrem = systems.filter(s => !s.isCloud);
@@ -303,6 +368,35 @@ export function computeSignals(systems, weightsOverride) {
                 signals.push({ id: 'sharedService', weight: weights.sharedService, label: 'Shared service',
                     value: valueText, tag: 'tag-blue', border: 'border-[#1d70b8]', strong: false });
             }
+        }
+    }
+
+    // Support model signal
+    if (weights.supportModel > 0) {
+        const classifications = systems.map(s => ({ system: s, classification: classifySupportModel(s) }));
+        const nonVendorSupported = classifications.filter(c => c.classification.model !== 'vendor-supported');
+        if (nonVendorSupported.length > 0) {
+            const hasUnsupported = nonVendorSupported.some(c => c.classification.model === 'unsupported');
+            const hasCommunity = nonVendorSupported.some(c => c.classification.model === 'community-supported');
+            const hasUnknown = nonVendorSupported.some(c => c.classification.model === 'unknown');
+
+            const valueText = nonVendorSupported.map(c =>
+                `${c.system.label}: ${c.classification.summary}`
+            ).join('; ');
+
+            let tag, strong, label;
+            if (hasUnsupported) {
+                tag = 'tag-orange'; strong = true; label = 'Support model concern';
+            } else if (hasUnknown && !hasCommunity) {
+                tag = 'tag-blue'; strong = false; label = 'Support model unknown';
+            } else if (hasCommunity && !hasUnknown) {
+                tag = 'tag-green'; strong = false; label = 'Community-supported';
+            } else {
+                tag = 'tag-blue'; strong = false; label = 'Support model';
+            }
+
+            signals.push({ id: 'supportModel', weight: weights.supportModel,
+                label, value: valueText, tag, border: hasUnsupported ? 'border-[#f47738]' : 'border-[#1d70b8]', strong });
         }
     }
 

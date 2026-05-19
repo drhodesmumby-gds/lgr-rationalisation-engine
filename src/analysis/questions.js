@@ -1,4 +1,4 @@
-import { computeTcopAssessment } from './signals.js';
+import { computeTcopAssessment, classifySupportModel, detectSameVendorConsolidation } from './signals.js';
 
 export function generatePersonaQuestions(persona, pattern, signals, systems, anchorSystem, allocations, tierInfo) {
     const questions = [];
@@ -115,14 +115,20 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
         // Q5 (consolidate patterns): Consolidation options
         if (isConsolidate) {
             const anchor = anchorSystem;
-            const consolidateAnswer = anchor
-                ? `${anchor.label} is the likely consolidation anchor based on user volume (${(anchor.users || 0).toLocaleString()} users). Portability is rated ${anchor.portability || 'unknown'}. Other systems in this function should be assessed for decommission sequencing. ${savings || ''}`
-                : `No clear anchor system is identifiable from user volume data alone. Consider assessing portability, contract timelines, and TCoP alignment to identify the preferred consolidation candidate. ${savings || ''}`;
+            const sameVendor = detectSameVendorConsolidation(systems);
+            let consolidateAnswer;
+            if (anchor) {
+                consolidateAnswer = `${anchor.label} is the likely consolidation anchor based on user volume (${(anchor.users || 0).toLocaleString()} users). Portability is rated ${anchor.portability || 'unknown'}. Other systems in this function should be assessed for decommission sequencing. ${savings || ''}`;
+            } else if (sameVendor && sameVendor.isUnanimous) {
+                consolidateAnswer = `No clear anchor from user volume alone, but ${sameVendor.insight} This significantly de-risks consolidation — focus selection on contract timing, TCoP alignment, and operational maturity rather than migration complexity. ${savings || ''}`;
+            } else {
+                consolidateAnswer = `No clear anchor system is identifiable from user volume data alone. Consider assessing portability, contract timelines, and TCoP alignment to identify the preferred consolidation candidate. ${savings || ''}`;
+            }
             questions.push({
                 question: 'What are the consolidation options?',
                 answer: consolidateAnswer,
-                indicator: anchor ? 'blue' : 'amber',
-                indicatorLabel: anchor ? 'Anchor identified' : 'Needs assessment'
+                indicator: anchor ? 'blue' : sameVendor ? 'green' : 'amber',
+                indicatorLabel: anchor ? 'Anchor identified' : sameVendor ? 'Same vendor' : 'Needs assessment'
             });
         }
 
@@ -146,9 +152,13 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
         // Q1: Vendor commonality
         if (sharedVendors.length > 0) {
             const vendorNames = sharedVendors.map(([v, sysList]) => `${v} (${sysList.length} systems)`).join(', ');
+            const sameVendor = detectSameVendorConsolidation(systems);
+            const consolidationNote = sameVendor
+                ? ` Additionally, ${sameVendor.insight.charAt(0).toLowerCase() + sameVendor.insight.slice(1)}`
+                : '';
             questions.push({
                 question: 'Can we leverage vendor commonality?',
-                answer: `Vendor commonality exists: ${vendorNames}. This may support a volume renegotiation or unified contract, reducing administrative overhead and potentially improving pricing. Engage the vendor early to understand cross-authority licensing terms.`,
+                answer: `Vendor commonality exists: ${vendorNames}. This may support a volume renegotiation or unified contract, reducing administrative overhead and potentially improving pricing. Engage the vendor early to understand cross-authority licensing terms.${consolidationNote}`,
                 indicator: 'green',
                 indicatorLabel: 'Opportunity'
             });
@@ -243,13 +253,20 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
 
         // Q1: Migration anchor
         const anchor = anchorSystem;
+        const sameVendor = detectSameVendorConsolidation(systems);
+        let anchorAnswer;
+        if (anchor) {
+            anchorAnswer = `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || 'unknown'}. ${anchor.isCloud ? 'Cloud-hosted.' : 'On-premise — cloud migration should be assessed.'} ${anchor.isERP ? 'ERP system — data extraction complexity is high.' : ''} Validate this with TCoP alignment and contract position before committing.`;
+        } else if (sameVendor && sameVendor.isUnanimous) {
+            anchorAnswer = `No clear anchor from user volume, but all systems are from ${sameVendor.vendor}. ${sameVendor.insight} Select the anchor based on: (1) contract renewal alignment, (2) TCoP assessment, (3) data maturity within the ${sameVendor.vendor} product family.`;
+        } else {
+            anchorAnswer = `No clear anchor is identifiable from user volume data. Assess systems against: (1) data portability, (2) TCoP alignment, (3) cloud-native architecture, (4) vendor support roadmap, and (5) contract renewal timing.`;
+        }
         questions.push({
             question: 'Which system should be the migration anchor?',
-            answer: anchor
-                ? `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || 'unknown'}. ${anchor.isCloud ? 'Cloud-hosted.' : 'On-premise — cloud migration should be assessed.'} ${anchor.isERP ? 'ERP system — data extraction complexity is high.' : ''} Validate this with TCoP alignment and contract position before committing.`
-                : `No clear anchor is identifiable from user volume data. Assess systems against: (1) data portability, (2) TCoP alignment, (3) cloud-native architecture, (4) vendor support roadmap, and (5) contract renewal timing.`,
-            indicator: anchor ? 'blue' : 'amber',
-            indicatorLabel: anchor ? 'Anchor identified' : 'Needs assessment'
+            answer: anchorAnswer,
+            indicator: anchor ? 'blue' : sameVendor ? 'green' : 'amber',
+            indicatorLabel: anchor ? 'Anchor identified' : sameVendor ? 'Same vendor' : 'Needs assessment'
         });
 
         // Q2: Data complexity — per-system breakdown
@@ -327,7 +344,27 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
             });
         }
 
-        // Q5 (extract): Data extraction strategy
+        // Q5: Support model assessment
+        const supportClassifications = systems.map(s => ({ label: s.label, vendor: s.vendor, ...classifySupportModel(s) }));
+        const nonStandard = supportClassifications.filter(c => c.model !== 'vendor-supported');
+        if (nonStandard.length > 0) {
+            const smList = nonStandard.map(c => {
+                const badgeClass = c.model === 'community-supported' ? 'text-[#00703c]'
+                    : c.model === 'unsupported' ? 'text-[#d4351c]'
+                    : 'text-[#505a5f]';
+                return `<li><strong>${c.label}</strong>${c.vendor ? ` <span class="text-gray-400">(${c.vendor})</span>` : ''} — <span class="${badgeClass}">${c.summary}</span></li>`;
+            }).join('');
+            const hasUnsupported = nonStandard.some(c => c.model === 'unsupported');
+            const hasCommunity = nonStandard.some(c => c.model === 'community-supported');
+            questions.push({
+                question: 'What is the support model for these systems?',
+                answer: `<ul class="mt-1 ml-4 space-y-0.5 text-sm list-disc">${smList}</ul><p class="mt-2 text-sm">${hasUnsupported ? 'Unsupported systems carry long-term viability risk for the successor authority — assess staffing continuity, documentation, and whether the capability can be procured commercially.' : ''} ${hasCommunity ? 'Community-supported systems align with TCoP principles for collaborative development. Assess governance arrangements for the successor authority.' : ''} ${!hasUnsupported && !hasCommunity ? 'Support model has not been assessed for these systems. Classify each to enable sustainability analysis.' : ''}</p>`,
+                indicator: hasUnsupported ? 'amber' : hasCommunity ? 'green' : 'blue',
+                indicatorLabel: hasUnsupported ? 'Sustainability risk' : hasCommunity ? 'Community model' : 'Needs classification'
+            });
+        }
+
+        // Q6 (extract): Data extraction strategy
         if (isExtract) {
             questions.push({
                 question: 'What is the data extraction strategy?',
