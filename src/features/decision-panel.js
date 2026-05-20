@@ -34,6 +34,28 @@ let _trapCleanup = null;
 let _allSystems = [];
 
 // ---------------------------------------------------------------------------
+// Cost split helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the list of successor names that have a given system in their allocations.
+ */
+function getSuccessorNamesForSystem(sysId) {
+    const names = [];
+    const allocMap = state.successorAllocationMap;
+    if (!allocMap) return names;
+    for (const [successorName, fnMap] of allocMap) {
+        for (const [, allocations] of fnMap) {
+            if (allocations.some(a => a.system && a.system.id === sysId)) {
+                names.push(successorName);
+                break;
+            }
+        }
+    }
+    return names;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -240,6 +262,54 @@ function renderDecisionPanelContent(functionId, successorName) {
 
     // Render blast radius summary banner above the Apply button
     renderCapabilityBlastRadiusSummary(capabilitySystems);
+
+    // Wire cost split inputs
+    wireCostSplitInputs(content);
+}
+
+// ---------------------------------------------------------------------------
+// Cost split input wiring
+// ---------------------------------------------------------------------------
+
+function wireCostSplitInputs(container) {
+    // Percentage inputs
+    container.querySelectorAll('.cost-split-pct').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const sysId = e.target.dataset.systemId;
+            const successor = e.target.dataset.successor;
+            let pct = parseInt(e.target.value, 10);
+            if (isNaN(pct) || pct < 0) pct = 0;
+            if (pct > 100) pct = 100;
+            e.target.value = pct;
+
+            const proportion = pct / 100;
+            if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
+            state.costSplitOverrides[sysId][successor] = proportion;
+
+            // Auto-balance remaining successors
+            const successorNames = getSuccessorNamesForSystem(sysId);
+            const remaining = 1 - proportion;
+            const otherSuccessors = successorNames.filter(s => s !== successor);
+            if (otherSuccessors.length > 0) {
+                const equalRemaining = remaining / otherSuccessors.length;
+                otherSuccessors.forEach(s => {
+                    state.costSplitOverrides[sysId][s] = Math.max(0, equalRemaining);
+                });
+            }
+
+            // Re-render the decision panel to reflect updated values
+            renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
+        });
+    });
+
+    // Reset buttons
+    container.querySelectorAll('.cost-split-reset').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const sysId = e.target.dataset.systemId;
+            delete state.costSplitOverrides[sysId];
+            renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
+        });
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -396,10 +466,55 @@ function renderSystemCard(sys, vestingDate, isHorizontal) {
         contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ''}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ''}`;
     }
 
-    // Disaggregation note
+    // Disaggregation note and cost split
     const disaggNote = sys.isDisaggregation
         ? `<div class="mt-1 text-xs text-[#f47738] font-bold">Partial predecessor system</div>`
         : '';
+
+    // Cost split UI for disaggregation systems
+    let costSplitHtml = '';
+    if (sys.isDisaggregation && sys.annualCost) {
+        const successorNames = getSuccessorNamesForSystem(sys.id);
+        if (successorNames.length > 1) {
+            const overrides = state.costSplitOverrides[sys.id] || {};
+            const equalProportion = 1 / successorNames.length;
+            let rows = '';
+            successorNames.forEach(sName => {
+                const prop = overrides[sName] != null ? overrides[sName] : equalProportion;
+                const pct = Math.round(prop * 100);
+                const amount = Math.round(sys.annualCost * prop);
+                rows += `<tr>
+                    <td class="text-xs py-0.5 pr-2">${escHtml(sName)}</td>
+                    <td class="py-0.5 pr-2"><input type="number" min="0" max="100" value="${pct}" class="cost-split-pct border border-gray-300 text-xs w-14 px-1 py-0.5 text-right" data-system-id="${escHtml(sys.id)}" data-successor="${escHtml(sName)}">%</td>
+                    <td class="text-xs py-0.5 text-gray-600">£${amount.toLocaleString()}</td>
+                </tr>`;
+            });
+            costSplitHtml = `<div class="mt-2 p-2 bg-orange-50 border border-[#f47738] rounded text-xs">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[#f47738]">Cost split</span>
+                    <button type="button" class="cost-split-reset text-[10px] text-[#1d70b8] underline font-bold" data-system-id="${escHtml(sys.id)}">Reset to equal</button>
+                </div>
+                <table class="w-full"><tbody>${rows}</tbody></table>
+            </div>`;
+        }
+    }
+
+    // Show proportional cost for disaggregation systems
+    let costDisplay = '';
+    if (sys.annualCost != null) {
+        if (sys.isDisaggregation) {
+            const successorNames = getSuccessorNamesForSystem(sys.id);
+            const numSucc = successorNames.length || 1;
+            const overrides = state.costSplitOverrides[sys.id] || {};
+            const currentSucc = _currentSuccessorName || '';
+            const prop = overrides[currentSucc] != null ? overrides[currentSucc] : (1 / numSucc);
+            const propCost = Math.round(sys.annualCost * prop);
+            const pct = Math.round(prop * 100);
+            costDisplay = `<div class="text-xs text-gray-600">Cost: <strong>£${propCost.toLocaleString()}/yr</strong> <span class="text-[10px] text-gray-400">(${pct}% of £${Number(sys.annualCost).toLocaleString()})</span></div>`;
+        } else {
+            costDisplay = `<div class="text-xs text-gray-600">Cost: <strong>£${Number(sys.annualCost).toLocaleString()}/yr</strong></div>`;
+        }
+    }
 
     return `
         <div class="${cardBorder} p-3 bg-white ${cardWidth}" data-system-id="${escHtml(sys.id || '')}">
@@ -413,9 +528,10 @@ function renderSystemCard(sys, vestingDate, isHorizontal) {
             </div>
             ${sys.vendor ? `<div class="text-xs text-gray-600">Vendor: <strong>${escHtml(sys.vendor)}</strong></div>` : ''}
             ${sys.users != null ? `<div class="text-xs text-gray-600">Users: <strong>${Number(sys.users).toLocaleString()}</strong></div>` : ''}
-            ${sys.annualCost != null ? `<div class="text-xs text-gray-600">Cost: <strong>£${Number(sys.annualCost).toLocaleString()}/yr</strong></div>` : ''}
+            ${costDisplay}
             ${contractHtml}
             ${disaggNote}
+            ${costSplitHtml}
         </div>
     `;
 }

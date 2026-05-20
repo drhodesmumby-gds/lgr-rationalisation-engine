@@ -76,6 +76,48 @@ function isCardExpanded(sysId) {
     return state.expandedCards.has(sysId); // collapsed is default, set tracks expanded exceptions
 }
 
+// --- Disaggregation cost split helpers ---
+// Counts how many successors have a given system in their allocations
+function countSuccessorsForSystem(sysId) {
+    let count = 0;
+    if (state.successorAllocationMap) {
+        for (const [, fnMap] of state.successorAllocationMap) {
+            for (const [, allocations] of fnMap) {
+                if (allocations.some(a => a.system && a.system.id === sysId)) {
+                    count++;
+                    break; // This successor has this system, move to next successor
+                }
+            }
+        }
+    }
+    return count || 1;
+}
+
+// Returns proportion (0-1) for a given system/successor combo
+// Uses override if set, otherwise equal split
+function getDisaggCostProportion(sysId, successorName) {
+    if (state.costSplitOverrides[sysId] && state.costSplitOverrides[sysId][successorName] != null) {
+        return state.costSplitOverrides[sysId][successorName];
+    }
+    const numSuccessors = countSuccessorsForSystem(sysId);
+    return 1 / numSuccessors;
+}
+
+// Formats a cost value with disaggregation proportion annotation
+function formatDisaggCost(sys, successorName) {
+    if (!sys.annualCost) return sys.cost || 'N/A';
+    const proportion = getDisaggCostProportion(sys.id, successorName);
+    const propCost = sys.annualCost * proportion;
+    const pct = Math.round(proportion * 100);
+    const fullStr = sys.annualCost >= 1000000
+        ? `£${(sys.annualCost/1000000).toFixed(1)}m`
+        : `£${sys.annualCost.toLocaleString()}`;
+    const propStr = propCost >= 1000000
+        ? `£${(propCost/1000000).toFixed(2)}m/yr`
+        : `£${Math.round(propCost).toLocaleString()}/yr`;
+    return `${propStr} (${pct}% of ${fullStr})`;
+}
+
 function openDocModal(key) {
     const doc = DOCUMENTATION[key];
     if (!doc) return;
@@ -1096,10 +1138,11 @@ function switchDashboardTab(tabId) {
 document.getElementById('tabMatrix')?.addEventListener('click', () => switchDashboardTab('matrix'));
 document.getElementById('tabOverview')?.addEventListener('click', () => switchDashboardTab('overview'));
 document.getElementById('tabTimeline')?.addEventListener('click', () => switchDashboardTab('timeline'));
+document.getElementById('tabVendors')?.addEventListener('click', () => switchDashboardTab('vendors'));
 
 // Keyboard navigation between visible tabs (arrow keys)
 document.getElementById('dashboardTabBar')?.addEventListener('keydown', (e) => {
-    const allTabs = ['tabMatrix', 'tabOverview', 'tabTimeline'];
+    const allTabs = ['tabMatrix', 'tabOverview', 'tabTimeline', 'tabVendors'];
     const visibleTabs = allTabs.filter(id => {
         const el = document.getElementById(id);
         return el && !el.hidden && el.style.display !== 'none';
@@ -1554,12 +1597,154 @@ function renderEstateSummary() {
     panel.classList.remove('hidden');
 }
 
+function renderVendorSummary() {
+    const panel = document.getElementById('vendorSummaryPanel');
+    if (!panel) return;
+
+    // Get systems, respecting perspective filter
+    const activeNodes = (state.simulationState && state.simulationState.lastImpact)
+        ? state.simulationState.lastImpact.simulationResult.nodes
+        : state.mergedArchitecture.nodes;
+    let systems = activeNodes.filter(n => n.type === 'ITSystem');
+
+    // Filter by perspective if set
+    if (state.activePerspective && state.activePerspective !== 'all' && state.successorAllocationMap) {
+        const successorFnMap = state.successorAllocationMap.get(state.activePerspective);
+        if (successorFnMap) {
+            const allocatedIds = new Set();
+            for (const [, allocations] of successorFnMap) {
+                allocations.forEach(a => { if (a.system) allocatedIds.add(a.system.id); });
+            }
+            systems = systems.filter(s => allocatedIds.has(s.id));
+        }
+    }
+
+    if (systems.length === 0) {
+        panel.innerHTML = '';
+        return;
+    }
+
+    // Compute base vendor metrics
+    const vendorRows = computeVendorDensityMetrics(systems);
+    if (vendorRows.length === 0) {
+        panel.innerHTML = '';
+        return;
+    }
+
+    // Compute enhanced fields from raw systems
+    const edges = (state.simulationState && state.simulationState.lastImpact)
+        ? state.simulationState.lastImpact.simulationResult.edges
+        : state.mergedArchitecture.edges;
+
+    const enhancedRows = vendorRows.map(v => {
+        const vendorSystems = systems.filter(s => s.vendor === v.vendor);
+        // Contract range: earliest and latest endYear
+        const endYears = vendorSystems.filter(s => s.endYear).map(s => s.endYear);
+        const contractRange = endYears.length > 0
+            ? { earliest: Math.min(...endYears), latest: Math.max(...endYears) }
+            : null;
+        // Function count: distinct LGA functions served
+        const funcIds = new Set();
+        vendorSystems.forEach(sys => {
+            const realizedEdges = edges.filter(e => e.source === sys.id && e.relationship === 'REALIZES');
+            realizedEdges.forEach(e => {
+                const targetNode = activeNodes.find(n => n.id === e.target);
+                if (targetNode && targetNode.lgaFunctionId) funcIds.add(targetNode.lgaFunctionId);
+            });
+        });
+        // Support status: check for unsupported systems
+        const hasUnsupported = vendorSystems.some(s => {
+            const sc = classifySupportModel(s);
+            return sc.model === 'unsupported';
+        });
+        return {
+            ...v,
+            contractRange,
+            functionCount: funcIds.size,
+            hasUnsupported
+        };
+    });
+
+    // Sort by spend descending
+    enhancedRows.sort((a, b) => b.totalSpend - a.totalSpend);
+
+    // Summary metrics
+    const totalVendors = enhancedRows.length;
+    const totalSpend = enhancedRows.reduce((sum, v) => sum + v.totalSpend, 0);
+    const avgSystems = (enhancedRows.reduce((sum, v) => sum + v.systemCount, 0) / totalVendors).toFixed(1);
+
+    let html = '<div class="bg-white border-t-4 border-[#00703c] shadow-sm p-6">';
+    html += `<h2 class="text-2xl font-bold mb-4">Vendor Portfolio${helpIcon('metrics')}</h2>`;
+
+    // Summary cards
+    html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">';
+    html += `<div class="border border-gray-300 p-4 bg-[#f3f2f1]">
+        <p class="text-3xl font-bold text-[#0b0c0c]">${totalVendors}</p>
+        <p class="text-sm font-bold text-gray-700">Total vendors</p>
+    </div>`;
+    html += `<div class="border border-gray-300 p-4 bg-[#f3f2f1]">
+        <p class="text-3xl font-bold text-[#0b0c0c]">${totalSpend > 0 ? '£' + totalSpend.toLocaleString() : 'N/A'}</p>
+        <p class="text-sm font-bold text-gray-700">Total spend under contract</p>
+    </div>`;
+    html += `<div class="border border-gray-300 p-4 bg-[#f3f2f1]">
+        <p class="text-3xl font-bold text-[#0b0c0c]">${avgSystems}</p>
+        <p class="text-sm font-bold text-gray-700">Avg systems per vendor</p>
+    </div>`;
+    html += '</div>';
+
+    // Main table
+    html += '<div class="overflow-x-auto">';
+    html += '<table class="gds-table text-sm">';
+    html += '<thead><tr>';
+    html += '<th>Vendor</th><th>Systems</th><th>Councils</th><th>Functions</th><th>Annual Spend</th><th>Contract Range</th><th>Support Status</th><th>Consolidation</th>';
+    html += '</tr></thead>';
+    html += '<tbody>';
+
+    enhancedRows.forEach(v => {
+        const spendStr = v.totalSpend > 0 ? '£' + v.totalSpend.toLocaleString() : '—';
+        const rangeStr = v.contractRange
+            ? (v.contractRange.earliest === v.contractRange.latest ? `${v.contractRange.earliest}` : `${v.contractRange.earliest}–${v.contractRange.latest}`)
+            : '—';
+        const supportHtml = v.hasUnsupported
+            ? '<span class="gds-tag tag-orange">Warning</span>'
+            : '<span class="text-xs text-[#00703c] font-bold">OK</span>';
+        let consolidationTag;
+        if (v.councilCount >= 2) {
+            consolidationTag = '<span class="gds-tag tag-green">Cross-council</span>';
+        } else if (v.systemCount >= 2) {
+            consolidationTag = '<span class="gds-tag tag-blue">Multi-system</span>';
+        } else {
+            consolidationTag = '<span class="text-gray-500 text-xs">Single</span>';
+        }
+
+        html += '<tr>';
+        html += `<td class="font-bold">${escHtml(v.vendor)}</td>`;
+        html += `<td>${v.systemCount}</td>`;
+        html += `<td>${v.councilCount}${v.councils.length ? ' <span class="text-xs text-gray-500">(' + v.councils.map(escHtml).join(', ') + ')</span>' : ''}</td>`;
+        html += `<td>${v.functionCount}</td>`;
+        html += `<td>${spendStr}</td>`;
+        html += `<td>${rangeStr}</td>`;
+        html += `<td>${supportHtml}</td>`;
+        html += `<td>${consolidationTag}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '</div>';
+    html += '</div>';
+
+    panel.innerHTML = html;
+}
+
 export function renderDashboard() {
     // Reset analysis modal data for this render
     state.analysisModalData = [];
 
     // Render estate summary panel at the top
     renderEstateSummary();
+
+    // Render vendor summary (Vendors tab)
+    renderVendorSummary();
 
     // Render simulation workspace (shown when simulation is active)
     renderSimulationWorkspace();
@@ -1893,7 +2078,7 @@ export function renderDashboard() {
 
                     // Build system cards with provenance (all systems — capability systems show their own badges)
                     const cellSystems = cellAllocations.map(a => a.system);
-                    let systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations);
+                    let systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations, successorName);
 
                     // Add NEW badges for systems not in baseline
                     if (state.simulationState && state.simulationState.baselineAllocation) {
@@ -2302,7 +2487,7 @@ function renderCriticalPathPanel() {
     cpPanel.innerHTML = html;
 }
 
-function buildSystemCard(sysList, persona, anchorSystem, allocations) {
+function buildSystemCard(sysList, persona, anchorSystem, allocations, successorName) {
     if (sysList.length === 0) return `<span class="text-gray-400 italic text-sm">No system mapped</span>`;
     let html = '';
     sysList.forEach((sys, idx) => {
@@ -2317,7 +2502,16 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
         const isExpanded = isCardExpanded(sys.id);
         const collapsedHidden = isExpanded ? ' hidden' : '';
         const expandedHidden = isExpanded ? '' : ' hidden';
-        const costStr = sys.cost ? sys.cost : (sys.annualCost ? `£${sys.annualCost >= 1000000 ? (sys.annualCost/1000000).toFixed(1)+'m' : sys.annualCost >= 1000 ? (sys.annualCost/1000).toFixed(0)+'k' : sys.annualCost}` : '');
+        const isDisagg = alloc ? alloc.isDisaggregation : sys.isDisaggregation;
+        let costStr;
+        if (isDisagg && sys.annualCost && successorName) {
+            const proportion = getDisaggCostProportion(sys.id, successorName);
+            const propCost = sys.annualCost * proportion;
+            const pct = Math.round(proportion * 100);
+            costStr = propCost >= 1000000 ? `£${(propCost/1000000).toFixed(1)}m (${pct}%)` : propCost >= 1000 ? `£${(propCost/1000).toFixed(0)}k (${pct}%)` : `£${Math.round(propCost)} (${pct}%)`;
+        } else {
+            costStr = sys.cost ? sys.cost : (sys.annualCost ? `£${sys.annualCost >= 1000000 ? (sys.annualCost/1000000).toFixed(1)+'m' : sys.annualCost >= 1000 ? (sys.annualCost/1000).toFixed(0)+'k' : sys.annualCost}` : '');
+        }
         let miniBadges = '';
         if (isERP)      miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">ERP</span>`;
         if (isShared)   miniBadges += `<span class="gds-tag tag-blue" style="font-size:11px;padding:2px 5px;line-height:1.2;">Shared</span>`;
@@ -2495,11 +2689,15 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations) {
             let riskColor = 'text-gray-700';
             if (sys.endYear === 2025 || (sys.endYear === 2026 && noticeMonths > 6)) riskColor = 'text-red-700 font-bold';
 
+            const expandedCostStr = (isDisagg && sys.annualCost && successorName)
+                ? formatDisaggCost(sys, successorName)
+                : (sys.cost || 'N/A');
+
             html += `
                 <div class="text-xs mt-2 border-t pt-3 space-y-3">
                     <div class="flex justify-between gap-4 items-start w-full">
                         <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="Annual operating cost">Cost</span>
-                        <strong class="text-right max-w-[60%] break-words">${sys.cost || 'N/A'}</strong>
+                        <strong class="text-right max-w-[60%] break-words">${expandedCostStr}</strong>
                     </div>
                     <div class="flex justify-between gap-4 items-start w-full">
                         <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="End date / Notice Period">Contract</span>

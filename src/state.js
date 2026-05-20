@@ -36,4 +36,5 @@ export const state = {
         unsupportedSystems: true,
         sharedServiceUnwinding: true
     },
+    costSplitOverrides: {},  // key: systemId, value: { [successorName]: proportion (0-1) }
 };

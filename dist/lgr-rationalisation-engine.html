@@ -552,6 +552,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                     <button role="tab" id="tabMatrix" class="dashboard-tab active" aria-selected="true" aria-controls="panelMatrix" tabindex="0">Matrix</button>
                     <button role="tab" id="tabOverview" class="dashboard-tab" aria-selected="false" aria-controls="panelOverview" tabindex="-1">Overview</button>
                     <button role="tab" id="tabTimeline" class="dashboard-tab" aria-selected="false" aria-controls="panelTimeline" tabindex="-1">Timeline</button>
+                    <button role="tab" id="tabVendors" class="dashboard-tab" aria-selected="false" aria-controls="panelVendors" tabindex="-1">Vendors</button>
                 </nav>
             </div>
 
@@ -634,6 +635,13 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                             <p class="text-gray-700 mb-6 max-w-4xl">Visualizing hard legal deadlines. The solid bar ends at contract expiry. The <span class="px-2 py-1 bg-[#ffb2a8] font-bold text-[#d4351c] text-xs uppercase border border-[#d4351c] mx-1">Striped Zone</span> represents the mandatory notice period. <strong>Action must be taken before the striped zone begins to avoid auto-renewal.</strong></p>
                             <div class="timeline-track" id="timelineTrack"></div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Vendors Panel -->
+                <div role="tabpanel" id="panelVendors" aria-labelledby="tabVendors" class="tab-panel h-full overflow-auto p-4 md:p-8">
+                    <div class="max-w-[1800px] mx-auto space-y-8">
+                        <div id="vendorSummaryPanel"></div>
                     </div>
                 </div>
 
@@ -1562,7 +1570,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       disaggregationComplexity: true,
       unsupportedSystems: true,
       sharedServiceUnwinding: true
-    }
+    },
+    costSplitOverrides: {}
+    // key: systemId, value: { [successorName]: proportion (0-1) }
   };
 
   // src/analysis/signals.js
@@ -7886,6 +7896,20 @@ ${hardErrors.join("\n")}`);
   var _panelOpener = null;
   var _trapCleanup = null;
   var _allSystems = [];
+  function getSuccessorNamesForSystem(sysId) {
+    const names = [];
+    const allocMap = state.successorAllocationMap;
+    if (!allocMap) return names;
+    for (const [successorName, fnMap] of allocMap) {
+      for (const [, allocations] of fnMap) {
+        if (allocations.some((a) => a.system && a.system.id === sysId)) {
+          names.push(successorName);
+          break;
+        }
+      }
+    }
+    return names;
+  }
   function openDecisionPanel(functionId, successorName) {
     if (!state.simulationState) return;
     _currentFunctionId = functionId;
@@ -8021,6 +8045,39 @@ ${hardErrors.join("\n")}`);
       prefillDecision(existingDecision, systems, successorName);
     }
     renderCapabilityBlastRadiusSummary(capabilitySystems);
+    wireCostSplitInputs(content);
+  }
+  function wireCostSplitInputs(container) {
+    container.querySelectorAll(".cost-split-pct").forEach((input) => {
+      input.addEventListener("change", (e) => {
+        const sysId = e.target.dataset.systemId;
+        const successor = e.target.dataset.successor;
+        let pct = parseInt(e.target.value, 10);
+        if (isNaN(pct) || pct < 0) pct = 0;
+        if (pct > 100) pct = 100;
+        e.target.value = pct;
+        const proportion = pct / 100;
+        if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
+        state.costSplitOverrides[sysId][successor] = proportion;
+        const successorNames = getSuccessorNamesForSystem(sysId);
+        const remaining = 1 - proportion;
+        const otherSuccessors = successorNames.filter((s) => s !== successor);
+        if (otherSuccessors.length > 0) {
+          const equalRemaining = remaining / otherSuccessors.length;
+          otherSuccessors.forEach((s) => {
+            state.costSplitOverrides[sysId][s] = Math.max(0, equalRemaining);
+          });
+        }
+        renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
+      });
+    });
+    container.querySelectorAll(".cost-split-reset").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const sysId = e.target.dataset.systemId;
+        delete state.costSplitOverrides[sysId];
+        renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
+      });
+    });
   }
   function renderPropagatedSharedServiceView(decision, funcLabel, successorName, tierBadge) {
     const origin = decision.sharedServiceOrigin || "";
@@ -8121,6 +8178,47 @@ ${hardErrors.join("\n")}`);
       contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ""}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ""}`;
     }
     const disaggNote = sys.isDisaggregation ? `<div class="mt-1 text-xs text-[#f47738] font-bold">Partial predecessor system</div>` : "";
+    let costSplitHtml = "";
+    if (sys.isDisaggregation && sys.annualCost) {
+      const successorNames = getSuccessorNamesForSystem(sys.id);
+      if (successorNames.length > 1) {
+        const overrides = state.costSplitOverrides[sys.id] || {};
+        const equalProportion = 1 / successorNames.length;
+        let rows = "";
+        successorNames.forEach((sName) => {
+          const prop = overrides[sName] != null ? overrides[sName] : equalProportion;
+          const pct = Math.round(prop * 100);
+          const amount = Math.round(sys.annualCost * prop);
+          rows += `<tr>
+                    <td class="text-xs py-0.5 pr-2">${escHtml(sName)}</td>
+                    <td class="py-0.5 pr-2"><input type="number" min="0" max="100" value="${pct}" class="cost-split-pct border border-gray-300 text-xs w-14 px-1 py-0.5 text-right" data-system-id="${escHtml(sys.id)}" data-successor="${escHtml(sName)}">%</td>
+                    <td class="text-xs py-0.5 text-gray-600">\xA3${amount.toLocaleString()}</td>
+                </tr>`;
+        });
+        costSplitHtml = `<div class="mt-2 p-2 bg-orange-50 border border-[#f47738] rounded text-xs">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[#f47738]">Cost split</span>
+                    <button type="button" class="cost-split-reset text-[10px] text-[#1d70b8] underline font-bold" data-system-id="${escHtml(sys.id)}">Reset to equal</button>
+                </div>
+                <table class="w-full"><tbody>${rows}</tbody></table>
+            </div>`;
+      }
+    }
+    let costDisplay = "";
+    if (sys.annualCost != null) {
+      if (sys.isDisaggregation) {
+        const successorNames = getSuccessorNamesForSystem(sys.id);
+        const numSucc = successorNames.length || 1;
+        const overrides = state.costSplitOverrides[sys.id] || {};
+        const currentSucc = _currentSuccessorName || "";
+        const prop = overrides[currentSucc] != null ? overrides[currentSucc] : 1 / numSucc;
+        const propCost = Math.round(sys.annualCost * prop);
+        const pct = Math.round(prop * 100);
+        costDisplay = `<div class="text-xs text-gray-600">Cost: <strong>\xA3${propCost.toLocaleString()}/yr</strong> <span class="text-[10px] text-gray-400">(${pct}% of \xA3${Number(sys.annualCost).toLocaleString()})</span></div>`;
+      } else {
+        costDisplay = `<div class="text-xs text-gray-600">Cost: <strong>\xA3${Number(sys.annualCost).toLocaleString()}/yr</strong></div>`;
+      }
+    }
     return `
         <div class="${cardBorder} p-3 bg-white ${cardWidth}" data-system-id="${escHtml(sys.id || "")}">
             <div class="font-bold text-sm mb-0.5">${escHtml(sys.label || "Unnamed")}</div>
@@ -8133,9 +8231,10 @@ ${hardErrors.join("\n")}`);
             </div>
             ${sys.vendor ? `<div class="text-xs text-gray-600">Vendor: <strong>${escHtml(sys.vendor)}</strong></div>` : ""}
             ${sys.users != null ? `<div class="text-xs text-gray-600">Users: <strong>${Number(sys.users).toLocaleString()}</strong></div>` : ""}
-            ${sys.annualCost != null ? `<div class="text-xs text-gray-600">Cost: <strong>\xA3${Number(sys.annualCost).toLocaleString()}/yr</strong></div>` : ""}
+            ${costDisplay}
             ${contractHtml}
             ${disaggNote}
+            ${costSplitHtml}
         </div>
     `;
   }
@@ -10805,6 +10904,36 @@ tr:nth-child(even){background:#f3f2f1;}
     }
     return state.expandedCards.has(sysId);
   }
+  function countSuccessorsForSystem(sysId) {
+    let count = 0;
+    if (state.successorAllocationMap) {
+      for (const [, fnMap] of state.successorAllocationMap) {
+        for (const [, allocations] of fnMap) {
+          if (allocations.some((a) => a.system && a.system.id === sysId)) {
+            count++;
+            break;
+          }
+        }
+      }
+    }
+    return count || 1;
+  }
+  function getDisaggCostProportion(sysId, successorName) {
+    if (state.costSplitOverrides[sysId] && state.costSplitOverrides[sysId][successorName] != null) {
+      return state.costSplitOverrides[sysId][successorName];
+    }
+    const numSuccessors = countSuccessorsForSystem(sysId);
+    return 1 / numSuccessors;
+  }
+  function formatDisaggCost(sys, successorName) {
+    if (!sys.annualCost) return sys.cost || "N/A";
+    const proportion = getDisaggCostProportion(sys.id, successorName);
+    const propCost = sys.annualCost * proportion;
+    const pct = Math.round(proportion * 100);
+    const fullStr = sys.annualCost >= 1e6 ? `\xA3${(sys.annualCost / 1e6).toFixed(1)}m` : `\xA3${sys.annualCost.toLocaleString()}`;
+    const propStr = propCost >= 1e6 ? `\xA3${(propCost / 1e6).toFixed(2)}m/yr` : `\xA3${Math.round(propCost).toLocaleString()}/yr`;
+    return `${propStr} (${pct}% of ${fullStr})`;
+  }
   function openDocModal(key) {
     const doc = DOCUMENTATION[key];
     if (!doc) return;
@@ -11630,8 +11759,9 @@ tr:nth-child(even){background:#f3f2f1;}
   document.getElementById("tabMatrix")?.addEventListener("click", () => switchDashboardTab("matrix"));
   document.getElementById("tabOverview")?.addEventListener("click", () => switchDashboardTab("overview"));
   document.getElementById("tabTimeline")?.addEventListener("click", () => switchDashboardTab("timeline"));
+  document.getElementById("tabVendors")?.addEventListener("click", () => switchDashboardTab("vendors"));
   document.getElementById("dashboardTabBar")?.addEventListener("keydown", (e) => {
-    const allTabs = ["tabMatrix", "tabOverview", "tabTimeline"];
+    const allTabs = ["tabMatrix", "tabOverview", "tabTimeline", "tabVendors"];
     const visibleTabs = allTabs.filter((id) => {
       const el = document.getElementById(id);
       return el && !el.hidden && el.style.display !== "none";
@@ -12011,9 +12141,114 @@ tr:nth-child(even){background:#f3f2f1;}
     panel.innerHTML = html;
     panel.classList.remove("hidden");
   }
+  function renderVendorSummary() {
+    const panel = document.getElementById("vendorSummaryPanel");
+    if (!panel) return;
+    const activeNodes = state.simulationState && state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.nodes : state.mergedArchitecture.nodes;
+    let systems = activeNodes.filter((n) => n.type === "ITSystem");
+    if (state.activePerspective && state.activePerspective !== "all" && state.successorAllocationMap) {
+      const successorFnMap = state.successorAllocationMap.get(state.activePerspective);
+      if (successorFnMap) {
+        const allocatedIds = /* @__PURE__ */ new Set();
+        for (const [, allocations] of successorFnMap) {
+          allocations.forEach((a) => {
+            if (a.system) allocatedIds.add(a.system.id);
+          });
+        }
+        systems = systems.filter((s) => allocatedIds.has(s.id));
+      }
+    }
+    if (systems.length === 0) {
+      panel.innerHTML = "";
+      return;
+    }
+    const vendorRows = computeVendorDensityMetrics(systems);
+    if (vendorRows.length === 0) {
+      panel.innerHTML = "";
+      return;
+    }
+    const edges = state.simulationState && state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.edges : state.mergedArchitecture.edges;
+    const enhancedRows = vendorRows.map((v) => {
+      const vendorSystems = systems.filter((s) => s.vendor === v.vendor);
+      const endYears = vendorSystems.filter((s) => s.endYear).map((s) => s.endYear);
+      const contractRange = endYears.length > 0 ? { earliest: Math.min(...endYears), latest: Math.max(...endYears) } : null;
+      const funcIds = /* @__PURE__ */ new Set();
+      vendorSystems.forEach((sys) => {
+        const realizedEdges = edges.filter((e) => e.source === sys.id && e.relationship === "REALIZES");
+        realizedEdges.forEach((e) => {
+          const targetNode = activeNodes.find((n) => n.id === e.target);
+          if (targetNode && targetNode.lgaFunctionId) funcIds.add(targetNode.lgaFunctionId);
+        });
+      });
+      const hasUnsupported = vendorSystems.some((s) => {
+        const sc = classifySupportModel(s);
+        return sc.model === "unsupported";
+      });
+      return {
+        ...v,
+        contractRange,
+        functionCount: funcIds.size,
+        hasUnsupported
+      };
+    });
+    enhancedRows.sort((a, b) => b.totalSpend - a.totalSpend);
+    const totalVendors = enhancedRows.length;
+    const totalSpend = enhancedRows.reduce((sum, v) => sum + v.totalSpend, 0);
+    const avgSystems = (enhancedRows.reduce((sum, v) => sum + v.systemCount, 0) / totalVendors).toFixed(1);
+    let html = '<div class="bg-white border-t-4 border-[#00703c] shadow-sm p-6">';
+    html += `<h2 class="text-2xl font-bold mb-4">Vendor Portfolio${helpIcon("metrics")}</h2>`;
+    html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">';
+    html += `<div class="border border-gray-300 p-4 bg-[#f3f2f1]">
+        <p class="text-3xl font-bold text-[#0b0c0c]">${totalVendors}</p>
+        <p class="text-sm font-bold text-gray-700">Total vendors</p>
+    </div>`;
+    html += `<div class="border border-gray-300 p-4 bg-[#f3f2f1]">
+        <p class="text-3xl font-bold text-[#0b0c0c]">${totalSpend > 0 ? "\xA3" + totalSpend.toLocaleString() : "N/A"}</p>
+        <p class="text-sm font-bold text-gray-700">Total spend under contract</p>
+    </div>`;
+    html += `<div class="border border-gray-300 p-4 bg-[#f3f2f1]">
+        <p class="text-3xl font-bold text-[#0b0c0c]">${avgSystems}</p>
+        <p class="text-sm font-bold text-gray-700">Avg systems per vendor</p>
+    </div>`;
+    html += "</div>";
+    html += '<div class="overflow-x-auto">';
+    html += '<table class="gds-table text-sm">';
+    html += "<thead><tr>";
+    html += "<th>Vendor</th><th>Systems</th><th>Councils</th><th>Functions</th><th>Annual Spend</th><th>Contract Range</th><th>Support Status</th><th>Consolidation</th>";
+    html += "</tr></thead>";
+    html += "<tbody>";
+    enhancedRows.forEach((v) => {
+      const spendStr = v.totalSpend > 0 ? "\xA3" + v.totalSpend.toLocaleString() : "\u2014";
+      const rangeStr = v.contractRange ? v.contractRange.earliest === v.contractRange.latest ? `${v.contractRange.earliest}` : `${v.contractRange.earliest}\u2013${v.contractRange.latest}` : "\u2014";
+      const supportHtml = v.hasUnsupported ? '<span class="gds-tag tag-orange">Warning</span>' : '<span class="text-xs text-[#00703c] font-bold">OK</span>';
+      let consolidationTag;
+      if (v.councilCount >= 2) {
+        consolidationTag = '<span class="gds-tag tag-green">Cross-council</span>';
+      } else if (v.systemCount >= 2) {
+        consolidationTag = '<span class="gds-tag tag-blue">Multi-system</span>';
+      } else {
+        consolidationTag = '<span class="text-gray-500 text-xs">Single</span>';
+      }
+      html += "<tr>";
+      html += `<td class="font-bold">${escHtml(v.vendor)}</td>`;
+      html += `<td>${v.systemCount}</td>`;
+      html += `<td>${v.councilCount}${v.councils.length ? ' <span class="text-xs text-gray-500">(' + v.councils.map(escHtml).join(", ") + ")</span>" : ""}</td>`;
+      html += `<td>${v.functionCount}</td>`;
+      html += `<td>${spendStr}</td>`;
+      html += `<td>${rangeStr}</td>`;
+      html += `<td>${supportHtml}</td>`;
+      html += `<td>${consolidationTag}</td>`;
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    html += "</div>";
+    html += "</div>";
+    panel.innerHTML = html;
+  }
   function renderDashboard() {
     state.analysisModalData = [];
     renderEstateSummary();
+    renderVendorSummary();
     renderSimulationWorkspace();
     updatePersonaBanner();
     const toolbar = document.getElementById("matrixToolbar");
@@ -12283,7 +12518,7 @@ tr:nth-child(even){background:#f3f2f1;}
             const patternTagHtml = renderPatternTag(pattern);
             const capAnnotation = capAllocations.length > 0 ? `<span class="text-[10px] text-[#0e7490] ml-1">(${capAllocations.length} also provide${capAllocations.length === 1 ? "s" : ""} capabilities)</span>` : "";
             const cellSystems = cellAllocations.map((a) => a.system);
-            let systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations);
+            let systemCardsHtml = buildSystemCard(cellSystems, state.activePersona, anchorSystem, cellAllocations, successorName);
             if (state.simulationState && state.simulationState.baselineAllocation) {
               cellAllocations.forEach((a) => {
                 if (!baselineIds.has(a.system.id)) {
@@ -12608,7 +12843,7 @@ tr:nth-child(even){background:#f3f2f1;}
     html += "</div>";
     cpPanel.innerHTML = html;
   }
-  function buildSystemCard(sysList, persona, anchorSystem, allocations) {
+  function buildSystemCard(sysList, persona, anchorSystem, allocations, successorName) {
     if (sysList.length === 0) return `<span class="text-gray-400 italic text-sm">No system mapped</span>`;
     let html = "";
     sysList.forEach((sys, idx) => {
@@ -12621,7 +12856,16 @@ tr:nth-child(even){background:#f3f2f1;}
       const isExpanded = isCardExpanded(sys.id);
       const collapsedHidden = isExpanded ? " hidden" : "";
       const expandedHidden = isExpanded ? "" : " hidden";
-      const costStr = sys.cost ? sys.cost : sys.annualCost ? `\xA3${sys.annualCost >= 1e6 ? (sys.annualCost / 1e6).toFixed(1) + "m" : sys.annualCost >= 1e3 ? (sys.annualCost / 1e3).toFixed(0) + "k" : sys.annualCost}` : "";
+      const isDisagg = alloc ? alloc.isDisaggregation : sys.isDisaggregation;
+      let costStr;
+      if (isDisagg && sys.annualCost && successorName) {
+        const proportion = getDisaggCostProportion(sys.id, successorName);
+        const propCost = sys.annualCost * proportion;
+        const pct = Math.round(proportion * 100);
+        costStr = propCost >= 1e6 ? `\xA3${(propCost / 1e6).toFixed(1)}m (${pct}%)` : propCost >= 1e3 ? `\xA3${(propCost / 1e3).toFixed(0)}k (${pct}%)` : `\xA3${Math.round(propCost)} (${pct}%)`;
+      } else {
+        costStr = sys.cost ? sys.cost : sys.annualCost ? `\xA3${sys.annualCost >= 1e6 ? (sys.annualCost / 1e6).toFixed(1) + "m" : sys.annualCost >= 1e3 ? (sys.annualCost / 1e3).toFixed(0) + "k" : sys.annualCost}` : "";
+      }
       let miniBadges = "";
       if (isERP) miniBadges += `<span class="gds-tag tag-red" style="font-size:11px;padding:2px 5px;line-height:1.2;">ERP</span>`;
       if (isShared) miniBadges += `<span class="gds-tag tag-blue" style="font-size:11px;padding:2px 5px;line-height:1.2;">Shared</span>`;
@@ -12765,11 +13009,12 @@ tr:nth-child(even){background:#f3f2f1;}
         const expStr = `${String(sys.endMonth || 1).padStart(2, "0")}/${sys.endYear || 2025}`;
         let riskColor = "text-gray-700";
         if (sys.endYear === 2025 || sys.endYear === 2026 && noticeMonths > 6) riskColor = "text-red-700 font-bold";
+        const expandedCostStr = isDisagg && sys.annualCost && successorName ? formatDisaggCost(sys, successorName) : sys.cost || "N/A";
         html += `
                 <div class="text-xs mt-2 border-t pt-3 space-y-3">
                     <div class="flex justify-between gap-4 items-start w-full">
                         <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="Annual operating cost">Cost</span>
-                        <strong class="text-right max-w-[60%] break-words">${sys.cost || "N/A"}</strong>
+                        <strong class="text-right max-w-[60%] break-words">${expandedCostStr}</strong>
                     </div>
                     <div class="flex justify-between gap-4 items-start w-full">
                         <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="End date / Notice Period">Contract</span>
