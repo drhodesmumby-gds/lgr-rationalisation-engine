@@ -1361,9 +1361,15 @@ function renderEstateSummary() {
         html += '<p class="text-sm font-bold text-gray-700">Successor authorities</p>';
         html += '</div>';
 
-        // Vesting date
+        // Vesting date with countdown
+        var vDateObj = new Date(state.transitionStructure.vestingDate);
+        var nowDate = new Date();
+        var monthsToVesting = Math.round((vDateObj - nowDate) / (1000 * 60 * 60 * 24 * 30.44));
+        var countdownText = monthsToVesting > 0 ? monthsToVesting + ' months remaining' : 'PASSED';
+        var countdownColour = monthsToVesting <= 0 ? 'text-[#d4351c]' : monthsToVesting <= 6 ? 'text-[#d4351c]' : monthsToVesting <= 12 ? 'text-[#f47738]' : 'text-[#0b0c0c]';
         html += '<div class="border border-gray-300 p-4 bg-red-50 border-l-4 border-l-[#d4351c]">';
         html += '<p class="text-xl font-bold text-[#d4351c]">' + state.transitionStructure.vestingDate + '</p>';
+        html += '<p class="text-sm font-bold ' + countdownColour + '">' + countdownText + '</p>';
         html += '<p class="text-sm font-bold text-gray-700">' + wrapWithTooltip('Vesting date', DOMAIN_TERMS['Vesting Date']) + '</p>';
         html += '</div>';
 

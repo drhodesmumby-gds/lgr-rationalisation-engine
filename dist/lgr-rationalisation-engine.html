@@ -10407,6 +10407,20 @@ tr:nth-child(even){background:#f3f2f1;}
   function computeDomainSummaries() {
     const rootCategories = getRootCategories();
     const summaries = /* @__PURE__ */ new Map();
+    const perspective = state.activePerspective;
+    const isFiltered = perspective && perspective !== "all" && state.operatingMode === "transition" && state.successorAllocationMap;
+    let perspectiveSystemIds = null;
+    if (isFiltered) {
+      perspectiveSystemIds = /* @__PURE__ */ new Set();
+      const fnMap = state.successorAllocationMap.get(perspective);
+      if (fnMap) {
+        for (const allocations of fnMap.values()) {
+          allocations.forEach((a) => {
+            if (a.system) perspectiveSystemIds.add(a.system.id);
+          });
+        }
+      }
+    }
     rootCategories.forEach((root) => {
       summaries.set(root.id, {
         rootId: root.id,
@@ -10426,13 +10440,17 @@ tr:nth-child(even){background:#f3f2f1;}
       const rootId = getRootCategoryId(lgaId);
       if (!rootId || !summaries.has(rootId)) continue;
       const summary = summaries.get(rootId);
-      summary.functionCount++;
-      const tier = state.tierMap && state.tierMap.get(lgaId) || DEFAULT_TIER_MAP.get(lgaId) || 2;
-      summary.tiers[tier]++;
       const funcEdges = state.mergedArchitecture.edges.filter(
         (e) => fnData.localNodeIds.has(e.target) && e.relationship === "REALIZES"
       );
-      const systemNodes = funcEdges.map((e) => state.mergedArchitecture.nodes.find((n) => n.id === e.source)).filter((n) => n && n.type === "ITSystem");
+      let systemNodes = funcEdges.map((e) => state.mergedArchitecture.nodes.find((n) => n.id === e.source)).filter((n) => n && n.type === "ITSystem");
+      if (perspectiveSystemIds) {
+        systemNodes = systemNodes.filter((s) => perspectiveSystemIds.has(s.id));
+      }
+      if (systemNodes.length === 0 && isFiltered) continue;
+      summary.functionCount++;
+      const tier = state.tierMap && state.tierMap.get(lgaId) || DEFAULT_TIER_MAP.get(lgaId) || 2;
+      summary.tiers[tier]++;
       systemNodes.forEach((sys) => {
         if (!summary._systemIds.has(sys.id)) {
           summary._systemIds.add(sys.id);
@@ -10458,14 +10476,28 @@ tr:nth-child(even){background:#f3f2f1;}
       if (state.simulationState?.decisions && state.operatingMode === "transition") {
         const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
         if (allocMap) {
-          for (const [successorName, fnMap] of allocMap) {
-            if (fnMap.has(lgaId)) {
+          if (isFiltered) {
+            const fnMap = allocMap.get(perspective);
+            if (fnMap && fnMap.has(lgaId)) {
               const allocations = fnMap.get(lgaId);
               if (allocations.length >= 2) {
                 summary.decidableCount++;
-                const key = `${lgaId}::${successorName}`;
+                const key = `${lgaId}::${perspective}`;
                 if (state.simulationState.decisions.has(key)) {
                   summary.decidedCount++;
+                }
+              }
+            }
+          } else {
+            for (const [successorName, fnMap] of allocMap) {
+              if (fnMap.has(lgaId)) {
+                const allocations = fnMap.get(lgaId);
+                if (allocations.length >= 2) {
+                  summary.decidableCount++;
+                  const key = `${lgaId}::${successorName}`;
+                  if (state.simulationState.decisions.has(key)) {
+                    summary.decidedCount++;
+                  }
                 }
               }
             }
@@ -11621,8 +11653,14 @@ tr:nth-child(even){background:#f3f2f1;}
       html += '<p class="text-3xl font-bold text-[#d4351c]">' + successorCount + "</p>";
       html += '<p class="text-sm font-bold text-gray-700">Successor authorities</p>';
       html += "</div>";
+      var vDateObj = new Date(state.transitionStructure.vestingDate);
+      var nowDate = /* @__PURE__ */ new Date();
+      var monthsToVesting = Math.round((vDateObj - nowDate) / (1e3 * 60 * 60 * 24 * 30.44));
+      var countdownText = monthsToVesting > 0 ? monthsToVesting + " months remaining" : "PASSED";
+      var countdownColour = monthsToVesting <= 0 ? "text-[#d4351c]" : monthsToVesting <= 6 ? "text-[#d4351c]" : monthsToVesting <= 12 ? "text-[#f47738]" : "text-[#0b0c0c]";
       html += '<div class="border border-gray-300 p-4 bg-red-50 border-l-4 border-l-[#d4351c]">';
       html += '<p class="text-xl font-bold text-[#d4351c]">' + state.transitionStructure.vestingDate + "</p>";
+      html += '<p class="text-sm font-bold ' + countdownColour + '">' + countdownText + "</p>";
       html += '<p class="text-sm font-bold text-gray-700">' + wrapWithTooltip("Vesting date", DOMAIN_TERMS["Vesting Date"]) + "</p>";
       html += "</div>";
       if (metrics.preVestingNoticeCount !== null) {

@@ -5,6 +5,20 @@ import { DEFAULT_TIER_MAP } from '../constants/tier-map.js';
 export function computeDomainSummaries() {
     const rootCategories = getRootCategories();
     const summaries = new Map();
+    const perspective = state.activePerspective;
+    const isFiltered = perspective && perspective !== 'all' && state.operatingMode === 'transition' && state.successorAllocationMap;
+
+    // Build a set of system IDs allocated to the active perspective successor
+    let perspectiveSystemIds = null;
+    if (isFiltered) {
+        perspectiveSystemIds = new Set();
+        const fnMap = state.successorAllocationMap.get(perspective);
+        if (fnMap) {
+            for (const allocations of fnMap.values()) {
+                allocations.forEach(a => { if (a.system) perspectiveSystemIds.add(a.system.id); });
+            }
+        }
+    }
 
     rootCategories.forEach(root => {
         summaries.set(root.id, {
@@ -27,17 +41,24 @@ export function computeDomainSummaries() {
         if (!rootId || !summaries.has(rootId)) continue;
 
         const summary = summaries.get(rootId);
-        summary.functionCount++;
-
-        const tier = (state.tierMap && state.tierMap.get(lgaId)) || DEFAULT_TIER_MAP.get(lgaId) || 2;
-        summary.tiers[tier]++;
 
         const funcEdges = state.mergedArchitecture.edges.filter(
             e => fnData.localNodeIds.has(e.target) && e.relationship === 'REALIZES'
         );
-        const systemNodes = funcEdges
+        let systemNodes = funcEdges
             .map(e => state.mergedArchitecture.nodes.find(n => n.id === e.source))
             .filter(n => n && n.type === 'ITSystem');
+
+        if (perspectiveSystemIds) {
+            systemNodes = systemNodes.filter(s => perspectiveSystemIds.has(s.id));
+        }
+
+        if (systemNodes.length === 0 && isFiltered) continue;
+
+        summary.functionCount++;
+
+        const tier = (state.tierMap && state.tierMap.get(lgaId)) || DEFAULT_TIER_MAP.get(lgaId) || 2;
+        summary.tiers[tier]++;
 
         systemNodes.forEach(sys => {
             if (!summary._systemIds.has(sys.id)) {
@@ -67,14 +88,28 @@ export function computeDomainSummaries() {
         if (state.simulationState?.decisions && state.operatingMode === 'transition') {
             const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
             if (allocMap) {
-                for (const [successorName, fnMap] of allocMap) {
-                    if (fnMap.has(lgaId)) {
+                if (isFiltered) {
+                    const fnMap = allocMap.get(perspective);
+                    if (fnMap && fnMap.has(lgaId)) {
                         const allocations = fnMap.get(lgaId);
                         if (allocations.length >= 2) {
                             summary.decidableCount++;
-                            const key = `${lgaId}::${successorName}`;
+                            const key = `${lgaId}::${perspective}`;
                             if (state.simulationState.decisions.has(key)) {
                                 summary.decidedCount++;
+                            }
+                        }
+                    }
+                } else {
+                    for (const [successorName, fnMap] of allocMap) {
+                        if (fnMap.has(lgaId)) {
+                            const allocations = fnMap.get(lgaId);
+                            if (allocations.length >= 2) {
+                                summary.decidableCount++;
+                                const key = `${lgaId}::${successorName}`;
+                                if (state.simulationState.decisions.has(key)) {
+                                    summary.decidedCount++;
+                                }
                             }
                         }
                     }
