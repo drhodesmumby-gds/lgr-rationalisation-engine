@@ -269,20 +269,30 @@
         <div id="optionsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
             <div class="bg-white max-w-2xl w-full p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
                 <button id="btnCloseOptions" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
-                <h2 class="text-2xl font-bold mb-1">Signal Options</h2>
-                <p class="text-sm text-gray-600 mb-6">Control which signals appear in the analysis column and how prominently. <strong>High</strong> signals appear with a coloured badge. <strong>Low</strong> signals appear as small grey notes. <strong>Off</strong> signals are hidden. Changing persona resets to that persona's defaults.</p>
-                <table class="w-full text-sm mb-6">
-                    <thead>
-                        <tr class="border-b-2 border-[#0b0c0c]">
-                            <th class="text-left pb-2 font-bold">Signal</th>
-                            <th class="text-center pb-2 font-bold w-14">Off</th>
-                            <th class="text-center pb-2 font-bold w-14">Low</th>
-                            <th class="text-center pb-2 font-bold w-14">Med</th>
-                            <th class="text-center pb-2 font-bold w-14">High</th>
-                        </tr>
-                    </thead>
-                    <tbody id="signalWeightsTable"></tbody>
-                </table>
+                <h2 class="text-2xl font-bold mb-1">Configuration</h2>
+                <p class="text-sm text-gray-600 mb-4">Configure signal weights and programme readiness factors.</p>
+                <div class="flex border-b border-gray-300 mb-4">
+                    <button id="optTabSignals" class="px-4 py-2 text-sm font-bold border-b-2 border-[#1d70b8] text-[#1d70b8]" type="button">Signals</button>
+                    <button id="optTabReadiness" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-[#0b0c0c]" type="button">Readiness</button>
+                </div>
+                <div id="optPanelSignals">
+                    <table class="w-full text-sm mb-6">
+                        <thead>
+                            <tr class="border-b-2 border-[#0b0c0c]">
+                                <th class="text-left pb-2 font-bold">Signal</th>
+                                <th class="text-center pb-2 font-bold w-14">Off</th>
+                                <th class="text-center pb-2 font-bold w-14">Low</th>
+                                <th class="text-center pb-2 font-bold w-14">Med</th>
+                                <th class="text-center pb-2 font-bold w-14">High</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signalWeightsTable"></tbody>
+                    </table>
+                </div>
+                <div id="optPanelReadiness" class="hidden">
+                    <p class="text-sm text-gray-600 mb-4">Toggle readiness factors that contribute to the programme RAG status. Disable factors you have already addressed outside this tool.</p>
+                    <div id="readinessFactorsPanel"></div>
+                </div>
                 <div class="flex gap-3 items-center">
                     <button id="btnApplyWeights" class="gds-btn">Apply &amp; refresh</button>
                     <button id="btnResetWeights" class="gds-btn-secondary px-4 py-2 text-sm font-bold hover:bg-gray-100">Reset to persona defaults</button>

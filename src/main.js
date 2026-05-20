@@ -20,7 +20,8 @@ import {
 import {
     computeEstateSummaryMetrics, computeEffectiveTier,
     sortFunctionRows, classifyRationalisationPattern,
-    getHeadlineMetrics, computeMigrationComplexity
+    getHeadlineMetrics, computeMigrationComplexity,
+    computeReadinessProfile
 } from './analysis/metrics.js';
 import { generatePersonaQuestions } from './analysis/questions.js';
 
@@ -296,6 +297,11 @@ document.getElementById('btnApplyWeights').addEventListener('click', () => {
         const sel = document.querySelector(`input[name="sig_${sig.id}"]:checked`);
         if (sel) state.signalWeights[sig.id] = parseInt(sel.value);
     });
+    // Also apply readiness toggles
+    ['contractUrgency', 'disaggregationComplexity', 'unsupportedSystems', 'sharedServiceUnwinding'].forEach(id => {
+        const cb = document.querySelector(`input[name="readiness_${id}"]`);
+        if (cb) state.readinessFactors[id] = cb.checked;
+    });
     document.getElementById('optionsModal').classList.add('hidden');
     renderDashboard();
 });
@@ -304,6 +310,44 @@ document.getElementById('btnResetWeights').addEventListener('click', () => {
     state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS[state.activePersona] };
     renderOptionsPanel();
 });
+
+// --- Readiness tab switching in options modal ---
+document.getElementById('optTabSignals').addEventListener('click', () => {
+    document.getElementById('optPanelSignals').classList.remove('hidden');
+    document.getElementById('optPanelReadiness').classList.add('hidden');
+    document.getElementById('optTabSignals').classList.add('border-[#1d70b8]', 'text-[#1d70b8]');
+    document.getElementById('optTabSignals').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById('optTabReadiness').classList.remove('border-[#1d70b8]', 'text-[#1d70b8]');
+    document.getElementById('optTabReadiness').classList.add('border-transparent', 'text-gray-500');
+});
+document.getElementById('optTabReadiness').addEventListener('click', () => {
+    document.getElementById('optPanelReadiness').classList.remove('hidden');
+    document.getElementById('optPanelSignals').classList.add('hidden');
+    document.getElementById('optTabReadiness').classList.add('border-[#1d70b8]', 'text-[#1d70b8]');
+    document.getElementById('optTabReadiness').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById('optTabSignals').classList.remove('border-[#1d70b8]', 'text-[#1d70b8]');
+    document.getElementById('optTabSignals').classList.add('border-transparent', 'text-gray-500');
+    renderReadinessPanel();
+});
+
+function renderReadinessPanel() {
+    const READINESS_FACTORS = [
+        { id: 'contractUrgency', label: 'Contract urgency', desc: 'Notice triggers that are overdue or approaching — tier-gated (Tier 3 overdue alone is AMBER, not RED)' },
+        { id: 'disaggregationComplexity', label: 'Disaggregation complexity', desc: 'Monolithic ERP systems from partial predecessors that must be split across successors' },
+        { id: 'unsupportedSystems', label: 'Unsupported systems', desc: 'Systems with no active maintenance — vendor EOL, abandoned in-house, or unclassified' },
+        { id: 'sharedServiceUnwinding', label: 'Shared service unwinding', desc: 'Jointly-operated systems whose councils are splitting to different successors' }
+    ];
+    const panel = document.getElementById('readinessFactorsPanel');
+    panel.innerHTML = READINESS_FACTORS.map(f => `
+        <label class="flex items-start gap-3 py-3 border-b border-gray-100 cursor-pointer">
+            <input type="checkbox" name="readiness_${f.id}" ${state.readinessFactors[f.id] ? 'checked' : ''} class="mt-1 cursor-pointer">
+            <div>
+                <span class="font-bold block">${f.label}</span>
+                <span class="text-xs text-gray-500">${f.desc}</span>
+            </div>
+        </label>
+    `).join('');
+}
 
 // --- STAGE 1: UPLOAD LOGIC ---
 const fileInput = document.getElementById('fileInput');
@@ -1464,6 +1508,47 @@ function renderEstateSummary() {
     }
 
     html += '</div>'; // close panel wrapper
+
+    // Programme Readiness block (only in transition mode)
+    if (state.operatingMode === 'transition' && state.transitionStructure) {
+        const readinessSystems = (state.simulationState && state.simulationState.lastImpact)
+            ? state.simulationState.lastImpact.simulationResult.nodes.filter(n => n.type === 'ITSystem')
+            : (metrics.filteredSystems || []);
+        const readiness = computeReadinessProfile(
+            readinessSystems,
+            state.lgaFunctionMap,
+            state.transitionStructure,
+            state.tierMap,
+            state.successorAllocationMap,
+            state.readinessFactors
+        );
+
+        const ragColours = { red: '#d4351c', amber: '#f47738', green: '#00703c' };
+        const ragLabels = { red: 'AT RISK', amber: 'ATTENTION NEEDED', green: 'ON TRACK' };
+
+        html += '<div class="bg-white border-t-4 shadow-sm p-6 mt-8" style="border-color:' + ragColours[readiness.overall] + '">';
+        html += '<div class="flex items-center gap-4 mb-4">';
+        html += '<h2 class="text-2xl font-bold">Programme Readiness</h2>';
+        html += '<span class="px-3 py-1 text-sm font-bold text-white" style="background:' + ragColours[readiness.overall] + '">' + ragLabels[readiness.overall] + '</span>';
+        html += '</div>';
+
+        const activeReadinessFactors = readiness.factors.filter(function(f) { return f.active; });
+        if (activeReadinessFactors.length > 0) {
+            html += '<div class="space-y-2">';
+            activeReadinessFactors.forEach(function(f) {
+                const dot = '<span class="inline-block w-3 h-3 rounded-full mr-2" style="background:' + ragColours[f.status] + '"></span>';
+                html += '<div class="flex items-center gap-2 py-1">';
+                html += dot;
+                html += '<span class="font-bold text-sm w-48">' + f.label + '</span>';
+                html += '<span class="text-sm text-gray-700">' + escHtml(f.detail) + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        } else {
+            html += '<p class="text-sm text-gray-500 italic">All readiness factors disabled. Enable via Signals &rarr; Readiness tab.</p>';
+        }
+        html += '</div>';
+    }
 
     panel.innerHTML = html;
     panel.classList.remove('hidden');

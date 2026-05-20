@@ -30,4 +30,10 @@ export const state = {
     activeDomainId: null,             // root category ID or custom workstream ID when drilled in
     customWorkstreams: [],            // [{ id, name, functionIds: string[] }]
     simPanelCollapsed: false,
+    readinessFactors: {
+        contractUrgency: true,
+        disaggregationComplexity: true,
+        unsupportedSystems: true,
+        sharedServiceUnwinding: true
+    },
 };

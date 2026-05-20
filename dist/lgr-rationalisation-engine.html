@@ -649,20 +649,30 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         <div id="optionsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
             <div class="bg-white max-w-2xl w-full p-8 border-t-8 border-[#1d70b8] shadow-2xl relative">
                 <button id="btnCloseOptions" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
-                <h2 class="text-2xl font-bold mb-1">Signal Options</h2>
-                <p class="text-sm text-gray-600 mb-6">Control which signals appear in the analysis column and how prominently. <strong>High</strong> signals appear with a coloured badge. <strong>Low</strong> signals appear as small grey notes. <strong>Off</strong> signals are hidden. Changing persona resets to that persona's defaults.</p>
-                <table class="w-full text-sm mb-6">
-                    <thead>
-                        <tr class="border-b-2 border-[#0b0c0c]">
-                            <th class="text-left pb-2 font-bold">Signal</th>
-                            <th class="text-center pb-2 font-bold w-14">Off</th>
-                            <th class="text-center pb-2 font-bold w-14">Low</th>
-                            <th class="text-center pb-2 font-bold w-14">Med</th>
-                            <th class="text-center pb-2 font-bold w-14">High</th>
-                        </tr>
-                    </thead>
-                    <tbody id="signalWeightsTable"></tbody>
-                </table>
+                <h2 class="text-2xl font-bold mb-1">Configuration</h2>
+                <p class="text-sm text-gray-600 mb-4">Configure signal weights and programme readiness factors.</p>
+                <div class="flex border-b border-gray-300 mb-4">
+                    <button id="optTabSignals" class="px-4 py-2 text-sm font-bold border-b-2 border-[#1d70b8] text-[#1d70b8]" type="button">Signals</button>
+                    <button id="optTabReadiness" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-[#0b0c0c]" type="button">Readiness</button>
+                </div>
+                <div id="optPanelSignals">
+                    <table class="w-full text-sm mb-6">
+                        <thead>
+                            <tr class="border-b-2 border-[#0b0c0c]">
+                                <th class="text-left pb-2 font-bold">Signal</th>
+                                <th class="text-center pb-2 font-bold w-14">Off</th>
+                                <th class="text-center pb-2 font-bold w-14">Low</th>
+                                <th class="text-center pb-2 font-bold w-14">Med</th>
+                                <th class="text-center pb-2 font-bold w-14">High</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signalWeightsTable"></tbody>
+                    </table>
+                </div>
+                <div id="optPanelReadiness" class="hidden">
+                    <p class="text-sm text-gray-600 mb-4">Toggle readiness factors that contribute to the programme RAG status. Disable factors you have already addressed outside this tool.</p>
+                    <div id="readinessFactorsPanel"></div>
+                </div>
                 <div class="flex gap-3 items-center">
                     <button id="btnApplyWeights" class="gds-btn">Apply &amp; refresh</button>
                     <button id="btnResetWeights" class="gds-btn-secondary px-4 py-2 text-sm font-bold hover:bg-gray-100">Reset to persona defaults</button>
@@ -1546,7 +1556,13 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     // root category ID or custom workstream ID when drilled in
     customWorkstreams: [],
     // [{ id, name, functionIds: string[] }]
-    simPanelCollapsed: false
+    simPanelCollapsed: false,
+    readinessFactors: {
+      contractUrgency: true,
+      disaggregationComplexity: true,
+      unsupportedSystems: true,
+      sharedServiceUnwinding: true
+    }
   };
 
   // src/analysis/signals.js
@@ -2233,6 +2249,180 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       label = "Very Large";
     }
     return { size, label, score, factors };
+  }
+  function computeReadinessProfile(systems, lgaFunctionMap, transitionStructure, tierMap, successorAllocationMap, activeFactors) {
+    const factors = [];
+    const now = /* @__PURE__ */ new Date();
+    const currentMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
+    const edges = state.mergedArchitecture && state.mergedArchitecture.edges || [];
+    const systemToFunctionIds = /* @__PURE__ */ new Map();
+    if (lgaFunctionMap) {
+      for (const [lgaId, fnData] of lgaFunctionMap) {
+        const fnNodeIds = fnData.localNodeIds;
+        if (!fnNodeIds) continue;
+        edges.forEach(function(e) {
+          if (fnNodeIds.has(e.target) && e.relationship === "REALIZES") {
+            if (!systemToFunctionIds.has(e.source)) systemToFunctionIds.set(e.source, []);
+            systemToFunctionIds.get(e.source).push(lgaId);
+          }
+        });
+      }
+    }
+    function getHighestTierForSystem(sys) {
+      const fnIds = systemToFunctionIds.get(sys.id) || [];
+      let best = 3;
+      for (const lgaId of fnIds) {
+        const tier = tierMap && tierMap.get(lgaId) || DEFAULT_TIER_MAP.get(lgaId) || 2;
+        if (tier < best) best = tier;
+      }
+      return best;
+    }
+    const contractActive = activeFactors && activeFactors.contractUrgency;
+    if (contractActive) {
+      let overdueT1T2 = 0;
+      let overdueT3 = 0;
+      let upcomingT1T2 = 0;
+      const sixMonthsOut = currentMonth + 6;
+      const twelveMonthsOut = currentMonth + 12;
+      (systems || []).forEach(function(sys) {
+        if (!sys.endYear || typeof sys.noticePeriod !== "number") return;
+        const noticeTriggerMonth = sys.endYear * 12 + (sys.endMonth || 12) - sys.noticePeriod;
+        const tier = getHighestTierForSystem(sys);
+        if (noticeTriggerMonth < currentMonth) {
+          if (tier <= 2) overdueT1T2++;
+          else overdueT3++;
+        } else if (noticeTriggerMonth <= sixMonthsOut && tier <= 2) {
+          upcomingT1T2++;
+        }
+      });
+      let status, detail;
+      if (overdueT1T2 > 0) {
+        status = "red";
+        detail = overdueT1T2 + " overdue Tier 1/2 notice trigger" + (overdueT1T2 !== 1 ? "s" : "");
+      } else if (overdueT3 > 0 || upcomingT1T2 > 0) {
+        status = "amber";
+        const parts = [];
+        if (overdueT3 > 0) parts.push(overdueT3 + " overdue Tier 3");
+        if (upcomingT1T2 > 0) parts.push(upcomingT1T2 + " Tier 1/2 within 6 months");
+        detail = parts.join("; ");
+      } else {
+        status = "green";
+        detail = "No overdue triggers; no Tier 1/2 triggers within 12 months";
+      }
+      factors.push({ id: "contractUrgency", label: "Contract urgency", status, detail, active: true });
+    } else {
+      factors.push({ id: "contractUrgency", label: "Contract urgency", status: "green", detail: "Disabled", active: false });
+    }
+    const disaggActive = activeFactors && activeFactors.disaggregationComplexity;
+    if (disaggActive) {
+      const partialPredecessors = /* @__PURE__ */ new Set();
+      if (transitionStructure && transitionStructure.successors) {
+        transitionStructure.successors.forEach(function(succ) {
+          (succ.partialPredecessors || []).forEach(function(c) {
+            partialPredecessors.add(c);
+          });
+        });
+      }
+      let hasMonolithicErp = false;
+      let hasDisaggregation = false;
+      (systems || []).forEach(function(sys) {
+        if (sys._sourceCouncil && partialPredecessors.has(sys._sourceCouncil)) {
+          hasDisaggregation = true;
+          if (sys.isERP && sys.dataPartitioning === "Monolithic") {
+            hasMonolithicErp = true;
+          }
+        }
+      });
+      let status, detail;
+      if (hasMonolithicErp) {
+        status = "red";
+        detail = "Monolithic ERP system from partial predecessor requires disaggregation";
+      } else if (hasDisaggregation) {
+        status = "amber";
+        detail = "Disaggregation required but no monolithic ERPs affected";
+      } else {
+        status = "green";
+        detail = "No disaggregation required in estate";
+      }
+      factors.push({ id: "disaggregationComplexity", label: "Disaggregation complexity", status, detail, active: true });
+    } else {
+      factors.push({ id: "disaggregationComplexity", label: "Disaggregation complexity", status: "green", detail: "Disabled", active: false });
+    }
+    const unsupportedActive = activeFactors && activeFactors.unsupportedSystems;
+    if (unsupportedActive) {
+      let unsupportedT1 = 0;
+      let unsupportedAny = 0;
+      (systems || []).forEach(function(sys) {
+        const support = classifySupportModel(sys);
+        if (support.model === "unsupported" || support.model === "unknown") {
+          unsupportedAny++;
+          const tier = getHighestTierForSystem(sys);
+          if (tier === 1) unsupportedT1++;
+        }
+      });
+      let status, detail;
+      if (unsupportedT1 > 0) {
+        status = "red";
+        detail = unsupportedT1 + " unsupported system" + (unsupportedT1 !== 1 ? "s" : "") + " serving Tier 1 functions";
+      } else if (unsupportedAny > 0) {
+        status = "amber";
+        detail = unsupportedAny + " unsupported/unknown system" + (unsupportedAny !== 1 ? "s" : "") + " in estate";
+      } else {
+        status = "green";
+        detail = "All systems vendor-supported or community-supported";
+      }
+      factors.push({ id: "unsupportedSystems", label: "Unsupported systems", status, detail, active: true });
+    } else {
+      factors.push({ id: "unsupportedSystems", label: "Unsupported systems", status: "green", detail: "Disabled", active: false });
+    }
+    const sharedActive = activeFactors && activeFactors.sharedServiceUnwinding;
+    if (sharedActive) {
+      let unwindingCount = 0;
+      let sharedCount = 0;
+      if (transitionStructure && transitionStructure.successors) {
+        const councilToSuccessorMap = /* @__PURE__ */ new Map();
+        transitionStructure.successors.forEach(function(succ) {
+          (succ.fullPredecessors || []).forEach(function(c) {
+            if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []);
+            councilToSuccessorMap.get(c).push(succ.name);
+          });
+          (succ.partialPredecessors || []).forEach(function(c) {
+            if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []);
+            councilToSuccessorMap.get(c).push(succ.name);
+          });
+        });
+        (systems || []).forEach(function(sys) {
+          if (sys.sharedWith && Array.isArray(sys.sharedWith) && sys.sharedWith.length > 0) {
+            sharedCount++;
+            const boundary = detectSharedServiceBoundary(sys, councilToSuccessorMap);
+            if (boundary.unwinding) unwindingCount++;
+          }
+        });
+      }
+      let status, detail;
+      if (unwindingCount > 0) {
+        status = "red";
+        detail = unwindingCount + " shared service" + (unwindingCount !== 1 ? "s" : "") + " crossing successor boundaries";
+      } else if (sharedCount > 0) {
+        status = "amber";
+        detail = sharedCount + " shared service" + (sharedCount !== 1 ? "s" : "") + " \u2014 boundary uncertain";
+      } else {
+        status = "green";
+        detail = "No shared services in estate";
+      }
+      factors.push({ id: "sharedServiceUnwinding", label: "Shared service unwinding", status, detail, active: true });
+    } else {
+      factors.push({ id: "sharedServiceUnwinding", label: "Shared service unwinding", status: "green", detail: "Disabled", active: false });
+    }
+    const activeFactorStatuses = factors.filter(function(f) {
+      return f.active;
+    }).map(function(f) {
+      return f.status;
+    });
+    let overall = "green";
+    if (activeFactorStatuses.includes("red")) overall = "red";
+    else if (activeFactorStatuses.includes("amber")) overall = "amber";
+    return { overall, factors };
   }
 
   // src/analysis/questions.js
@@ -10775,6 +10965,10 @@ tr:nth-child(even){background:#f3f2f1;}
       const sel = document.querySelector(`input[name="sig_${sig.id}"]:checked`);
       if (sel) state.signalWeights[sig.id] = parseInt(sel.value);
     });
+    ["contractUrgency", "disaggregationComplexity", "unsupportedSystems", "sharedServiceUnwinding"].forEach((id) => {
+      const cb = document.querySelector(`input[name="readiness_${id}"]`);
+      if (cb) state.readinessFactors[id] = cb.checked;
+    });
     document.getElementById("optionsModal").classList.add("hidden");
     renderDashboard();
   });
@@ -10782,6 +10976,41 @@ tr:nth-child(even){background:#f3f2f1;}
     state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS[state.activePersona] };
     renderOptionsPanel();
   });
+  document.getElementById("optTabSignals").addEventListener("click", () => {
+    document.getElementById("optPanelSignals").classList.remove("hidden");
+    document.getElementById("optPanelReadiness").classList.add("hidden");
+    document.getElementById("optTabSignals").classList.add("border-[#1d70b8]", "text-[#1d70b8]");
+    document.getElementById("optTabSignals").classList.remove("border-transparent", "text-gray-500");
+    document.getElementById("optTabReadiness").classList.remove("border-[#1d70b8]", "text-[#1d70b8]");
+    document.getElementById("optTabReadiness").classList.add("border-transparent", "text-gray-500");
+  });
+  document.getElementById("optTabReadiness").addEventListener("click", () => {
+    document.getElementById("optPanelReadiness").classList.remove("hidden");
+    document.getElementById("optPanelSignals").classList.add("hidden");
+    document.getElementById("optTabReadiness").classList.add("border-[#1d70b8]", "text-[#1d70b8]");
+    document.getElementById("optTabReadiness").classList.remove("border-transparent", "text-gray-500");
+    document.getElementById("optTabSignals").classList.remove("border-[#1d70b8]", "text-[#1d70b8]");
+    document.getElementById("optTabSignals").classList.add("border-transparent", "text-gray-500");
+    renderReadinessPanel();
+  });
+  function renderReadinessPanel() {
+    const READINESS_FACTORS = [
+      { id: "contractUrgency", label: "Contract urgency", desc: "Notice triggers that are overdue or approaching \u2014 tier-gated (Tier 3 overdue alone is AMBER, not RED)" },
+      { id: "disaggregationComplexity", label: "Disaggregation complexity", desc: "Monolithic ERP systems from partial predecessors that must be split across successors" },
+      { id: "unsupportedSystems", label: "Unsupported systems", desc: "Systems with no active maintenance \u2014 vendor EOL, abandoned in-house, or unclassified" },
+      { id: "sharedServiceUnwinding", label: "Shared service unwinding", desc: "Jointly-operated systems whose councils are splitting to different successors" }
+    ];
+    const panel = document.getElementById("readinessFactorsPanel");
+    panel.innerHTML = READINESS_FACTORS.map((f) => `
+        <label class="flex items-start gap-3 py-3 border-b border-gray-100 cursor-pointer">
+            <input type="checkbox" name="readiness_${f.id}" ${state.readinessFactors[f.id] ? "checked" : ""} class="mt-1 cursor-pointer">
+            <div>
+                <span class="font-bold block">${f.label}</span>
+                <span class="text-xs text-gray-500">${f.desc}</span>
+            </div>
+        </label>
+    `).join("");
+  }
   var fileInput = document.getElementById("fileInput");
   document.getElementById("uploadArea").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("click", (e) => e.stopPropagation());
@@ -11743,6 +11972,42 @@ tr:nth-child(even){background:#f3f2f1;}
       html += "</div>";
     }
     html += "</div>";
+    if (state.operatingMode === "transition" && state.transitionStructure) {
+      const readinessSystems = state.simulationState && state.simulationState.lastImpact ? state.simulationState.lastImpact.simulationResult.nodes.filter((n) => n.type === "ITSystem") : metrics.filteredSystems || [];
+      const readiness = computeReadinessProfile(
+        readinessSystems,
+        state.lgaFunctionMap,
+        state.transitionStructure,
+        state.tierMap,
+        state.successorAllocationMap,
+        state.readinessFactors
+      );
+      const ragColours = { red: "#d4351c", amber: "#f47738", green: "#00703c" };
+      const ragLabels = { red: "AT RISK", amber: "ATTENTION NEEDED", green: "ON TRACK" };
+      html += '<div class="bg-white border-t-4 shadow-sm p-6 mt-8" style="border-color:' + ragColours[readiness.overall] + '">';
+      html += '<div class="flex items-center gap-4 mb-4">';
+      html += '<h2 class="text-2xl font-bold">Programme Readiness</h2>';
+      html += '<span class="px-3 py-1 text-sm font-bold text-white" style="background:' + ragColours[readiness.overall] + '">' + ragLabels[readiness.overall] + "</span>";
+      html += "</div>";
+      const activeReadinessFactors = readiness.factors.filter(function(f) {
+        return f.active;
+      });
+      if (activeReadinessFactors.length > 0) {
+        html += '<div class="space-y-2">';
+        activeReadinessFactors.forEach(function(f) {
+          const dot = '<span class="inline-block w-3 h-3 rounded-full mr-2" style="background:' + ragColours[f.status] + '"></span>';
+          html += '<div class="flex items-center gap-2 py-1">';
+          html += dot;
+          html += '<span class="font-bold text-sm w-48">' + f.label + "</span>";
+          html += '<span class="text-sm text-gray-700">' + escHtml(f.detail) + "</span>";
+          html += "</div>";
+        });
+        html += "</div>";
+      } else {
+        html += '<p class="text-sm text-gray-500 italic">All readiness factors disabled. Enable via Signals &rarr; Readiness tab.</p>';
+      }
+      html += "</div>";
+    }
     panel.innerHTML = html;
     panel.classList.remove("hidden");
   }

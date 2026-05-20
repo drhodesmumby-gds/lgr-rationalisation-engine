@@ -1,5 +1,7 @@
 import { state } from '../state.js';
 import { classifyVestingZone, detectSharedServiceBoundary } from './allocation.js';
+import { classifySupportModel } from './signals.js';
+import { DEFAULT_TIER_MAP } from '../constants/tier-map.js';
 
 // Computes the effective playbook tier for a function node.
 // Pure function: accepts inputs, returns { tier, promoted, originalTier }.
@@ -315,4 +317,204 @@ export function computeMigrationComplexity(system) {
     else { size = 'XL'; label = 'Very Large'; }
 
     return { size, label, score, factors };
+}
+
+// --- Programme Readiness Profile (pure-ish: reads state.mergedArchitecture.edges) ---
+// Computes a synthesised RAG profile across 4 readiness factors.
+// Returns { overall: 'red'|'amber'|'green', factors: [...] }
+export function computeReadinessProfile(systems, lgaFunctionMap, transitionStructure, tierMap, successorAllocationMap, activeFactors) {
+    const factors = [];
+    const now = new Date();
+    const currentMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
+
+    // Build system → LGA function mapping from merged architecture edges
+    const edges = (state.mergedArchitecture && state.mergedArchitecture.edges) || [];
+    const systemToFunctionIds = new Map();
+    if (lgaFunctionMap) {
+        for (const [lgaId, fnData] of lgaFunctionMap) {
+            const fnNodeIds = fnData.localNodeIds; // Set of function node IDs
+            if (!fnNodeIds) continue;
+            edges.forEach(function(e) {
+                if (fnNodeIds.has(e.target) && e.relationship === 'REALIZES') {
+                    if (!systemToFunctionIds.has(e.source)) systemToFunctionIds.set(e.source, []);
+                    systemToFunctionIds.get(e.source).push(lgaId);
+                }
+            });
+        }
+    }
+
+    // Helper: get highest tier (lowest number) for a system
+    function getHighestTierForSystem(sys) {
+        const fnIds = systemToFunctionIds.get(sys.id) || [];
+        let best = 3;
+        for (const lgaId of fnIds) {
+            const tier = (tierMap && tierMap.get(lgaId)) || DEFAULT_TIER_MAP.get(lgaId) || 2;
+            if (tier < best) best = tier;
+        }
+        return best;
+    }
+
+    // --- Factor 1: Contract urgency ---
+    const contractActive = activeFactors && activeFactors.contractUrgency;
+    if (contractActive) {
+        let overdueT1T2 = 0;
+        let overdueT3 = 0;
+        let upcomingT1T2 = 0;
+        const sixMonthsOut = currentMonth + 6;
+        const twelveMonthsOut = currentMonth + 12;
+
+        (systems || []).forEach(function(sys) {
+            if (!sys.endYear || typeof sys.noticePeriod !== 'number') return;
+            const noticeTriggerMonth = sys.endYear * 12 + (sys.endMonth || 12) - sys.noticePeriod;
+            const tier = getHighestTierForSystem(sys);
+            if (noticeTriggerMonth < currentMonth) {
+                // Overdue
+                if (tier <= 2) overdueT1T2++;
+                else overdueT3++;
+            } else if (noticeTriggerMonth <= sixMonthsOut && tier <= 2) {
+                upcomingT1T2++;
+            }
+        });
+
+        let status, detail;
+        if (overdueT1T2 > 0) {
+            status = 'red';
+            detail = overdueT1T2 + ' overdue Tier 1/2 notice trigger' + (overdueT1T2 !== 1 ? 's' : '');
+        } else if (overdueT3 > 0 || upcomingT1T2 > 0) {
+            status = 'amber';
+            const parts = [];
+            if (overdueT3 > 0) parts.push(overdueT3 + ' overdue Tier 3');
+            if (upcomingT1T2 > 0) parts.push(upcomingT1T2 + ' Tier 1/2 within 6 months');
+            detail = parts.join('; ');
+        } else {
+            status = 'green';
+            detail = 'No overdue triggers; no Tier 1/2 triggers within 12 months';
+        }
+        factors.push({ id: 'contractUrgency', label: 'Contract urgency', status: status, detail: detail, active: true });
+    } else {
+        factors.push({ id: 'contractUrgency', label: 'Contract urgency', status: 'green', detail: 'Disabled', active: false });
+    }
+
+    // --- Factor 2: Disaggregation complexity ---
+    const disaggActive = activeFactors && activeFactors.disaggregationComplexity;
+    if (disaggActive) {
+        // Find systems from partial predecessors
+        const partialPredecessors = new Set();
+        if (transitionStructure && transitionStructure.successors) {
+            transitionStructure.successors.forEach(function(succ) {
+                (succ.partialPredecessors || []).forEach(function(c) { partialPredecessors.add(c); });
+            });
+        }
+
+        let hasMonolithicErp = false;
+        let hasDisaggregation = false;
+
+        (systems || []).forEach(function(sys) {
+            if (sys._sourceCouncil && partialPredecessors.has(sys._sourceCouncil)) {
+                hasDisaggregation = true;
+                if (sys.isERP && sys.dataPartitioning === 'Monolithic') {
+                    hasMonolithicErp = true;
+                }
+            }
+        });
+
+        let status, detail;
+        if (hasMonolithicErp) {
+            status = 'red';
+            detail = 'Monolithic ERP system from partial predecessor requires disaggregation';
+        } else if (hasDisaggregation) {
+            status = 'amber';
+            detail = 'Disaggregation required but no monolithic ERPs affected';
+        } else {
+            status = 'green';
+            detail = 'No disaggregation required in estate';
+        }
+        factors.push({ id: 'disaggregationComplexity', label: 'Disaggregation complexity', status: status, detail: detail, active: true });
+    } else {
+        factors.push({ id: 'disaggregationComplexity', label: 'Disaggregation complexity', status: 'green', detail: 'Disabled', active: false });
+    }
+
+    // --- Factor 3: Unsupported systems ---
+    const unsupportedActive = activeFactors && activeFactors.unsupportedSystems;
+    if (unsupportedActive) {
+        let unsupportedT1 = 0;
+        let unsupportedAny = 0;
+
+        (systems || []).forEach(function(sys) {
+            const support = classifySupportModel(sys);
+            if (support.model === 'unsupported' || support.model === 'unknown') {
+                unsupportedAny++;
+                const tier = getHighestTierForSystem(sys);
+                if (tier === 1) unsupportedT1++;
+            }
+        });
+
+        let status, detail;
+        if (unsupportedT1 > 0) {
+            status = 'red';
+            detail = unsupportedT1 + ' unsupported system' + (unsupportedT1 !== 1 ? 's' : '') + ' serving Tier 1 functions';
+        } else if (unsupportedAny > 0) {
+            status = 'amber';
+            detail = unsupportedAny + ' unsupported/unknown system' + (unsupportedAny !== 1 ? 's' : '') + ' in estate';
+        } else {
+            status = 'green';
+            detail = 'All systems vendor-supported or community-supported';
+        }
+        factors.push({ id: 'unsupportedSystems', label: 'Unsupported systems', status: status, detail: detail, active: true });
+    } else {
+        factors.push({ id: 'unsupportedSystems', label: 'Unsupported systems', status: 'green', detail: 'Disabled', active: false });
+    }
+
+    // --- Factor 4: Shared service unwinding ---
+    const sharedActive = activeFactors && activeFactors.sharedServiceUnwinding;
+    if (sharedActive) {
+        let unwindingCount = 0;
+        let sharedCount = 0;
+
+        if (transitionStructure && transitionStructure.successors) {
+            // Build councilToSuccessorMap
+            const councilToSuccessorMap = new Map();
+            transitionStructure.successors.forEach(function(succ) {
+                (succ.fullPredecessors || []).forEach(function(c) {
+                    if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []);
+                    councilToSuccessorMap.get(c).push(succ.name);
+                });
+                (succ.partialPredecessors || []).forEach(function(c) {
+                    if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []);
+                    councilToSuccessorMap.get(c).push(succ.name);
+                });
+            });
+
+            (systems || []).forEach(function(sys) {
+                if (sys.sharedWith && Array.isArray(sys.sharedWith) && sys.sharedWith.length > 0) {
+                    sharedCount++;
+                    const boundary = detectSharedServiceBoundary(sys, councilToSuccessorMap);
+                    if (boundary.unwinding) unwindingCount++;
+                }
+            });
+        }
+
+        let status, detail;
+        if (unwindingCount > 0) {
+            status = 'red';
+            detail = unwindingCount + ' shared service' + (unwindingCount !== 1 ? 's' : '') + ' crossing successor boundaries';
+        } else if (sharedCount > 0) {
+            status = 'amber';
+            detail = sharedCount + ' shared service' + (sharedCount !== 1 ? 's' : '') + ' — boundary uncertain';
+        } else {
+            status = 'green';
+            detail = 'No shared services in estate';
+        }
+        factors.push({ id: 'sharedServiceUnwinding', label: 'Shared service unwinding', status: status, detail: detail, active: true });
+    } else {
+        factors.push({ id: 'sharedServiceUnwinding', label: 'Shared service unwinding', status: 'green', detail: 'Disabled', active: false });
+    }
+
+    // Synthesised overall = worst of active factors
+    const activeFactorStatuses = factors.filter(function(f) { return f.active; }).map(function(f) { return f.status; });
+    let overall = 'green';
+    if (activeFactorStatuses.includes('red')) overall = 'red';
+    else if (activeFactorStatuses.includes('amber')) overall = 'amber';
+
+    return { overall: overall, factors: factors };
 }
