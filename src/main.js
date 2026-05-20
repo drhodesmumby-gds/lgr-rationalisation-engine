@@ -1611,6 +1611,7 @@ export function renderDashboard() {
 
     if (showHierarchy) {
         if (state.activePersona !== 'architect') drawTimeline(systems, councilsArray);
+        renderCriticalPathPanel();
         return;
     }
 
