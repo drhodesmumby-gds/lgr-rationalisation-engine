@@ -12803,40 +12803,53 @@ tr:nth-child(even){background:#f3f2f1;}
     return html;
   }
   function renderPatternTag(pattern) {
+    const isExec = state.activePersona === "executive" || state.activePersona === "commercial";
     const patternConfig = {
-      "inherit-as-is": { colour: "tag-green", label: "Inherit as-is" },
-      "choose-and-consolidate": { colour: "tag-blue", label: "Choose & consolidate" },
-      "extract-and-partition": { colour: "tag-red", label: "Extract & partition" },
-      "extract-partition-and-consolidate": { colour: "tag-purple", label: "Extract, partition & consolidate" }
+      "inherit-as-is": { colour: "tag-green", label: "Inherit as-is", execLabel: "No decision needed" },
+      "choose-and-consolidate": { colour: "tag-blue", label: "Choose & consolidate", execLabel: "Choose one system" },
+      "extract-and-partition": { colour: "tag-red", label: "Extract & partition", execLabel: "Split across successors" },
+      "extract-partition-and-consolidate": { colour: "tag-purple", label: "Extract, partition & consolidate", execLabel: "Split then choose" }
     };
     const config = patternConfig[pattern] || patternConfig["inherit-as-is"];
-    return '<span class="gds-tag ' + config.colour + '">' + config.label + "</span>";
+    const label = isExec ? config.execLabel : config.label;
+    return '<span class="gds-tag ' + config.colour + '">' + label + "</span>";
   }
   function renderPatternTagWithTooltip(pattern) {
+    const isExec = state.activePersona === "executive" || state.activePersona === "commercial";
     const patternConfig = {
       "inherit-as-is": {
         colour: "tag-green",
         label: "Inherit as-is",
-        guidance: "Only one system is allocated here \u2014 no choice between competing alternatives. Check the signals below: a single system may still warrant replacement if it scores poorly on portability, TCoP alignment, or cost."
+        execLabel: "No decision needed",
+        guidance: "Only one system is allocated here \u2014 no choice between competing alternatives. Check the signals below: a single system may still warrant replacement if it scores poorly on portability, TCoP alignment, or cost.",
+        execGuidance: "Only one system serves this function for this successor. No rationalisation decision is required, though the system may still need review for fitness."
       },
       "choose-and-consolidate": {
         colour: "tag-blue",
         label: "Choose & consolidate",
-        guidance: "Multiple systems serve this function for the same successor. The signals highlight differentiators \u2014 user volume, contract timing, portability, and vendor density can inform which system is retained."
+        execLabel: "Choose one system",
+        guidance: "Multiple systems serve this function for the same successor. The signals highlight differentiators \u2014 user volume, contract timing, portability, and vendor density can inform which system is retained.",
+        execGuidance: "Multiple systems from predecessor councils do the same thing. One must be chosen and the others decommissioned \u2014 a rationalisation decision is required."
       },
       "extract-and-partition": {
         colour: "tag-red",
         label: "Extract & partition",
-        guidance: "This system spans successor boundaries and its data will need separation. The data layer and portability signals indicate how difficult extraction will be \u2014 monolithic systems carry the highest risk here."
+        execLabel: "Split across successors",
+        guidance: "This system spans successor boundaries and its data will need separation. The data layer and portability signals indicate how difficult extraction will be \u2014 monolithic systems carry the highest risk here.",
+        execGuidance: "A shared system must be split so each successor authority has its own copy of the data and service. This is complex and time-consuming, especially for large or monolithic systems."
       },
       "extract-partition-and-consolidate": {
         colour: "tag-purple",
         label: "Extract, partition & consolidate",
-        guidance: "Data must be separated across successors AND competing systems consolidated within each. Consider sequencing: partition first to establish clean boundaries, then consolidate within each successor."
+        execLabel: "Split then choose",
+        guidance: "Data must be separated across successors AND competing systems consolidated within each. Consider sequencing: partition first to establish clean boundaries, then consolidate within each successor.",
+        execGuidance: "A shared system must first be split across successors, then each successor must choose between the resulting systems and alternatives. The most complex pattern \u2014 requires sequenced decisions."
       }
     };
     const config = patternConfig[pattern] || patternConfig["inherit-as-is"];
-    const tooltip = wrapWithTooltip(config.label, config.guidance);
+    const label = isExec ? config.execLabel : config.label;
+    const guidance = isExec ? config.execGuidance : config.guidance;
+    const tooltip = wrapWithTooltip(label, guidance);
     return `<span class="gds-tag ${config.colour}">${tooltip}</span>${helpIcon("patterns")}`;
   }
   function tagToSignalDotClass(tag) {
