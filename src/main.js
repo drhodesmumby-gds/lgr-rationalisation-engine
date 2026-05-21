@@ -399,14 +399,14 @@ document.getElementById('uploadArea').addEventListener('click', () => fileInput.
 fileInput.addEventListener('click', (e) => e.stopPropagation());
 
 document.getElementById('btnDownloadTemplate')?.addEventListener('click', async () => {
-    if (typeof XLSX === 'undefined') {
+    if (typeof ExcelJS === 'undefined') {
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js';
-        script.onload = () => downloadTemplate();
+        script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+        script.onload = async () => { await downloadTemplate(); };
         script.onerror = () => showNotification({ type: 'error', message: 'Failed to load Excel library. Check your internet connection.' });
         document.head.appendChild(script);
     } else {
-        downloadTemplate();
+        await downloadTemplate();
     }
 });
 
@@ -422,7 +422,7 @@ fileInput.addEventListener('change', async (e) => {
                 const loadXlsx = () => new Promise((resolve, reject) => {
                     if (typeof XLSX !== 'undefined') { resolve(); return; }
                     const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js';
+                    script.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
                     script.onload = resolve;
                     script.onerror = () => reject(new Error('Failed to load Excel library'));
                     document.head.appendChild(script);

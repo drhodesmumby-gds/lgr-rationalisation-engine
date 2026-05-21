@@ -1036,7 +1036,7 @@ function handleImportFileSelect(file) {
         if (loadingEl) loadingEl.classList.remove('hidden');
         if (typeof XLSX === 'undefined') {
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js';
+            script.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
             script.onload = () => {
                 if (loadingEl) loadingEl.classList.add('hidden');
                 parseExcelFile(file);

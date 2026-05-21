@@ -3659,7 +3659,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (loadingEl) loadingEl.classList.remove("hidden");
       if (typeof XLSX === "undefined") {
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js";
+        script.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
         script.onload = () => {
           if (loadingEl) loadingEl.classList.add("hidden");
           parseExcelFile(file);
@@ -11235,68 +11235,94 @@ tr:nth-child(even){background:#f3f2f1;}
     "Capabilities Provided"
   ];
   var DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 8, 14, 13, 10, 12, 15, 12, 6, 22, 20, 22];
-  function colWidths(widths) {
-    return widths.map((wch) => ({ wch }));
-  }
-  function makeSheet(aoa, widths) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    if (widths) {
-      ws["!cols"] = colWidths(widths);
-    }
-    return ws;
-  }
   function todayISO() {
     return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   }
-  function buildIndexSheet() {
-    const allSheetNames = ["Index", "Council Info", ...DOMAIN_SHEET_NAMES, "Dependencies", "_Lookups", "_SystemNames"];
-    const aoa = [];
-    aoa.push(["LGR Architecture Data Template"]);
-    aoa.push([]);
-    aoa.push(["Instructions:"]);
-    aoa.push([`\u2022 Fill in the "Council Info" sheet with your council's name, tier, and financial distress status.`]);
-    aoa.push(["\u2022 For each domain sheet, list the IT systems your council uses for each function."]);
-    aoa.push(["\u2022 Leave function rows empty if you do not deliver that function \u2014 do not delete them."]);
-    aoa.push(["\u2022 Add extra rows for the same function if multiple systems serve it."]);
-    aoa.push(['\u2022 Use the "Dependencies" sheet to record system-to-system capability links.']);
-    aoa.push(["\u2022 Do not rename, reorder, or delete any sheet. Do not change column headers."]);
-    aoa.push([]);
-    aoa.push(["Sheets in this workbook:"]);
-    aoa.push(["Sheet name", "Description"]);
+  function applyColumnWidths(sheet, widths) {
+    widths.forEach((w, i) => {
+      sheet.getColumn(i + 1).width = w;
+    });
+  }
+  function buildIndexSheet(wb) {
+    const sheet = wb.addWorksheet("Index");
+    applyColumnWidths(sheet, [35, 55]);
+    const allSheetNames = ["Council Info", ...DOMAIN_SHEET_NAMES, "Dependencies"];
+    const titleRow = sheet.addRow(["LGR Architecture Data Template"]);
+    titleRow.font = { bold: true, size: 14 };
+    sheet.mergeCells("A1:B1");
+    sheet.addRow([]);
+    sheet.addRow(["Instructions:"]);
+    sheet.getCell("A3").font = { bold: true };
+    sheet.addRow([`1. Fill in the "Council Info" sheet with your council's name, tier, and financial distress status.`]);
+    sheet.addRow(["2. For each domain sheet, list the IT systems your council uses for each function."]);
+    sheet.addRow(["3. Leave function rows empty if you do not deliver that function \u2014 do not delete them."]);
+    sheet.addRow(["4. Add extra rows for the same function if multiple systems serve it."]);
+    sheet.addRow(['5. Use the "Dependencies" sheet to record system-to-system capability links.']);
+    sheet.addRow(["6. Upload the completed file to the LGR Workspace Engine."]);
+    sheet.addRow([]);
+    const headerRow = sheet.addRow(["Sheet name", "Description"]);
+    headerRow.font = { bold: true };
     for (const name of allSheetNames) {
-      aoa.push([name, SHEET_DESCRIPTIONS[name] || ""]);
+      const row = sheet.addRow([name, SHEET_DESCRIPTIONS[name] || ""]);
+      const cell = row.getCell(1);
+      cell.value = { text: name, hyperlink: `#'${name}'!A1` };
+      cell.font = { color: { argb: "FF1D70B8" }, underline: true };
     }
-    aoa.push([]);
-    aoa.push([`Template v1.0 \u2014 generated ${todayISO()}`]);
-    return makeSheet(aoa, [35, 55]);
+    sheet.addRow([]);
+    sheet.addRow([`Template v1.0 \u2014 generated ${todayISO()}`]);
+    return sheet;
   }
-  function buildCouncilInfoSheet() {
-    const aoa = [
-      ["Enter your council's details below. This identifies your architecture in the merged estate."],
-      [],
-      ["Council Name", "Council Tier", "Financial Distress"],
-      ["EXAMPLE \u2014 delete this row", "District", "No"],
-      []
-    ];
-    const ws = makeSheet(aoa, [30, 15, 18]);
-    ws["!dataValidation"] = [
-      { sqref: "B4:B100", type: "list", formula1: '"County,District,Borough,Unitary"' },
-      { sqref: "C4:C100", type: "list", formula1: '"Yes,No"' }
-    ];
-    return ws;
+  function buildCouncilInfoSheet(wb) {
+    const sheet = wb.addWorksheet("Council Info");
+    applyColumnWidths(sheet, [30, 15, 18]);
+    const guidanceRow = sheet.addRow(["Enter your council's details below. This identifies your architecture in the merged estate."]);
+    guidanceRow.font = { italic: true };
+    sheet.mergeCells("A1:C1");
+    guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+    sheet.addRow([]);
+    const headerRow = sheet.addRow(["Council Name", "Council Tier", "Financial Distress"]);
+    headerRow.font = { bold: true };
+    const exampleRow = sheet.addRow(["EXAMPLE \u2014 delete this row", "District", "No"]);
+    exampleRow.font = { italic: true, color: { argb: "FF666666" } };
+    exampleRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+    });
+    for (let row = 4; row <= 100; row++) {
+      sheet.getCell(`B${row}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"County,District,Borough,Unitary"']
+      };
+      sheet.getCell(`C${row}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Yes,No"']
+      };
+    }
+    return sheet;
   }
-  function buildDomainSheet(sheetName, rootId) {
+  function buildDomainSheet(wb, sheetName, rootId) {
+    const sheet = wb.addWorksheet(sheetName);
+    applyColumnWidths(sheet, DOMAIN_COL_WIDTHS);
     const descendantIds = getDescendantIds(rootId);
     const functions = LGA_FUNCTIONS.filter((f) => descendantIds.has(f.id)).sort((a, b) => a.label.localeCompare(b.label));
     const example = EXAMPLE_SYSTEMS[sheetName] || null;
-    const aoa = [];
-    aoa.push([`List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`]);
-    aoa.push(DOMAIN_HEADERS);
+    const guidanceText = `List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`;
+    const guidanceRow = sheet.addRow([guidanceText]);
+    sheet.mergeCells(`A1:O1`);
+    guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+    guidanceRow.font = { italic: true };
+    const headerRow = sheet.addRow(DOMAIN_HEADERS);
+    headerRow.font = { bold: true };
     if (example) {
-      aoa.push(example);
+      const exRow = sheet.addRow(example);
+      exRow.font = { italic: true, color: { argb: "FF666666" } };
+      exRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+      });
     } else {
       const firstFn = functions[0];
-      aoa.push([
+      const fallback = [
         firstFn ? firstFn.id : "",
         firstFn ? firstFn.label : "",
         "Example System Name",
@@ -11312,31 +11338,49 @@ tr:nth-child(even){background:#f3f2f1;}
         "",
         "Vendor-supported",
         ""
-      ]);
+      ];
+      const exRow = sheet.addRow(fallback);
+      exRow.font = { italic: true, color: { argb: "FF666666" } };
+      exRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+      });
     }
     for (const fn of functions) {
-      aoa.push([fn.id, fn.label, "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      sheet.addRow([fn.id, fn.label, "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
-    const domainSheet = makeSheet(aoa, DOMAIN_COL_WIDTHS);
-    domainSheet["!dataValidation"] = [
-      { sqref: "I3:I200", type: "list", formula1: '"High,Medium,Low"' },
-      { sqref: "J3:J200", type: "list", formula1: '"Segmented,Monolithic"' },
-      { sqref: "K3:K200", type: "list", formula1: '"Yes,No"' },
-      { sqref: "L3:L200", type: "list", formula1: '"Yes,No"' },
-      { sqref: "N3:N200", type: "list", formula1: '"Vendor-supported,Community-supported,Unsupported"' }
-    ];
-    return domainSheet;
+    const validations = {
+      I: { type: "list", allowBlank: true, formulae: ['"High,Medium,Low"'] },
+      J: { type: "list", allowBlank: true, formulae: ['"Segmented,Monolithic"'] },
+      K: { type: "list", allowBlank: true, formulae: ['"Yes,No"'] },
+      L: { type: "list", allowBlank: true, formulae: ['"Yes,No"'] },
+      N: { type: "list", allowBlank: true, formulae: ['"Vendor-supported,Community-supported,Unsupported"'] }
+    };
+    for (const [col, validation] of Object.entries(validations)) {
+      for (let row = 3; row <= 200; row++) {
+        sheet.getCell(`${col}${row}`).dataValidation = validation;
+      }
+    }
+    return sheet;
   }
-  function buildDependenciesSheet() {
-    const aoa = [
-      ["List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?"],
-      ["System that depends", "System it depends on", "What for?", "Match \u2713"],
-      ["Liquidlogic LAS", "SAP S/4HANA", "payments", "\u2713"],
-      []
-    ];
-    return makeSheet(aoa, [30, 30, 20, 12]);
+  function buildDependenciesSheet(wb) {
+    const sheet = wb.addWorksheet("Dependencies");
+    applyColumnWidths(sheet, [30, 30, 20, 12]);
+    const guidanceRow = sheet.addRow(["List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?"]);
+    sheet.mergeCells("A1:D1");
+    guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+    guidanceRow.font = { italic: true };
+    const headerRow = sheet.addRow(["System that depends", "System it depends on", "What for?", "Match"]);
+    headerRow.font = { bold: true };
+    const exRow = sheet.addRow(["Liquidlogic LAS", "SAP S/4HANA", "payments", ""]);
+    exRow.font = { italic: true, color: { argb: "FF666666" } };
+    exRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+    });
+    return sheet;
   }
-  function buildLookupsSheet() {
+  function buildLookupsSheet(wb) {
+    const sheet = wb.addWorksheet("_Lookups");
+    sheet.state = "hidden";
     const tierValues = ["County", "District", "Borough", "Unitary"];
     const yesNo = ["Yes", "No"];
     const portability = ["High", "Medium", "Low"];
@@ -11344,7 +11388,10 @@ tr:nth-child(even){background:#f3f2f1;}
     const supportModels = ["Vendor-supported", "Community-supported", "Unsupported"];
     const capabilities = LGAM_CAPABILITIES.map((c) => c.id);
     const headers = ["Tier", "YesNo", "Portability", "DataPartitioning", "SupportModel", "Capabilities"];
-    const aoa = [headers];
+    applyColumnWidths(sheet, [12, 8, 12, 16, 20, 16]);
+    sheet.addRow(headers);
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true };
     const maxRows = Math.max(
       tierValues.length,
       yesNo.length,
@@ -11354,7 +11401,7 @@ tr:nth-child(even){background:#f3f2f1;}
       capabilities.length
     );
     for (let i = 0; i < maxRows; i++) {
-      aoa.push([
+      sheet.addRow([
         tierValues[i] || "",
         yesNo[i] || "",
         portability[i] || "",
@@ -11363,14 +11410,15 @@ tr:nth-child(even){background:#f3f2f1;}
         capabilities[i] || ""
       ]);
     }
-    return makeSheet(aoa, [12, 8, 12, 16, 20, 16]);
+    return sheet;
   }
-  function buildSystemNamesSheet() {
-    const aoa = [
-      ["System Names (auto-populated from domain sheets \u2014 used by Dependencies validation)"],
-      ["Note: system names are matched at import time rather than via live Excel formulas."]
-    ];
-    return makeSheet(aoa, [70]);
+  function buildSystemNamesSheet(wb) {
+    const sheet = wb.addWorksheet("_SystemNames");
+    sheet.state = "hidden";
+    applyColumnWidths(sheet, [70]);
+    sheet.addRow(["System Names (auto-populated from domain sheets \u2014 used by Dependencies validation)"]);
+    sheet.addRow(["Note: system names are matched at import time rather than via live Excel formulas."]);
+    return sheet;
   }
   function buildRootToSheetMap() {
     const ROOT_TO_SHEET = /* @__PURE__ */ new Map();
@@ -11383,9 +11431,9 @@ tr:nth-child(even){background:#f3f2f1;}
     return ROOT_TO_SHEET;
   }
   function generateTemplate() {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, buildIndexSheet(), "Index");
-    XLSX.utils.book_append_sheet(wb, buildCouncilInfoSheet(), "Council Info");
+    const wb = new ExcelJS.Workbook();
+    buildIndexSheet(wb);
+    buildCouncilInfoSheet(wb);
     const rootToSheet = buildRootToSheetMap();
     const sheetToRoot = /* @__PURE__ */ new Map();
     for (const [rootId, sheetName] of rootToSheet.entries()) {
@@ -11396,25 +11444,25 @@ tr:nth-child(even){background:#f3f2f1;}
       if (!rootId) continue;
       const descendantIds = getDescendantIds(rootId);
       if (descendantIds.size === 0) continue;
-      XLSX.utils.book_append_sheet(wb, buildDomainSheet(sheetName, rootId), sheetName);
+      buildDomainSheet(wb, sheetName, rootId);
     }
-    XLSX.utils.book_append_sheet(wb, buildDependenciesSheet(), "Dependencies");
-    XLSX.utils.book_append_sheet(wb, buildLookupsSheet(), "_Lookups");
-    XLSX.utils.book_append_sheet(wb, buildSystemNamesSheet(), "_SystemNames");
-    wb.Workbook = wb.Workbook || {};
-    wb.Workbook.Sheets = wb.Workbook.Sheets || [];
-    while (wb.Workbook.Sheets.length < wb.SheetNames.length) {
-      wb.Workbook.Sheets.push({});
-    }
-    const lookupsIdx = wb.SheetNames.indexOf("_Lookups");
-    if (lookupsIdx >= 0) wb.Workbook.Sheets[lookupsIdx].Hidden = 1;
-    const sysNamesIdx = wb.SheetNames.indexOf("_SystemNames");
-    if (sysNamesIdx >= 0) wb.Workbook.Sheets[sysNamesIdx].Hidden = 1;
+    buildDependenciesSheet(wb);
+    buildLookupsSheet(wb);
+    buildSystemNamesSheet(wb);
     return wb;
   }
-  function downloadTemplate() {
+  async function downloadTemplate() {
     const wb = generateTemplate();
-    XLSX.writeFile(wb, "lgr-architecture-template.xlsx");
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lgr-architecture-template.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // src/main.js
@@ -11683,14 +11731,16 @@ tr:nth-child(even){background:#f3f2f1;}
   document.getElementById("uploadArea").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("click", (e) => e.stopPropagation());
   document.getElementById("btnDownloadTemplate")?.addEventListener("click", async () => {
-    if (typeof XLSX === "undefined") {
+    if (typeof ExcelJS === "undefined") {
       const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js";
-      script.onload = () => downloadTemplate();
+      script.src = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+      script.onload = async () => {
+        await downloadTemplate();
+      };
       script.onerror = () => showNotification({ type: "error", message: "Failed to load Excel library. Check your internet connection." });
       document.head.appendChild(script);
     } else {
-      downloadTemplate();
+      await downloadTemplate();
     }
   });
   fileInput.addEventListener("change", async (e) => {
@@ -11705,7 +11755,7 @@ tr:nth-child(even){background:#f3f2f1;}
             return;
           }
           const script = document.createElement("script");
-          script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js";
+          script.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
           script.onload = resolve;
           script.onerror = () => reject(new Error("Failed to load Excel library"));
           document.head.appendChild(script);

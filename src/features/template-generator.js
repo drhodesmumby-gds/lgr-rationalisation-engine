@@ -1,15 +1,15 @@
 /**
  * template-generator.js
  *
- * Generates a SheetJS workbook (Excel .xlsx) that councils can fill in
+ * Generates an ExcelJS workbook (Excel .xlsx) that councils can fill in
  * with their IT system architecture data, ready for import into the
  * LGR Rationalisation Engine via the template-converter.
  *
  * Exports:
- *   generateTemplate()   — Returns a SheetJS workbook object
- *   downloadTemplate()   — Generates and triggers browser download
+ *   generateTemplate()   — Returns an ExcelJS workbook object (synchronous)
+ *   downloadTemplate()   — Generates and triggers browser download (async)
  *
- * The global XLSX object (SheetJS) must be available at runtime (loaded from CDN).
+ * The global ExcelJS object must be available at runtime (loaded from CDN).
  */
 
 import { LGA_FUNCTIONS } from '../constants/lga-functions.js';
@@ -66,7 +66,7 @@ const DOMAIN_HEADERS = [
 ];
 
 // -----------------------------------------------------------------------
-// Column widths
+// Column widths (character units)
 // -----------------------------------------------------------------------
 const DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 8, 14, 13, 10, 12, 15, 12, 6, 22, 20, 22];
 
@@ -75,163 +75,215 @@ const DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 8, 14, 13, 10, 12, 15, 12, 6, 22, 20, 
 // -----------------------------------------------------------------------
 
 /**
- * Build a SheetJS !cols array from an array of pixel widths (character units).
- */
-function colWidths(widths) {
-    return widths.map(wch => ({ wch }));
-}
-
-/**
- * Create a simple sheet from an array-of-arrays (aoa).
- * Attaches column widths if provided.
- */
-function makeSheet(aoa, widths) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    if (widths) {
-        ws['!cols'] = colWidths(widths);
-    }
-    return ws;
-}
-
-/**
  * Get today's date as YYYY-MM-DD.
  */
 function todayISO() {
     return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Apply column widths to a worksheet.
+ * @param {object} sheet - ExcelJS worksheet
+ * @param {number[]} widths - Array of column widths (1-indexed internally)
+ */
+function applyColumnWidths(sheet, widths) {
+    widths.forEach((w, i) => {
+        sheet.getColumn(i + 1).width = w;
+    });
+}
+
 // -----------------------------------------------------------------------
 // Sheet builders
 // -----------------------------------------------------------------------
 
-function buildIndexSheet() {
-    const allSheetNames = ['Index', 'Council Info', ...DOMAIN_SHEET_NAMES, 'Dependencies', '_Lookups', '_SystemNames'];
+function buildIndexSheet(wb) {
+    const sheet = wb.addWorksheet('Index');
+    applyColumnWidths(sheet, [35, 55]);
 
-    const aoa = [];
+    const allSheetNames = ['Council Info', ...DOMAIN_SHEET_NAMES, 'Dependencies'];
 
     // Row 1: Title
-    aoa.push(['LGR Architecture Data Template']);
-    aoa.push([]);
+    const titleRow = sheet.addRow(['LGR Architecture Data Template']);
+    titleRow.font = { bold: true, size: 14 };
+    sheet.mergeCells('A1:B1');
 
-    // Rows 3-8: Instructions (6 bullet points)
-    aoa.push(['Instructions:']);
-    aoa.push(['• Fill in the "Council Info" sheet with your council\'s name, tier, and financial distress status.']);
-    aoa.push(['• For each domain sheet, list the IT systems your council uses for each function.']);
-    aoa.push(['• Leave function rows empty if you do not deliver that function — do not delete them.']);
-    aoa.push(['• Add extra rows for the same function if multiple systems serve it.']);
-    aoa.push(['• Use the "Dependencies" sheet to record system-to-system capability links.']);
-    aoa.push(['• Do not rename, reorder, or delete any sheet. Do not change column headers.']);
-    aoa.push([]);
+    // Row 2: blank
+    sheet.addRow([]);
 
-    // Row 10: Sheet table header
-    aoa.push(['Sheets in this workbook:']);
-    aoa.push(['Sheet name', 'Description']);
+    // Rows 3-9: Instructions
+    sheet.addRow(['Instructions:']);
+    sheet.getCell('A3').font = { bold: true };
+    sheet.addRow(['1. Fill in the "Council Info" sheet with your council\'s name, tier, and financial distress status.']);
+    sheet.addRow(['2. For each domain sheet, list the IT systems your council uses for each function.']);
+    sheet.addRow(['3. Leave function rows empty if you do not deliver that function — do not delete them.']);
+    sheet.addRow(['4. Add extra rows for the same function if multiple systems serve it.']);
+    sheet.addRow(['5. Use the "Dependencies" sheet to record system-to-system capability links.']);
+    sheet.addRow(['6. Upload the completed file to the LGR Workspace Engine.']);
 
-    // Sheet rows
+    // Row 10: blank
+    sheet.addRow([]);
+
+    // Row 11: Sheet table header
+    const headerRow = sheet.addRow(['Sheet name', 'Description']);
+    headerRow.font = { bold: true };
+
+    // Sheet rows with hyperlinks
     for (const name of allSheetNames) {
-        aoa.push([name, SHEET_DESCRIPTIONS[name] || '']);
+        const row = sheet.addRow([name, SHEET_DESCRIPTIONS[name] || '']);
+        const cell = row.getCell(1);
+        cell.value = { text: name, hyperlink: `#'${name}'!A1` };
+        cell.font = { color: { argb: 'FF1D70B8' }, underline: true };
     }
 
-    aoa.push([]);
-    aoa.push([`Template v1.0 — generated ${todayISO()}`]);
+    // Footer
+    sheet.addRow([]);
+    sheet.addRow([`Template v1.0 — generated ${todayISO()}`]);
 
-    return makeSheet(aoa, [35, 55]);
+    return sheet;
 }
 
-function buildCouncilInfoSheet() {
-    const aoa = [
-        ['Enter your council\'s details below. This identifies your architecture in the merged estate.'],
-        [],
-        ['Council Name', 'Council Tier', 'Financial Distress'],
-        ['EXAMPLE — delete this row', 'District', 'No'],
-        [],
-    ];
-    const ws = makeSheet(aoa, [30, 15, 18]);
-    ws['!dataValidation'] = [
-        { sqref: 'B4:B100', type: 'list', formula1: '"County,District,Borough,Unitary"' },
-        { sqref: 'C4:C100', type: 'list', formula1: '"Yes,No"' },
-    ];
-    return ws;
+function buildCouncilInfoSheet(wb) {
+    const sheet = wb.addWorksheet('Council Info');
+    applyColumnWidths(sheet, [30, 15, 18]);
+
+    // Row 1: Guidance
+    const guidanceRow = sheet.addRow(['Enter your council\'s details below. This identifies your architecture in the merged estate.']);
+    guidanceRow.font = { italic: true };
+    sheet.mergeCells('A1:C1');
+    guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+
+    // Row 2: blank
+    sheet.addRow([]);
+
+    // Row 3: Headers
+    const headerRow = sheet.addRow(['Council Name', 'Council Tier', 'Financial Distress']);
+    headerRow.font = { bold: true };
+
+    // Row 4: Example
+    const exampleRow = sheet.addRow(['EXAMPLE — delete this row', 'District', 'No']);
+    exampleRow.font = { italic: true, color: { argb: 'FF666666' } };
+    exampleRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    });
+
+    // Data validation on Tier (column B) and Financial Distress (column C) for rows 4-100
+    for (let row = 4; row <= 100; row++) {
+        sheet.getCell(`B${row}`).dataValidation = {
+            type: 'list', allowBlank: true,
+            formulae: ['"County,District,Borough,Unitary"']
+        };
+        sheet.getCell(`C${row}`).dataValidation = {
+            type: 'list', allowBlank: true,
+            formulae: ['"Yes,No"']
+        };
+    }
+
+    return sheet;
 }
 
 /**
  * Build a domain sheet for a given root ESD category.
  *
- * @param {string} sheetName  - The DOMAIN_SHEET_NAMES entry for this root
- * @param {string} rootId     - ESD root category id
- * @returns {object}          - SheetJS worksheet
+ * @param {object} wb        - ExcelJS workbook
+ * @param {string} sheetName - The DOMAIN_SHEET_NAMES entry for this root
+ * @param {string} rootId    - ESD root category id
+ * @returns {object}         - ExcelJS worksheet
  */
-function buildDomainSheet(sheetName, rootId) {
+function buildDomainSheet(wb, sheetName, rootId) {
+    const sheet = wb.addWorksheet(sheetName);
+    applyColumnWidths(sheet, DOMAIN_COL_WIDTHS);
+
     // Collect all leaf/non-root functions in this domain
     const descendantIds = getDescendantIds(rootId);
-
-    // Filter LGA_FUNCTIONS to get only direct-or-indirect descendants
     const functions = LGA_FUNCTIONS
         .filter(f => descendantIds.has(f.id))
         .sort((a, b) => a.label.localeCompare(b.label));
 
     const example = EXAMPLE_SYSTEMS[sheetName] || null;
 
-    const aoa = [];
+    // Row 1: Guidance (merged across all columns, grey fill)
+    const guidanceText = `List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`;
+    const guidanceRow = sheet.addRow([guidanceText]);
+    sheet.mergeCells(`A1:O1`);
+    guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    guidanceRow.font = { italic: true };
 
-    // Row 1: Guidance
-    aoa.push([`List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`]);
+    // Row 2: Column headers (bold)
+    const headerRow = sheet.addRow(DOMAIN_HEADERS);
+    headerRow.font = { bold: true };
 
-    // Row 2: Column headers
-    aoa.push(DOMAIN_HEADERS);
-
-    // Row 3: Example row
+    // Row 3: Example row (italic, grey fill, clearly marked)
     if (example) {
-        aoa.push(example);
+        const exRow = sheet.addRow(example);
+        exRow.font = { italic: true, color: { argb: 'FF666666' } };
+        exRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+        });
     } else {
-        // Fallback placeholder example
         const firstFn = functions[0];
-        aoa.push([
-            firstFn ? firstFn.id : '',
-            firstFn ? firstFn.label : '',
-            'Example System Name',
-            'Example Vendor',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            'Vendor-supported',
-            '',
-        ]);
+        const fallback = [
+            firstFn ? firstFn.id : '', firstFn ? firstFn.label : '',
+            'Example System Name', 'Example Vendor',
+            '', '', '', '', '', '', '', '', '', 'Vendor-supported', '',
+        ];
+        const exRow = sheet.addRow(fallback);
+        exRow.font = { italic: true, color: { argb: 'FF666666' } };
+        exRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+        });
     }
 
     // Rows 4+: One row per function (ESD ID + label pre-filled, rest empty)
     for (const fn of functions) {
-        aoa.push([fn.id, fn.label, '', '', '', '', '', '', '', '', '', '', '', '', '']);
+        sheet.addRow([fn.id, fn.label, '', '', '', '', '', '', '', '', '', '', '', '', '']);
     }
 
-    const domainSheet = makeSheet(aoa, DOMAIN_COL_WIDTHS);
-    domainSheet['!dataValidation'] = [
-        { sqref: 'I3:I200', type: 'list', formula1: '"High,Medium,Low"' },
-        { sqref: 'J3:J200', type: 'list', formula1: '"Segmented,Monolithic"' },
-        { sqref: 'K3:K200', type: 'list', formula1: '"Yes,No"' },
-        { sqref: 'L3:L200', type: 'list', formula1: '"Yes,No"' },
-        { sqref: 'N3:N200', type: 'list', formula1: '"Vendor-supported,Community-supported,Unsupported"' },
-    ];
-    return domainSheet;
+    // Data validation (rows 3-200 for dropdown columns)
+    const validations = {
+        I: { type: 'list', allowBlank: true, formulae: ['"High,Medium,Low"'] },
+        J: { type: 'list', allowBlank: true, formulae: ['"Segmented,Monolithic"'] },
+        K: { type: 'list', allowBlank: true, formulae: ['"Yes,No"'] },
+        L: { type: 'list', allowBlank: true, formulae: ['"Yes,No"'] },
+        N: { type: 'list', allowBlank: true, formulae: ['"Vendor-supported,Community-supported,Unsupported"'] },
+    };
+
+    for (const [col, validation] of Object.entries(validations)) {
+        for (let row = 3; row <= 200; row++) {
+            sheet.getCell(`${col}${row}`).dataValidation = validation;
+        }
+    }
+
+    return sheet;
 }
 
-function buildDependenciesSheet() {
-    const aoa = [
-        ['List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?'],
-        ['System that depends', 'System it depends on', 'What for?', 'Match ✓'],
-        ['Liquidlogic LAS', 'SAP S/4HANA', 'payments', '✓'],
-        [],
-    ];
-    return makeSheet(aoa, [30, 30, 20, 12]);
+function buildDependenciesSheet(wb) {
+    const sheet = wb.addWorksheet('Dependencies');
+    applyColumnWidths(sheet, [30, 30, 20, 12]);
+
+    // Row 1: Guidance
+    const guidanceRow = sheet.addRow(['List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?']);
+    sheet.mergeCells('A1:D1');
+    guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    guidanceRow.font = { italic: true };
+
+    // Row 2: Headers
+    const headerRow = sheet.addRow(['System that depends', 'System it depends on', 'What for?', 'Match']);
+    headerRow.font = { bold: true };
+
+    // Row 3: Example
+    const exRow = sheet.addRow(['Liquidlogic LAS', 'SAP S/4HANA', 'payments', '']);
+    exRow.font = { italic: true, color: { argb: 'FF666666' } };
+    exRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    });
+
+    return sheet;
 }
 
-function buildLookupsSheet() {
+function buildLookupsSheet(wb) {
+    const sheet = wb.addWorksheet('_Lookups');
+    sheet.state = 'hidden';
+
     const tierValues = ['County', 'District', 'Borough', 'Unitary'];
     const yesNo = ['Yes', 'No'];
     const portability = ['High', 'Medium', 'Low'];
@@ -239,22 +291,24 @@ function buildLookupsSheet() {
     const supportModels = ['Vendor-supported', 'Community-supported', 'Unsupported'];
     const capabilities = LGAM_CAPABILITIES.map(c => c.id);
 
-    // Build headers row
     const headers = ['Tier', 'YesNo', 'Portability', 'DataPartitioning', 'SupportModel', 'Capabilities'];
-    const aoa = [headers];
+    applyColumnWidths(sheet, [12, 8, 12, 16, 20, 16]);
 
-    // Find max rows needed
+    sheet.addRow(headers);
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true };
+
     const maxRows = Math.max(
         tierValues.length,
         yesNo.length,
         portability.length,
         dataPartitioning.length,
         supportModels.length,
-        capabilities.length
+        capabilities.length,
     );
 
     for (let i = 0; i < maxRows; i++) {
-        aoa.push([
+        sheet.addRow([
             tierValues[i]       || '',
             yesNo[i]            || '',
             portability[i]      || '',
@@ -264,26 +318,28 @@ function buildLookupsSheet() {
         ]);
     }
 
-    return makeSheet(aoa, [12, 8, 12, 16, 20, 16]);
+    return sheet;
 }
 
-function buildSystemNamesSheet() {
-    const aoa = [
-        ['System Names (auto-populated from domain sheets — used by Dependencies validation)'],
-        ['Note: system names are matched at import time rather than via live Excel formulas.'],
-    ];
-    return makeSheet(aoa, [70]);
+function buildSystemNamesSheet(wb) {
+    const sheet = wb.addWorksheet('_SystemNames');
+    sheet.state = 'hidden';
+    applyColumnWidths(sheet, [70]);
+
+    sheet.addRow(['System Names (auto-populated from domain sheets — used by Dependencies validation)']);
+    sheet.addRow(['Note: system names are matched at import time rather than via live Excel formulas.']);
+
+    return sheet;
 }
 
 // -----------------------------------------------------------------------
-// Root category → sheet name mapping
+// Root category -> sheet name mapping
 // -----------------------------------------------------------------------
 
 function buildRootToSheetMap() {
     const ROOT_TO_SHEET = new Map();
     const roots = getRootCategories();
     roots.forEach(root => {
-        // Match by comparing first significant word (case-insensitive)
         const rootWord = root.label.toLowerCase().split(/\s+/)[0];
         const match = DOMAIN_SHEET_NAMES.find(name => name.toLowerCase().startsWith(rootWord));
         if (match) ROOT_TO_SHEET.set(root.id, match);
@@ -298,23 +354,22 @@ function buildRootToSheetMap() {
 /**
  * generateTemplate()
  *
- * Returns a SheetJS workbook containing 14 sheets ready for council data entry.
- * Requires the global XLSX object to be loaded (SheetJS CDN).
+ * Returns an ExcelJS workbook containing 14 sheets ready for council data entry.
+ * Requires the global ExcelJS object to be loaded (CDN).
  */
 export function generateTemplate() {
-    const wb = XLSX.utils.book_new();
+    const wb = new ExcelJS.Workbook();
 
     // Sheet 1: Index
-    XLSX.utils.book_append_sheet(wb, buildIndexSheet(), 'Index');
+    buildIndexSheet(wb);
 
     // Sheet 2: Council Info
-    XLSX.utils.book_append_sheet(wb, buildCouncilInfoSheet(), 'Council Info');
+    buildCouncilInfoSheet(wb);
 
     // Sheets 3-11: Domain sheets
     const rootToSheet = buildRootToSheetMap();
 
-    // Append domain sheets in the canonical order of DOMAIN_SHEET_NAMES
-    // so the tab order matches the index regardless of getRootCategories() order.
+    // Build reverse map for canonical ordering
     const sheetToRoot = new Map();
     for (const [rootId, sheetName] of rootToSheet.entries()) {
         sheetToRoot.set(sheetName, rootId);
@@ -322,33 +377,22 @@ export function generateTemplate() {
 
     for (const sheetName of DOMAIN_SHEET_NAMES) {
         const rootId = sheetToRoot.get(sheetName);
-        if (!rootId) continue; // no matching root category
+        if (!rootId) continue;
 
         const descendantIds = getDescendantIds(rootId);
-        if (descendantIds.size === 0) continue; // root has no child functions — skip
+        if (descendantIds.size === 0) continue;
 
-        XLSX.utils.book_append_sheet(wb, buildDomainSheet(sheetName, rootId), sheetName);
+        buildDomainSheet(wb, sheetName, rootId);
     }
 
     // Sheet 12: Dependencies
-    XLSX.utils.book_append_sheet(wb, buildDependenciesSheet(), 'Dependencies');
+    buildDependenciesSheet(wb);
 
-    // Sheet 13: _Lookups
-    XLSX.utils.book_append_sheet(wb, buildLookupsSheet(), '_Lookups');
+    // Sheet 13: _Lookups (hidden)
+    buildLookupsSheet(wb);
 
-    // Sheet 14: _SystemNames
-    XLSX.utils.book_append_sheet(wb, buildSystemNamesSheet(), '_SystemNames');
-
-    // Hide helper sheets
-    wb.Workbook = wb.Workbook || {};
-    wb.Workbook.Sheets = wb.Workbook.Sheets || [];
-    while (wb.Workbook.Sheets.length < wb.SheetNames.length) {
-        wb.Workbook.Sheets.push({});
-    }
-    const lookupsIdx = wb.SheetNames.indexOf('_Lookups');
-    if (lookupsIdx >= 0) wb.Workbook.Sheets[lookupsIdx].Hidden = 1;
-    const sysNamesIdx = wb.SheetNames.indexOf('_SystemNames');
-    if (sysNamesIdx >= 0) wb.Workbook.Sheets[sysNamesIdx].Hidden = 1;
+    // Sheet 14: _SystemNames (hidden)
+    buildSystemNamesSheet(wb);
 
     return wb;
 }
@@ -357,9 +401,18 @@ export function generateTemplate() {
  * downloadTemplate()
  *
  * Generates the template workbook and triggers a browser file download.
- * Requires the global XLSX object to be loaded (SheetJS CDN).
+ * Requires the global ExcelJS object to be loaded (CDN).
  */
-export function downloadTemplate() {
+export async function downloadTemplate() {
     const wb = generateTemplate();
-    XLSX.writeFile(wb, 'lgr-architecture-template.xlsx');
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lgr-architecture-template.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
