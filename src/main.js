@@ -39,6 +39,8 @@ import { exportReport } from './features/report-export.js';
 import { exportBaselineReport } from './features/baseline-report.js';
 import { computeDomainSummaries, renderDomainCards } from './features/domain-cards.js';
 import { showNotification, showConfirm } from './ui-notifications.js';
+import { downloadTemplate } from './features/template-generator.js';
+import { convertXlsxToArchitecture } from './features/template-converter.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -396,6 +398,18 @@ const fileInput = document.getElementById('fileInput');
 document.getElementById('uploadArea').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('click', (e) => e.stopPropagation());
 
+document.getElementById('btnDownloadTemplate')?.addEventListener('click', async () => {
+    if (typeof XLSX === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js';
+        script.onload = () => downloadTemplate();
+        script.onerror = () => showNotification({ type: 'error', message: 'Failed to load Excel library. Check your internet connection.' });
+        document.head.appendChild(script);
+    } else {
+        downloadTemplate();
+    }
+});
+
 fileInput.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -403,6 +417,50 @@ fileInput.addEventListener('change', async (e) => {
     const listUl = document.getElementById('uploadedFilesUl');
     
     for (const file of files) {
+            // Handle xlsx template files
+            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                const loadXlsx = () => new Promise((resolve, reject) => {
+                    if (typeof XLSX !== 'undefined') { resolve(); return; }
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js';
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Failed to load Excel library'));
+                    document.head.appendChild(script);
+                });
+                try {
+                    await loadXlsx();
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const { architecture, warnings } = convertXlsxToArchitecture(workbook);
+                    const uploadIdx = state.rawUploads.length;
+                    state.rawUploads.push({ filename: file.name, data: architecture });
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center gap-3';
+                    const span = document.createElement('span');
+                    const sysCount = architecture.nodes.filter(n => n.type === 'ITSystem').length;
+                    const warnText = warnings.length > 0 ? ` (${warnings.length} warning${warnings.length > 1 ? 's' : ''})` : '';
+                    span.textContent = `${architecture.councilName} (${sysCount} systems from template)${warnText}`;
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn-edit-arch gds-btn-secondary px-2 py-1 text-xs font-bold hover:bg-gray-100';
+                    editBtn.setAttribute('data-upload-idx', uploadIdx);
+                    editBtn.textContent = 'Edit Architecture';
+                    wireEditArchBtn(editBtn);
+                    li.appendChild(span);
+                    li.appendChild(editBtn);
+                    if (warnings.length > 0) {
+                        const warnBtn = document.createElement('button');
+                        warnBtn.className = 'text-[#f47738] text-xs underline cursor-pointer bg-transparent border-none';
+                        warnBtn.textContent = 'View warnings';
+                        warnBtn.onclick = () => alert(warnings.join('\n'));
+                        li.appendChild(warnBtn);
+                    }
+                    listUl.appendChild(li);
+                } catch (err) {
+                    showNotification({ type: 'error', message: `Failed to parse template: ${err.message}` });
+                }
+                continue;
+            }
+
         const text = await file.text();
         try {
             const json = JSON.parse(text);

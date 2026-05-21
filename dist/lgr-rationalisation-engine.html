@@ -433,7 +433,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                 <span class="text-xl font-bold text-[#1d70b8] underline">Select JSON files</span>
                 <span class="text-lg text-gray-600 block mt-2">Upload Council A, Council B, etc.</span>
-                <input type="file" id="fileInput" multiple accept=".json" class="sr-only">
+                <input type="file" id="fileInput" multiple accept=".json,.xlsx,.xls" class="sr-only">
+            </div>
+
+            <div class="mt-4 flex items-center gap-4">
+                <button id="btnDownloadTemplate" class="gds-btn-secondary px-4 py-2 text-sm font-bold" type="button">Download Template (.xlsx)</button>
+                <span class="text-xs text-gray-500">Structured spreadsheet with guidance — fill offline, then upload here</span>
             </div>
 
             <!-- Import wizard entry points -->
@@ -2825,7 +2830,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         if (!isNaN(n)) sys[f] = n;
       }
     });
-    const parseBool = (v, falseyExtra) => {
+    const parseBool2 = (v, falseyExtra) => {
       if (v === void 0 || v === null || v === "") return void 0;
       const s = String(v).toLowerCase().trim();
       if (["yes", "true", "1", "y"].includes(s)) return true;
@@ -2833,9 +2838,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (falsey.some((f) => s.includes(f))) return false;
       return void 0;
     };
-    const cloudVal = parseBool(get("isCloud"), ["on-premise", "on premise", "onpremise"]);
+    const cloudVal = parseBool2(get("isCloud"), ["on-premise", "on premise", "onpremise"]);
     if (cloudVal !== void 0) sys.isCloud = cloudVal;
-    const erpVal = parseBool(get("isERP"));
+    const erpVal = parseBool2(get("isERP"));
     if (erpVal !== void 0) sys.isERP = erpVal;
     const sw = get("sharedWith");
     if (sw !== void 0 && sw !== null && String(sw).trim() !== "") {
@@ -10878,6 +10883,541 @@ tr:nth-child(even){background:#f3f2f1;}
     return `<div class="domain-cards-grid" role="group" aria-label="Function domains">${cards}${workstreamCards}</div>`;
   }
 
+  // src/features/template-converter.js
+  var DOMAIN_SHEET_NAMES = [
+    "Health & Social Care",
+    "Administration & Government",
+    "Environmental Protection",
+    "Planning & Building Control",
+    "Housing",
+    "Transport & Highways",
+    "Advice & Benefits",
+    "Leisure & Culture",
+    "Business & Employment"
+  ];
+  var COL = {
+    ESD_ID: 0,
+    // A
+    FUNCTION: 1,
+    // B
+    SYSTEM_NAME: 2,
+    // C
+    VENDOR: 3,
+    // D
+    USERS: 4,
+    // E
+    ANNUAL_COST: 5,
+    // F
+    CONTRACT_END: 6,
+    // G
+    NOTICE_PERIOD: 7,
+    // H
+    PORTABILITY: 8,
+    // I
+    DATA_PARTITIONING: 9,
+    // J
+    CLOUD_HOSTED: 10,
+    // K
+    ERP: 11,
+    // L
+    SHARED_WITH: 12,
+    // M
+    SUPPORT_MODEL: 13,
+    // N
+    CAPABILITIES: 14
+    // O
+  };
+  function excelSerialToDate(serial) {
+    const MS_PER_DAY = 864e5;
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    return new Date(epoch.getTime() + serial * MS_PER_DAY);
+  }
+  function parseContractEnd(value) {
+    if (value === null || value === void 0 || value === "") return null;
+    if (typeof value === "number") {
+      if (value < 1) return null;
+      const d2 = excelSerialToDate(Math.floor(value));
+      if (isNaN(d2.getTime())) return null;
+      return { endYear: d2.getUTCFullYear(), endMonth: d2.getUTCMonth() + 1 };
+    }
+    const s = String(value).trim();
+    if (!s) return null;
+    const mmYyyy = s.match(/^(\d{1,2})\/(\d{4})$/);
+    if (mmYyyy) {
+      const month = parseInt(mmYyyy[1], 10);
+      const year = parseInt(mmYyyy[2], 10);
+      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
+    }
+    const yyyyMm = s.match(/^(\d{4})-(\d{1,2})/);
+    if (yyyyMm) {
+      const year = parseInt(yyyyMm[1], 10);
+      const month = parseInt(yyyyMm[2], 10);
+      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
+    }
+    const mmYy = s.match(/^(\d{1,2})\/(\d{2})$/);
+    if (mmYy) {
+      const month = parseInt(mmYy[1], 10);
+      const year = 2e3 + parseInt(mmYy[2], 10);
+      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
+    }
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      return { endYear: d.getFullYear(), endMonth: d.getMonth() + 1 };
+    }
+    return null;
+  }
+  function safeStr(v) {
+    if (v === null || v === void 0) return "";
+    return String(v).trim();
+  }
+  function safeInt(v) {
+    if (v === null || v === void 0 || v === "") return void 0;
+    const n = typeof v === "number" ? v : parseInt(String(v).replace(/[^0-9.-]/g, ""), 10);
+    return isNaN(n) ? void 0 : n;
+  }
+  function parseBool(v) {
+    if (v === null || v === void 0 || v === "") return void 0;
+    const s = String(v).trim().toLowerCase();
+    if (s === "yes" || s === "true" || s === "1") return true;
+    if (s === "no" || s === "false" || s === "0") return false;
+    return void 0;
+  }
+  function parseCommaSeparated(v) {
+    if (v === null || v === void 0 || v === "") return [];
+    return String(v).split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  function parsePortability(v) {
+    const s = safeStr(v);
+    if (["High", "Medium", "Low"].includes(s)) return s;
+    const match = ["High", "Medium", "Low"].find((p) => p.toLowerCase() === s.toLowerCase());
+    return match || void 0;
+  }
+  function parseDataPartitioning(v) {
+    const s = safeStr(v);
+    if (["Segmented", "Monolithic"].includes(s)) return s;
+    const match = ["Segmented", "Monolithic"].find((p) => p.toLowerCase() === s.toLowerCase());
+    return match || void 0;
+  }
+  function parseSupportModel(v) {
+    const s = safeStr(v).toLowerCase();
+    if (s === "vendor-supported" || s === "vendor supported") return "vendor-supported";
+    if (s === "community-supported" || s === "community supported") return "community-supported";
+    if (s === "unsupported") return "unsupported";
+    return void 0;
+  }
+  function findHeaderRow(rows) {
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (!Array.isArray(row)) continue;
+      const cell0 = safeStr(row[0]);
+      const cell1 = safeStr(row[1]);
+      if (cell0.toLowerCase().includes("esd") || cell1.toLowerCase().includes("function") || cell0.toLowerCase() === "esd id") {
+        return { headerRowIndex: i, dataStartIndex: i + 2 };
+      }
+      if (/^\d+$/.test(cell0)) {
+        return { headerRowIndex: -1, dataStartIndex: i };
+      }
+    }
+    return { headerRowIndex: -1, dataStartIndex: 0 };
+  }
+  function convertXlsxToArchitecture(workbook) {
+    const warnings = [];
+    let councilName = "Unknown Council";
+    let councilTier = "unitary";
+    let financialDistress = false;
+    const lgaLookup = new Map(LGA_FUNCTIONS.map((f) => [String(f.id), f.label]));
+    const infoSheet = workbook.Sheets["Council Info"];
+    if (infoSheet) {
+      const rows = XLSX.utils.sheet_to_json(infoSheet, { header: 1 });
+      for (const row of rows) {
+        if (!Array.isArray(row) || row.length < 2) continue;
+        const key = safeStr(row[0]).toLowerCase();
+        const val = row[1];
+        if (key.includes("council") && key.includes("name")) {
+          councilName = safeStr(val) || councilName;
+        } else if (key === "tier" || key === "council tier") {
+          const t = safeStr(val).toLowerCase();
+          if (["county", "district", "borough", "unitary"].includes(t)) councilTier = t;
+        } else if (key.includes("financial") && key.includes("distress")) {
+          const b = parseBool(val);
+          if (b !== void 0) financialDistress = b;
+        }
+      }
+    } else {
+      warnings.push('Sheet "Council Info" not found \u2014 using defaults.');
+    }
+    const nodes = [];
+    const edges = [];
+    const functionsSeen = /* @__PURE__ */ new Set();
+    const systemsByName = /* @__PURE__ */ new Map();
+    let sysCounter = 0;
+    for (const sheetName of DOMAIN_SHEET_NAMES) {
+      const sheet = workbook.Sheets[sheetName];
+      if (!sheet) {
+        continue;
+      }
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const { dataStartIndex } = findHeaderRow(rows);
+      for (let ri = dataStartIndex; ri < rows.length; ri++) {
+        const row = rows[ri];
+        if (!Array.isArray(row)) continue;
+        const systemName = safeStr(row[COL.SYSTEM_NAME]);
+        if (!systemName || systemName.toUpperCase().includes("EXAMPLE")) continue;
+        const rawEsdId = safeStr(row[COL.ESD_ID]);
+        const esdId = rawEsdId.replace(/\D/g, "");
+        let fnLabel = safeStr(row[COL.FUNCTION]);
+        if (!fnLabel && esdId && lgaLookup.has(esdId)) {
+          fnLabel = lgaLookup.get(esdId);
+        }
+        if (!fnLabel && esdId) {
+          fnLabel = `Function ${esdId}`;
+        }
+        if (!fnLabel) {
+          warnings.push(`Row ${ri + 1} in "${sheetName}": system "${systemName}" has no ESD ID or Function name \u2014 skipped.`);
+          continue;
+        }
+        if (esdId && !lgaLookup.has(esdId)) {
+          warnings.push(`ESD ID "${esdId}" (system "${systemName}" in "${sheetName}") not found in LGA taxonomy.`);
+        }
+        const fnNodeId = esdId ? `fn-${esdId}` : `fn-${sheetName.replace(/\W/g, "")}-${ri}`;
+        const dedupeKey = esdId || fnNodeId;
+        if (!functionsSeen.has(dedupeKey)) {
+          functionsSeen.add(dedupeKey);
+          const fnNode = {
+            id: fnNodeId,
+            label: fnLabel,
+            type: "Function"
+          };
+          if (esdId) fnNode.lgaFunctionId = esdId;
+          nodes.push(fnNode);
+        }
+        sysCounter++;
+        const sysNodeId = `sys-${sysCounter}`;
+        const sysNode = {
+          id: sysNodeId,
+          label: systemName,
+          type: "ITSystem"
+        };
+        const vendor = safeStr(row[COL.VENDOR]);
+        if (vendor) sysNode.vendor = vendor;
+        const users = safeInt(row[COL.USERS]);
+        if (users !== void 0) sysNode.users = users;
+        const rawCost = row[COL.ANNUAL_COST];
+        const costStr = safeStr(rawCost).replace(/[£$,\s]/g, "");
+        const annualCost = costStr ? parseFloat(costStr) : NaN;
+        if (!isNaN(annualCost) && annualCost > 0) {
+          sysNode.annualCost = annualCost;
+        }
+        const contractEndParsed = parseContractEnd(row[COL.CONTRACT_END]);
+        if (contractEndParsed) {
+          sysNode.endYear = contractEndParsed.endYear;
+          sysNode.endMonth = contractEndParsed.endMonth;
+        }
+        const noticePeriod = safeInt(row[COL.NOTICE_PERIOD]);
+        if (noticePeriod !== void 0) sysNode.noticePeriod = noticePeriod;
+        const portability = parsePortability(row[COL.PORTABILITY]);
+        if (portability !== void 0) sysNode.portability = portability;
+        const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING]);
+        if (dataPartitioning !== void 0) sysNode.dataPartitioning = dataPartitioning;
+        const isCloud = parseBool(row[COL.CLOUD_HOSTED]);
+        if (isCloud !== void 0) sysNode.isCloud = isCloud;
+        const isERP = parseBool(row[COL.ERP]);
+        if (isERP !== void 0) sysNode.isERP = isERP;
+        const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH]);
+        if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
+        const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL]);
+        if (supportModel !== void 0) sysNode.supportModel = supportModel;
+        const capabilitiesArr = parseCommaSeparated(row[COL.CAPABILITIES]).map((c) => c.toLowerCase());
+        if (capabilitiesArr.length > 0) sysNode.capabilityType = capabilitiesArr;
+        nodes.push(sysNode);
+        systemsByName.set(systemName.toLowerCase(), sysNodeId);
+        edges.push({
+          source: sysNodeId,
+          target: fnNodeId,
+          relationship: "REALIZES"
+        });
+      }
+    }
+    const depsSheet = workbook.Sheets["Dependencies"];
+    if (depsSheet) {
+      const rows = XLSX.utils.sheet_to_json(depsSheet, { header: 1 });
+      let depStart = 0;
+      for (let i = 0; i < Math.min(rows.length, 5); i++) {
+        const cell0 = safeStr(rows[i]?.[0]).toLowerCase();
+        if (cell0.includes("system that depends") || cell0.includes("dependent") || cell0.includes("depends on")) {
+          depStart = i + 1;
+          break;
+        }
+        if (cell0 && !cell0.includes("depend") && /\w/.test(cell0)) {
+          depStart = i;
+          break;
+        }
+      }
+      for (let ri = depStart; ri < rows.length; ri++) {
+        const row = rows[ri];
+        if (!Array.isArray(row)) continue;
+        const dependentName = safeStr(row[0]).toLowerCase();
+        const dependedOnName = safeStr(row[1]).toLowerCase();
+        const whatFor = parseCommaSeparated(row[2]).map((c) => c.toLowerCase());
+        if (!dependentName || !dependedOnName) continue;
+        const dependentId = systemsByName.get(dependentName);
+        const dependedOnId = systemsByName.get(dependedOnName);
+        if (!dependentId) {
+          warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain sheets \u2014 edge skipped.`);
+          continue;
+        }
+        if (!dependedOnId) {
+          warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain sheets \u2014 edge skipped.`);
+          continue;
+        }
+        edges.push({
+          source: dependentId,
+          target: dependedOnId,
+          relationship: "CONSUMES_CAPABILITY",
+          capabilities: whatFor.length > 0 ? whatFor : void 0
+        });
+      }
+    }
+    const architecture = {
+      councilName,
+      councilMetadata: {
+        tier: councilTier,
+        financialDistress
+      },
+      nodes,
+      edges
+    };
+    return { architecture, warnings };
+  }
+
+  // src/features/template-generator.js
+  var EXAMPLE_SYSTEMS = {
+    "Health & Social Care": ["148", "Adult social care", "Liquidlogic LAS", "System C", 3500, 95e4, "03/2028", 12, "High", "Segmented", "Yes", "No", "", "Vendor-supported", ""],
+    "Administration & Government": ["116", "Finance", "SAP S/4HANA", "SAP", 7e3, 23e5, "03/2030", 18, "Low", "Monolithic", "No", "Yes", "", "Vendor-supported", "payments,workflow"],
+    "Environmental Protection": ["34", "Environmental health", "Idox Public Protection", "Idox", 40, 6e4, "06/2027", 6, "Medium", "Segmented", "No", "No", "", "Vendor-supported", ""],
+    "Planning & Building Control": ["101", "Development control", "Idox Uniform", "Idox", 25, 45e3, "12/2027", 6, "Medium", "Segmented", "Yes", "No", "", "Vendor-supported", ""],
+    "Housing": ["66", "Housing", "NEC Housing", "NEC", 80, 12e4, "09/2028", 9, "Low", "Monolithic", "No", "No", "", "Vendor-supported", ""],
+    "Transport & Highways": ["109", "Highway maintenance", "Confirm Highways", "Confirm", 150, 28e4, "06/2029", 12, "Medium", "Segmented", "No", "No", "Other County Council", "Vendor-supported", ""],
+    "Advice & Benefits": ["3", "Benefits", "NEC Revenues & Benefits", "NEC", 200, 35e4, "03/2028", 12, "Low", "Monolithic", "No", "No", "", "Vendor-supported", ""],
+    "Leisure & Culture": ["76", "Libraries", "Koha LMS", "In-House", 45, 3e4, "12/2027", 3, "High", "Segmented", "Yes", "No", "", "Community-supported", ""],
+    "Business & Employment": ["7", "Business advice and support", "CRM System", "Microsoft", 60, 85e3, "09/2028", 6, "High", "Segmented", "Yes", "No", "", "Vendor-supported", ""]
+  };
+  var SHEET_DESCRIPTIONS = {
+    "Index": "This sheet \u2014 instructions and workbook guide",
+    "Council Info": "Your council name, tier, and financial status",
+    "Health & Social Care": "Systems for adult social care, children's services, public health",
+    "Administration & Government": "Finance, HR, ICT, democratic services, legal",
+    "Environmental Protection": "Environmental health, waste management, parks",
+    "Planning & Building Control": "Planning applications, building control, heritage",
+    "Housing": "Council housing, homelessness, housing advice",
+    "Transport & Highways": "Highways, transport, road safety, parking",
+    "Advice & Benefits": "Revenues, benefits, welfare rights, grants",
+    "Leisure & Culture": "Libraries, leisure centres, arts, museums",
+    "Business & Employment": "Business support, regeneration, trading standards",
+    "Dependencies": "System-to-system capability dependencies",
+    "_Lookups": "Validation lists (internal use)",
+    "_SystemNames": "System name registry (internal use)"
+  };
+  var DOMAIN_HEADERS = [
+    "ESD ID",
+    "Function",
+    "System Name",
+    "Vendor",
+    "Users",
+    "Annual Cost (\xA3)",
+    "Contract End",
+    "Notice Period (months)",
+    "Portability",
+    "Data Partitioning",
+    "Cloud Hosted?",
+    "ERP?",
+    "Shared With",
+    "Support Model",
+    "Capabilities Provided"
+  ];
+  var DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 8, 14, 13, 10, 12, 15, 12, 6, 22, 20, 22];
+  function colWidths(widths) {
+    return widths.map((wch) => ({ wch }));
+  }
+  function makeSheet(aoa, widths) {
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    if (widths) {
+      ws["!cols"] = colWidths(widths);
+    }
+    return ws;
+  }
+  function todayISO() {
+    return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  }
+  function buildIndexSheet() {
+    const allSheetNames = ["Index", "Council Info", ...DOMAIN_SHEET_NAMES, "Dependencies", "_Lookups", "_SystemNames"];
+    const aoa = [];
+    aoa.push(["LGR Architecture Data Template"]);
+    aoa.push([]);
+    aoa.push(["Instructions:"]);
+    aoa.push([`\u2022 Fill in the "Council Info" sheet with your council's name, tier, and financial distress status.`]);
+    aoa.push(["\u2022 For each domain sheet, list the IT systems your council uses for each function."]);
+    aoa.push(["\u2022 Leave function rows empty if you do not deliver that function \u2014 do not delete them."]);
+    aoa.push(["\u2022 Add extra rows for the same function if multiple systems serve it."]);
+    aoa.push(['\u2022 Use the "Dependencies" sheet to record system-to-system capability links.']);
+    aoa.push(["\u2022 Do not rename, reorder, or delete any sheet. Do not change column headers."]);
+    aoa.push([]);
+    aoa.push(["Sheets in this workbook:"]);
+    aoa.push(["Sheet name", "Description"]);
+    for (const name of allSheetNames) {
+      aoa.push([name, SHEET_DESCRIPTIONS[name] || ""]);
+    }
+    aoa.push([]);
+    aoa.push([`Template v1.0 \u2014 generated ${todayISO()}`]);
+    return makeSheet(aoa, [35, 55]);
+  }
+  function buildCouncilInfoSheet() {
+    const aoa = [
+      ["Enter your council's details below. This identifies your architecture in the merged estate."],
+      [],
+      ["Council Name", "Council Tier", "Financial Distress"],
+      ["EXAMPLE \u2014 delete this row", "District", "No"],
+      []
+    ];
+    const ws = makeSheet(aoa, [30, 15, 18]);
+    ws["!dataValidation"] = [
+      { sqref: "B4:B100", type: "list", formula1: '"County,District,Borough,Unitary"' },
+      { sqref: "C4:C100", type: "list", formula1: '"Yes,No"' }
+    ];
+    return ws;
+  }
+  function buildDomainSheet(sheetName, rootId) {
+    const descendantIds = getDescendantIds(rootId);
+    const functions = LGA_FUNCTIONS.filter((f) => descendantIds.has(f.id)).sort((a, b) => a.label.localeCompare(b.label));
+    const example = EXAMPLE_SYSTEMS[sheetName] || null;
+    const aoa = [];
+    aoa.push([`List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`]);
+    aoa.push(DOMAIN_HEADERS);
+    if (example) {
+      aoa.push(example);
+    } else {
+      const firstFn = functions[0];
+      aoa.push([
+        firstFn ? firstFn.id : "",
+        firstFn ? firstFn.label : "",
+        "Example System Name",
+        "Example Vendor",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Vendor-supported",
+        ""
+      ]);
+    }
+    for (const fn of functions) {
+      aoa.push([fn.id, fn.label, "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    }
+    const domainSheet = makeSheet(aoa, DOMAIN_COL_WIDTHS);
+    domainSheet["!dataValidation"] = [
+      { sqref: "I3:I200", type: "list", formula1: '"High,Medium,Low"' },
+      { sqref: "J3:J200", type: "list", formula1: '"Segmented,Monolithic"' },
+      { sqref: "K3:K200", type: "list", formula1: '"Yes,No"' },
+      { sqref: "L3:L200", type: "list", formula1: '"Yes,No"' },
+      { sqref: "N3:N200", type: "list", formula1: '"Vendor-supported,Community-supported,Unsupported"' }
+    ];
+    return domainSheet;
+  }
+  function buildDependenciesSheet() {
+    const aoa = [
+      ["List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?"],
+      ["System that depends", "System it depends on", "What for?", "Match \u2713"],
+      ["Liquidlogic LAS", "SAP S/4HANA", "payments", "\u2713"],
+      []
+    ];
+    return makeSheet(aoa, [30, 30, 20, 12]);
+  }
+  function buildLookupsSheet() {
+    const tierValues = ["County", "District", "Borough", "Unitary"];
+    const yesNo = ["Yes", "No"];
+    const portability = ["High", "Medium", "Low"];
+    const dataPartitioning = ["Segmented", "Monolithic"];
+    const supportModels = ["Vendor-supported", "Community-supported", "Unsupported"];
+    const capabilities = LGAM_CAPABILITIES.map((c) => c.id);
+    const headers = ["Tier", "YesNo", "Portability", "DataPartitioning", "SupportModel", "Capabilities"];
+    const aoa = [headers];
+    const maxRows = Math.max(
+      tierValues.length,
+      yesNo.length,
+      portability.length,
+      dataPartitioning.length,
+      supportModels.length,
+      capabilities.length
+    );
+    for (let i = 0; i < maxRows; i++) {
+      aoa.push([
+        tierValues[i] || "",
+        yesNo[i] || "",
+        portability[i] || "",
+        dataPartitioning[i] || "",
+        supportModels[i] || "",
+        capabilities[i] || ""
+      ]);
+    }
+    return makeSheet(aoa, [12, 8, 12, 16, 20, 16]);
+  }
+  function buildSystemNamesSheet() {
+    const aoa = [
+      ["System Names (auto-populated from domain sheets \u2014 used by Dependencies validation)"],
+      ["Note: system names are matched at import time rather than via live Excel formulas."]
+    ];
+    return makeSheet(aoa, [70]);
+  }
+  function buildRootToSheetMap() {
+    const ROOT_TO_SHEET = /* @__PURE__ */ new Map();
+    const roots = getRootCategories();
+    roots.forEach((root) => {
+      const rootWord = root.label.toLowerCase().split(/\s+/)[0];
+      const match = DOMAIN_SHEET_NAMES.find((name) => name.toLowerCase().startsWith(rootWord));
+      if (match) ROOT_TO_SHEET.set(root.id, match);
+    });
+    return ROOT_TO_SHEET;
+  }
+  function generateTemplate() {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, buildIndexSheet(), "Index");
+    XLSX.utils.book_append_sheet(wb, buildCouncilInfoSheet(), "Council Info");
+    const rootToSheet = buildRootToSheetMap();
+    const sheetToRoot = /* @__PURE__ */ new Map();
+    for (const [rootId, sheetName] of rootToSheet.entries()) {
+      sheetToRoot.set(sheetName, rootId);
+    }
+    for (const sheetName of DOMAIN_SHEET_NAMES) {
+      const rootId = sheetToRoot.get(sheetName);
+      if (!rootId) continue;
+      const descendantIds = getDescendantIds(rootId);
+      if (descendantIds.size === 0) continue;
+      XLSX.utils.book_append_sheet(wb, buildDomainSheet(sheetName, rootId), sheetName);
+    }
+    XLSX.utils.book_append_sheet(wb, buildDependenciesSheet(), "Dependencies");
+    XLSX.utils.book_append_sheet(wb, buildLookupsSheet(), "_Lookups");
+    XLSX.utils.book_append_sheet(wb, buildSystemNamesSheet(), "_SystemNames");
+    wb.Workbook = wb.Workbook || {};
+    wb.Workbook.Sheets = wb.Workbook.Sheets || [];
+    while (wb.Workbook.Sheets.length < wb.SheetNames.length) {
+      wb.Workbook.Sheets.push({});
+    }
+    const lookupsIdx = wb.SheetNames.indexOf("_Lookups");
+    if (lookupsIdx >= 0) wb.Workbook.Sheets[lookupsIdx].Hidden = 1;
+    const sysNamesIdx = wb.SheetNames.indexOf("_SystemNames");
+    if (sysNamesIdx >= 0) wb.Workbook.Sheets[sysNamesIdx].Hidden = 1;
+    return wb;
+  }
+  function downloadTemplate() {
+    const wb = generateTemplate();
+    XLSX.writeFile(wb, "lgr-architecture-template.xlsx");
+  }
+
   // src/main.js
   state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
   function toggleHeaderCollapse() {
@@ -11143,11 +11683,67 @@ tr:nth-child(even){background:#f3f2f1;}
   var fileInput = document.getElementById("fileInput");
   document.getElementById("uploadArea").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("click", (e) => e.stopPropagation());
+  document.getElementById("btnDownloadTemplate")?.addEventListener("click", async () => {
+    if (typeof XLSX === "undefined") {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js";
+      script.onload = () => downloadTemplate();
+      script.onerror = () => showNotification({ type: "error", message: "Failed to load Excel library. Check your internet connection." });
+      document.head.appendChild(script);
+    } else {
+      downloadTemplate();
+    }
+  });
   fileInput.addEventListener("change", async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     const listUl = document.getElementById("uploadedFilesUl");
     for (const file of files) {
+      if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        const loadXlsx = () => new Promise((resolve, reject) => {
+          if (typeof XLSX !== "undefined") {
+            resolve();
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18/dist/xlsx.full.min.js";
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Failed to load Excel library"));
+          document.head.appendChild(script);
+        });
+        try {
+          await loadXlsx();
+          const arrayBuffer = await file.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: "array" });
+          const { architecture, warnings } = convertXlsxToArchitecture(workbook);
+          const uploadIdx = state.rawUploads.length;
+          state.rawUploads.push({ filename: file.name, data: architecture });
+          const li = document.createElement("li");
+          li.className = "flex items-center gap-3";
+          const span = document.createElement("span");
+          const sysCount = architecture.nodes.filter((n) => n.type === "ITSystem").length;
+          const warnText = warnings.length > 0 ? ` (${warnings.length} warning${warnings.length > 1 ? "s" : ""})` : "";
+          span.textContent = `${architecture.councilName} (${sysCount} systems from template)${warnText}`;
+          const editBtn = document.createElement("button");
+          editBtn.className = "btn-edit-arch gds-btn-secondary px-2 py-1 text-xs font-bold hover:bg-gray-100";
+          editBtn.setAttribute("data-upload-idx", uploadIdx);
+          editBtn.textContent = "Edit Architecture";
+          wireEditArchBtn2(editBtn);
+          li.appendChild(span);
+          li.appendChild(editBtn);
+          if (warnings.length > 0) {
+            const warnBtn = document.createElement("button");
+            warnBtn.className = "text-[#f47738] text-xs underline cursor-pointer bg-transparent border-none";
+            warnBtn.textContent = "View warnings";
+            warnBtn.onclick = () => alert(warnings.join("\n"));
+            li.appendChild(warnBtn);
+          }
+          listUl.appendChild(li);
+        } catch (err) {
+          showNotification({ type: "error", message: `Failed to parse template: ${err.message}` });
+        }
+        continue;
+      }
       const text = await file.text();
       try {
         const json = JSON.parse(text);
