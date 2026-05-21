@@ -12451,12 +12451,650 @@ tr:nth-child(even){background:#f3f2f1;}
       }
       html += "</ul></div>";
     }
+    html += '<div class="mt-6 pt-4 border-t border-gray-200 flex gap-3">';
+    html += '<button id="btnOpenEditor" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold">Open in Editor</button>';
     if (result.valid) {
-      html += '<div class="mt-6 pt-4 border-t border-gray-200 flex gap-3">';
       html += '<button id="btnValidatorImport" class="gds-btn px-3 py-1.5 text-sm font-bold">Import to Engine</button>';
-      html += "</div>";
     }
+    html += "</div>";
     return html;
+  }
+
+  // src/features/pre-import-editor.js
+  function escHtml4(str) {
+    return String(str == null ? "" : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function getEnumFor2(fieldName) {
+    const fields = SCHEMA_DEFINITIONS.architecture.nodeTypes.ITSystem.fields;
+    const field = fields.find((f) => f.name === fieldName);
+    return field && field.enum ? field.enum : [];
+  }
+  function getTierOptions() {
+    const tierField = SCHEMA_DEFINITIONS.architecture.topLevel.find((f) => f.name === "councilMetadata");
+    if (tierField && tierField.fields) {
+      const tf = tierField.fields.find((f) => f.name === "tier");
+      return tf && tf.enum ? tf.enum : ["county", "district", "borough", "unitary"];
+    }
+    return ["county", "district", "borough", "unitary"];
+  }
+  var LGA_ID_SET = new Set(LGA_FUNCTIONS.map((f) => f.id));
+  function lgaStatusIcon(lgaFunctionId) {
+    if (!lgaFunctionId) return '<span class="text-[#d4351c] font-bold">\u2717</span>';
+    return LGA_ID_SET.has(String(lgaFunctionId)) ? '<span class="text-[#00703c] font-bold">\u2713</span>' : '<span class="text-[#d4351c] font-bold">\u2717</span>';
+  }
+  function systemStatusIcon(node) {
+    const ok = node.label && node.label.trim() && node.vendor && node.vendor.trim();
+    return ok ? '<span class="text-[#00703c] font-bold">\u2713</span>' : '<span class="text-[#d4351c] font-bold">\u2717</span>';
+  }
+  function generateId3(prefix) {
+    return prefix + "-" + Math.random().toString(36).slice(2, 9);
+  }
+  function renderPreImportEditor(json) {
+    const nodes = Array.isArray(json.nodes) ? json.nodes : [];
+    const edges = Array.isArray(json.edges) ? json.edges : [];
+    const functions = nodes.filter((n) => n.type === "Function");
+    const systems = nodes.filter((n) => n.type === "ITSystem");
+    const deps = edges.filter((e) => e.relationship === "CONSUMES_CAPABILITY");
+    return `
+<div id="preImportEditorView" class="max-w-7xl mx-auto p-6">
+    <button id="btnBackFromEditor" class="text-[#1d70b8] underline font-bold text-sm mb-5 block">\u2190 Back to validator</button>
+    <h2 class="text-2xl font-bold mb-1">Edit Architecture File</h2>
+    <p class="text-sm text-gray-600 mb-6">Edit the data below, then re-validate or import directly to the engine.</p>
+
+    <!-- Tab bar -->
+    <div class="border-b border-gray-300 mb-6 flex gap-0">
+        <button class="pre-import-tab-btn border-b-4 border-[#1d70b8] px-5 py-2 font-bold text-sm bg-white" data-tab="council">Council Info</button>
+        <button class="pre-import-tab-btn border-b-4 border-transparent px-5 py-2 font-bold text-sm text-gray-600 bg-white hover:border-gray-400" data-tab="functions">Functions (${functions.length})</button>
+        <button class="pre-import-tab-btn border-b-4 border-transparent px-5 py-2 font-bold text-sm text-gray-600 bg-white hover:border-gray-400" data-tab="systems">Systems (${systems.length})</button>
+        <button class="pre-import-tab-btn border-b-4 border-transparent px-5 py-2 font-bold text-sm text-gray-600 bg-white hover:border-gray-400" data-tab="dependencies">Dependencies (${deps.length})</button>
+    </div>
+
+    <!-- Tab panels -->
+    <div id="preImportTabCouncil">${buildCouncilTabHtml(json)}</div>
+    <div id="preImportTabFunctions" class="hidden">${buildFunctionsTabHtml(nodes)}</div>
+    <div id="preImportTabSystems" class="hidden">${buildSystemsTabHtml(nodes)}</div>
+    <div id="preImportTabDependencies" class="hidden">${buildDependenciesTabHtml(nodes, edges)}</div>
+
+    <!-- Datalist for LGA functions -->
+    <datalist id="lgaFunctionsEditorDatalist">
+        ${LGA_FUNCTIONS.map((f) => `<option value="${escHtml4(f.id)}" label="${escHtml4(f.label)}">`).join("")}
+    </datalist>
+
+    <!-- Revalidation result banner -->
+    <div id="preImportRevalidateBanner" class="hidden mt-4"></div>
+
+    <!-- Footer actions -->
+    <div class="mt-8 pt-5 border-t border-gray-300 flex flex-wrap gap-3 items-center">
+        <button id="btnEditorRevalidate" class="gds-btn-secondary px-4 py-2 text-sm font-bold">Re-validate</button>
+        <button id="btnEditorExport" class="gds-btn-secondary px-4 py-2 text-sm font-bold">Export JSON</button>
+        <button id="btnEditorImport" class="gds-btn px-4 py-2 text-sm font-bold">Import to Engine</button>
+    </div>
+</div>`;
+  }
+  function buildCouncilTabHtml(json) {
+    const meta = json.councilMetadata || {};
+    const tier = meta.tier || "";
+    const distress = meta.financialDistress === true;
+    const tiers = getTierOptions();
+    return `
+<div class="max-w-lg space-y-6">
+    <div>
+        <label for="editorCouncilName" class="block font-bold text-sm mb-1">Council Name</label>
+        <input id="editorCouncilName" type="text" class="border-2 border-[#0b0c0c] p-2 text-base w-full"
+            value="${escHtml4(json.councilName || "")}">
+    </div>
+    <div>
+        <label for="editorCouncilTier" class="block font-bold text-sm mb-1">Tier</label>
+        <select id="editorCouncilTier" class="border-2 border-[#0b0c0c] p-2 text-base">
+            <option value="">-- not set --</option>
+            ${tiers.map((t) => `<option value="${t}"${tier === t ? " selected" : ""}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join("")}
+        </select>
+    </div>
+    <div>
+        <label for="editorFinancialDistress" class="block font-bold text-sm mb-1">Financial Distress</label>
+        <select id="editorFinancialDistress" class="border-2 border-[#0b0c0c] p-2 text-base">
+            <option value="false"${!distress ? " selected" : ""}>No</option>
+            <option value="true"${distress ? " selected" : ""}>Yes</option>
+        </select>
+    </div>
+</div>`;
+  }
+  function buildFunctionsTabHtml(nodes) {
+    const functions = nodes.filter((n) => n.type === "Function");
+    const rows = functions.map((fn, i) => {
+      const globalIdx = nodes.indexOf(fn);
+      return `
+<tr data-index="${globalIdx}" class="border-b border-gray-200 hover:bg-gray-50">
+    <td class="px-3 py-2 font-mono text-xs text-gray-500">${escHtml4(fn.id || "")}</td>
+    <td class="px-3 py-2">
+        <input type="text" class="editor-fn-label border border-gray-300 p-1 text-sm w-full"
+            value="${escHtml4(fn.label || "")}" data-node-idx="${globalIdx}" data-field="label"
+            placeholder="Function label">
+    </td>
+    <td class="px-3 py-2">
+        <input type="text" list="lgaFunctionsEditorDatalist"
+            class="editor-fn-lgaid border border-gray-300 p-1 text-sm w-36"
+            value="${escHtml4(fn.lgaFunctionId || "")}" data-node-idx="${globalIdx}" data-field="lgaFunctionId"
+            placeholder="e.g. 148">
+    </td>
+    <td class="px-3 py-2 text-center">${lgaStatusIcon(fn.lgaFunctionId)}</td>
+    <td class="px-3 py-2 text-center">
+        <button class="editor-delete-fn text-[#d4351c] font-bold text-xs px-1 hover:underline"
+            data-node-idx="${globalIdx}" title="Delete row">\u2715</button>
+    </td>
+</tr>`;
+    }).join("");
+    return `
+<div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200" id="fnTable">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700 w-24">ID</th>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700">Label</th>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700 w-40">LGA Function ID</th>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700 w-16 text-center">Valid</th>
+                    <th class="px-3 py-2 w-10"></th>
+                </tr>
+            </thead>
+            <tbody id="fnTableBody">${rows}</tbody>
+        </table>
+    </div>
+    <button id="btnAddFunction" class="gds-btn-secondary mt-4 px-3 py-1.5 text-sm font-bold">+ Add Function</button>
+</div>`;
+  }
+  function buildSystemsTabHtml(nodes) {
+    const systems = nodes.filter((n) => n.type === "ITSystem");
+    const portabilityOpts = getEnumFor2("portability");
+    const supportOpts = getEnumFor2("supportModel");
+    const rows = systems.map((sys, i) => {
+      const globalIdx = nodes.indexOf(sys);
+      const portSel = portabilityOpts.map(
+        (p) => `<option value="${p}"${sys.portability === p ? " selected" : ""}>${p}</option>`
+      ).join("");
+      const supportSel = supportOpts.map(
+        (s) => `<option value="${s}"${sys.supportModel === s ? " selected" : ""}>${s}</option>`
+      ).join("");
+      return `
+<tr data-index="${globalIdx}" class="border-b border-gray-200 hover:bg-gray-50">
+    <td class="px-2 py-1.5">
+        <input type="text" class="editor-sys-field border border-gray-300 p-1 text-xs w-32"
+            value="${escHtml4(sys.label || "")}" data-node-idx="${globalIdx}" data-field="label" placeholder="System label">
+    </td>
+    <td class="px-2 py-1.5">
+        <input type="text" class="editor-sys-field border border-gray-300 p-1 text-xs w-28"
+            value="${escHtml4(sys.vendor || "")}" data-node-idx="${globalIdx}" data-field="vendor" placeholder="Vendor">
+    </td>
+    <td class="px-2 py-1.5">
+        <input type="number" class="editor-sys-field border border-gray-300 p-1 text-xs w-20"
+            value="${escHtml4(sys.users != null ? sys.users : "")}" data-node-idx="${globalIdx}" data-field="users" placeholder="0" min="0">
+    </td>
+    <td class="px-2 py-1.5">
+        <input type="number" class="editor-sys-field border border-gray-300 p-1 text-xs w-24"
+            value="${escHtml4(sys.annualCost != null ? sys.annualCost : "")}" data-node-idx="${globalIdx}" data-field="annualCost" placeholder="0" min="0">
+    </td>
+    <td class="px-2 py-1.5">
+        <select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="portability">
+            <option value="">--</option>
+            ${portSel}
+        </select>
+    </td>
+    <td class="px-2 py-1.5">
+        <select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="isCloud">
+            <option value="">--</option>
+            <option value="true"${sys.isCloud === true ? " selected" : ""}>Yes</option>
+            <option value="false"${sys.isCloud === false ? " selected" : ""}>No</option>
+        </select>
+    </td>
+    <td class="px-2 py-1.5">
+        <select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="supportModel">
+            <option value="">--</option>
+            ${supportSel}
+        </select>
+    </td>
+    <td class="px-2 py-1.5 text-center" data-status-idx="${globalIdx}">${systemStatusIcon(sys)}</td>
+    <td class="px-2 py-1.5 text-center">
+        <button class="editor-delete-sys text-[#d4351c] font-bold text-xs px-1 hover:underline"
+            data-node-idx="${globalIdx}" title="Delete row">\u2715</button>
+    </td>
+</tr>`;
+    }).join("");
+    return `
+<div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-gray-200" id="sysTable">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-2 py-2 font-bold text-gray-700">Label</th>
+                    <th class="px-2 py-2 font-bold text-gray-700">Vendor</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-20">Users</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-24">Annual Cost (\xA3)</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-24">Portability</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-16">Cloud</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-36">Support Model</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-14 text-center">Valid</th>
+                    <th class="px-2 py-2 w-8"></th>
+                </tr>
+            </thead>
+            <tbody id="sysTableBody">${rows}</tbody>
+        </table>
+    </div>
+    <button id="btnAddSystem" class="gds-btn-secondary mt-4 px-3 py-1.5 text-sm font-bold">+ Add System</button>
+</div>`;
+  }
+  function buildDependenciesTabHtml(nodes, edges) {
+    const systems = nodes.filter((n) => n.type === "ITSystem");
+    const deps = edges.filter((e) => e.relationship === "CONSUMES_CAPABILITY");
+    const sysOptionsHtml = systems.map(
+      (s) => `<option value="${escHtml4(s.id)}">${escHtml4(s.label || s.id)}</option>`
+    ).join("");
+    const rows = deps.map((dep, i) => {
+      const globalIdx = edges.indexOf(dep);
+      const caps = Array.isArray(dep.capabilities) ? dep.capabilities.join(", ") : "";
+      return `
+<tr data-edge-index="${globalIdx}" class="border-b border-gray-200 hover:bg-gray-50">
+    <td class="px-3 py-2">
+        <select class="editor-dep-field border border-gray-300 p-1 text-sm w-full"
+            data-edge-idx="${globalIdx}" data-field="source">
+            <option value="">-- select system --</option>
+            ${sysOptionsHtml.replace(`value="${escHtml4(dep.source)}"`, `value="${escHtml4(dep.source)}" selected`)}
+        </select>
+    </td>
+    <td class="px-3 py-2">
+        <select class="editor-dep-field border border-gray-300 p-1 text-sm w-full"
+            data-edge-idx="${globalIdx}" data-field="target">
+            <option value="">-- select system --</option>
+            ${sysOptionsHtml.replace(`value="${escHtml4(dep.target)}"`, `value="${escHtml4(dep.target)}" selected`)}
+        </select>
+    </td>
+    <td class="px-3 py-2">
+        <input type="text" class="editor-dep-field border border-gray-300 p-1 text-sm w-full"
+            value="${escHtml4(caps)}" data-edge-idx="${globalIdx}" data-field="capabilities"
+            placeholder="e.g. payments, workflow">
+    </td>
+    <td class="px-3 py-2 text-center">
+        <button class="editor-delete-dep text-[#d4351c] font-bold text-xs px-1 hover:underline"
+            data-edge-idx="${globalIdx}" title="Delete row">\u2715</button>
+    </td>
+</tr>`;
+    }).join("");
+    return `
+<div>
+    <p class="text-sm text-gray-600 mb-4">CONSUMES_CAPABILITY edges \u2014 where one system depends on a capability provided by another. REALIZES edges are preserved automatically.</p>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200" id="depTable">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700 w-1/3">Source System (consuming)</th>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700 w-1/3">Target System (providing)</th>
+                    <th class="px-3 py-2 text-xs font-bold text-gray-700">Capabilities (comma-separated)</th>
+                    <th class="px-3 py-2 w-10"></th>
+                </tr>
+            </thead>
+            <tbody id="depTableBody">${rows}</tbody>
+        </table>
+    </div>
+    <button id="btnAddDependency" class="gds-btn-secondary mt-4 px-3 py-1.5 text-sm font-bold">+ Add Dependency</button>
+</div>`;
+  }
+  function wirePreImportEditor(json, onImport, onBack) {
+    let editorState = JSON.parse(JSON.stringify(json));
+    if (!Array.isArray(editorState.nodes)) editorState.nodes = [];
+    if (!Array.isArray(editorState.edges)) editorState.edges = [];
+    if (!editorState.councilMetadata) editorState.councilMetadata = {};
+    const btnBack = document.getElementById("btnBackFromEditor");
+    if (btnBack) btnBack.addEventListener("click", () => onBack());
+    const tabPanels = {
+      council: document.getElementById("preImportTabCouncil"),
+      functions: document.getElementById("preImportTabFunctions"),
+      systems: document.getElementById("preImportTabSystems"),
+      dependencies: document.getElementById("preImportTabDependencies")
+    };
+    function activateTab(tabName) {
+      document.querySelectorAll(".pre-import-tab-btn").forEach((btn) => {
+        const isActive = btn.getAttribute("data-tab") === tabName;
+        btn.classList.toggle("border-[#1d70b8]", isActive);
+        btn.classList.toggle("border-transparent", !isActive);
+        btn.classList.toggle("text-gray-600", !isActive);
+        btn.classList.toggle("font-bold", true);
+      });
+      Object.entries(tabPanels).forEach(([name, el]) => {
+        if (el) el.classList.toggle("hidden", name !== tabName);
+      });
+    }
+    document.querySelectorAll(".pre-import-tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => activateTab(btn.getAttribute("data-tab")));
+    });
+    const councilNameEl = document.getElementById("editorCouncilName");
+    const councilTierEl = document.getElementById("editorCouncilTier");
+    const financialDistressEl = document.getElementById("editorFinancialDistress");
+    if (councilNameEl) {
+      councilNameEl.addEventListener("input", () => {
+        editorState.councilName = councilNameEl.value;
+      });
+    }
+    if (councilTierEl) {
+      councilTierEl.addEventListener("change", () => {
+        editorState.councilMetadata.tier = councilTierEl.value || void 0;
+      });
+    }
+    if (financialDistressEl) {
+      financialDistressEl.addEventListener("change", () => {
+        editorState.councilMetadata.financialDistress = financialDistressEl.value === "true";
+      });
+    }
+    const fnBody = document.getElementById("fnTableBody");
+    if (fnBody) {
+      fnBody.addEventListener("input", (e) => {
+        const target = e.target;
+        if (!target.dataset.nodeIdx) return;
+        const idx = parseInt(target.dataset.nodeIdx, 10);
+        const field = target.dataset.field;
+        editorState.nodes[idx][field] = target.value;
+        const row = target.closest("tr");
+        if (row && field === "lgaFunctionId") {
+          const statusCell = row.querySelector("td:nth-child(4)");
+          if (statusCell) statusCell.innerHTML = lgaStatusIcon(target.value);
+        }
+      });
+      fnBody.addEventListener("click", (e) => {
+        if (e.target.classList.contains("editor-delete-fn")) {
+          const idx = parseInt(e.target.dataset.nodeIdx, 10);
+          editorState.nodes.splice(idx, 1);
+          rerenderFunctions();
+        }
+      });
+    }
+    document.getElementById("btnAddFunction")?.addEventListener("click", () => {
+      editorState.nodes.push({
+        id: generateId3("fn"),
+        label: "",
+        type: "Function",
+        lgaFunctionId: ""
+      });
+      rerenderFunctions();
+    });
+    function rerenderFunctions() {
+      const panel = document.getElementById("preImportTabFunctions");
+      if (!panel) return;
+      panel.innerHTML = buildFunctionsTabHtml(editorState.nodes);
+      const newBody = document.getElementById("fnTableBody");
+      if (newBody) {
+        newBody.addEventListener("input", (e) => {
+          const target = e.target;
+          if (!target.dataset.nodeIdx) return;
+          const idx = parseInt(target.dataset.nodeIdx, 10);
+          const field = target.dataset.field;
+          editorState.nodes[idx][field] = target.value;
+          const row = target.closest("tr");
+          if (row && field === "lgaFunctionId") {
+            const statusCell = row.querySelector("td:nth-child(4)");
+            if (statusCell) statusCell.innerHTML = lgaStatusIcon(target.value);
+          }
+        });
+        newBody.addEventListener("click", (e) => {
+          if (e.target.classList.contains("editor-delete-fn")) {
+            const idx = parseInt(e.target.dataset.nodeIdx, 10);
+            editorState.nodes.splice(idx, 1);
+            rerenderFunctions();
+          }
+        });
+      }
+      document.getElementById("btnAddFunction")?.addEventListener("click", () => {
+        editorState.nodes.push({ id: generateId3("fn"), label: "", type: "Function", lgaFunctionId: "" });
+        rerenderFunctions();
+      });
+      updateTabCounts();
+    }
+    const sysBody = document.getElementById("sysTableBody");
+    if (sysBody) {
+      sysBody.addEventListener("input", (e) => {
+        const target = e.target;
+        if (!target.dataset.nodeIdx) return;
+        const idx = parseInt(target.dataset.nodeIdx, 10);
+        const field = target.dataset.field;
+        const raw = target.value;
+        if (field === "users" || field === "annualCost") {
+          editorState.nodes[idx][field] = raw === "" ? void 0 : Number(raw);
+        } else if (field === "isCloud") {
+          editorState.nodes[idx][field] = raw === "" ? void 0 : raw === "true";
+        } else {
+          editorState.nodes[idx][field] = raw;
+        }
+        const row = target.closest("tr");
+        if (row) {
+          const statusCell = row.querySelector("[data-status-idx]");
+          if (statusCell) statusCell.innerHTML = systemStatusIcon(editorState.nodes[idx]);
+        }
+      });
+      sysBody.addEventListener("change", (e) => {
+        const target = e.target;
+        if (!target.dataset.nodeIdx) return;
+        const idx = parseInt(target.dataset.nodeIdx, 10);
+        const field = target.dataset.field;
+        const raw = target.value;
+        if (field === "isCloud") {
+          editorState.nodes[idx][field] = raw === "" ? void 0 : raw === "true";
+        } else {
+          editorState.nodes[idx][field] = raw || void 0;
+        }
+        const row = target.closest("tr");
+        if (row) {
+          const statusCell = row.querySelector("[data-status-idx]");
+          if (statusCell) statusCell.innerHTML = systemStatusIcon(editorState.nodes[idx]);
+        }
+      });
+      sysBody.addEventListener("click", (e) => {
+        if (e.target.classList.contains("editor-delete-sys")) {
+          const idx = parseInt(e.target.dataset.nodeIdx, 10);
+          const removedId = editorState.nodes[idx] && editorState.nodes[idx].id;
+          editorState.nodes.splice(idx, 1);
+          if (removedId) {
+            editorState.edges = editorState.edges.filter(
+              (e2) => e2.source !== removedId && e2.target !== removedId
+            );
+          }
+          rerenderSystems();
+        }
+      });
+    }
+    document.getElementById("btnAddSystem")?.addEventListener("click", () => {
+      editorState.nodes.push({
+        id: generateId3("sys"),
+        label: "",
+        type: "ITSystem",
+        vendor: ""
+      });
+      rerenderSystems();
+    });
+    function rerenderSystems() {
+      const panel = document.getElementById("preImportTabSystems");
+      if (!panel) return;
+      panel.innerHTML = buildSystemsTabHtml(editorState.nodes);
+      const newBody = document.getElementById("sysTableBody");
+      if (newBody) {
+        newBody.addEventListener("input", (e) => {
+          const target = e.target;
+          if (!target.dataset.nodeIdx) return;
+          const idx = parseInt(target.dataset.nodeIdx, 10);
+          const field = target.dataset.field;
+          const raw = target.value;
+          if (field === "users" || field === "annualCost") {
+            editorState.nodes[idx][field] = raw === "" ? void 0 : Number(raw);
+          } else if (field === "isCloud") {
+            editorState.nodes[idx][field] = raw === "" ? void 0 : raw === "true";
+          } else {
+            editorState.nodes[idx][field] = raw;
+          }
+          const row = target.closest("tr");
+          if (row) {
+            const statusCell = row.querySelector("[data-status-idx]");
+            if (statusCell) statusCell.innerHTML = systemStatusIcon(editorState.nodes[idx]);
+          }
+        });
+        newBody.addEventListener("change", (e) => {
+          const target = e.target;
+          if (!target.dataset.nodeIdx) return;
+          const idx = parseInt(target.dataset.nodeIdx, 10);
+          const field = target.dataset.field;
+          const raw = target.value;
+          if (field === "isCloud") {
+            editorState.nodes[idx][field] = raw === "" ? void 0 : raw === "true";
+          } else {
+            editorState.nodes[idx][field] = raw || void 0;
+          }
+          const row = target.closest("tr");
+          if (row) {
+            const statusCell = row.querySelector("[data-status-idx]");
+            if (statusCell) statusCell.innerHTML = systemStatusIcon(editorState.nodes[idx]);
+          }
+        });
+        newBody.addEventListener("click", (e) => {
+          if (e.target.classList.contains("editor-delete-sys")) {
+            const idx = parseInt(e.target.dataset.nodeIdx, 10);
+            const removedId = editorState.nodes[idx] && editorState.nodes[idx].id;
+            editorState.nodes.splice(idx, 1);
+            if (removedId) {
+              editorState.edges = editorState.edges.filter(
+                (e2) => e2.source !== removedId && e2.target !== removedId
+              );
+            }
+            rerenderSystems();
+          }
+        });
+      }
+      document.getElementById("btnAddSystem")?.addEventListener("click", () => {
+        editorState.nodes.push({ id: generateId3("sys"), label: "", type: "ITSystem", vendor: "" });
+        rerenderSystems();
+      });
+      updateTabCounts();
+      rerenderDependencies();
+    }
+    const depBody = document.getElementById("depTableBody");
+    if (depBody) {
+      depBody.addEventListener("change", (e) => {
+        const target = e.target;
+        if (!target.dataset.edgeIdx) return;
+        const idx = parseInt(target.dataset.edgeIdx, 10);
+        const field = target.dataset.field;
+        editorState.edges[idx][field] = target.value;
+      });
+      depBody.addEventListener("input", (e) => {
+        const target = e.target;
+        if (!target.dataset.edgeIdx) return;
+        const idx = parseInt(target.dataset.edgeIdx, 10);
+        const field = target.dataset.field;
+        if (field === "capabilities") {
+          editorState.edges[idx].capabilities = target.value.split(",").map((s) => s.trim()).filter(Boolean);
+        } else {
+          editorState.edges[idx][field] = target.value;
+        }
+      });
+      depBody.addEventListener("click", (e) => {
+        if (e.target.classList.contains("editor-delete-dep")) {
+          const idx = parseInt(e.target.dataset.edgeIdx, 10);
+          editorState.edges.splice(idx, 1);
+          rerenderDependencies();
+        }
+      });
+    }
+    document.getElementById("btnAddDependency")?.addEventListener("click", () => {
+      editorState.edges.push({
+        source: "",
+        target: "",
+        relationship: "CONSUMES_CAPABILITY",
+        capabilities: []
+      });
+      rerenderDependencies();
+    });
+    function rerenderDependencies() {
+      const panel = document.getElementById("preImportTabDependencies");
+      if (!panel) return;
+      panel.innerHTML = buildDependenciesTabHtml(editorState.nodes, editorState.edges);
+      const newBody = document.getElementById("depTableBody");
+      if (newBody) {
+        newBody.addEventListener("change", (e) => {
+          const target = e.target;
+          if (!target.dataset.edgeIdx) return;
+          const idx = parseInt(target.dataset.edgeIdx, 10);
+          editorState.edges[idx][target.dataset.field] = target.value;
+        });
+        newBody.addEventListener("input", (e) => {
+          const target = e.target;
+          if (!target.dataset.edgeIdx) return;
+          const idx = parseInt(target.dataset.edgeIdx, 10);
+          const field = target.dataset.field;
+          if (field === "capabilities") {
+            editorState.edges[idx].capabilities = target.value.split(",").map((s) => s.trim()).filter(Boolean);
+          } else {
+            editorState.edges[idx][field] = target.value;
+          }
+        });
+        newBody.addEventListener("click", (e) => {
+          if (e.target.classList.contains("editor-delete-dep")) {
+            const idx = parseInt(e.target.dataset.edgeIdx, 10);
+            editorState.edges.splice(idx, 1);
+            rerenderDependencies();
+          }
+        });
+      }
+      document.getElementById("btnAddDependency")?.addEventListener("click", () => {
+        editorState.edges.push({ source: "", target: "", relationship: "CONSUMES_CAPABILITY", capabilities: [] });
+        rerenderDependencies();
+      });
+      updateTabCounts();
+    }
+    function updateTabCounts() {
+      const fns = editorState.nodes.filter((n) => n.type === "Function").length;
+      const sys = editorState.nodes.filter((n) => n.type === "ITSystem").length;
+      const dep = editorState.edges.filter((e) => e.relationship === "CONSUMES_CAPABILITY").length;
+      document.querySelectorAll(".pre-import-tab-btn").forEach((btn) => {
+        const tab = btn.getAttribute("data-tab");
+        if (tab === "functions") btn.textContent = `Functions (${fns})`;
+        if (tab === "systems") btn.textContent = `Systems (${sys})`;
+        if (tab === "dependencies") btn.textContent = `Dependencies (${dep})`;
+      });
+    }
+    document.getElementById("btnEditorRevalidate")?.addEventListener("click", () => {
+      const result = validateArchitecture(editorState);
+      const banner = document.getElementById("preImportRevalidateBanner");
+      if (!banner) return;
+      const statusColour = result.valid ? "border-[#00703c] bg-green-50" : "border-[#d4351c] bg-red-50";
+      const statusText = result.valid ? "\u2713 Valid \u2014 ready to import" : `\u2717 ${result.errors.length} error${result.errors.length !== 1 ? "s" : ""} found`;
+      const statusTextColour = result.valid ? "text-[#00703c]" : "text-[#d4351c]";
+      let html = `<div class="border-l-4 ${statusColour} pl-4 py-3">`;
+      html += `<p class="font-bold text-sm ${statusTextColour} mb-2">${statusText}</p>`;
+      if (result.errors.length > 0) {
+        html += '<ul class="text-sm text-[#d4351c] space-y-1 mb-2">';
+        for (const err of result.errors) {
+          html += `<li>\u2022 ${escHtml4(err.message)}</li>`;
+        }
+        html += "</ul>";
+      }
+      if (result.warnings.length > 0) {
+        html += '<ul class="text-sm text-[#f47738] space-y-1">';
+        for (const warn of result.warnings) {
+          html += `<li>\u2022 ${escHtml4(warn.message)}</li>`;
+        }
+        html += "</ul>";
+      }
+      html += "</div>";
+      banner.innerHTML = html;
+      banner.classList.remove("hidden");
+    });
+    document.getElementById("btnEditorExport")?.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(editorState, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const name = (editorState.councilName || "architecture").replace(/\s+/g, "-").toLowerCase();
+      a.href = url;
+      a.download = `${name}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    document.getElementById("btnEditorImport")?.addEventListener("click", () => {
+      onImport(editorState);
+    });
   }
 
   // src/main.js
@@ -12757,26 +13395,75 @@ tr:nth-child(even){background:#f3f2f1;}
       });
     });
     validatorContainer.addEventListener("click", (e) => {
-      if (e.target.id !== "btnValidatorImport") return;
-      const textarea = document.getElementById("validatorTextarea");
-      if (!textarea || !textarea.value.trim()) return;
-      try {
-        const json = JSON.parse(textarea.value.trim());
-        if (json.successors && !json.nodes) {
-          state.pendingTransitionConfig = json;
-        } else {
-          state.rawUploads.push({ filename: "validated-file.json", data: json });
+      if (e.target.id === "btnValidatorImport") {
+        const textarea = document.getElementById("validatorTextarea");
+        if (!textarea || !textarea.value.trim()) return;
+        try {
+          const json = JSON.parse(textarea.value.trim());
+          if (json.successors && !json.nodes) {
+            state.pendingTransitionConfig = json;
+          } else {
+            state.rawUploads.push({ filename: "validated-file.json", data: json });
+          }
+          document.getElementById("btnBackFromValidator").click();
+          const listUl = document.getElementById("uploadedFilesUl");
+          const fileListEl = document.getElementById("fileList");
+          if (fileListEl) fileListEl.classList.remove("hidden");
+          const li = document.createElement("li");
+          li.textContent = json.councilName ? `${json.councilName} (validated, ${(json.nodes || []).filter((n) => n.type === "ITSystem").length} systems)` : `transition-config.json (validated, ${(json.successors || []).length} successors)`;
+          listUl.appendChild(li);
+          showNotification({ type: "success", message: "File validated and imported successfully." });
+        } catch (err) {
+          showNotification({ type: "error", message: "Failed to import: " + err.message });
         }
-        document.getElementById("btnBackFromValidator").click();
-        const listUl = document.getElementById("uploadedFilesUl");
-        const fileListEl = document.getElementById("fileList");
-        if (fileListEl) fileListEl.classList.remove("hidden");
-        const li = document.createElement("li");
-        li.textContent = json.councilName ? `${json.councilName} (validated, ${(json.nodes || []).filter((n) => n.type === "ITSystem").length} systems)` : `transition-config.json (validated, ${(json.successors || []).length} successors)`;
-        listUl.appendChild(li);
-        showNotification({ type: "success", message: "File validated and imported successfully." });
-      } catch (err) {
-        showNotification({ type: "error", message: "Failed to import: " + err.message });
+      }
+      if (e.target.id === "btnOpenEditor") {
+        const textarea = document.getElementById("validatorTextarea");
+        if (!textarea || !textarea.value.trim()) return;
+        try {
+          const json = JSON.parse(textarea.value.trim());
+          const savedTextareaValue = textarea.value;
+          validatorContainer.innerHTML = renderPreImportEditor(json);
+          wirePreImportEditor(
+            json,
+            // onImport callback
+            (fixedJson) => {
+              if (fixedJson.successors && !fixedJson.nodes) {
+                state.pendingTransitionConfig = fixedJson;
+              } else {
+                state.rawUploads.push({ filename: "edited-file.json", data: fixedJson });
+              }
+              validatorContainer.classList.add("hidden");
+              validatorContainer.innerHTML = "";
+              Array.from(stageContent.children).forEach((child) => {
+                if (child.id !== "validatorContainer") child.classList.remove("hidden");
+              });
+              const fileList = document.getElementById("fileList");
+              const listUl = document.getElementById("uploadedFilesUl");
+              if (fileList) fileList.classList.remove("hidden");
+              const li = document.createElement("li");
+              li.textContent = fixedJson.councilName ? `${fixedJson.councilName} (edited, ${(fixedJson.nodes || []).filter((n) => n.type === "ITSystem").length} systems)` : `transition-config.json (edited, ${(fixedJson.successors || []).length} successors)`;
+              listUl.appendChild(li);
+              showNotification({ type: "success", message: "File edited and imported successfully." });
+            },
+            // onBack callback — return to validator
+            () => {
+              validatorContainer.innerHTML = renderValidationPanel();
+              wireValidationPanel();
+              const ta = document.getElementById("validatorTextarea");
+              if (ta) ta.value = savedTextareaValue;
+              document.getElementById("btnBackFromValidator")?.addEventListener("click", () => {
+                validatorContainer.classList.add("hidden");
+                validatorContainer.innerHTML = "";
+                Array.from(stageContent.children).forEach((child) => {
+                  if (child.id !== "validatorContainer") child.classList.remove("hidden");
+                });
+              });
+            }
+          );
+        } catch (err) {
+          showNotification({ type: "error", message: "Failed to parse JSON for editor: " + err.message });
+        }
       }
     });
   });

@@ -43,6 +43,7 @@ import { downloadTemplate } from './features/template-generator.js';
 import { convertXlsxToArchitecture } from './features/template-converter.js';
 import { renderSchemaReference } from './features/schema-reference.js';
 import { renderValidationPanel, wireValidationPanel } from './features/validation-panel.js';
+import { renderPreImportEditor, wirePreImportEditor } from './features/pre-import-editor.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -442,30 +443,87 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
 
     // Import button (injected after validation succeeds)
     validatorContainer.addEventListener('click', (e) => {
-        if (e.target.id !== 'btnValidatorImport') return;
-        const textarea = document.getElementById('validatorTextarea');
-        if (!textarea || !textarea.value.trim()) return;
-        try {
-            const json = JSON.parse(textarea.value.trim());
-            if (json.successors && !json.nodes) {
-                state.pendingTransitionConfig = json;
-            } else {
-                state.rawUploads.push({ filename: 'validated-file.json', data: json });
+        if (e.target.id === 'btnValidatorImport') {
+            const textarea = document.getElementById('validatorTextarea');
+            if (!textarea || !textarea.value.trim()) return;
+            try {
+                const json = JSON.parse(textarea.value.trim());
+                if (json.successors && !json.nodes) {
+                    state.pendingTransitionConfig = json;
+                } else {
+                    state.rawUploads.push({ filename: 'validated-file.json', data: json });
+                }
+                // Navigate back to upload view
+                document.getElementById('btnBackFromValidator').click();
+                // Update the staged file list
+                const listUl = document.getElementById('uploadedFilesUl');
+                const fileListEl = document.getElementById('fileList');
+                if (fileListEl) fileListEl.classList.remove('hidden');
+                const li = document.createElement('li');
+                li.textContent = json.councilName
+                    ? `${json.councilName} (validated, ${(json.nodes || []).filter(n => n.type === 'ITSystem').length} systems)`
+                    : `transition-config.json (validated, ${(json.successors || []).length} successors)`;
+                listUl.appendChild(li);
+                showNotification({ type: 'success', message: 'File validated and imported successfully.' });
+            } catch (err) {
+                showNotification({ type: 'error', message: 'Failed to import: ' + err.message });
             }
-            // Navigate back to upload view
-            document.getElementById('btnBackFromValidator').click();
-            // Update the staged file list
-            const listUl = document.getElementById('uploadedFilesUl');
-            const fileListEl = document.getElementById('fileList');
-            if (fileListEl) fileListEl.classList.remove('hidden');
-            const li = document.createElement('li');
-            li.textContent = json.councilName
-                ? `${json.councilName} (validated, ${(json.nodes || []).filter(n => n.type === 'ITSystem').length} systems)`
-                : `transition-config.json (validated, ${(json.successors || []).length} successors)`;
-            listUl.appendChild(li);
-            showNotification({ type: 'success', message: 'File validated and imported successfully.' });
-        } catch (err) {
-            showNotification({ type: 'error', message: 'Failed to import: ' + err.message });
+        }
+
+        if (e.target.id === 'btnOpenEditor') {
+            const textarea = document.getElementById('validatorTextarea');
+            if (!textarea || !textarea.value.trim()) return;
+            try {
+                const json = JSON.parse(textarea.value.trim());
+                const savedTextareaValue = textarea.value;
+
+                // Replace validator with editor
+                validatorContainer.innerHTML = renderPreImportEditor(json);
+                wirePreImportEditor(json,
+                    // onImport callback
+                    (fixedJson) => {
+                        if (fixedJson.successors && !fixedJson.nodes) {
+                            state.pendingTransitionConfig = fixedJson;
+                        } else {
+                            state.rawUploads.push({ filename: 'edited-file.json', data: fixedJson });
+                        }
+                        // Navigate back to Stage 1
+                        validatorContainer.classList.add('hidden');
+                        validatorContainer.innerHTML = '';
+                        Array.from(stageContent.children).forEach(child => {
+                            if (child.id !== 'validatorContainer') child.classList.remove('hidden');
+                        });
+                        // Show file list
+                        const fileList = document.getElementById('fileList');
+                        const listUl = document.getElementById('uploadedFilesUl');
+                        if (fileList) fileList.classList.remove('hidden');
+                        const li = document.createElement('li');
+                        li.textContent = fixedJson.councilName
+                            ? `${fixedJson.councilName} (edited, ${(fixedJson.nodes || []).filter(n => n.type === 'ITSystem').length} systems)`
+                            : `transition-config.json (edited, ${(fixedJson.successors || []).length} successors)`;
+                        listUl.appendChild(li);
+                        showNotification({ type: 'success', message: 'File edited and imported successfully.' });
+                    },
+                    // onBack callback — return to validator
+                    () => {
+                        validatorContainer.innerHTML = renderValidationPanel();
+                        wireValidationPanel();
+                        // Restore the textarea content
+                        const ta = document.getElementById('validatorTextarea');
+                        if (ta) ta.value = savedTextareaValue;
+                        // Re-wire back button
+                        document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
+                            validatorContainer.classList.add('hidden');
+                            validatorContainer.innerHTML = '';
+                            Array.from(stageContent.children).forEach(child => {
+                                if (child.id !== 'validatorContainer') child.classList.remove('hidden');
+                            });
+                        });
+                    }
+                );
+            } catch (err) {
+                showNotification({ type: 'error', message: 'Failed to parse JSON for editor: ' + err.message });
+            }
         }
     });
 });
