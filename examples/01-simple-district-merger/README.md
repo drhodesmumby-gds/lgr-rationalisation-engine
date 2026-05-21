@@ -16,15 +16,16 @@ Both councils merge fully into a single new successor authority.
 - **Vesting Date**: 2027-04-01
 - **Successors**: Thornbury and Crestfield Council (full predecessors: both councils)
 
-## What This Scenario Demonstrates
+## Features Demonstrated
 
-- Clean two-way function collisions across all 7 shared functions — the engine should flag every row as a collision
-- Different vendors covering the same function (e.g. Bartec vs Whitespace for waste) — the engine should surface rationalisation decisions
+- Clean two-way function collisions across all 7 shared functions — the engine flags every row as a collision
+- Different vendors covering the same function (e.g. Bartec vs Whitespace for waste) — vendor rationalisation decisions
 - No ERP complexity, no shared services — a straightforward "pick one" scenario for each function
-- Mixed contract end dates between 2026 and 2029 — the timeline view shows natural consolidation windows
-- All systems are cloud with high or medium portability — no legacy risk flags
-- Electoral system contract expiring imminently (Thornbury, September 2026) — urgency signal before vesting
-- A genuinely simple scenario: useful as an introductory example or for training new users on the tool
+- Mixed contract end dates between 2026 and 2029 — natural consolidation windows in the timeline
+- All systems cloud-hosted with vendor support — no legacy risk or on-premise burden
+- GOV.UK Notify integration — demonstrates capability system dependencies (CONSUMES_CAPABILITY edges)
+- Electoral system urgency (Thornbury Electoral IQ expiring September 2026) — signals pre-vesting pressure
+- Minimal baseline case: useful as an introductory example for training new users
 
 ## Files
 

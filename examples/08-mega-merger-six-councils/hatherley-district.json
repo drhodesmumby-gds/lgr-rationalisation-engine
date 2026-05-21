@@ -5,16 +5,66 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "hdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "hdc-fn-benefits", "label": "Housing Benefits and Council Tax", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "hdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "hdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "hdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "hdc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "hdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "hdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "hdc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "hdc-fn-parking", "label": "Parking Services", "type": "Function", "lgaFunctionId": "110" },
+    {
+      "id": "hdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "hdc-fn-benefits",
+      "label": "Housing Benefits and Council Tax",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "hdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "hdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "hdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "hdc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "hdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "hdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "hdc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "hdc-fn-parking",
+      "label": "Parking Services",
+      "type": "Function",
+      "lgaFunctionId": "110"
+    },
     {
       "id": "hdc-sys-bartec",
       "label": "Bartec Waste Management",
@@ -22,7 +72,7 @@
       "owner": "Hatherley District Council",
       "users": 85,
       "vendor": "Bartec",
-      "cost": "£125k/yr",
+      "cost": "\u00a3125k/yr",
       "annualCost": 125000,
       "endYear": 2028,
       "endMonth": 6,
@@ -30,7 +80,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-nec-rev",
@@ -39,7 +90,7 @@
       "owner": "Hatherley District Council",
       "users": 100,
       "vendor": "NEC",
-      "cost": "£190k/yr",
+      "cost": "\u00a3190k/yr",
       "annualCost": 190000,
       "endYear": 2029,
       "endMonth": 3,
@@ -47,7 +98,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-nec-assure",
@@ -56,7 +108,7 @@
       "owner": "Hatherley District Council",
       "users": 48,
       "vendor": "NEC",
-      "cost": "£90k/yr",
+      "cost": "\u00a390k/yr",
       "annualCost": 90000,
       "endYear": 2028,
       "endMonth": 3,
@@ -64,7 +116,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-nec-housing",
@@ -73,7 +126,7 @@
       "owner": "Hatherley District Council",
       "users": 115,
       "vendor": "NEC",
-      "cost": "£180k/yr",
+      "cost": "\u00a3180k/yr",
       "annualCost": 180000,
       "endYear": 2029,
       "endMonth": 6,
@@ -81,7 +134,8 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-nec-env",
@@ -90,7 +144,7 @@
       "owner": "Hatherley District Council",
       "users": 42,
       "vendor": "NEC",
-      "cost": "£65k/yr",
+      "cost": "\u00a365k/yr",
       "annualCost": 65000,
       "endYear": 2028,
       "endMonth": 9,
@@ -98,7 +152,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-democracy-counts",
@@ -107,7 +162,7 @@
       "owner": "Hatherley District Council",
       "users": 16,
       "vendor": "Idox",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2027,
       "endMonth": 3,
@@ -115,7 +170,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-unit4",
@@ -124,7 +180,7 @@
       "owner": "Hatherley District Council",
       "users": 95,
       "vendor": "Unit4",
-      "cost": "£140k/yr",
+      "cost": "\u00a3140k/yr",
       "annualCost": 140000,
       "endYear": 2029,
       "endMonth": 3,
@@ -132,7 +188,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-mhr-itrent",
@@ -141,7 +198,7 @@
       "owner": "Hatherley District Council",
       "users": 250,
       "vendor": "MHR",
-      "cost": "£195k/yr",
+      "cost": "\u00a3195k/yr",
       "annualCost": 195000,
       "endYear": 2028,
       "endMonth": 6,
@@ -149,7 +206,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-nec-firmstep",
@@ -158,7 +216,7 @@
       "owner": "Hatherley District Council",
       "users": 190,
       "vendor": "NEC",
-      "cost": "£115k/yr",
+      "cost": "\u00a3115k/yr",
       "annualCost": 115000,
       "endYear": 2028,
       "endMonth": 3,
@@ -166,7 +224,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "hdc-sys-conduent",
@@ -175,7 +234,7 @@
       "owner": "Hatherley District Council",
       "users": 70,
       "vendor": "Conduent",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2027,
       "endMonth": 9,
@@ -183,19 +242,60 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     }
   ],
   "edges": [
-    { "source": "hdc-sys-bartec", "target": "hdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "hdc-sys-nec-rev", "target": "hdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "hdc-sys-nec-assure", "target": "hdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "hdc-sys-nec-housing", "target": "hdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "hdc-sys-nec-env", "target": "hdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "hdc-sys-democracy-counts", "target": "hdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "hdc-sys-unit4", "target": "hdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "hdc-sys-mhr-itrent", "target": "hdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "hdc-sys-nec-firmstep", "target": "hdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "hdc-sys-conduent", "target": "hdc-fn-parking", "relationship": "REALIZES" }
+    {
+      "source": "hdc-sys-bartec",
+      "target": "hdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-nec-rev",
+      "target": "hdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-nec-assure",
+      "target": "hdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-nec-housing",
+      "target": "hdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-nec-env",
+      "target": "hdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-democracy-counts",
+      "target": "hdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-unit4",
+      "target": "hdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-mhr-itrent",
+      "target": "hdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-nec-firmstep",
+      "target": "hdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "hdc-sys-conduent",
+      "target": "hdc-fn-parking",
+      "relationship": "REALIZES"
+    }
   ]
 }

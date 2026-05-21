@@ -17,19 +17,20 @@ A financially distressed district council is merged under emergency direction in
 
 ## What This Scenario Demonstrates
 
+- **Support Model Contrast**: Greyminster's estate is marked `unsupported` — no active vendor SLA, expired contracts, post-EOL products. Westhaven's systems are `vendor-supported` (commercial vendors) or `community-supported` (GOV.UK tools). This visualises the complete absence of commercial safety net on Greyminster's side.
 - The contrast between a distressed legacy estate and a healthy cloud estate — every function row shows a stark technology divide
 - Urgency created by the vesting date: October 2026 is fewer than 6 months away, meaning the notice period action zones on many Greyminster systems have already passed or are in the immediate action window
-- Greyminster's Oracle Financials ERP (legacy, monolithic, low portability) with a 9-month notice period and a June 2025 expiry — the contract is already lapsed, creating commercial and legal risk
-- Capita dominates the Greyminster estate with 4 systems — all legacy on-prem and low portability, meaning data extraction is a core workstream
-- Westhaven's Workday HCM and MRI Housing represent the target architecture standard — the successor will almost certainly default to these
+- Greyminster's Oracle Financials ERP (legacy, monolithic, low portability, unsupported) with a 9-month notice period and a June 2025 expiry — the contract is already lapsed, creating commercial and legal risk
+- Capita dominates the Greyminster estate with 4 systems — all marked `unsupported`, legacy on-prem and low portability, meaning data extraction is a core workstream
+- Westhaven's Workday HCM and MRI Housing represent the target architecture standard — both vendor-supported and cloud-based. The successor will almost certainly default to these.
 - The financial distress flag on Greyminster changes the framing: budget for migration and new licences must come from Westhaven's reserves or central intervention
 - Every function has a two-way collision — simple to baseline but the risk divergence between the two councils is as extreme as any scenario in this portfolio
-- Day 1 viability for Greyminster's systems is in question — several contracts have already lapsed and systems may be running without valid support agreements
+- Day 1 viability for Greyminster's systems is in question — several contracts have already lapsed and systems are marked as unsupported, meaning they may be running without any vendor SLA
 
 ## Files
 
-- `greyminster-borough.json` — Greyminster Borough Council (8 systems, all legacy on-prem, financialDistress: true)
-- `westhaven-district.json` — Westhaven District Council (8 systems, all cloud, modern vendors)
+- `greyminster-borough.json` — Greyminster Borough Council (8 systems, all legacy on-prem with `supportModel: unsupported`, financialDistress: true; Oracle ERP has payment/workflow capabilities)
+- `westhaven-district.json` — Westhaven District Council (10 systems, all cloud with `supportModel: vendor-supported` or `community-supported`; GOV.UK Pay and Notify marked as community-supported)
 - `transition-config.json` — Transition configuration (vesting 2026-10-01, single successor)
 
 ## How to Use

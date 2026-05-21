@@ -19,13 +19,14 @@ Two districts merge into a single successor unitary authority. Both are full pre
 ## What This Scenario Demonstrates
 
 - Maximum portability contrast: every function has a Brightwell cloud/segmented system versus an Oldcastle on-prem/monolithic system
+- Support model diversity: Brightwell all `vendor-supported` modern SaaS, Oldcastle mix of `vendor-supported` legacy systems and one `unsupported` in-house system
 - Brightwell's systems are natural consolidation targets — high portability, segmented data, open APIs — but Oldcastle's long contracts (2030-2032) create procurement barriers
 - Oldcastle's Capita contracts (waste, housing, finance) run to 2031 with 12-month notice periods: commercial lock-in across three functions simultaneously
 - NEC HR contract runs to 2032 — the longest-running liability in the portfolio, 5+ years post-vesting
 - Executive persona should surface the scale of Oldcastle legacy commitment as a Day 1 and horizon 2 risk
 - Commercial persona should flag the Capita triple-contract exposure and the NEC 2032 cliff
 - Architect persona should contrast Brightwell's segmented/cloud stack as the target architecture blueprint against Oldcastle's monolithic estate requiring data migration planning before any consolidation
-- The In-House Parks system (Oldcastle) is the most exposed: no vendor, low portability, monolithic, contract expiring 2027 — immediately before vesting
+- The In-House Parks system (Oldcastle) is the most exposed: no vendor, unsupported, low portability, monolithic, contract expiring 2027 — immediately before vesting
 
 ## Files
 

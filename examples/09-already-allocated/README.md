@@ -23,6 +23,8 @@ Demonstrates the `targetAuthorities` field and "Detect from architecture" featur
 - Mixed allocation states: fully planned, partially planned, completely unplanned
 - County disaggregation with Oracle ERP going to both successors
 - Contrast between councils at different stages of migration planning
+- Support models: most systems `vendor-supported`, with two community-supported (in-house) systems
+- Capability modelling: Oracle providing payments/workflow to multiple systems; Jadu and GOV.UK Notify providing forms/SMS/email
 
 ## Files
 

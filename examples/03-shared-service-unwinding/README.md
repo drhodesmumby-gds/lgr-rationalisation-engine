@@ -19,15 +19,17 @@ Two successor authorities are formed from this dissolution:
   - Riverside Council — full predecessor: Riverdale Borough Council + Stonebridge Borough Council
   - Greater Wolds Council — full predecessor: Kingsway District Council
 
-## What This Scenario Demonstrates
+## Features Demonstrated
 
-- Shared systems being split to different successors — the engine should flag NEC Revenues (monolithic, low portability) as the highest risk: two councils use one database, and they're going separate ways
-- MHR iTrent (monolithic, medium portability) is also shared across the split — the HR function will be disrupted
-- Civica Elections (shared) has medium portability and a June 2027 contract end — tight timeline for separation given the April 2027 vesting
-- NEC Revenues is on-premises, monolithic, and has a 9-month notice period — procurement action required well before vesting
-- Stonebridge is a clean cloud estate — it brings healthy systems to Riverside Council with no shared-service complications
-- The scenario surfaces the difference between "we share a contract" and "we have separate data" — segmented vs monolithic partitioning becomes critical for separation planning
-- Multiple three-way collisions (benefits, waste, planning, housing, elections, etc.) — the dashboard should show 3-council collisions on most rows
+- **Shared service boundary detection**: NEC Revenues, MHR iTrent, and Civica Elections are shared between Riverdale and Kingsway — sharedWith fields highlight the dependency chain
+- **Monolithic data risk**: NEC Revenues (monolithic, low portability, on-prem, vendor-supported) splits to different successors — critical separation complexity
+- **HR system splitting**: MHR iTrent (monolithic, vendor-supported) is also shared — both councils depend on a single database that must be unwound
+- **Vendor support model**: Shared systems are vendor-supported but locked into shared contracts — procurement must decouple agreements post-vesting
+- **Contract urgency in split**: Civica Elections (shared, June 2027 end) has tight timeline for separation; NEC notice period is 9 months (action required by June 2026)
+- **Clean integration scenario**: Stonebridge brings an independent, cloud-first, entirely vendor-supported estate to Riverside Council — no shared service complications
+- **Three-way collisions**: Benefits, waste, planning, housing, elections show 3-council scenarios — simulates real disaggregation complexity
+- **Capability chain**: Capita Pay360 and GOV.UK Notify integrate across shared systems — dependencies persist through the transition
+- **Asymmetric outcomes**: Riverside gains 2 councils with different support needs; Greater Wolds Council starts isolated post-vesting
 
 ## Files
 

@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "ibc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "ibc-fn-benefits", "label": "Housing Benefits and Council Tax", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "ibc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "ibc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "ibc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "ibc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "ibc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "ibc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "ibc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "ibc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "ibc-fn-benefits",
+      "label": "Housing Benefits and Council Tax",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "ibc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "ibc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "ibc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "ibc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "ibc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "ibc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "ibc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "ibc-sys-arcus-waste",
       "label": "Arcus Global Waste Management",
@@ -21,7 +66,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 50,
       "vendor": "Arcus Global",
-      "cost": "£75k/yr",
+      "cost": "\u00a375k/yr",
       "annualCost": 75000,
       "endYear": 2029,
       "endMonth": 3,
@@ -29,7 +74,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-access-benefits",
@@ -38,7 +84,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 55,
       "vendor": "Access Group",
-      "cost": "£120k/yr",
+      "cost": "\u00a3120k/yr",
       "annualCost": 120000,
       "endYear": 2028,
       "endMonth": 6,
@@ -46,7 +92,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-arcus-planning",
@@ -55,7 +102,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 35,
       "vendor": "Arcus Global",
-      "cost": "£80k/yr",
+      "cost": "\u00a380k/yr",
       "annualCost": 80000,
       "endYear": 2030,
       "endMonth": 3,
@@ -63,7 +110,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-arcus-housing",
@@ -72,7 +120,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 70,
       "vendor": "Arcus Global",
-      "cost": "£110k/yr",
+      "cost": "\u00a3110k/yr",
       "annualCost": 110000,
       "endYear": 2030,
       "endMonth": 6,
@@ -80,7 +128,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-arcus-env",
@@ -89,7 +138,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 25,
       "vendor": "Arcus Global",
-      "cost": "£50k/yr",
+      "cost": "\u00a350k/yr",
       "annualCost": 50000,
       "endYear": 2029,
       "endMonth": 9,
@@ -97,7 +146,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-civica-xpress",
@@ -106,7 +156,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 8,
       "vendor": "Civica",
-      "cost": "£28k/yr",
+      "cost": "\u00a328k/yr",
       "annualCost": 28000,
       "endYear": 2027,
       "endMonth": 3,
@@ -114,7 +164,8 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-xero",
@@ -123,7 +174,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 45,
       "vendor": "Xero",
-      "cost": "£35k/yr",
+      "cost": "\u00a335k/yr",
       "annualCost": 35000,
       "endYear": 2028,
       "endMonth": 3,
@@ -131,7 +182,8 @@
       "portability": "High",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-workday",
@@ -140,7 +192,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 130,
       "vendor": "Workday",
-      "cost": "£145k/yr",
+      "cost": "\u00a3145k/yr",
       "annualCost": 145000,
       "endYear": 2030,
       "endMonth": 3,
@@ -149,7 +201,10 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ],
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-jadu",
@@ -158,7 +213,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 160,
       "vendor": "Jadu",
-      "cost": "£90k/yr",
+      "cost": "\u00a390k/yr",
       "annualCost": 90000,
       "endYear": 2029,
       "endMonth": 6,
@@ -167,7 +222,11 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms", "identity"]
+      "capabilityType": [
+        "forms",
+        "identity"
+      ],
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-govuk-notify",
@@ -176,7 +235,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 200,
       "vendor": "GDS",
-      "cost": "£8k/yr",
+      "cost": "\u00a38k/yr",
       "annualCost": 8000,
       "endYear": 2030,
       "endMonth": 12,
@@ -185,7 +244,11 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "supportModel": "vendor-supported"
     },
     {
       "id": "ibc-sys-stripe",
@@ -194,7 +257,7 @@
       "owner": "Ivybridge Borough Council",
       "users": 100,
       "vendor": "Stripe",
-      "cost": "£15k/yr",
+      "cost": "\u00a315k/yr",
       "annualCost": 15000,
       "endYear": 2029,
       "endMonth": 3,
@@ -203,26 +266,122 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ],
+      "supportModel": "vendor-supported"
     }
   ],
   "edges": [
-    { "source": "ibc-sys-arcus-waste", "target": "ibc-fn-waste", "relationship": "REALIZES" },
-    { "source": "ibc-sys-access-benefits", "target": "ibc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "ibc-sys-arcus-planning", "target": "ibc-fn-planning", "relationship": "REALIZES" },
-    { "source": "ibc-sys-arcus-housing", "target": "ibc-fn-housing", "relationship": "REALIZES" },
-    { "source": "ibc-sys-arcus-env", "target": "ibc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "ibc-sys-civica-xpress", "target": "ibc-fn-elections", "relationship": "REALIZES" },
-    { "source": "ibc-sys-xero", "target": "ibc-fn-finance", "relationship": "REALIZES" },
-    { "source": "ibc-sys-workday", "target": "ibc-fn-hr", "relationship": "REALIZES" },
-    { "source": "ibc-sys-jadu", "target": "ibc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ibc-sys-arcus-planning", "target": "ibc-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ibc-sys-arcus-housing", "target": "ibc-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ibc-sys-arcus-env", "target": "ibc-sys-stripe", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ibc-sys-arcus-planning", "target": "ibc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
-    { "source": "ibc-sys-arcus-waste", "target": "ibc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "ibc-sys-arcus-housing", "target": "ibc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ibc-sys-jadu", "target": "ibc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "ibc-sys-arcus-housing", "target": "ibc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
+    {
+      "source": "ibc-sys-arcus-waste",
+      "target": "ibc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-access-benefits",
+      "target": "ibc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-arcus-planning",
+      "target": "ibc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-arcus-housing",
+      "target": "ibc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-arcus-env",
+      "target": "ibc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-civica-xpress",
+      "target": "ibc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-xero",
+      "target": "ibc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-workday",
+      "target": "ibc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-jadu",
+      "target": "ibc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ibc-sys-arcus-planning",
+      "target": "ibc-sys-stripe",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ibc-sys-arcus-housing",
+      "target": "ibc-sys-stripe",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ibc-sys-arcus-env",
+      "target": "ibc-sys-stripe",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ibc-sys-arcus-planning",
+      "target": "ibc-sys-jadu",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    },
+    {
+      "source": "ibc-sys-arcus-waste",
+      "target": "ibc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "ibc-sys-arcus-housing",
+      "target": "ibc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ibc-sys-jadu",
+      "target": "ibc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "ibc-sys-arcus-housing",
+      "target": "ibc-sys-jadu",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    }
   ]
 }

@@ -18,15 +18,16 @@ All four councils merge into a single new unitary authority.
 - **Vesting Date**: 2027-04-01
 - **Successors**: Hartfordshire Council (full predecessors: all four councils)
 
-## What This Scenario Demonstrates
+## Features Demonstrated
 
-- ERP dominance: Oracle E-Business Suite (county) and Unit4 (Millbrook) both serve Finance and HR — the engine should flag the ERP collision and lock-in risk
-- County functions (adult social care 148, children's services 152, highways 109, libraries 76) are unique to the county — no collisions from districts, but districts bring new functions the county doesn't cover
-- Civica vendor concentration in Millbrook — the commercial persona should flag the dependency risk
-- Cloud/on-prem divide: Ashbury's entire estate is cloud, Millbrook's is largely on-prem — the architect persona should surface modernisation complexity
-- Multiple contract expirations in 2026-2027 coinciding with the vesting window — the timeline view shows high-pressure decision points
-- Four-way collisions on waste (142), benefits (3), planning (101), housing (159), and elections (146) — the engine should show multi-council rationalisation decisions
-- Oracle ERP notice period is 12 months — any decision to migrate needs to be made before April 2026 to avoid straddling the vesting date
+- **ERP dominance**: Oracle E-Business Suite (county, vendor-supported) and Unit4 (Millbrook, vendor-supported) both serve Finance and HR — collisions with lock-in risk
+- **County functions**: Adult social care, children's services, highways, libraries are unique to the county — districts bring new distinct functions (housing, environmental health, waste)
+- **Vendor concentration**: Civica heavy in Millbrook (waste, revenues, planning, housing, EH, elections) — single-vendor dependency risk
+- **Cloud/on-prem modernisation**: Ashbury entirely cloud and vendor-supported; Millbrook heavily on-premises — wide gap in operational maturity
+- **Contract urgency**: Millbrook Electoral IQ expires September 2026; multiple Civica contracts hit within the vesting window (June 2027)
+- **Multi-council collisions**: Waste, benefits, planning, housing, and elections each have competing systems across 3-4 councils
+- **Capability dependencies**: Oracle ERP provides payments to Capita Pay360; Liquidlogic systems provide SMS/email via GOV.UK Notify
+- **Support model profile**: Most systems vendor-supported; Millbrook Civica stack demonstrates legacy on-premises risk
 
 ## Files
 

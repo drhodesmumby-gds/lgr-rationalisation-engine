@@ -59,6 +59,7 @@ Copperfield District's modern, cloud-first estate is divided between Blackwood N
 - 4 ERP instances (Unit4, SAP, Oracle — plus Oracle also at county level)
 - Contracts ranging from expired (2025) to 2032
 - Mix of cloud, on-prem, shared, and legacy systems
+- Support model diversity: mostly vendor-supported, plus 2 in-house community-supported systems, and 1 unsupported system
 
 ## Loading Instructions
 
