@@ -225,12 +225,15 @@ export function validateArchitecture(json) {
         }
     }
 
-    // Orphaned ITSystem warnings (no REALIZES edge with this system as source)
+    // Orphaned ITSystem warnings (no REALIZES edge and not a capability provider)
+    const capabilityProviderIds = new Set(
+        edges.filter(e => e.relationship === 'CONSUMES_CAPABILITY').map(e => e.target)
+    );
     for (const sysId of systemNodeIds) {
-        if (!realizesTargets.has(sysId)) {
+        if (!realizesTargets.has(sysId) && !capabilityProviderIds.has(sysId)) {
             const sysNode = nodes.find(n => n.id === sysId);
             const label = (sysNode && sysNode.label) ? sysNode.label : sysId;
-            addWarning(result, `ITSystem node '${label}': no REALIZES edge — system is orphaned`);
+            addWarning(result, `ITSystem node '${label}': no REALIZES edge and not a capability provider — system may be orphaned`);
         }
     }
 

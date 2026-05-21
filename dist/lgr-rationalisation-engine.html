@@ -12135,11 +12135,14 @@ tr:nth-child(even){background:#f3f2f1;}
         }
       }
     }
+    const capabilityProviderIds = new Set(
+      edges.filter((e) => e.relationship === "CONSUMES_CAPABILITY").map((e) => e.target)
+    );
     for (const sysId of systemNodeIds) {
-      if (!realizesTargets.has(sysId)) {
+      if (!realizesTargets.has(sysId) && !capabilityProviderIds.has(sysId)) {
         const sysNode = nodes.find((n) => n.id === sysId);
         const label = sysNode && sysNode.label ? sysNode.label : sysId;
-        addWarning(result, `ITSystem node '${label}': no REALIZES edge \u2014 system is orphaned`);
+        addWarning(result, `ITSystem node '${label}': no REALIZES edge and not a capability provider \u2014 system may be orphaned`);
       }
     }
     for (const fnId of functionNodeIds) {
