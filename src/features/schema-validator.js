@@ -188,31 +188,39 @@ export function validateArchitecture(json) {
     let realizesCount = 0;
     let consumesCount = 0;
 
+    const nodeLabels = new Map();
+    nodes.forEach(n => { if (n.id && n.label) nodeLabels.set(n.id, n.label); });
+
     for (let i = 0; i < edges.length; i++) {
         const edge = edges[i];
+        const rel = edge.relationship || 'unknown';
+        const srcLabel = nodeLabels.get(edge.source) || edge.source || '?';
+        const tgtLabel = nodeLabels.get(edge.target) || edge.target || '?';
+        const context = rel === 'REALIZES' ? `${srcLabel} → ${tgtLabel} (REALIZES)`
+            : rel === 'CONSUMES_CAPABILITY' ? `${srcLabel} → ${tgtLabel} (CONSUMES_CAPABILITY)`
+            : `${srcLabel} → ${tgtLabel} (${rel})`;
 
         if (!edge.source || !edge.target) {
-            addError(result, `Edge at index ${i}: missing 'source' or 'target'`, `edges[${i}]`);
+            addError(result, `Edge ${i + 1}: missing 'source' or 'target' — ${context}. Check the Dependencies tab.`, `edges[${i}]`);
             continue;
         }
 
         if (!nodeIds.has(edge.source)) {
-            addError(result, `Edge at index ${i}: source '${edge.source}' does not match any node ID`, `edges[${i}].source`);
+            addError(result, `Edge ${i + 1}: source '${srcLabel}' (id: ${edge.source}) does not match any node. Check Systems or Functions tab.`, `edges[${i}].source`);
         }
 
         if (!nodeIds.has(edge.target)) {
-            addError(result, `Edge at index ${i}: target '${edge.target}' does not match any node ID`, `edges[${i}].target`);
+            addError(result, `Edge ${i + 1}: target '${tgtLabel}' (id: ${edge.target}) does not match any node. Check Systems or Functions tab.`, `edges[${i}].target`);
         }
 
-        const rel = edge.relationship;
         if (rel === 'REALIZES') {
             realizesCount++;
-            realizesTargets.add(edge.source); // source is the ITSystem
+            realizesTargets.add(edge.source);
             realizedFunctions.add(edge.target);
         } else if (rel === 'CONSUMES_CAPABILITY') {
             consumesCount++;
             if (!edge.capabilities || !Array.isArray(edge.capabilities) || edge.capabilities.length === 0) {
-                addWarning(result, `Edge at index ${i}: CONSUMES_CAPABILITY has empty capabilities array`, `edges[${i}].capabilities`);
+                addWarning(result, `Dependency: ${srcLabel} → ${tgtLabel} has no capabilities listed. Add at least one (e.g., 'payments').`, `edges[${i}].capabilities`);
             }
         }
     }

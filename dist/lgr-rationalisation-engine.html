@@ -444,10 +444,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 </div>
             </div>
 
-            <!-- SECTION 2: Schema Reference -->
-            <div class="mb-10" id="schemaReferenceSection"></div>
-
-            <!-- SECTION 3: Data Preparation Tools -->
+            <!-- SECTION 2: Data Preparation Tools -->
             <div class="border-t border-gray-200 pt-8">
                 <h3 class="text-lg font-bold mb-4">Data Preparation Tools</h3>
                 <p class="text-sm text-gray-600 mb-6">Ways to prepare and create valid architecture files for upload.</p>
@@ -484,6 +481,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                     </div>
                 </div>
             </div>
+
+            <!-- SECTION 3: Schema Reference -->
+            <div class="mt-10" id="schemaReferenceSection"></div>
 
             <!-- Validator full-page view (hidden by default) -->
             <div id="validatorContainer" class="hidden"></div>
@@ -11955,11 +11955,10 @@ tr:nth-child(even){background:#f3f2f1;}
     let html = '<div class="border-t-4 border-[#0b0c0c] pt-6 mt-10">';
     html += '<h3 class="text-xl font-bold mb-2">Schema Reference</h3>';
     html += '<p class="text-sm text-gray-600 mb-6">Two file types are accepted. Each council uploads one architecture file; the transition config is shared across the programme.</p>';
-    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">';
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
     html += renderSchemaCard(arch, "lgr-architecture.schema.json", "schema.html");
     html += renderSchemaCard(config, "lgr-transition-config.schema.json", "schema.html#transition-config");
     html += "</div>";
-    html += renderFieldReference(arch.nodeTypes.ITSystem);
     html += "</div>";
     return html;
   }
@@ -11970,125 +11969,12 @@ tr:nth-child(even){background:#f3f2f1;}
     let html = `<div class="border border-[#b1b4b6] border-t-4 p-5 bg-white" style="border-top-color:${accentColour};">`;
     html += `<h4 class="text-base font-bold mb-1">${schema.title}</h4>`;
     html += `<p class="text-sm text-gray-600 mb-4">${schema.description}</p>`;
-    html += '<div class="mb-4">';
-    html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Top-level fields</p>';
-    html += '<ul class="space-y-1">';
-    for (const field of schema.topLevel) {
-      const reqMark = field.required ? '<span class="text-[#d4351c] font-bold ml-0.5" aria-label="required">*</span>' : "";
-      const typeHint = `<span class="text-xs text-gray-400 ml-1">${field.type}${field.format ? " (" + field.format + ")" : ""}</span>`;
-      const optClass = field.required ? "" : "text-gray-500";
-      html += `<li class="text-sm flex items-baseline gap-1 ${optClass}">`;
-      html += `<span class="font-mono font-bold">${field.name}</span>${reqMark}${typeHint}`;
-      html += `<span class="text-gray-500 ml-1">\u2014 ${field.description}</span>`;
-      html += "</li>";
-    }
-    html += "</ul>";
-    html += '<p class="text-xs text-gray-400 mt-2"><span class="text-[#d4351c] font-bold">*</span> required</p>';
-    html += "</div>";
-    if (isArch) {
-      html += '<div class="mb-4">';
-      html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Node types</p>';
-      html += '<div class="flex flex-wrap gap-2">';
-      for (const typeName of Object.keys(schema.nodeTypes)) {
-        const count = schema.nodeTypes[typeName].fields.length;
-        html += `<span class="inline-block text-xs border border-[#b1b4b6] px-2 py-0.5 bg-[#f3f2f1] font-mono">${typeName} <span class="text-gray-400">(${count} fields)</span></span>`;
-      }
-      html += "</div>";
-      html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mt-3 mb-2">Edge types</p>';
-      html += '<div class="flex flex-wrap gap-2">';
-      for (const edgeName of Object.keys(schema.edgeTypes)) {
-        html += `<span class="inline-block text-xs border border-[#b1b4b6] px-2 py-0.5 bg-[#f3f2f1] font-mono">${edgeName}</span>`;
-      }
-      html += "</div>";
-      html += "</div>";
-    } else {
-      if (schema.successorFields) {
-        html += '<div class="mb-4">';
-        html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Successor fields</p>';
-        html += '<ul class="space-y-1">';
-        for (const field of schema.successorFields) {
-          const reqMark = field.required ? '<span class="text-[#d4351c] font-bold ml-0.5" aria-label="required">*</span>' : "";
-          const optClass = field.required ? "" : "text-gray-500";
-          html += `<li class="text-sm flex items-baseline gap-1 ${optClass}">`;
-          html += `<span class="font-mono font-bold">${field.name}</span>${reqMark}`;
-          html += `<span class="text-xs text-gray-400 ml-1">${field.type}</span>`;
-          html += `<span class="text-gray-500 ml-1">\u2014 ${field.description}</span>`;
-          html += "</li>";
-        }
-        html += "</ul>";
-        html += "</div>";
-      }
-    }
     html += '<div class="flex flex-wrap items-center gap-3 pt-3 border-t border-[#b1b4b6]">';
     html += `<a href="${refLink}" target="_blank" rel="noopener" class="text-sm text-[#1d70b8] underline font-bold hover:text-[#0b0c0c]">Full reference &#x2197;</a>`;
     html += `<a href="${schemaFile}" download class="text-sm text-[#1d70b8] underline hover:text-[#0b0c0c]">Download .schema.json</a>`;
     html += `<button class="gds-btn-secondary px-3 py-1 text-xs font-bold" type="button" data-copy-example="${encodeForAttr(exampleJson)}">Copy example</button>`;
     html += "</div>";
     html += "</div>";
-    return html;
-  }
-  function renderFieldReference(nodeType) {
-    const fields = nodeType.fields;
-    const fieldCount = fields.length;
-    let html = '<details class="border border-[#b1b4b6] bg-white">';
-    html += `<summary class="cursor-pointer px-4 py-3 font-bold text-sm select-none hover:bg-[#f3f2f1] list-none flex items-center justify-between">`;
-    html += `<span>ITSystem Field Reference <span class="text-gray-500 font-normal">(${fieldCount} fields)</span></span>`;
-    html += '<span class="text-gray-400 text-xs font-normal" aria-hidden="true">Show / Hide</span>';
-    html += "</summary>";
-    html += '<div class="overflow-x-auto">';
-    html += '<table class="w-full text-sm border-t border-[#b1b4b6]">';
-    html += "<thead>";
-    html += '<tr class="bg-[#f3f2f1] border-b-2 border-[#0b0c0c]">';
-    html += '<th class="text-left py-2 px-3 font-bold whitespace-nowrap">Field</th>';
-    html += '<th class="text-left py-2 px-3 font-bold whitespace-nowrap">Type</th>';
-    html += '<th class="text-center py-2 px-3 font-bold whitespace-nowrap">Required</th>';
-    html += '<th class="text-left py-2 px-3 font-bold">Valid Values</th>';
-    html += '<th class="text-left py-2 px-3 font-bold">Description</th>';
-    html += "</tr>";
-    html += "</thead>";
-    html += "<tbody>";
-    for (const field of fields) {
-      const isRequired = field.required === true;
-      const rowClass = isRequired ? "" : "";
-      html += `<tr class="border-b border-[#b1b4b6] ${rowClass}">`;
-      if (isRequired) {
-        html += `<td class="py-2 px-3 font-mono font-bold text-[#0b0c0c]">${field.name} <span class="text-[#d4351c]" aria-label="required">*</span></td>`;
-      } else {
-        html += `<td class="py-2 px-3 font-mono text-gray-600">${field.name}</td>`;
-      }
-      let typeStr = field.type;
-      if (field.items) typeStr += `&lt;${field.items}&gt;`;
-      if (field.min !== void 0 || field.max !== void 0) {
-        const constraints = [];
-        if (field.min !== void 0) constraints.push(`min ${field.min}`);
-        if (field.max !== void 0) constraints.push(`max ${field.max}`);
-        typeStr += ` <span class="text-gray-400 text-xs">(${constraints.join(", ")})</span>`;
-      }
-      html += `<td class="py-2 px-3 text-gray-700">${typeStr}</td>`;
-      if (isRequired) {
-        html += '<td class="py-2 px-3 text-center"><span class="text-[#00703c] font-bold" aria-label="yes">&#10003;</span></td>';
-      } else {
-        html += '<td class="py-2 px-3 text-center text-gray-400" aria-label="no">&#8212;</td>';
-      }
-      if (field.const) {
-        html += `<td class="py-2 px-3"><span class="inline-block text-xs border border-[#b1b4b6] px-1.5 py-0.5 font-mono bg-[#f3f2f1]">"${field.const}"</span></td>`;
-      } else if (field.enum && field.enum.length > 0) {
-        const tags = field.enum.map(
-          (v) => `<span class="inline-block text-xs border border-[#b1b4b6] px-1.5 py-0.5 font-mono bg-[#f3f2f1] mr-1 mb-1">${v}</span>`
-        ).join("");
-        html += `<td class="py-2 px-3">${tags}</td>`;
-      } else if (field.format) {
-        html += `<td class="py-2 px-3 text-xs text-gray-500 italic">${field.format} format</td>`;
-      } else {
-        html += '<td class="py-2 px-3 text-gray-400">\u2014</td>';
-      }
-      html += `<td class="py-2 px-3 text-gray-700">${field.description}</td>`;
-      html += "</tr>";
-    }
-    html += "</tbody>";
-    html += "</table>";
-    html += "</div>";
-    html += "</details>";
     return html;
   }
   function encodeForAttr(str) {
@@ -12218,19 +12104,26 @@ tr:nth-child(even){background:#f3f2f1;}
     const realizedFunctions = /* @__PURE__ */ new Set();
     let realizesCount = 0;
     let consumesCount = 0;
+    const nodeLabels = /* @__PURE__ */ new Map();
+    nodes.forEach((n) => {
+      if (n.id && n.label) nodeLabels.set(n.id, n.label);
+    });
     for (let i = 0; i < edges.length; i++) {
       const edge = edges[i];
+      const rel = edge.relationship || "unknown";
+      const srcLabel = nodeLabels.get(edge.source) || edge.source || "?";
+      const tgtLabel = nodeLabels.get(edge.target) || edge.target || "?";
+      const context = rel === "REALIZES" ? `${srcLabel} \u2192 ${tgtLabel} (REALIZES)` : rel === "CONSUMES_CAPABILITY" ? `${srcLabel} \u2192 ${tgtLabel} (CONSUMES_CAPABILITY)` : `${srcLabel} \u2192 ${tgtLabel} (${rel})`;
       if (!edge.source || !edge.target) {
-        addError(result, `Edge at index ${i}: missing 'source' or 'target'`, `edges[${i}]`);
+        addError(result, `Edge ${i + 1}: missing 'source' or 'target' \u2014 ${context}. Check the Dependencies tab.`, `edges[${i}]`);
         continue;
       }
       if (!nodeIds.has(edge.source)) {
-        addError(result, `Edge at index ${i}: source '${edge.source}' does not match any node ID`, `edges[${i}].source`);
+        addError(result, `Edge ${i + 1}: source '${srcLabel}' (id: ${edge.source}) does not match any node. Check Systems or Functions tab.`, `edges[${i}].source`);
       }
       if (!nodeIds.has(edge.target)) {
-        addError(result, `Edge at index ${i}: target '${edge.target}' does not match any node ID`, `edges[${i}].target`);
+        addError(result, `Edge ${i + 1}: target '${tgtLabel}' (id: ${edge.target}) does not match any node. Check Systems or Functions tab.`, `edges[${i}].target`);
       }
-      const rel = edge.relationship;
       if (rel === "REALIZES") {
         realizesCount++;
         realizesTargets.add(edge.source);
@@ -12238,7 +12131,7 @@ tr:nth-child(even){background:#f3f2f1;}
       } else if (rel === "CONSUMES_CAPABILITY") {
         consumesCount++;
         if (!edge.capabilities || !Array.isArray(edge.capabilities) || edge.capabilities.length === 0) {
-          addWarning(result, `Edge at index ${i}: CONSUMES_CAPABILITY has empty capabilities array`, `edges[${i}].capabilities`);
+          addWarning(result, `Dependency: ${srcLabel} \u2192 ${tgtLabel} has no capabilities listed. Add at least one (e.g., 'payments').`, `edges[${i}].capabilities`);
         }
       }
     }
@@ -12328,6 +12221,22 @@ tr:nth-child(even){background:#f3f2f1;}
   }
 
   // src/features/validation-panel.js
+  function renderValidationItem(item, colourClass) {
+    if (!item.path) {
+      return `<li class="text-sm ${colourClass}">\u2022 ${escHtml3(item.message)}</li>`;
+    }
+    return `<li class="text-sm">
+        <details class="group">
+            <summary class="cursor-pointer ${colourClass} list-none">
+                <span>\u2022 ${escHtml3(item.message)}</span>
+                <span class="text-gray-400 text-xs ml-1 group-open:hidden">\u25B8</span>
+            </summary>
+            <div class="ml-4 mt-1 p-2 bg-gray-100 text-xs border-l-2 border-gray-300">
+                <p class="font-mono text-gray-700">Path: <strong>${escHtml3(item.path)}</strong></p>
+            </div>
+        </details>
+    </li>`;
+  }
   function escHtml3(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
@@ -12435,19 +12344,19 @@ tr:nth-child(even){background:#f3f2f1;}
     }
     if (result.errors && result.errors.length > 0) {
       html += `<div class="mb-4 border-l-4 border-[#d4351c] pl-4">`;
-      html += `<h4 class="font-bold text-sm text-[#d4351c] mb-2">${result.errors.length} Error${result.errors.length > 1 ? "s" : ""}</h4>`;
-      html += '<ul class="space-y-1">';
+      html += `<h4 class="font-bold text-sm text-[#d4351c] mb-2">${result.errors.length} Error${result.errors.length > 1 ? "s" : ""} found</h4>`;
+      html += '<ul class="space-y-2">';
       for (const err of result.errors) {
-        html += `<li class="text-sm text-[#d4351c]">\u2022 ${escHtml3(err.message)}</li>`;
+        html += renderValidationItem(err, "text-[#d4351c]");
       }
       html += "</ul></div>";
     }
     if (result.warnings && result.warnings.length > 0) {
       html += `<div class="mb-4 border-l-4 border-[#f47738] pl-4">`;
       html += `<h4 class="font-bold text-sm text-[#f47738] mb-2">${result.warnings.length} Warning${result.warnings.length > 1 ? "s" : ""}</h4>`;
-      html += '<ul class="space-y-1">';
+      html += '<ul class="space-y-2">';
       for (const warn of result.warnings) {
-        html += `<li class="text-sm text-[#f47738]">\u2022 ${escHtml3(warn.message)}</li>`;
+        html += renderValidationItem(warn, "text-[#f47738]");
       }
       html += "</ul></div>";
     }
@@ -12496,7 +12405,7 @@ tr:nth-child(even){background:#f3f2f1;}
     const systems = nodes.filter((n) => n.type === "ITSystem");
     const deps = edges.filter((e) => e.relationship === "CONSUMES_CAPABILITY");
     return `
-<div id="preImportEditorView" class="max-w-7xl mx-auto p-6">
+<div id="preImportEditorView" class="w-full px-4 md:px-8">
     <button id="btnBackFromEditor" class="text-[#1d70b8] underline font-bold text-sm mb-5 block">\u2190 Back to validator</button>
     <h2 class="text-2xl font-bold mb-1">Edit Architecture File</h2>
     <p class="text-sm text-gray-600 mb-6">Edit the data below, then re-validate or import directly to the engine.</p>
@@ -12512,7 +12421,7 @@ tr:nth-child(even){background:#f3f2f1;}
     <!-- Tab panels -->
     <div id="preImportTabCouncil">${buildCouncilTabHtml(json)}</div>
     <div id="preImportTabFunctions" class="hidden">${buildFunctionsTabHtml(nodes)}</div>
-    <div id="preImportTabSystems" class="hidden">${buildSystemsTabHtml(nodes)}</div>
+    <div id="preImportTabSystems" class="hidden">${buildSystemsTabHtml(nodes, edges)}</div>
     <div id="preImportTabDependencies" class="hidden">${buildDependenciesTabHtml(nodes, edges)}</div>
 
     <!-- Datalist for LGA functions -->
@@ -12603,10 +12512,11 @@ tr:nth-child(even){background:#f3f2f1;}
     <button id="btnAddFunction" class="gds-btn-secondary mt-4 px-3 py-1.5 text-sm font-bold">+ Add Function</button>
 </div>`;
   }
-  function buildSystemsTabHtml(nodes) {
+  function buildSystemsTabHtml(nodes, edges) {
     const systems = nodes.filter((n) => n.type === "ITSystem");
     const portabilityOpts = getEnumFor2("portability");
     const supportOpts = getEnumFor2("supportModel");
+    const functions = nodes.filter((n) => n.type === "Function");
     const rows = systems.map((sys, i) => {
       const globalIdx = nodes.indexOf(sys);
       const portSel = portabilityOpts.map(
@@ -12614,6 +12524,10 @@ tr:nth-child(even){background:#f3f2f1;}
       ).join("");
       const supportSel = supportOpts.map(
         (s) => `<option value="${s}"${sys.supportModel === s ? " selected" : ""}>${s}</option>`
+      ).join("");
+      const realizedFnIds = edges.filter((e) => e.relationship === "REALIZES" && e.source === sys.id).map((e) => e.target);
+      const fnOptions = functions.map(
+        (fn) => `<option value="${fn.id}"${realizedFnIds.includes(fn.id) ? " selected" : ""}>${escHtml4(fn.label || fn.lgaFunctionId || fn.id)}</option>`
       ).join("");
       return `
 <tr data-index="${globalIdx}" class="border-b border-gray-200 hover:bg-gray-50">
@@ -12652,6 +12566,12 @@ tr:nth-child(even){background:#f3f2f1;}
             ${supportSel}
         </select>
     </td>
+    <td class="px-2 py-1.5">
+        <select class="editor-sys-realizes border border-gray-300 p-1 text-xs w-36" data-node-idx="${globalIdx}" data-sys-id="${sys.id}">
+            <option value="">-- none --</option>
+            ${fnOptions}
+        </select>
+    </td>
     <td class="px-2 py-1.5 text-center" data-status-idx="${globalIdx}">${systemStatusIcon(sys)}</td>
     <td class="px-2 py-1.5 text-center">
         <button class="editor-delete-sys text-[#d4351c] font-bold text-xs px-1 hover:underline"
@@ -12672,6 +12592,7 @@ tr:nth-child(even){background:#f3f2f1;}
                     <th class="px-2 py-2 font-bold text-gray-700 w-24">Portability</th>
                     <th class="px-2 py-2 font-bold text-gray-700 w-16">Cloud</th>
                     <th class="px-2 py-2 font-bold text-gray-700 w-36">Support Model</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-36">Serves Function</th>
                     <th class="px-2 py-2 font-bold text-gray-700 w-14 text-center">Valid</th>
                     <th class="px-2 py-2 w-8"></th>
                 </tr>
@@ -12884,6 +12805,18 @@ tr:nth-child(even){background:#f3f2f1;}
           if (statusCell) statusCell.innerHTML = systemStatusIcon(editorState.nodes[idx]);
         }
       });
+      sysBody.addEventListener("change", (e) => {
+        if (e.target.classList.contains("editor-sys-realizes")) {
+          const sysId = e.target.dataset.sysId;
+          const fnId = e.target.value;
+          editorState.edges = editorState.edges.filter(
+            (edge) => !(edge.relationship === "REALIZES" && edge.source === sysId)
+          );
+          if (fnId) {
+            editorState.edges.push({ source: sysId, target: fnId, relationship: "REALIZES" });
+          }
+        }
+      });
       sysBody.addEventListener("click", (e) => {
         if (e.target.classList.contains("editor-delete-sys")) {
           const idx = parseInt(e.target.dataset.nodeIdx, 10);
@@ -12910,7 +12843,7 @@ tr:nth-child(even){background:#f3f2f1;}
     function rerenderSystems() {
       const panel = document.getElementById("preImportTabSystems");
       if (!panel) return;
-      panel.innerHTML = buildSystemsTabHtml(editorState.nodes);
+      panel.innerHTML = buildSystemsTabHtml(editorState.nodes, editorState.edges);
       const newBody = document.getElementById("sysTableBody");
       if (newBody) {
         newBody.addEventListener("input", (e) => {
@@ -13384,12 +13317,16 @@ tr:nth-child(even){background:#f3f2f1;}
     Array.from(stageContent.children).forEach((child) => {
       if (child.id !== "validatorContainer") child.classList.add("hidden");
     });
+    stageContent.classList.remove("max-w-4xl");
+    stageContent.classList.add("max-w-6xl");
     validatorContainer.innerHTML = renderValidationPanel();
     validatorContainer.classList.remove("hidden");
     wireValidationPanel();
     document.getElementById("btnBackFromValidator")?.addEventListener("click", () => {
       validatorContainer.classList.add("hidden");
       validatorContainer.innerHTML = "";
+      stageContent.classList.add("max-w-4xl");
+      stageContent.classList.remove("max-w-6xl");
       Array.from(stageContent.children).forEach((child) => {
         if (child.id !== "validatorContainer") child.classList.remove("hidden");
       });
@@ -13435,6 +13372,8 @@ tr:nth-child(even){background:#f3f2f1;}
               }
               validatorContainer.classList.add("hidden");
               validatorContainer.innerHTML = "";
+              stageContent.classList.add("max-w-4xl");
+              stageContent.classList.remove("max-w-6xl");
               Array.from(stageContent.children).forEach((child) => {
                 if (child.id !== "validatorContainer") child.classList.remove("hidden");
               });
@@ -13455,6 +13394,8 @@ tr:nth-child(even){background:#f3f2f1;}
               document.getElementById("btnBackFromValidator")?.addEventListener("click", () => {
                 validatorContainer.classList.add("hidden");
                 validatorContainer.innerHTML = "";
+                stageContent.classList.add("max-w-4xl");
+                stageContent.classList.remove("max-w-6xl");
                 Array.from(stageContent.children).forEach((child) => {
                   if (child.id !== "validatorContainer") child.classList.remove("hidden");
                 });

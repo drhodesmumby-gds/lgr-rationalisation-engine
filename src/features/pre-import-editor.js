@@ -73,7 +73,7 @@ export function renderPreImportEditor(json) {
     const deps = edges.filter(e => e.relationship === 'CONSUMES_CAPABILITY');
 
     return `
-<div id="preImportEditorView" class="max-w-7xl mx-auto p-6">
+<div id="preImportEditorView" class="w-full px-4 md:px-8">
     <button id="btnBackFromEditor" class="text-[#1d70b8] underline font-bold text-sm mb-5 block">← Back to validator</button>
     <h2 class="text-2xl font-bold mb-1">Edit Architecture File</h2>
     <p class="text-sm text-gray-600 mb-6">Edit the data below, then re-validate or import directly to the engine.</p>
@@ -89,7 +89,7 @@ export function renderPreImportEditor(json) {
     <!-- Tab panels -->
     <div id="preImportTabCouncil">${buildCouncilTabHtml(json)}</div>
     <div id="preImportTabFunctions" class="hidden">${buildFunctionsTabHtml(nodes)}</div>
-    <div id="preImportTabSystems" class="hidden">${buildSystemsTabHtml(nodes)}</div>
+    <div id="preImportTabSystems" class="hidden">${buildSystemsTabHtml(nodes, edges)}</div>
     <div id="preImportTabDependencies" class="hidden">${buildDependenciesTabHtml(nodes, edges)}</div>
 
     <!-- Datalist for LGA functions -->
@@ -189,10 +189,12 @@ function buildFunctionsTabHtml(nodes) {
 </div>`;
 }
 
-function buildSystemsTabHtml(nodes) {
+function buildSystemsTabHtml(nodes, edges) {
     const systems = nodes.filter(n => n.type === 'ITSystem');
     const portabilityOpts = getEnumFor('portability');
     const supportOpts = getEnumFor('supportModel');
+
+    const functions = nodes.filter(n => n.type === 'Function');
 
     const rows = systems.map((sys, i) => {
         const globalIdx = nodes.indexOf(sys);
@@ -201,6 +203,13 @@ function buildSystemsTabHtml(nodes) {
         ).join('');
         const supportSel = supportOpts.map(s =>
             `<option value="${s}"${sys.supportModel === s ? ' selected' : ''}>${s}</option>`
+        ).join('');
+
+        const realizedFnIds = edges
+            .filter(e => e.relationship === 'REALIZES' && e.source === sys.id)
+            .map(e => e.target);
+        const fnOptions = functions.map(fn =>
+            `<option value="${fn.id}"${realizedFnIds.includes(fn.id) ? ' selected' : ''}>${escHtml(fn.label || fn.lgaFunctionId || fn.id)}</option>`
         ).join('');
 
         return `
@@ -240,6 +249,12 @@ function buildSystemsTabHtml(nodes) {
             ${supportSel}
         </select>
     </td>
+    <td class="px-2 py-1.5">
+        <select class="editor-sys-realizes border border-gray-300 p-1 text-xs w-36" data-node-idx="${globalIdx}" data-sys-id="${sys.id}">
+            <option value="">-- none --</option>
+            ${fnOptions}
+        </select>
+    </td>
     <td class="px-2 py-1.5 text-center" data-status-idx="${globalIdx}">${systemStatusIcon(sys)}</td>
     <td class="px-2 py-1.5 text-center">
         <button class="editor-delete-sys text-[#d4351c] font-bold text-xs px-1 hover:underline"
@@ -261,6 +276,7 @@ function buildSystemsTabHtml(nodes) {
                     <th class="px-2 py-2 font-bold text-gray-700 w-24">Portability</th>
                     <th class="px-2 py-2 font-bold text-gray-700 w-16">Cloud</th>
                     <th class="px-2 py-2 font-bold text-gray-700 w-36">Support Model</th>
+                    <th class="px-2 py-2 font-bold text-gray-700 w-36">Serves Function</th>
                     <th class="px-2 py-2 font-bold text-gray-700 w-14 text-center">Valid</th>
                     <th class="px-2 py-2 w-8"></th>
                 </tr>
@@ -514,6 +530,21 @@ export function wirePreImportEditor(json, onImport, onBack) {
             }
         });
 
+        sysBody.addEventListener('change', (e) => {
+            if (e.target.classList.contains('editor-sys-realizes')) {
+                const sysId = e.target.dataset.sysId;
+                const fnId = e.target.value;
+                // Remove existing REALIZES edges for this system
+                editorState.edges = editorState.edges.filter(
+                    edge => !(edge.relationship === 'REALIZES' && edge.source === sysId)
+                );
+                // Add new REALIZES edge if a function was selected
+                if (fnId) {
+                    editorState.edges.push({ source: sysId, target: fnId, relationship: 'REALIZES' });
+                }
+            }
+        });
+
         sysBody.addEventListener('click', (e) => {
             if (e.target.classList.contains('editor-delete-sys')) {
                 const idx = parseInt(e.target.dataset.nodeIdx, 10);
@@ -543,7 +574,7 @@ export function wirePreImportEditor(json, onImport, onBack) {
     function rerenderSystems() {
         const panel = document.getElementById('preImportTabSystems');
         if (!panel) return;
-        panel.innerHTML = buildSystemsTabHtml(editorState.nodes);
+        panel.innerHTML = buildSystemsTabHtml(editorState.nodes, editorState.edges);
         const newBody = document.getElementById('sysTableBody');
         if (newBody) {
             newBody.addEventListener('input', (e) => {

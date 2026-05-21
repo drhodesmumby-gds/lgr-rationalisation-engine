@@ -24,12 +24,11 @@ export function renderSchemaReference() {
     html += '<h3 class="text-xl font-bold mb-2">Schema Reference</h3>';
     html += '<p class="text-sm text-gray-600 mb-6">Two file types are accepted. Each council uploads one architecture file; the transition config is shared across the programme.</p>';
 
-    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">';
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
     html += renderSchemaCard(arch, 'lgr-architecture.schema.json', 'schema.html');
     html += renderSchemaCard(config, 'lgr-transition-config.schema.json', 'schema.html#transition-config');
     html += '</div>';
 
-    html += renderFieldReference(arch.nodeTypes.ITSystem);
     html += '</div>';
 
     return html;
@@ -46,72 +45,9 @@ function renderSchemaCard(schema, schemaFile, refLink) {
 
     let html = `<div class="border border-[#b1b4b6] border-t-4 p-5 bg-white" style="border-top-color:${accentColour};">`;
 
-    // Title + description
     html += `<h4 class="text-base font-bold mb-1">${schema.title}</h4>`;
     html += `<p class="text-sm text-gray-600 mb-4">${schema.description}</p>`;
 
-    // Top-level structure summary
-    html += '<div class="mb-4">';
-    html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Top-level fields</p>';
-    html += '<ul class="space-y-1">';
-
-    for (const field of schema.topLevel) {
-        const reqMark = field.required
-            ? '<span class="text-[#d4351c] font-bold ml-0.5" aria-label="required">*</span>'
-            : '';
-        const typeHint = `<span class="text-xs text-gray-400 ml-1">${field.type}${field.format ? ' (' + field.format + ')' : ''}</span>`;
-        const optClass = field.required ? '' : 'text-gray-500';
-
-        html += `<li class="text-sm flex items-baseline gap-1 ${optClass}">`;
-        html += `<span class="font-mono font-bold">${field.name}</span>${reqMark}${typeHint}`;
-        html += `<span class="text-gray-500 ml-1">— ${field.description}</span>`;
-        html += '</li>';
-    }
-
-    html += '</ul>';
-    html += '<p class="text-xs text-gray-400 mt-2"><span class="text-[#d4351c] font-bold">*</span> required</p>';
-    html += '</div>';
-
-    // Node / successor type summary (brief)
-    if (isArch) {
-        html += '<div class="mb-4">';
-        html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Node types</p>';
-        html += '<div class="flex flex-wrap gap-2">';
-        for (const typeName of Object.keys(schema.nodeTypes)) {
-            const count = schema.nodeTypes[typeName].fields.length;
-            html += `<span class="inline-block text-xs border border-[#b1b4b6] px-2 py-0.5 bg-[#f3f2f1] font-mono">${typeName} <span class="text-gray-400">(${count} fields)</span></span>`;
-        }
-        html += '</div>';
-        html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mt-3 mb-2">Edge types</p>';
-        html += '<div class="flex flex-wrap gap-2">';
-        for (const edgeName of Object.keys(schema.edgeTypes)) {
-            html += `<span class="inline-block text-xs border border-[#b1b4b6] px-2 py-0.5 bg-[#f3f2f1] font-mono">${edgeName}</span>`;
-        }
-        html += '</div>';
-        html += '</div>';
-    } else {
-        // Transition config: show successor fields count
-        if (schema.successorFields) {
-            html += '<div class="mb-4">';
-            html += '<p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Successor fields</p>';
-            html += '<ul class="space-y-1">';
-            for (const field of schema.successorFields) {
-                const reqMark = field.required
-                    ? '<span class="text-[#d4351c] font-bold ml-0.5" aria-label="required">*</span>'
-                    : '';
-                const optClass = field.required ? '' : 'text-gray-500';
-                html += `<li class="text-sm flex items-baseline gap-1 ${optClass}">`;
-                html += `<span class="font-mono font-bold">${field.name}</span>${reqMark}`;
-                html += `<span class="text-xs text-gray-400 ml-1">${field.type}</span>`;
-                html += `<span class="text-gray-500 ml-1">— ${field.description}</span>`;
-                html += '</li>';
-            }
-            html += '</ul>';
-            html += '</div>';
-        }
-    }
-
-    // Action links / buttons
     html += '<div class="flex flex-wrap items-center gap-3 pt-3 border-t border-[#b1b4b6]">';
     html += `<a href="${refLink}" target="_blank" rel="noopener" class="text-sm text-[#1d70b8] underline font-bold hover:text-[#0b0c0c]">Full reference &#x2197;</a>`;
     html += `<a href="${schemaFile}" download class="text-sm text-[#1d70b8] underline hover:text-[#0b0c0c]">Download .schema.json</a>`;

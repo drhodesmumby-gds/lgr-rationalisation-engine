@@ -427,6 +427,9 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
     Array.from(stageContent.children).forEach(child => {
         if (child.id !== 'validatorContainer') child.classList.add('hidden');
     });
+    // Remove width constraint for full-page views
+    stageContent.classList.remove('max-w-4xl');
+    stageContent.classList.add('max-w-6xl');
 
     validatorContainer.innerHTML = renderValidationPanel();
     validatorContainer.classList.remove('hidden');
@@ -436,6 +439,8 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
     document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
         validatorContainer.classList.add('hidden');
         validatorContainer.innerHTML = '';
+        stageContent.classList.add('max-w-4xl');
+        stageContent.classList.remove('max-w-6xl');
         Array.from(stageContent.children).forEach(child => {
             if (child.id !== 'validatorContainer') child.classList.remove('hidden');
         });
@@ -490,6 +495,8 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                         // Navigate back to Stage 1
                         validatorContainer.classList.add('hidden');
                         validatorContainer.innerHTML = '';
+                        stageContent.classList.add('max-w-4xl');
+                        stageContent.classList.remove('max-w-6xl');
                         Array.from(stageContent.children).forEach(child => {
                             if (child.id !== 'validatorContainer') child.classList.remove('hidden');
                         });
@@ -515,6 +522,8 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                         document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
                             validatorContainer.classList.add('hidden');
                             validatorContainer.innerHTML = '';
+                            stageContent.classList.add('max-w-4xl');
+                            stageContent.classList.remove('max-w-6xl');
                             Array.from(stageContent.children).forEach(child => {
                                 if (child.id !== 'validatorContainer') child.classList.remove('hidden');
                             });

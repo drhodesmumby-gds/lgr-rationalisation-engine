@@ -216,7 +216,10 @@ describe('validateArchitecture', () => {
             ]
         });
         expect(result.valid).toBe(true);
-        expect(result.warnings.some(w => w.message.includes('CONSUMES_CAPABILITY') && w.message.includes('empty'))).toBe(true);
+        // Should warn about the empty-capabilities dependency — mentions both system names
+        const capWarning = result.warnings.find(w => w.message.includes('S2') && w.message.includes('S1'));
+        expect(capWarning).toBeDefined();
+        expect(capWarning.path).toContain('capabilities');
     });
 
     it('provides info summary', () => {

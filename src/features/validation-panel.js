@@ -8,6 +8,23 @@
 
 import { validateArchitecture, validateTransitionConfig } from './schema-validator.js';
 
+function renderValidationItem(item, colourClass) {
+    if (!item.path) {
+        return `<li class="text-sm ${colourClass}">• ${escHtml(item.message)}</li>`;
+    }
+    return `<li class="text-sm">
+        <details class="group">
+            <summary class="cursor-pointer ${colourClass} list-none">
+                <span>• ${escHtml(item.message)}</span>
+                <span class="text-gray-400 text-xs ml-1 group-open:hidden">▸</span>
+            </summary>
+            <div class="ml-4 mt-1 p-2 bg-gray-100 text-xs border-l-2 border-gray-300">
+                <p class="font-mono text-gray-700">Path: <strong>${escHtml(item.path)}</strong></p>
+            </div>
+        </details>
+    </li>`;
+}
+
 function escHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;')
@@ -138,10 +155,10 @@ function renderResults(result, fileType) {
     // Errors
     if (result.errors && result.errors.length > 0) {
         html += `<div class="mb-4 border-l-4 border-[#d4351c] pl-4">`;
-        html += `<h4 class="font-bold text-sm text-[#d4351c] mb-2">${result.errors.length} Error${result.errors.length > 1 ? 's' : ''}</h4>`;
-        html += '<ul class="space-y-1">';
+        html += `<h4 class="font-bold text-sm text-[#d4351c] mb-2">${result.errors.length} Error${result.errors.length > 1 ? 's' : ''} found</h4>`;
+        html += '<ul class="space-y-2">';
         for (const err of result.errors) {
-            html += `<li class="text-sm text-[#d4351c]">• ${escHtml(err.message)}</li>`;
+            html += renderValidationItem(err, 'text-[#d4351c]');
         }
         html += '</ul></div>';
     }
@@ -150,9 +167,9 @@ function renderResults(result, fileType) {
     if (result.warnings && result.warnings.length > 0) {
         html += `<div class="mb-4 border-l-4 border-[#f47738] pl-4">`;
         html += `<h4 class="font-bold text-sm text-[#f47738] mb-2">${result.warnings.length} Warning${result.warnings.length > 1 ? 's' : ''}</h4>`;
-        html += '<ul class="space-y-1">';
+        html += '<ul class="space-y-2">';
         for (const warn of result.warnings) {
-            html += `<li class="text-sm text-[#f47738]">• ${escHtml(warn.message)}</li>`;
+            html += renderValidationItem(warn, 'text-[#f47738]');
         }
         html += '</ul></div>';
     }
