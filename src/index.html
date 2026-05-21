@@ -45,38 +45,64 @@
 
         <!-- STAGE 1: UPLOAD -->
         <div id="stageUpload" class="max-w-4xl mx-auto mt-20 p-8 bg-white border-t-4 border-[#1d70b8] shadow-md transition-opacity duration-300">
-            <h2 class="text-3xl font-bold mb-4">1. Ingest Legacy Architectures</h2>
-            <p class="text-lg text-gray-700 mb-8">Upload the isolated JSON architectural exports from the merging councils. The engine will merge them into a unified workspace.</p>
+            <h2 class="text-3xl font-bold mb-4">1. Ingest Council Architectures</h2>
+            <p class="text-sm text-gray-600 mb-8">Upload architecture files from merging councils. The engine will merge them into a unified workspace for rationalisation analysis.</p>
 
-            <div id="uploadArea" class="border-4 border-dashed border-[#b1b4b6] p-12 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                <span class="text-xl font-bold text-[#1d70b8] underline">Select architecture files</span>
-                <span class="text-lg text-gray-600 block mt-2">Accepts .json (LGR schema) or .xlsx (completed template)</span>
-                <input type="file" id="fileInput" multiple accept=".json,.xlsx,.xls" class="sr-only">
-            </div>
+            <!-- SECTION 1: Upload -->
+            <div class="mb-10">
+                <div id="uploadArea" class="border-4 border-dashed border-[#b1b4b6] p-10 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <svg class="mx-auto h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    <span class="text-lg font-bold text-[#1d70b8] underline">Select architecture files</span>
+                    <span class="text-sm text-gray-600 block mt-2">Accepts <strong>.json</strong> (LGR schema) or <strong>.xlsx</strong> (completed template)</span>
+                    <input type="file" id="fileInput" multiple accept=".json,.xlsx,.xls" class="sr-only">
+                </div>
 
-            <div class="mt-4 flex items-center gap-4">
-                <button id="btnDownloadTemplate" class="gds-btn-secondary px-4 py-2 text-sm font-bold" type="button">Download Template (.xlsx)</button>
-                <span class="text-xs text-gray-500">Structured spreadsheet with guidance — fill offline, then upload above</span>
-            </div>
-
-            <!-- Import wizard entry points -->
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                <p class="text-center text-sm text-gray-500 font-bold uppercase tracking-wider mb-4">Or import from a different format</p>
-                <div class="flex flex-col gap-3 max-w-sm mx-auto">
-                    <button id="btnOpenImportWizard" class="gds-btn-secondary px-4 py-3 font-bold text-base w-full text-center">Import from Spreadsheet (CSV / Excel)</button>
-                    <button id="btnOpenManualEntry" class="gds-btn-secondary px-4 py-3 font-bold text-base w-full text-center">Build Register from Scratch</button>
+                <div id="fileList" class="mt-6 space-y-2 hidden">
+                    <h3 class="font-bold border-b pb-2">Staged Files:</h3>
+                    <ul id="uploadedFilesUl" class="list-disc pl-5 text-[#00703c] font-bold"></ul>
+                    <button id="btnProceedBaseline" class="gds-btn mt-6">Proceed to Baselining & Reconciliation &rarr;</button>
                 </div>
             </div>
 
-            <div id="fileList" class="mt-8 space-y-2 hidden">
-                <h3 class="font-bold border-b pb-2">Staged Files:</h3>
-                <ul id="uploadedFilesUl" class="list-disc pl-5 text-[#00703c] font-bold"></ul>
-                <button id="btnProceedBaseline" class="gds-btn mt-6">Proceed to Baselining & Reconciliation &rarr;</button>
-            </div>
+            <!-- SECTION 2: Schema Reference -->
+            <div class="mb-10" id="schemaReferenceSection"></div>
 
-            <div class="mt-8 pt-8 border-t border-gray-200 text-center">
-                <button id="btnLoadDemo" class="text-[#1d70b8] underline font-bold hover:text-[#0b0c0c]">Load Complex LGR Demo Scenario</button>
+            <!-- SECTION 3: Data Preparation Tools -->
+            <div class="border-t border-gray-200 pt-8">
+                <h3 class="text-lg font-bold mb-4">Data Preparation Tools</h3>
+                <p class="text-sm text-gray-600 mb-6">Ways to prepare and create valid architecture files for upload.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
+                        <h4 class="font-bold text-sm mb-1">Excel Template</h4>
+                        <p class="text-xs text-gray-600 mb-3">Structured spreadsheet with ESD functions, dropdowns, and guidance.</p>
+                        <button id="btnDownloadTemplate" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center" type="button">Download Template (.xlsx)</button>
+                    </div>
+
+                    <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
+                        <h4 class="font-bold text-sm mb-1">Validate a File</h4>
+                        <p class="text-xs text-gray-600 mb-3">Check a JSON file against the schema before importing.</p>
+                        <button id="btnOpenValidator" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center opacity-50 cursor-not-allowed" type="button" disabled>Coming soon</button>
+                    </div>
+
+                    <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
+                        <h4 class="font-bold text-sm mb-1">Import from CSV / Excel</h4>
+                        <p class="text-xs text-gray-600 mb-3">Map columns from an existing spreadsheet to the LGR schema.</p>
+                        <button id="btnOpenImportWizard" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center" type="button">Open Import Wizard</button>
+                    </div>
+
+                    <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
+                        <h4 class="font-bold text-sm mb-1">Build from Scratch</h4>
+                        <p class="text-xs text-gray-600 mb-3">Guided manual entry — add functions and systems step by step.</p>
+                        <button id="btnOpenManualEntry" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center" type="button">Start Manual Builder</button>
+                    </div>
+
+                    <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
+                        <h4 class="font-bold text-sm mb-1">Demo Scenario</h4>
+                        <p class="text-xs text-gray-600 mb-3">Load a pre-built multi-council scenario to explore the tool.</p>
+                        <button id="btnLoadDemo" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center" type="button">Load Demo</button>
+                    </div>
+                </div>
             </div>
         </div>
 

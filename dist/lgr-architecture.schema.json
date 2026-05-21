@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Council Architecture File",
+  "description": "Describes a single council's IT estate: its service functions, IT systems, and the relationships between them.",
+  "type": "object",
+  "required": [
+    "councilName",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "councilName": {
+      "description": "Official council name",
+      "type": "string"
+    },
+    "councilMetadata": {
+      "description": "Council classification",
+      "type": "object",
+      "properties": {
+        "tier": {
+          "description": "Council tier",
+          "type": "string",
+          "enum": [
+            "county",
+            "district",
+            "borough",
+            "unitary"
+          ]
+        },
+        "financialDistress": {
+          "description": "Whether the council is under s114 notice or equivalent",
+          "type": "boolean"
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Array of Function and ITSystem nodes",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "type",
+              "lgaFunctionId"
+            ],
+            "properties": {
+              "id": {
+                "description": "Unique node identifier",
+                "type": "string"
+              },
+              "label": {
+                "description": "Human-readable function name",
+                "type": "string"
+              },
+              "type": {
+                "description": "Node type discriminator",
+                "const": "Function"
+              },
+              "lgaFunctionId": {
+                "description": "ESD function taxonomy identifier (e.g. '148' for Adult Social Care)",
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "type",
+              "vendor"
+            ],
+            "properties": {
+              "id": {
+                "description": "Unique node identifier",
+                "type": "string"
+              },
+              "label": {
+                "description": "System name as the council knows it",
+                "type": "string"
+              },
+              "type": {
+                "description": "Node type discriminator",
+                "const": "ITSystem"
+              },
+              "vendor": {
+                "description": "Software vendor, or 'In-House' if internally developed",
+                "type": "string"
+              },
+              "users": {
+                "description": "Approximate staff user count",
+                "type": "number"
+              },
+              "annualCost": {
+                "description": "Annual cost in pounds",
+                "type": "number"
+              },
+              "cost": {
+                "description": "Human-readable cost (e.g. '£950k/yr')",
+                "type": "string"
+              },
+              "endYear": {
+                "description": "Contract expiry year",
+                "type": "number"
+              },
+              "endMonth": {
+                "description": "Contract expiry month",
+                "type": "number",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "noticePeriod": {
+                "description": "Months notice to exit contract",
+                "type": "number"
+              },
+              "portability": {
+                "description": "Ease of bulk data extraction",
+                "type": "string",
+                "enum": [
+                  "High",
+                  "Medium",
+                  "Low"
+                ]
+              },
+              "dataPartitioning": {
+                "description": "How data is organised within the system",
+                "type": "string",
+                "enum": [
+                  "Segmented",
+                  "Monolithic"
+                ]
+              },
+              "isCloud": {
+                "description": "Whether hosted in cloud (true) or on-premise (false)",
+                "type": "boolean"
+              },
+              "isERP": {
+                "description": "Whether this is an Enterprise Resource Planning system spanning multiple functions",
+                "type": "boolean"
+              },
+              "sharedWith": {
+                "description": "Names of other councils sharing this system instance",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "targetAuthorities": {
+                "description": "Successor authorities this system is explicitly allocated to",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "capabilityType": {
+                "description": "Capabilities provided to other systems (e.g. ['payments', 'workflow'])",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "supportModel": {
+                "description": "Who maintains the system going forward",
+                "type": "string",
+                "enum": [
+                  "vendor-supported",
+                  "community-supported",
+                  "unsupported"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Array of relationships between nodes",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "target",
+              "relationship"
+            ],
+            "properties": {
+              "source": {
+                "description": "ITSystem node ID",
+                "type": "string"
+              },
+              "target": {
+                "description": "Function node ID",
+                "type": "string"
+              },
+              "relationship": {
+                "description": "Edge type discriminator",
+                "const": "REALIZES"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "target",
+              "relationship",
+              "capabilities"
+            ],
+            "properties": {
+              "source": {
+                "description": "Consuming system node ID",
+                "type": "string"
+              },
+              "target": {
+                "description": "Providing system node ID",
+                "type": "string"
+              },
+              "relationship": {
+                "description": "Edge type discriminator",
+                "const": "CONSUMES_CAPABILITY"
+              },
+              "capabilities": {
+                "description": "Capabilities consumed (e.g. ['payments'])",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGR Architecture Schema Reference</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-[#0b0c0c]">
+    <header class="bg-[#0b0c0c] text-white px-6 py-3 border-b-[3px] border-[#1d70b8]">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <h1 class="text-sm font-bold">LGR Workspace Engine — Schema Reference</h1>
+            <a href="lgr-rationalisation-engine.html" class="text-xs text-gray-300 hover:text-white underline">← Back to app</a>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-6 py-8 flex gap-8">
+        <!-- Sidebar navigation -->
+        <nav class="hidden md:block w-56 shrink-0 sticky top-8 self-start">
+            <h2 class="font-bold text-sm mb-3 text-gray-500 uppercase tracking-wider">Contents</h2>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#architecture" class="text-[#1d70b8] hover:underline font-bold">Architecture Schema</a></li>
+                <li><a href="#transition-config" class="text-[#1d70b8] hover:underline font-bold">Transition Config</a></li>
+                <li><a href="#downloads" class="text-[#1d70b8] hover:underline font-bold">Downloads</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main content -->
+        <main class="flex-1 min-w-0" id="schemaContent">
+            <p class="text-gray-500">Loading schema documentation...</p>
+        </main>
+    </div>
+
+    <footer class="border-t border-gray-200 mt-16 py-6 px-6 text-center text-xs text-gray-500">
+        Part of the LGR Workspace Engine
+    </footer>
+
+    <script>
+    {{BUNDLE}}
+    </script>
+</body>
+</html>

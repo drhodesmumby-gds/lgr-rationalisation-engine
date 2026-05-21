@@ -41,6 +41,7 @@ import { computeDomainSummaries, renderDomainCards } from './features/domain-car
 import { showNotification, showConfirm } from './ui-notifications.js';
 import { downloadTemplate } from './features/template-generator.js';
 import { convertXlsxToArchitecture } from './features/template-converter.js';
+import { renderSchemaReference } from './features/schema-reference.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -394,6 +395,23 @@ function renderReadinessPanel() {
 }
 
 // --- STAGE 1: UPLOAD LOGIC ---
+
+// Render schema reference section
+const schemaRefEl = document.getElementById('schemaReferenceSection');
+if (schemaRefEl) {
+    schemaRefEl.innerHTML = renderSchemaReference();
+    schemaRefEl.querySelectorAll('[data-copy-example]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const json = btn.getAttribute('data-copy-example');
+            navigator.clipboard.writeText(json).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = original; }, 2000);
+            });
+        });
+    });
+}
+
 const fileInput = document.getElementById('fileInput');
 document.getElementById('uploadArea').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('click', (e) => e.stopPropagation());

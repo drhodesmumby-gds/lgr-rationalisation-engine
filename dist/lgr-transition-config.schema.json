@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Transition Configuration File",
+  "description": "Defines successor authorities, predecessor assignments, and vesting date.",
+  "type": "object",
+  "required": [
+    "vestingDate",
+    "successors"
+  ],
+  "properties": {
+    "vestingDate": {
+      "description": "ISO date when successor authorities come into existence (e.g. '2027-04-01')",
+      "type": "string",
+      "format": "date"
+    },
+    "successors": {
+      "type": "array",
+      "description": "Array of successor authority definitions",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "description": "Name of the successor unitary authority",
+            "type": "string"
+          },
+          "fullPredecessors": {
+            "description": "Councils whose entire estate transfers to this successor",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "partialPredecessors": {
+            "description": "Councils whose estate is split across multiple successors",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

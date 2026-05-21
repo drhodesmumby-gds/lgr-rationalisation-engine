@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGR Architecture Schema Reference</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-[#0b0c0c]">
+    <header class="bg-[#0b0c0c] text-white px-6 py-3 border-b-[3px] border-[#1d70b8]">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <h1 class="text-sm font-bold">LGR Workspace Engine — Schema Reference</h1>
+            <a href="lgr-rationalisation-engine.html" class="text-xs text-gray-300 hover:text-white underline">← Back to app</a>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-6 py-8 flex gap-8">
+        <!-- Sidebar navigation -->
+        <nav class="hidden md:block w-56 shrink-0 sticky top-8 self-start">
+            <h2 class="font-bold text-sm mb-3 text-gray-500 uppercase tracking-wider">Contents</h2>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#architecture" class="text-[#1d70b8] hover:underline font-bold">Architecture Schema</a></li>
+                <li><a href="#transition-config" class="text-[#1d70b8] hover:underline font-bold">Transition Config</a></li>
+                <li><a href="#downloads" class="text-[#1d70b8] hover:underline font-bold">Downloads</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main content -->
+        <main class="flex-1 min-w-0" id="schemaContent">
+            <p class="text-gray-500">Loading schema documentation...</p>
+        </main>
+    </div>
+
+    <footer class="border-t border-gray-200 mt-16 py-6 px-6 text-center text-xs text-gray-500">
+        Part of the LGR Workspace Engine
+    </footer>
+
+    <script>
+    (() => {
+  // src/constants/schema-definitions.js
+  var SCHEMA_DEFINITIONS = {
+    // -------------------------------------------------------------------------
+    // Architecture file — one per council
+    // -------------------------------------------------------------------------
+    architecture: {
+      title: "Council Architecture File",
+      description: "Describes a single council's IT estate: its service functions, IT systems, and the relationships between them.",
+      topLevel: [
+        {
+          name: "councilName",
+          type: "string",
+          required: true,
+          description: "Official council name"
+        },
+        {
+          name: "councilMetadata",
+          type: "object",
+          required: false,
+          description: "Council classification",
+          fields: [
+            {
+              name: "tier",
+              type: "string",
+              required: false,
+              description: "Council tier",
+              enum: ["county", "district", "borough", "unitary"]
+            },
+            {
+              name: "financialDistress",
+              type: "boolean",
+              required: false,
+              description: "Whether the council is under s114 notice or equivalent"
+            }
+          ]
+        },
+        {
+          name: "nodes",
+          type: "array",
+          required: true,
+          description: "Array of Function and ITSystem nodes"
+        },
+        {
+          name: "edges",
+          type: "array",
+          required: true,
+          description: "Array of relationships between nodes"
+        }
+      ],
+      nodeTypes: {
+        Function: {
+          fields: [
+            {
+              name: "id",
+              type: "string",
+              required: true,
+              description: "Unique node identifier"
+            },
+            {
+              name: "label",
+              type: "string",
+              required: true,
+              description: "Human-readable function name"
+            },
+            {
+              name: "type",
+              type: "string",
+              required: true,
+              description: "Node type discriminator",
+              const: "Function"
+            },
+            {
+              name: "lgaFunctionId",
+              type: "string",
+              required: true,
+              description: "ESD function taxonomy identifier (e.g. '148' for Adult Social Care)"
+            }
+          ]
+        },
+        ITSystem: {
+          fields: [
+            {
+              name: "id",
+              type: "string",
+              required: true,
+              description: "Unique node identifier"
+            },
+            {
+              name: "label",
+              type: "string",
+              required: true,
+              description: "System name as the council knows it"
+            },
+            {
+              name: "type",
+              type: "string",
+              required: true,
+              description: "Node type discriminator",
+              const: "ITSystem"
+            },
+            {
+              name: "vendor",
+              type: "string",
+              required: true,
+              description: "Software vendor, or 'In-House' if internally developed"
+            },
+            {
+              name: "users",
+              type: "number",
+              required: false,
+              description: "Approximate staff user count"
+            },
+            {
+              name: "annualCost",
+              type: "number",
+              required: false,
+              description: "Annual cost in pounds"
+            },
+            {
+              name: "cost",
+              type: "string",
+              required: false,
+              description: "Human-readable cost (e.g. '\xA3950k/yr')"
+            },
+            {
+              name: "endYear",
+              type: "number",
+              required: false,
+              description: "Contract expiry year"
+            },
+            {
+              name: "endMonth",
+              type: "number",
+              required: false,
+              min: 1,
+              max: 12,
+              description: "Contract expiry month"
+            },
+            {
+              name: "noticePeriod",
+              type: "number",
+              required: false,
+              description: "Months notice to exit contract"
+            },
+            {
+              name: "portability",
+              type: "string",
+              required: false,
+              description: "Ease of bulk data extraction",
+              enum: ["High", "Medium", "Low"],
+              enumDescriptions: {
+                High: "Open APIs, standard formats (CSV/XML/JSON), vendor provides export tools. Migration possible without vendor assistance.",
+                Medium: "Some export capability exists but may require vendor support or have proprietary elements.",
+                Low: "Proprietary format, no bulk export API. Significant vendor lock-in. Migration requires vendor cooperation."
+              }
+            },
+            {
+              name: "dataPartitioning",
+              type: "string",
+              required: false,
+              description: "How data is organised within the system",
+              enum: ["Segmented", "Monolithic"],
+              enumDescriptions: {
+                Segmented: "Data logically separated by service area. Can be split without major restructuring.",
+                Monolithic: "Data entangled across all areas. Splitting requires ETL (Extract, Transform, Load) work."
+              }
+            },
+            {
+              name: "isCloud",
+              type: "boolean",
+              required: false,
+              description: "Whether hosted in cloud (true) or on-premise (false)"
+            },
+            {
+              name: "isERP",
+              type: "boolean",
+              required: false,
+              description: "Whether this is an Enterprise Resource Planning system spanning multiple functions"
+            },
+            {
+              name: "sharedWith",
+              type: "array",
+              required: false,
+              items: "string",
+              description: "Names of other councils sharing this system instance"
+            },
+            {
+              name: "targetAuthorities",
+              type: "array",
+              required: false,
+              items: "string",
+              description: "Successor authorities this system is explicitly allocated to"
+            },
+            {
+              name: "capabilityType",
+              type: "array",
+              required: false,
+              items: "string",
+              description: "Capabilities provided to other systems (e.g. ['payments', 'workflow'])"
+            },
+            {
+              name: "supportModel",
+              type: "string",
+              required: false,
+              description: "Who maintains the system going forward",
+              enum: ["vendor-supported", "community-supported", "unsupported"],
+              enumDescriptions: {
+                "vendor-supported": "Commercial vendor with SLA, support contract, and product roadmap.",
+                "community-supported": "Maintained collaboratively (multi-council, open source, shared digital team).",
+                "unsupported": "No active maintenance agreement. Developer left, product EOL, or no SLA."
+              }
+            }
+          ]
+        }
+      },
+      edgeTypes: {
+        REALIZES: {
+          fields: [
+            {
+              name: "source",
+              type: "string",
+              required: true,
+              description: "ITSystem node ID"
+            },
+            {
+              name: "target",
+              type: "string",
+              required: true,
+              description: "Function node ID"
+            },
+            {
+              name: "relationship",
+              type: "string",
+              required: true,
+              description: "Edge type discriminator",
+              const: "REALIZES"
+            }
+          ]
+        },
+        CONSUMES_CAPABILITY: {
+          fields: [
+            {
+              name: "source",
+              type: "string",
+              required: true,
+              description: "Consuming system node ID"
+            },
+            {
+              name: "target",
+              type: "string",
+              required: true,
+              description: "Providing system node ID"
+            },
+            {
+              name: "relationship",
+              type: "string",
+              required: true,
+              description: "Edge type discriminator",
+              const: "CONSUMES_CAPABILITY"
+            },
+            {
+              name: "capabilities",
+              type: "array",
+              required: true,
+              items: "string",
+              description: "Capabilities consumed (e.g. ['payments'])"
+            }
+          ]
+        }
+      },
+      example: {
+        councilName: "Example Borough Council",
+        councilMetadata: { tier: "borough", financialDistress: false },
+        nodes: [
+          { id: "fn-1", label: "Adult Social Care", type: "Function", lgaFunctionId: "148" },
+          { id: "sys-1", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 350, annualCost: 95e3, portability: "High", isCloud: true }
+        ],
+        edges: [
+          { source: "sys-1", target: "fn-1", relationship: "REALIZES" }
+        ]
+      }
+    },
+    // -------------------------------------------------------------------------
+    // Transition configuration file — one per reorganisation
+    // -------------------------------------------------------------------------
+    transitionConfig: {
+      title: "Transition Configuration File",
+      description: "Defines successor authorities, predecessor assignments, and vesting date.",
+      topLevel: [
+        {
+          name: "vestingDate",
+          type: "string",
+          required: true,
+          format: "date",
+          description: "ISO date when successor authorities come into existence (e.g. '2027-04-01')"
+        },
+        {
+          name: "successors",
+          type: "array",
+          required: true,
+          description: "Array of successor authority definitions"
+        }
+      ],
+      successorFields: [
+        {
+          name: "name",
+          type: "string",
+          required: true,
+          description: "Name of the successor unitary authority"
+        },
+        {
+          name: "fullPredecessors",
+          type: "array",
+          required: false,
+          items: "string",
+          description: "Councils whose entire estate transfers to this successor"
+        },
+        {
+          name: "partialPredecessors",
+          type: "array",
+          required: false,
+          items: "string",
+          description: "Councils whose estate is split across multiple successors"
+        }
+      ],
+      example: {
+        vestingDate: "2027-04-01",
+        successors: [
+          {
+            name: "North Essex Unitary",
+            fullPredecessors: ["Braintree District"],
+            partialPredecessors: ["Essex County"]
+          }
+        ]
+      }
+    }
+  };
+
+  // src/schema-page-entry.js
+  function renderPage() {
+    const arch = SCHEMA_DEFINITIONS.architecture;
+    const config = SCHEMA_DEFINITIONS.transitionConfig;
+    const container = document.getElementById("schemaContent");
+    if (!container) return;
+    let html = "";
+    html += renderSchemaSection(arch, "architecture");
+    html += renderSchemaSection(config, "transition-config");
+    html += '<section id="downloads" class="mt-12 pt-8 border-t border-gray-300">';
+    html += '<h2 class="text-2xl font-bold mb-4">Downloads</h2>';
+    html += '<div class="space-y-3">';
+    html += '<a href="lgr-architecture.schema.json" download class="block text-[#1d70b8] underline font-bold">lgr-architecture.schema.json</a>';
+    html += '<a href="lgr-transition-config.schema.json" download class="block text-[#1d70b8] underline font-bold">lgr-transition-config.schema.json</a>';
+    html += "</div></section>";
+    container.innerHTML = html;
+  }
+  function renderSchemaSection(schema, anchorId) {
+    let html = `<section id="${anchorId}" class="mb-12">`;
+    html += `<h2 class="text-2xl font-bold mb-2">${schema.title}</h2>`;
+    html += `<p class="text-gray-600 mb-6">${schema.description}</p>`;
+    html += '<h3 class="text-lg font-bold mb-3 mt-6">Top-Level Structure</h3>';
+    html += '<table class="w-full text-sm border-collapse mb-6">';
+    html += '<thead><tr class="border-b-2 border-black"><th class="text-left py-2 pr-4">Field</th><th class="text-left py-2 pr-4">Type</th><th class="text-left py-2 pr-4">Required</th><th class="text-left py-2">Description</th></tr></thead>';
+    html += "<tbody>";
+    for (const field of schema.topLevel) {
+      const req = field.required ? '<span class="text-[#d4351c] font-bold">Yes</span>' : "No";
+      html += `<tr class="border-b border-gray-200"><td class="py-2 pr-4 font-mono text-xs font-bold">${field.name}</td><td class="py-2 pr-4 text-xs">${field.type}</td><td class="py-2 pr-4 text-xs">${req}</td><td class="py-2 text-xs">${field.description}</td></tr>`;
+    }
+    html += "</tbody></table>";
+    if (schema.nodeTypes) {
+      for (const [typeName, nodeType] of Object.entries(schema.nodeTypes)) {
+        html += `<h3 class="text-lg font-bold mb-3 mt-8">Node Type: ${typeName}</h3>`;
+        if (nodeType.description) {
+          html += `<p class="text-sm text-gray-600 mb-3">${nodeType.description}</p>`;
+        }
+        html += renderFieldTable(nodeType.fields);
+      }
+    }
+    if (schema.successorFields) {
+      html += '<h3 class="text-lg font-bold mb-3 mt-8">Successor Object Fields</h3>';
+      html += renderFieldTable(schema.successorFields);
+    }
+    if (schema.edgeTypes) {
+      html += '<h3 class="text-lg font-bold mb-3 mt-8">Edge Types</h3>';
+      for (const [typeName, edgeType] of Object.entries(schema.edgeTypes)) {
+        html += `<h4 class="font-bold text-sm mb-2 mt-4">${typeName}</h4>`;
+        html += `<p class="text-xs text-gray-600 mb-2">${edgeType.description}</p>`;
+        html += renderFieldTable(edgeType.fields);
+      }
+    }
+    html += '<h3 class="text-lg font-bold mb-3 mt-8">Minimal Example</h3>';
+    html += `<pre class="bg-gray-100 p-4 text-xs overflow-x-auto border border-gray-300"><code>${escapeHtml(JSON.stringify(schema.example, null, 2))}</code></pre>`;
+    html += '<button class="mt-2 text-xs text-[#1d70b8] underline font-bold cursor-pointer" onclick="navigator.clipboard.writeText(JSON.stringify(' + escapeHtml(JSON.stringify(schema.example)) + `, null, 2)).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy to clipboard',2000)})">Copy to clipboard</button>`;
+    html += "</section>";
+    return html;
+  }
+  function renderFieldTable(fields) {
+    let html = '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse mb-4">';
+    html += '<thead><tr class="border-b-2 border-black"><th class="text-left py-2 pr-3">Field</th><th class="text-left py-2 pr-3">Type</th><th class="text-left py-2 pr-3">Required</th><th class="text-left py-2 pr-3">Valid Values</th><th class="text-left py-2">Description</th></tr></thead>';
+    html += "<tbody>";
+    for (const field of fields) {
+      const req = field.required ? '<span class="text-[#d4351c] font-bold">Yes</span>' : "No";
+      let values = "\u2014";
+      if (field.const) values = `<code>"${field.const}"</code>`;
+      else if (field.enum) values = field.enum.map((v) => `<span class="inline-block bg-gray-200 px-1.5 py-0.5 text-xs mr-1 mb-1">${v}</span>`).join("");
+      let desc = field.description || "";
+      if (field.enumDescriptions) {
+        desc += '<dl class="mt-1 ml-2 text-xs text-gray-600">';
+        for (const [val, explanation] of Object.entries(field.enumDescriptions)) {
+          desc += `<dt class="font-bold mt-1">${val}</dt><dd class="ml-2">${explanation}</dd>`;
+        }
+        desc += "</dl>";
+      }
+      html += `<tr class="border-b border-gray-200 align-top"><td class="py-2 pr-3 font-mono text-xs font-bold whitespace-nowrap">${field.name}</td><td class="py-2 pr-3 text-xs">${field.type}${field.items ? `[${field.items}]` : ""}</td><td class="py-2 pr-3 text-xs">${req}</td><td class="py-2 pr-3 text-xs">${values}</td><td class="py-2 text-xs">${desc}</td></tr>`;
+    }
+    html += "</tbody></table></div>";
+    return html;
+  }
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  document.addEventListener("DOMContentLoaded", renderPage);
+})();
+
+    </script>
+</body>
+</html>
