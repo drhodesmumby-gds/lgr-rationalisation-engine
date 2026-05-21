@@ -174,7 +174,7 @@ function renderResults(result, fileType) {
         html += '</ul></div>';
     }
 
-    // Action buttons (always show editor, import only when valid)
+    // Action buttons
     html += '<div class="mt-6 pt-4 border-t border-gray-200 flex gap-3">';
     html += '<button id="btnOpenEditor" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold">Open in Editor</button>';
     if (result.valid) {

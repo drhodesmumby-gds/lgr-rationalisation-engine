@@ -43,7 +43,7 @@ import { downloadTemplate } from './features/template-generator.js';
 import { convertXlsxToArchitecture } from './features/template-converter.js';
 import { renderSchemaReference } from './features/schema-reference.js';
 import { renderValidationPanel, wireValidationPanel } from './features/validation-panel.js';
-import { renderPreImportEditor, wirePreImportEditor } from './features/pre-import-editor.js';
+import { renderPreImportEditor, wirePreImportEditor, renderTransitionConfigEditor, wireTransitionConfigEditor } from './features/pre-import-editor.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -481,8 +481,49 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
             try {
                 const json = JSON.parse(textarea.value.trim());
                 const savedTextareaValue = textarea.value;
+                const isTransitionConfig = json.successors && !json.nodes;
 
-                // Replace validator with editor
+                // Route to appropriate editor
+                if (isTransitionConfig) {
+                    validatorContainer.innerHTML = renderTransitionConfigEditor(json);
+                    wireTransitionConfigEditor(json,
+                        (fixedJson) => {
+                            state.pendingTransitionConfig = fixedJson;
+                            validatorContainer.classList.add('hidden');
+                            validatorContainer.innerHTML = '';
+                            stageContent.classList.add('max-w-4xl');
+                            stageContent.classList.remove('max-w-6xl');
+                            Array.from(stageContent.children).forEach(child => {
+                                if (child.id !== 'validatorContainer') child.classList.remove('hidden');
+                            });
+                            const fileList = document.getElementById('fileList');
+                            const listUl = document.getElementById('uploadedFilesUl');
+                            if (fileList) fileList.classList.remove('hidden');
+                            const li = document.createElement('li');
+                            li.textContent = `transition-config.json (edited, ${(fixedJson.successors || []).length} successors)`;
+                            listUl.appendChild(li);
+                            showNotification({ type: 'success', message: 'Transition config edited and imported.' });
+                        },
+                        () => {
+                            validatorContainer.innerHTML = renderValidationPanel();
+                            wireValidationPanel();
+                            const ta = document.getElementById('validatorTextarea');
+                            if (ta) ta.value = savedTextareaValue;
+                            document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
+                                validatorContainer.classList.add('hidden');
+                                validatorContainer.innerHTML = '';
+                                stageContent.classList.add('max-w-4xl');
+                                stageContent.classList.remove('max-w-6xl');
+                                Array.from(stageContent.children).forEach(child => {
+                                    if (child.id !== 'validatorContainer') child.classList.remove('hidden');
+                                });
+                            });
+                        }
+                    );
+                    return;
+                }
+
+                // Replace validator with architecture editor
                 validatorContainer.innerHTML = renderPreImportEditor(json);
                 wirePreImportEditor(json,
                     // onImport callback
