@@ -430,14 +430,14 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 
             <div id="uploadArea" class="border-4 border-dashed border-[#b1b4b6] p-12 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
                 <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                <span class="text-xl font-bold text-[#1d70b8] underline">Select JSON files</span>
-                <span class="text-lg text-gray-600 block mt-2">Upload Council A, Council B, etc.</span>
+                <span class="text-xl font-bold text-[#1d70b8] underline">Select architecture files</span>
+                <span class="text-lg text-gray-600 block mt-2">Accepts .json (LGR schema) or .xlsx (completed template)</span>
                 <input type="file" id="fileInput" multiple accept=".json,.xlsx,.xls" class="sr-only">
             </div>
 
             <div class="mt-4 flex items-center gap-4">
                 <button id="btnDownloadTemplate" class="gds-btn-secondary px-4 py-2 text-sm font-bold" type="button">Download Template (.xlsx)</button>
-                <span class="text-xs text-gray-500">Structured spreadsheet with guidance — fill offline, then upload here</span>
+                <span class="text-xs text-gray-500">Structured spreadsheet with guidance — fill offline, then upload above</span>
             </div>
 
             <!-- Import wizard entry points -->
@@ -11214,6 +11214,7 @@ tr:nth-child(even){background:#f3f2f1;}
     "Leisure & Culture": "Libraries, leisure centres, arts, museums",
     "Business & Employment": "Business support, regeneration, trading standards",
     "Dependencies": "System-to-system capability dependencies",
+    "Definitions": "What each dropdown field means \u2014 refer here if unsure",
     "_Lookups": "Validation lists (internal use)",
     "_SystemNames": "System name registry (internal use)"
   };
@@ -11246,7 +11247,7 @@ tr:nth-child(even){background:#f3f2f1;}
   function buildIndexSheet(wb) {
     const sheet = wb.addWorksheet("Index");
     applyColumnWidths(sheet, [35, 55]);
-    const allSheetNames = ["Council Info", ...DOMAIN_SHEET_NAMES, "Dependencies"];
+    const allSheetNames = ["Council Info", ...DOMAIN_SHEET_NAMES, "Dependencies", "Definitions"];
     const titleRow = sheet.addRow(["LGR Architecture Data Template"]);
     titleRow.font = { bold: true, size: 14 };
     sheet.mergeCells("A1:B1");
@@ -11348,34 +11349,148 @@ tr:nth-child(even){background:#f3f2f1;}
     for (const fn of functions) {
       sheet.addRow([fn.id, fn.label, "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
+    const tableId = sheetName.replace(/[^a-zA-Z]/g, "");
+    const lastDataRow = sheet.rowCount;
+    sheet.addTable({
+      name: tableId,
+      ref: "A2",
+      headerRow: true,
+      totalsRow: false,
+      columns: DOMAIN_HEADERS.map((h) => ({ name: h })),
+      rows: Array.from({ length: lastDataRow - 2 }, (_, i) => {
+        const row = sheet.getRow(i + 3);
+        return DOMAIN_HEADERS.map((_2, col) => row.getCell(col + 1).value || "");
+      })
+    });
     const validations = {
-      I: { type: "list", allowBlank: true, formulae: ['"High,Medium,Low"'] },
-      J: { type: "list", allowBlank: true, formulae: ['"Segmented,Monolithic"'] },
-      K: { type: "list", allowBlank: true, formulae: ['"Yes,No"'] },
-      L: { type: "list", allowBlank: true, formulae: ['"Yes,No"'] },
-      N: { type: "list", allowBlank: true, formulae: ['"Vendor-supported,Community-supported,Unsupported"'] }
+      I: {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"High,Medium,Low"'],
+        showInputMessage: true,
+        promptTitle: "Data Portability",
+        prompt: "How easy is it to extract your data in bulk?\n\nHigh \u2014 Open APIs, standard formats (CSV/XML), vendor provides export tools. You could migrate data without vendor assistance.\n\nMedium \u2014 Some export capability exists but may require vendor support or have proprietary elements.\n\nLow \u2014 Proprietary format, no bulk export API, significant vendor lock-in. Migration requires vendor cooperation or reverse engineering."
+      },
+      J: {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Segmented,Monolithic"'],
+        showInputMessage: true,
+        promptTitle: "Data Partitioning",
+        prompt: "How is data organised within this system?\n\nSegmented \u2014 Data is logically separated (e.g., by service area, team, or geography). Can be split without major restructuring.\n\nMonolithic \u2014 Data is entangled across all areas the system serves. Splitting it would require ETL (Extract, Transform, Load) work and significant planning."
+      },
+      K: {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Yes,No"'],
+        showInputMessage: true,
+        promptTitle: "Cloud Hosted?",
+        prompt: "Is this system hosted in the cloud (SaaS, IaaS, PaaS) or on your own servers?\n\nYes \u2014 Hosted by the vendor or in a cloud platform (Azure, AWS, etc.)\n\nNo \u2014 Hosted on council-owned or council-managed servers (on-premise)"
+      },
+      L: {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Yes,No"'],
+        showInputMessage: true,
+        promptTitle: "ERP System?",
+        prompt: "Is this an Enterprise Resource Planning system?\n\nYes \u2014 A large integrated system spanning multiple functions (e.g., SAP, Oracle, Unit4). Typically handles finance, HR, procurement, etc. in one platform.\n\nNo \u2014 A system focused on a single function or service area."
+      },
+      N: {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Vendor-supported,Community-supported,Unsupported"'],
+        showInputMessage: true,
+        promptTitle: "Support Model",
+        prompt: "Who maintains and supports this system going forward?\n\nVendor-supported \u2014 Commercial vendor with SLA, support contract, and product roadmap.\n\nCommunity-supported \u2014 Maintained collaboratively (multi-council partnership, open source with active contributors, shared digital team).\n\nUnsupported \u2014 No active maintenance agreement. Original developer may have left, product may be end-of-life, or no SLA exists."
+      }
     };
     for (const [col, validation] of Object.entries(validations)) {
       for (let row = 3; row <= 200; row++) {
         sheet.getCell(`${col}${row}`).dataValidation = validation;
       }
     }
+    sheet.getCell("C2").note = "The name of the IT system as your council knows it. Use the same name consistently (it must match in the Dependencies sheet).";
+    sheet.getCell("D2").note = 'Software vendor name, or "In-House" if developed internally by the council.';
+    sheet.getCell("E2").note = "Approximate number of staff who regularly use this system.";
+    sheet.getCell("F2").note = "Annual licence, hosting, and support cost in pounds (number only, no \xA3 symbol).";
+    sheet.getCell("G2").note = "When the current contract expires. Format: mm/yyyy (e.g., 03/2028).";
+    sheet.getCell("H2").note = "How many months notice you must give to exit the contract before it auto-renews.";
+    sheet.getCell("M2").note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
+    sheet.getCell("O2").note = "What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.";
     return sheet;
   }
   function buildDependenciesSheet(wb) {
     const sheet = wb.addWorksheet("Dependencies");
-    applyColumnWidths(sheet, [30, 30, 20, 12]);
+    applyColumnWidths(sheet, [30, 30, 20, 14]);
     const guidanceRow = sheet.addRow(["List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?"]);
     sheet.mergeCells("A1:D1");
     guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
     guidanceRow.font = { italic: true };
-    const headerRow = sheet.addRow(["System that depends", "System it depends on", "What for?", "Match"]);
+    const headerRow = sheet.addRow(["System that depends", "System it depends on", "What for?", "Match \u2713"]);
     headerRow.font = { bold: true };
     const exRow = sheet.addRow(["Liquidlogic LAS", "SAP S/4HANA", "payments", ""]);
     exRow.font = { italic: true, color: { argb: "FF666666" } };
     exRow.eachCell((cell) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
     });
+    const countifParts = DOMAIN_SHEET_NAMES.map((name) => `COUNTIF('${name}'!C:C,A{row})`).join("+");
+    const countifPartsB = DOMAIN_SHEET_NAMES.map((name) => `COUNTIF('${name}'!C:C,B{row})`).join("+");
+    for (let row = 3; row <= 100; row++) {
+      const formula = `IF(AND(A${row}<>"",B${row}<>""),IF(AND(${countifParts.replace(/\{row\}/g, row)}>0,${countifPartsB.replace(/\{row\}/g, row)}>0),"\u2713","\u26A0 Not found"),"")`;
+      sheet.getCell(`D${row}`).value = { formula };
+    }
+    sheet.getCell("A2").note = "The system that would break \u2014 use the EXACT same name you entered on the domain sheets.";
+    sheet.getCell("B2").note = "The system that provides the capability \u2014 use the EXACT same name from your domain sheets.";
+    sheet.getCell("C2").note = "What capability is consumed? e.g., payments, workflow, SSO, integration, SMS, forms.";
+    sheet.getCell("D2").note = "Auto-checks whether both system names match entries in your domain sheets. \u2713 = found, \u26A0 = not found (check spelling).";
+    return sheet;
+  }
+  function buildDefinitionsSheet(wb) {
+    const sheet = wb.addWorksheet("Definitions");
+    applyColumnWidths(sheet, [22, 14, 60]);
+    const titleRow = sheet.addRow(["Field Definitions"]);
+    titleRow.font = { bold: true, size: 13 };
+    sheet.mergeCells("A1:C1");
+    sheet.addRow([]);
+    const definitions = [
+      ["Data Portability", "High", "Open APIs available, standard data formats (CSV, XML, JSON). You could migrate data without vendor assistance. Vendor provides export tools and documentation."],
+      ["", "Medium", "Some export capability exists (e.g., report extracts, limited API) but may require vendor support or have proprietary elements. Migration is possible but needs planning."],
+      ["", "Low", "Proprietary data format with no bulk export API. Significant vendor lock-in. Migration requires vendor cooperation, reverse engineering, or expensive consultancy. High switching cost."],
+      [],
+      ["Data Partitioning", "Segmented", "Data is logically separated by service area, team, or geography. If the system needed to be split across two new councils, the data could be divided without major restructuring."],
+      ["", "Monolithic", "Data is entangled across all areas the system serves. Users, records, and workflows are interleaved. Splitting would require ETL (Extract, Transform, Load) work \u2014 this is complex and time-consuming."],
+      [],
+      ["Cloud Hosted?", "Yes", "The system is hosted by the vendor or in a cloud platform (Azure, AWS, Google Cloud). The council does not manage the servers. Includes SaaS, IaaS, and PaaS."],
+      ["", "No", "The system runs on servers owned or managed by the council (on-premise). The council is responsible for infrastructure, patching, backups, and availability."],
+      [],
+      ["ERP System?", "Yes", "An Enterprise Resource Planning system \u2014 a large integrated platform spanning multiple business functions (typically finance, HR, procurement, payroll). Examples: SAP, Oracle, Unit4, Microsoft Dynamics 365 Finance."],
+      ["", "No", 'A system focused on a single function or service area. Most systems will be "No".'],
+      [],
+      ["Support Model", "Vendor-supported", "A commercial vendor provides a support contract, SLA, regular updates, and a product roadmap. If something breaks, you can raise a ticket and expect a response."],
+      ["", "Community-supported", "Maintained collaboratively \u2014 e.g., a multi-council partnership, an open source project with active contributors, or a shared digital team. Support comes from the community rather than a single vendor."],
+      ["", "Unsupported", "No active maintenance agreement exists. The original developer may have left, the product may be end-of-life, or no SLA is in place. If it breaks, there is no guaranteed route to fix it."],
+      [],
+      ["Capabilities Provided", "(examples)", "Only fill this if OTHER systems depend on this system for a specific service. Common capabilities:"],
+      ["", "payments", "This system processes payments that other systems use (e.g., SAP providing payment processing to social care systems)"],
+      ["", "SSO", "This system provides single sign-on authentication to other systems"],
+      ["", "forms", "This system provides digital forms capability consumed by other systems"],
+      ["", "workflow", "This system provides workflow/process automation consumed by other systems"],
+      ["", "SMS", "This system provides SMS notification capability to other systems"],
+      ["", "integration", "This system provides data integration/middleware services between other systems"]
+    ];
+    const headerRow = sheet.addRow(["Field", "Value", "What it means"]);
+    headerRow.font = { bold: true };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+    });
+    for (const def of definitions) {
+      if (!def || def.length === 0) {
+        sheet.addRow([]);
+        continue;
+      }
+      const row = sheet.addRow(def);
+      if (def[0]) row.getCell(1).font = { bold: true };
+    }
     return sheet;
   }
   function buildLookupsSheet(wb) {
@@ -11447,6 +11562,7 @@ tr:nth-child(even){background:#f3f2f1;}
       buildDomainSheet(wb, sheetName, rootId);
     }
     buildDependenciesSheet(wb);
+    buildDefinitionsSheet(wb);
     buildLookupsSheet(wb);
     buildSystemNamesSheet(wb);
     return wb;
