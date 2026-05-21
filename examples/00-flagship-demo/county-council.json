@@ -1,0 +1,210 @@
+{
+  "councilName": "County Council",
+  "councilMetadata": {
+    "tier": "county",
+    "financialDistress": false
+  },
+  "nodes": [
+    {
+      "id": "fn-116",
+      "label": "Finance",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "fn-119",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "fn-145",
+      "label": "Procurement",
+      "type": "Function",
+      "lgaFunctionId": "145"
+    },
+    {
+      "id": "fn-148",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "fn-109",
+      "label": "Highway Maintenance",
+      "type": "Function",
+      "lgaFunctionId": "109"
+    },
+    {
+      "id": "fn-65",
+      "label": "Public Health",
+      "type": "Function",
+      "lgaFunctionId": "65"
+    },
+    {
+      "id": "fn-54",
+      "label": "Registration",
+      "type": "Function",
+      "lgaFunctionId": "54"
+    },
+    {
+      "id": "fn-152",
+      "label": "Children's Social Care",
+      "type": "Function",
+      "lgaFunctionId": "152"
+    },
+    {
+      "id": "sys-sap-erp",
+      "label": "SAP S/4HANA ERP",
+      "type": "ITSystem",
+      "vendor": "SAP",
+      "users": 5000,
+      "cost": "£2,100,000/yr",
+      "annualCost": 2100000,
+      "endYear": 2030,
+      "endMonth": 3,
+      "noticePeriod": 18,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": true,
+      "supportModel": "vendor-supported",
+      "capabilityType": ["payments", "workflow"]
+    },
+    {
+      "id": "sys-liquidlogic",
+      "label": "Liquidlogic LAS",
+      "type": "ITSystem",
+      "vendor": "System C",
+      "users": 1200,
+      "cost": "£480,000/yr",
+      "annualCost": 480000,
+      "endYear": 2028,
+      "endMonth": 9,
+      "noticePeriod": 6,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-confirm-highways",
+      "label": "Confirm Highways",
+      "type": "ITSystem",
+      "vendor": "Confirm",
+      "users": 400,
+      "cost": "£320,000/yr",
+      "annualCost": 320000,
+      "endYear": 2029,
+      "endMonth": 6,
+      "noticePeriod": 6,
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "vendor-supported",
+      "sharedWith": ["District Council 1"]
+    },
+    {
+      "id": "sys-public-health-intel",
+      "label": "Public Health Intelligence",
+      "type": "ITSystem",
+      "vendor": "In-House",
+      "users": 80,
+      "cost": "£35,000/yr",
+      "annualCost": 35000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 3,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "community-supported",
+      "sharedWith": ["Other County Programme Council A", "Other County Programme Council B"]
+    },
+    {
+      "id": "sys-nec-revenues",
+      "label": "NEC Revenues",
+      "type": "ITSystem",
+      "vendor": "NEC",
+      "users": 300,
+      "cost": "£190,000/yr",
+      "annualCost": 190000,
+      "endYear": 2026,
+      "endMonth": 6,
+      "noticePeriod": 12,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-capita-one",
+      "label": "Capita ONE",
+      "type": "ITSystem",
+      "vendor": "Capita",
+      "users": 800,
+      "cost": "£350,000/yr",
+      "annualCost": 350000,
+      "endYear": 2028,
+      "endMonth": 12,
+      "noticePeriod": 6,
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    }
+  ],
+  "edges": [
+    {
+      "source": "sys-sap-erp",
+      "target": "fn-116",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-sap-erp",
+      "target": "fn-119",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-sap-erp",
+      "target": "fn-145",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-liquidlogic",
+      "target": "fn-148",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-liquidlogic",
+      "target": "sys-sap-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": ["payments"]
+    },
+    {
+      "source": "sys-confirm-highways",
+      "target": "fn-109",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-public-health-intel",
+      "target": "fn-65",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-nec-revenues",
+      "target": "fn-54",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-capita-one",
+      "target": "fn-152",
+      "relationship": "REALIZES"
+    }
+  ]
+}

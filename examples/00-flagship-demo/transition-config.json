@@ -1,0 +1,10 @@
+{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "New Unitary Authority",
+      "fullPredecessors": ["District Council 1", "District Council 2", "District Council 3"],
+      "partialPredecessors": ["County Council"]
+    }
+  ]
+}

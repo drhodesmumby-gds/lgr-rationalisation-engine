@@ -15681,64 +15681,140 @@ tr:nth-child(even){background:#f3f2f1;}
   }
   document.getElementById("btnLoadDemo").addEventListener("click", () => {
     const demoDataA = {
-      councilName: "Northshire County",
-      councilMetadata: { tier: "county" },
+      councilName: "County Council",
+      councilMetadata: { tier: "county", financialDistress: false },
       nodes: [
-        { id: "LGA_F2", label: "Adult Social Care", type: "Function", lgaFunctionId: "148" },
-        { id: "LGA_F3", label: "Highways", type: "Function", lgaFunctionId: "109" },
-        { id: "sys_ncc_asc", label: "Liquidlogic ASC", type: "ITSystem", endYear: 2028, endMonth: 3, noticePeriod: 12, cost: "\xA3950k/yr", annualCost: 95e4, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, users: 3500, vendor: "System C" },
-        { id: "sys_ncc_hw", label: "Confirm Environment", type: "ITSystem", endYear: 2026, endMonth: 10, noticePeriod: 6, cost: "\xA3250k/yr", annualCost: 25e4, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, users: 200, vendor: "Brightly" }
+        { id: "fn-116", label: "Finance", type: "Function", lgaFunctionId: "116" },
+        { id: "fn-119", label: "Human Resources", type: "Function", lgaFunctionId: "119" },
+        { id: "fn-145", label: "Procurement", type: "Function", lgaFunctionId: "145" },
+        { id: "fn-148", label: "Adult Social Care", type: "Function", lgaFunctionId: "148" },
+        { id: "fn-109", label: "Highway Maintenance", type: "Function", lgaFunctionId: "109" },
+        { id: "fn-65", label: "Public Health", type: "Function", lgaFunctionId: "65" },
+        { id: "fn-54", label: "Registration", type: "Function", lgaFunctionId: "54" },
+        { id: "fn-152", label: "Children's Social Care", type: "Function", lgaFunctionId: "152" },
+        { id: "sys-sap-erp", label: "SAP S/4HANA ERP", type: "ITSystem", vendor: "SAP", users: 5e3, cost: "\xA32,100,000/yr", annualCost: 21e5, endYear: 2030, endMonth: 3, noticePeriod: 18, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: true, supportModel: "vendor-supported", capabilityType: ["payments", "workflow"] },
+        { id: "sys-liquidlogic", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 1200, cost: "\xA3480,000/yr", annualCost: 48e4, endYear: 2028, endMonth: 9, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-confirm-highways", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 400, cost: "\xA3320,000/yr", annualCost: 32e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"] },
+        { id: "sys-public-health-intel", label: "Public Health Intelligence", type: "ITSystem", vendor: "In-House", users: 80, cost: "\xA335,000/yr", annualCost: 35e3, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "community-supported", sharedWith: ["Other County Programme Council A", "Other County Programme Council B"] },
+        { id: "sys-nec-revenues", label: "NEC Revenues", type: "ITSystem", vendor: "NEC", users: 300, cost: "\xA3190,000/yr", annualCost: 19e4, endYear: 2026, endMonth: 6, noticePeriod: 12, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-capita-one", label: "Capita ONE", type: "ITSystem", vendor: "Capita", users: 800, cost: "\xA3350,000/yr", annualCost: 35e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" }
       ],
       edges: [
-        { source: "sys_ncc_asc", target: "LGA_F2", relationship: "REALIZES" },
-        { source: "sys_ncc_hw", target: "LGA_F3", relationship: "REALIZES" }
+        { source: "sys-sap-erp", target: "fn-116", relationship: "REALIZES" },
+        { source: "sys-sap-erp", target: "fn-119", relationship: "REALIZES" },
+        { source: "sys-sap-erp", target: "fn-145", relationship: "REALIZES" },
+        { source: "sys-liquidlogic", target: "fn-148", relationship: "REALIZES" },
+        { source: "sys-liquidlogic", target: "sys-sap-erp", relationship: "CONSUMES_CAPABILITY", capabilities: ["payments"] },
+        { source: "sys-confirm-highways", target: "fn-109", relationship: "REALIZES" },
+        { source: "sys-public-health-intel", target: "fn-65", relationship: "REALIZES" },
+        { source: "sys-nec-revenues", target: "fn-54", relationship: "REALIZES" },
+        { source: "sys-capita-one", target: "fn-152", relationship: "REALIZES" }
       ]
     };
     const demoDataB = {
-      councilName: "Westampton District",
-      councilMetadata: { tier: "district" },
+      councilName: "District Council 1",
+      councilMetadata: { tier: "district", financialDistress: false },
       nodes: [
-        { id: "LGA_F1", label: "Waste Collection", type: "Function", lgaFunctionId: "142" },
-        { id: "LGA_F4", label: "Planning", type: "Function", lgaFunctionId: "101" },
-        { id: "sys_dav_wc", label: "Bartec Collective SaaS", type: "ITSystem", endYear: 2025, endMonth: 11, noticePeriod: 3, cost: "\xA3180k/yr", annualCost: 18e4, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, users: 120, vendor: "Bartec" },
-        { id: "sys_dav_pl", label: "Idox Uniform", type: "ITSystem", endYear: 2026, endMonth: 2, noticePeriod: 6, cost: "\xA390k/yr", annualCost: 9e4, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, users: 45, vendor: "Idox" }
+        { id: "fn-116", label: "Finance", type: "Function", lgaFunctionId: "116" },
+        { id: "fn-3", label: "Benefits", type: "Function", lgaFunctionId: "3" },
+        { id: "fn-101", label: "Development Control", type: "Function", lgaFunctionId: "101" },
+        { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
+        { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
+        { id: "fn-109", label: "Highway Maintenance", type: "Function", lgaFunctionId: "109" },
+        { id: "sys-civica-fin", label: "Civica Financials", type: "ITSystem", vendor: "Civica", users: 120, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2028, endMonth: 6, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-nec-revben", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 200, cost: "\xA3180,000/yr", annualCost: 18e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 2"] },
+        { id: "sys-idox-uniform", label: "Idox Uniform", type: "ITSystem", vendor: "Idox", users: 35, cost: "\xA355,000/yr", annualCost: 55e3, endYear: 2029, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-bartec-waste", label: "Bartec Waste Management", type: "ITSystem", vendor: "Bartec", users: 90, cost: "\xA3130,000/yr", annualCost: 13e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-dynamics-crm", label: "Microsoft Dynamics 365", type: "ITSystem", vendor: "Microsoft", users: 350, cost: "\xA3110,000/yr", annualCost: 11e4, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported", capabilityType: ["forms"] },
+        { id: "sys-confirm-highways-d1", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 45, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["County Council"] }
       ],
       edges: [
-        { source: "sys_dav_wc", target: "LGA_F1", relationship: "REALIZES" },
-        { source: "sys_dav_pl", target: "LGA_F4", relationship: "REALIZES" }
+        { source: "sys-civica-fin", target: "fn-116", relationship: "REALIZES" },
+        { source: "sys-nec-revben", target: "fn-3", relationship: "REALIZES" },
+        { source: "sys-idox-uniform", target: "fn-101", relationship: "REALIZES" },
+        { source: "sys-bartec-waste", target: "fn-38", relationship: "REALIZES" },
+        { source: "sys-dynamics-crm", target: "fn-43", relationship: "REALIZES" },
+        { source: "sys-confirm-highways-d1", target: "fn-109", relationship: "REALIZES" }
       ]
     };
     const demoDataC = {
-      councilName: "Easton District",
-      councilMetadata: { tier: "district", financialDistress: true },
+      councilName: "District Council 2",
+      councilMetadata: { tier: "district", financialDistress: false },
       nodes: [
-        { id: "LGA_F1", label: "Refuse Operations", type: "Function", lgaFunctionId: "142" },
-        { id: "LGA_F4", label: "Planning", type: "Function", lgaFunctionId: "101" },
-        { id: "sys_sn_wc", label: "Local SQL Routing App", type: "ITSystem", endYear: 2025, endMonth: 11, noticePeriod: 1, cost: "\xA330k/yr", annualCost: 3e4, sharedWith: ["Westampton District"], portability: "Medium", dataPartitioning: "Monolithic", isCloud: false, isERP: false, users: 30, vendor: "In-House" },
-        { id: "sys_sn_pl", label: "Agile Planning", type: "ITSystem", endYear: 2026, endMonth: 12, noticePeriod: 3, cost: "\xA385k/yr", annualCost: 85e3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, users: 35, vendor: "AgileApps" }
+        { id: "fn-3", label: "Benefits", type: "Function", lgaFunctionId: "3" },
+        { id: "fn-66", label: "Housing", type: "Function", lgaFunctionId: "66" },
+        { id: "fn-101", label: "Development Control", type: "Function", lgaFunctionId: "101" },
+        { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
+        { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
+        { id: "sys-nec-revben-d2", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 150, cost: "\xA3160,000/yr", annualCost: 16e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"] },
+        { id: "sys-nec-housing", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 100, cost: "\xA3140,000/yr", annualCost: 14e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-nec-planning", label: "NEC Planning", type: "ITSystem", vendor: "NEC", users: 28, cost: "\xA360,000/yr", annualCost: 6e4, endYear: 2029, endMonth: 9, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-whitespace-waste", label: "Whitespace Waste", type: "ITSystem", vendor: "Whitespace", users: 60, cost: "\xA385,000/yr", annualCost: 85e3, endYear: 2028, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-firmstep-crm", label: "Firmstep Digital", type: "ITSystem", vendor: "Firmstep", users: 200, cost: "\xA375,000/yr", annualCost: 75e3, endYear: 2030, endMonth: 6, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" }
       ],
       edges: [
-        { source: "sys_sn_wc", target: "LGA_F1", relationship: "REALIZES" },
-        { source: "sys_sn_pl", target: "LGA_F4", relationship: "REALIZES" }
+        { source: "sys-nec-revben-d2", target: "fn-3", relationship: "REALIZES" },
+        { source: "sys-nec-housing", target: "fn-66", relationship: "REALIZES" },
+        { source: "sys-nec-planning", target: "fn-101", relationship: "REALIZES" },
+        { source: "sys-whitespace-waste", target: "fn-38", relationship: "REALIZES" },
+        { source: "sys-firmstep-crm", target: "fn-43", relationship: "REALIZES" }
+      ]
+    };
+    const demoDataD = {
+      councilName: "District Council 3",
+      councilMetadata: { tier: "district", financialDistress: true },
+      nodes: [
+        { id: "fn-116", label: "Finance", type: "Function", lgaFunctionId: "116" },
+        { id: "fn-101", label: "Development Control", type: "Function", lgaFunctionId: "101" },
+        { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
+        { id: "fn-66", label: "Housing", type: "Function", lgaFunctionId: "66" },
+        { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
+        { id: "fn-76", label: "Libraries", type: "Function", lgaFunctionId: "76" },
+        { id: "sys-sage-finance", label: "Sage 50 Finance", type: "ITSystem", vendor: "Sage", users: 25, cost: "\xA315,000/yr", annualCost: 15e3, endYear: 2026, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "unsupported" },
+        { id: "sys-inhouse-planning", label: "In-House Planning Register", type: "ITSystem", vendor: "In-House", users: 15, cost: "\xA312,000/yr", annualCost: 12e3, endYear: 2027, endMonth: 6, noticePeriod: 3, portability: "Medium", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "unsupported" },
+        { id: "sys-inhouse-waste", label: "In-House Waste Scheduling", type: "ITSystem", vendor: "In-House", users: 20, cost: "\xA38,000/yr", annualCost: 8e3, endYear: 2028, endMonth: 9, noticePeriod: 3, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "unsupported" },
+        { id: "sys-nec-housing-d3", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 60, cost: "\xA390,000/yr", annualCost: 9e4, endYear: 2029, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-goss-icm", label: "GOSS iCM", type: "ITSystem", vendor: "GOSS", users: 100, cost: "\xA340,000/yr", annualCost: 4e4, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-koha-library", label: "Koha Library System", type: "ITSystem", vendor: "In-House", users: 30, cost: "\xA318,000/yr", annualCost: 18e3, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "community-supported", sharedWith: ["Neighbouring Council A", "Neighbouring Council B"] }
+      ],
+      edges: [
+        { source: "sys-sage-finance", target: "fn-116", relationship: "REALIZES" },
+        { source: "sys-inhouse-planning", target: "fn-101", relationship: "REALIZES" },
+        { source: "sys-inhouse-waste", target: "fn-38", relationship: "REALIZES" },
+        { source: "sys-nec-housing-d3", target: "fn-66", relationship: "REALIZES" },
+        { source: "sys-goss-icm", target: "fn-43", relationship: "REALIZES" },
+        { source: "sys-koha-library", target: "fn-76", relationship: "REALIZES" }
       ]
     };
     state.rawUploads = [
-      { filename: "northshire.json", data: demoDataA },
-      { filename: "westampton.json", data: demoDataB },
-      { filename: "easton.json", data: demoDataC }
+      { filename: "county-council.json", data: demoDataA },
+      { filename: "district-council-1.json", data: demoDataB },
+      { filename: "district-council-2.json", data: demoDataC },
+      { filename: "district-council-3.json", data: demoDataD }
     ];
+    state.pendingTransitionConfig = {
+      vestingDate: "2027-04-01",
+      successors: [
+        {
+          name: "New Unitary Authority",
+          fullPredecessors: ["District Council 1", "District Council 2", "District Council 3"],
+          partialPredecessors: ["County Council"]
+        }
+      ]
+    };
     document.getElementById("fileList").classList.remove("hidden");
     const listUl = document.getElementById("uploadedFilesUl");
     listUl.innerHTML = "";
     [
-      { name: "Northshire County", idx: 0 },
-      { name: "Westampton District", idx: 1 },
-      { name: "Easton District", idx: 2 }
+      { name: "County Council", idx: 0, count: 14 },
+      { name: "District Council 1", idx: 1, count: 12 },
+      { name: "District Council 2", idx: 2, count: 10 },
+      { name: "District Council 3", idx: 3, count: 12 }
     ].forEach((c) => {
       const li = document.createElement("li");
       li.className = "flex items-center gap-3";
       const span = document.createElement("span");
-      span.textContent = `${c.name} (4 nodes)`;
+      span.textContent = `${c.name} (${c.count} nodes)`;
       const editBtn = document.createElement("button");
       editBtn.className = "btn-edit-arch gds-btn-secondary px-2 py-1 text-xs font-bold hover:bg-gray-100";
       editBtn.setAttribute("data-upload-idx", c.idx);

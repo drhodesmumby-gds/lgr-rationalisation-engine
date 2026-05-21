@@ -1,0 +1,180 @@
+{
+  "councilName": "District Council 3",
+  "councilMetadata": {
+    "tier": "district",
+    "financialDistress": true
+  },
+  "nodes": [
+    {
+      "id": "fn-116",
+      "label": "Finance",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "fn-101",
+      "label": "Development Control",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "fn-38",
+      "label": "Waste Management",
+      "type": "Function",
+      "lgaFunctionId": "38"
+    },
+    {
+      "id": "fn-66",
+      "label": "Housing",
+      "type": "Function",
+      "lgaFunctionId": "66"
+    },
+    {
+      "id": "fn-43",
+      "label": "Accessing Information",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "fn-76",
+      "label": "Libraries",
+      "type": "Function",
+      "lgaFunctionId": "76"
+    },
+    {
+      "id": "sys-sage-finance",
+      "label": "Sage 50 Finance",
+      "type": "ITSystem",
+      "vendor": "Sage",
+      "users": 25,
+      "cost": "£15,000/yr",
+      "annualCost": 15000,
+      "endYear": 2026,
+      "endMonth": 3,
+      "noticePeriod": 6,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "unsupported"
+    },
+    {
+      "id": "sys-inhouse-planning",
+      "label": "In-House Planning Register",
+      "type": "ITSystem",
+      "vendor": "In-House",
+      "users": 15,
+      "cost": "£12,000/yr",
+      "annualCost": 12000,
+      "endYear": 2027,
+      "endMonth": 6,
+      "noticePeriod": 3,
+      "portability": "Medium",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "unsupported"
+    },
+    {
+      "id": "sys-inhouse-waste",
+      "label": "In-House Waste Scheduling",
+      "type": "ITSystem",
+      "vendor": "In-House",
+      "users": 20,
+      "cost": "£8,000/yr",
+      "annualCost": 8000,
+      "endYear": 2028,
+      "endMonth": 9,
+      "noticePeriod": 3,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "unsupported"
+    },
+    {
+      "id": "sys-nec-housing-d3",
+      "label": "NEC Housing",
+      "type": "ITSystem",
+      "vendor": "NEC",
+      "users": 60,
+      "cost": "£90,000/yr",
+      "annualCost": 90000,
+      "endYear": 2029,
+      "endMonth": 3,
+      "noticePeriod": 6,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-goss-icm",
+      "label": "GOSS iCM",
+      "type": "ITSystem",
+      "vendor": "GOSS",
+      "users": 100,
+      "cost": "£40,000/yr",
+      "annualCost": 40000,
+      "endYear": 2030,
+      "endMonth": 12,
+      "noticePeriod": 3,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-koha-library",
+      "label": "Koha Library System",
+      "type": "ITSystem",
+      "vendor": "In-House",
+      "users": 30,
+      "cost": "£18,000/yr",
+      "annualCost": 18000,
+      "endYear": 2030,
+      "endMonth": 9,
+      "noticePeriod": 3,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "community-supported",
+      "sharedWith": ["Neighbouring Council A", "Neighbouring Council B"]
+    }
+  ],
+  "edges": [
+    {
+      "source": "sys-sage-finance",
+      "target": "fn-116",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-inhouse-planning",
+      "target": "fn-101",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-inhouse-waste",
+      "target": "fn-38",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-nec-housing-d3",
+      "target": "fn-66",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-goss-icm",
+      "target": "fn-43",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-koha-library",
+      "target": "fn-76",
+      "relationship": "REALIZES"
+    }
+  ]
+}

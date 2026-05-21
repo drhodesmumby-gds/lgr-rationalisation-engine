@@ -1,0 +1,152 @@
+{
+  "councilName": "District Council 2",
+  "councilMetadata": {
+    "tier": "district",
+    "financialDistress": false
+  },
+  "nodes": [
+    {
+      "id": "fn-3",
+      "label": "Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "fn-66",
+      "label": "Housing",
+      "type": "Function",
+      "lgaFunctionId": "66"
+    },
+    {
+      "id": "fn-101",
+      "label": "Development Control",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "fn-38",
+      "label": "Waste Management",
+      "type": "Function",
+      "lgaFunctionId": "38"
+    },
+    {
+      "id": "fn-43",
+      "label": "Accessing Information",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "sys-nec-revben-d2",
+      "label": "NEC Revenues & Benefits",
+      "type": "ITSystem",
+      "vendor": "NEC",
+      "users": 150,
+      "cost": "£160,000/yr",
+      "annualCost": 160000,
+      "endYear": 2027,
+      "endMonth": 3,
+      "noticePeriod": 9,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "vendor-supported",
+      "sharedWith": ["District Council 1"]
+    },
+    {
+      "id": "sys-nec-housing",
+      "label": "NEC Housing",
+      "type": "ITSystem",
+      "vendor": "NEC",
+      "users": 100,
+      "cost": "£140,000/yr",
+      "annualCost": 140000,
+      "endYear": 2028,
+      "endMonth": 12,
+      "noticePeriod": 6,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-nec-planning",
+      "label": "NEC Planning",
+      "type": "ITSystem",
+      "vendor": "NEC",
+      "users": 28,
+      "cost": "£60,000/yr",
+      "annualCost": 60000,
+      "endYear": 2029,
+      "endMonth": 9,
+      "noticePeriod": 6,
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": false,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-whitespace-waste",
+      "label": "Whitespace Waste",
+      "type": "ITSystem",
+      "vendor": "Whitespace",
+      "users": 60,
+      "cost": "£85,000/yr",
+      "annualCost": 85000,
+      "endYear": 2028,
+      "endMonth": 3,
+      "noticePeriod": 3,
+      "portability": "Medium",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-firmstep-crm",
+      "label": "Firmstep Digital",
+      "type": "ITSystem",
+      "vendor": "Firmstep",
+      "users": 200,
+      "cost": "£75,000/yr",
+      "annualCost": 75000,
+      "endYear": 2030,
+      "endMonth": 6,
+      "noticePeriod": 3,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "isCloud": true,
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    }
+  ],
+  "edges": [
+    {
+      "source": "sys-nec-revben-d2",
+      "target": "fn-3",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-nec-housing",
+      "target": "fn-66",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-nec-planning",
+      "target": "fn-101",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-whitespace-waste",
+      "target": "fn-38",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sys-firmstep-crm",
+      "target": "fn-43",
+      "relationship": "REALIZES"
+    }
+  ]
+}
