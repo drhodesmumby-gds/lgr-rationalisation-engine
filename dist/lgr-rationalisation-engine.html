@@ -462,7 +462,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                     <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
                         <h4 class="font-bold text-sm mb-1">Validate a File</h4>
                         <p class="text-xs text-gray-600 mb-3">Check a JSON file against the schema before importing.</p>
-                        <button id="btnOpenValidator" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center opacity-50 cursor-not-allowed" type="button" disabled>Coming soon</button>
+                        <button id="btnOpenValidator" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center" type="button">Open Validator</button>
                     </div>
 
                     <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
@@ -484,6 +484,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                     </div>
                 </div>
             </div>
+
+            <!-- Validator full-page view (hidden by default) -->
+            <div id="validatorContainer" class="hidden"></div>
         </div>
 
         <!-- STAGE 1.5: TRANSITION CONFIGURATION -->
@@ -12092,6 +12095,370 @@ tr:nth-child(even){background:#f3f2f1;}
     return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // src/features/schema-validator.js
+  var ITSYSTEM_DEF = SCHEMA_DEFINITIONS.architecture.nodeTypes.ITSystem;
+  function getEnumFor(fieldName) {
+    const field = ITSYSTEM_DEF.fields.find((f) => f.name === fieldName);
+    return field && field.enum ? field.enum : null;
+  }
+  var VALID_PORTABILITY = getEnumFor("portability");
+  var VALID_PARTITIONING = getEnumFor("dataPartitioning");
+  var VALID_SUPPORT_MODELS = getEnumFor("supportModel");
+  var VALID_NODE_TYPES = ["Function", "ITSystem"];
+  function makeResult() {
+    return { valid: true, errors: [], warnings: [], info: [] };
+  }
+  function addError(result, message, path) {
+    result.errors.push(path ? { message, path } : { message });
+    result.valid = false;
+  }
+  function addWarning(result, message, path) {
+    result.warnings.push(path ? { message, path } : { message });
+  }
+  function addInfo(result, message) {
+    result.info.push({ message });
+  }
+  function findCaseInsensitiveMatch(value, enumValues) {
+    if (!enumValues) return null;
+    const lower = String(value).toLowerCase();
+    return enumValues.find((e) => e.toLowerCase() === lower) || null;
+  }
+  function validateArchitecture(json) {
+    const result = makeResult();
+    if (json === null || json === void 0) {
+      addError(result, "Input is null or undefined");
+      return result;
+    }
+    if (typeof json !== "object" || Array.isArray(json)) {
+      addError(result, "Input is not a valid JSON object");
+      return result;
+    }
+    if (!json.councilName) {
+      addError(result, "Missing required field: councilName", "councilName");
+    }
+    if (!json.nodes || !Array.isArray(json.nodes)) {
+      addError(result, "Missing required field: nodes (must be an array)", "nodes");
+    }
+    if (!json.edges || !Array.isArray(json.edges)) {
+      addError(result, "Missing required field: edges (must be an array)", "edges");
+    }
+    if (!result.valid && (result.errors.some((e) => e.path === "nodes") || result.errors.some((e) => e.path === "edges"))) {
+      if (json.councilName) addInfo(result, `Council: ${json.councilName}`);
+      return result;
+    }
+    const nodes = Array.isArray(json.nodes) ? json.nodes : [];
+    const edges = Array.isArray(json.edges) ? json.edges : [];
+    if (json.councilName) addInfo(result, `Council: ${json.councilName}`);
+    const nodeIds = /* @__PURE__ */ new Set();
+    const duplicateIds = /* @__PURE__ */ new Set();
+    const functionNodeIds = /* @__PURE__ */ new Set();
+    const systemNodeIds = /* @__PURE__ */ new Set();
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const nodeRef = node.id ? `'${node.id}'` : `at index ${i}`;
+      if (!node.id) {
+        addError(result, `Node at index ${i}: missing required field 'id'`, `nodes[${i}]`);
+      } else {
+        if (nodeIds.has(node.id)) {
+          duplicateIds.add(node.id);
+        }
+        nodeIds.add(node.id);
+      }
+      if (!node.type) {
+        addError(result, `Node at index ${i}: missing required field 'type'`, `nodes[${i}]`);
+        continue;
+      }
+      if (!VALID_NODE_TYPES.includes(node.type)) {
+        addError(result, `Node ${nodeRef}: invalid type '${node.type}' (must be 'Function' or 'ITSystem')`, `nodes[${i}].type`);
+        continue;
+      }
+      if (node.type === "Function") {
+        if (node.id) functionNodeIds.add(node.id);
+        if (!node.lgaFunctionId) {
+          const label = node.label || node.id || `at index ${i}`;
+          addError(result, `Function node '${label}': missing required field 'lgaFunctionId'`, `nodes[${i}].lgaFunctionId`);
+        }
+      }
+      if (node.type === "ITSystem") {
+        if (node.id) systemNodeIds.add(node.id);
+        if (!node.vendor) {
+          const label = node.label || node.id || `at index ${i}`;
+          addError(result, `ITSystem node '${label}': missing required field 'vendor'`, `nodes[${i}].vendor`);
+        }
+        const enumChecks = [
+          { field: "portability", valid: VALID_PORTABILITY },
+          { field: "dataPartitioning", valid: VALID_PARTITIONING },
+          { field: "supportModel", valid: VALID_SUPPORT_MODELS }
+        ];
+        const nodeLabel = node.label || node.id || `at index ${i}`;
+        for (const { field, valid } of enumChecks) {
+          if (node[field] !== void 0 && node[field] !== null && node[field] !== "") {
+            if (!valid.includes(node[field])) {
+              const suggestion = findCaseInsensitiveMatch(node[field], valid);
+              if (suggestion) {
+                addWarning(result, `Node '${nodeLabel}': ${field} value '${node[field]}' should be '${suggestion}'`, `nodes[${i}].${field}`);
+              } else {
+                addWarning(result, `Node '${nodeLabel}': ${field} value '${node[field]}' is not a recognised value (expected one of: ${valid.join(", ")})`, `nodes[${i}].${field}`);
+              }
+            }
+          }
+        }
+        if (node.annualCost === void 0 || node.annualCost === null) {
+          addWarning(result, `Node '${nodeLabel}': missing 'annualCost' \u2014 cost analysis will be limited`, `nodes[${i}].annualCost`);
+        }
+        if (node.endYear === void 0 || node.endYear === null) {
+          addWarning(result, `Node '${nodeLabel}': missing 'endYear' \u2014 contract timeline will be incomplete`, `nodes[${i}].endYear`);
+        }
+      }
+    }
+    for (const dupId of duplicateIds) {
+      addError(result, `Duplicate node ID: '${dupId}'`);
+    }
+    const realizesTargets = /* @__PURE__ */ new Set();
+    const realizedFunctions = /* @__PURE__ */ new Set();
+    let realizesCount = 0;
+    let consumesCount = 0;
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i];
+      if (!edge.source || !edge.target) {
+        addError(result, `Edge at index ${i}: missing 'source' or 'target'`, `edges[${i}]`);
+        continue;
+      }
+      if (!nodeIds.has(edge.source)) {
+        addError(result, `Edge at index ${i}: source '${edge.source}' does not match any node ID`, `edges[${i}].source`);
+      }
+      if (!nodeIds.has(edge.target)) {
+        addError(result, `Edge at index ${i}: target '${edge.target}' does not match any node ID`, `edges[${i}].target`);
+      }
+      const rel = edge.relationship;
+      if (rel === "REALIZES") {
+        realizesCount++;
+        realizesTargets.add(edge.source);
+        realizedFunctions.add(edge.target);
+      } else if (rel === "CONSUMES_CAPABILITY") {
+        consumesCount++;
+        if (!edge.capabilities || !Array.isArray(edge.capabilities) || edge.capabilities.length === 0) {
+          addWarning(result, `Edge at index ${i}: CONSUMES_CAPABILITY has empty capabilities array`, `edges[${i}].capabilities`);
+        }
+      }
+    }
+    for (const sysId of systemNodeIds) {
+      if (!realizesTargets.has(sysId)) {
+        const sysNode = nodes.find((n) => n.id === sysId);
+        const label = sysNode && sysNode.label ? sysNode.label : sysId;
+        addWarning(result, `ITSystem node '${label}': no REALIZES edge \u2014 system is orphaned`);
+      }
+    }
+    for (const fnId of functionNodeIds) {
+      if (!realizedFunctions.has(fnId)) {
+        const fnNode = nodes.find((n) => n.id === fnId);
+        const label = fnNode && fnNode.label ? fnNode.label : fnId;
+        addWarning(result, `Function node '${label}': no systems realize this function`);
+      }
+    }
+    const fnCount = functionNodeIds.size;
+    const sysCount = systemNodeIds.size;
+    addInfo(result, `${fnCount} Function node${fnCount !== 1 ? "s" : ""}`);
+    addInfo(result, `${sysCount} ITSystem node${sysCount !== 1 ? "s" : ""}`);
+    addInfo(result, `${edges.length} edge${edges.length !== 1 ? "s" : ""} (${realizesCount} REALIZES, ${consumesCount} CONSUMES_CAPABILITY)`);
+    const systemNodes = nodes.filter((n) => n.type === "ITSystem");
+    const total = systemNodes.length;
+    if (total > 0) {
+      const withAnnualCost = systemNodes.filter((n) => n.annualCost !== void 0 && n.annualCost !== null).length;
+      const withEndYear = systemNodes.filter((n) => n.endYear !== void 0 && n.endYear !== null).length;
+      const withPortability = systemNodes.filter((n) => n.portability !== void 0 && n.portability !== null && n.portability !== "").length;
+      addInfo(result, `Field completeness: annualCost ${withAnnualCost}/${total}, endYear ${withEndYear}/${total}, portability ${withPortability}/${total}`);
+    }
+    return result;
+  }
+  function validateTransitionConfig(json) {
+    const result = makeResult();
+    if (json === null || json === void 0) {
+      addError(result, "Input is null or undefined");
+      return result;
+    }
+    if (typeof json !== "object" || Array.isArray(json)) {
+      addError(result, "Input is not a valid JSON object");
+      return result;
+    }
+    if (!json.vestingDate) {
+      addError(result, "Missing required field: vestingDate", "vestingDate");
+    } else {
+      const dateVal = json.vestingDate;
+      const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      const parsed = new Date(dateVal);
+      if (!isoDateRegex.test(dateVal) || isNaN(parsed.getTime())) {
+        addError(result, `vestingDate '${dateVal}' is not a valid date (expected YYYY-MM-DD)`, "vestingDate");
+      } else {
+        const today = /* @__PURE__ */ new Date();
+        today.setHours(0, 0, 0, 0);
+        if (parsed < today) {
+          addWarning(result, `vestingDate '${dateVal}' is in the past`);
+        }
+        addInfo(result, `Vesting date: ${dateVal}`);
+      }
+    }
+    if (!json.successors || !Array.isArray(json.successors)) {
+      addError(result, "Missing required field: successors (must be an array)", "successors");
+      return result;
+    }
+    if (json.successors.length === 0) {
+      addError(result, "successors array is empty \u2014 at least one successor required", "successors");
+    }
+    let totalPredecessorAssignments = 0;
+    for (let i = 0; i < json.successors.length; i++) {
+      const s = json.successors[i];
+      if (!s.name) {
+        addError(result, `Successor at index ${i}: missing required field 'name'`, `successors[${i}].name`);
+      }
+      const hasFullPredecessors = Array.isArray(s.fullPredecessors) && s.fullPredecessors.length > 0;
+      const hasPartialPredecessors = Array.isArray(s.partialPredecessors) && s.partialPredecessors.length > 0;
+      if (!hasFullPredecessors && !hasPartialPredecessors) {
+        if (s.name) {
+          addWarning(result, `Successor '${s.name}': no predecessors assigned`);
+        }
+      }
+      if (hasFullPredecessors) totalPredecessorAssignments += s.fullPredecessors.length;
+      if (hasPartialPredecessors) totalPredecessorAssignments += s.partialPredecessors.length;
+    }
+    const successorCount = json.successors.length;
+    addInfo(result, `${successorCount} successor authorit${successorCount !== 1 ? "ies" : "y"} defined`);
+    addInfo(result, `${totalPredecessorAssignments} total predecessor assignment${totalPredecessorAssignments !== 1 ? "s" : ""}`);
+    return result;
+  }
+
+  // src/features/validation-panel.js
+  function escHtml3(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function renderValidationPanel() {
+    return `
+<div id="validatorView" class="max-w-6xl mx-auto p-8">
+    <button id="btnBackFromValidator" class="text-[#1d70b8] underline font-bold text-sm mb-6 block">\u2190 Back to upload</button>
+    <h2 class="text-2xl font-bold mb-2">Validate Architecture File</h2>
+    <p class="text-sm text-gray-600 mb-6">Check a JSON file against the LGR schema before importing. Auto-detects whether it's an architecture file or transition config.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Left: Input -->
+        <div>
+            <div class="flex gap-3 mb-4">
+                <button id="btnValidatorUpload" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold">Upload .json</button>
+                <input type="file" id="validatorFileInput" accept=".json" class="sr-only">
+                <span class="text-sm text-gray-500 self-center">or paste JSON below</span>
+            </div>
+            <textarea id="validatorTextarea" class="w-full h-80 border border-gray-300 p-3 font-mono text-xs resize-none focus:border-[#1d70b8] focus:outline-none" placeholder='Paste JSON here...
+
+{
+  "councilName": "...",
+  "nodes": [...],
+  "edges": [...]
+}'></textarea>
+            <div class="flex gap-3 mt-4">
+                <button id="btnRunValidation" class="gds-btn px-4 py-2 text-sm font-bold">Validate</button>
+                <button id="btnClearValidator" class="gds-btn-secondary px-3 py-1.5 text-sm">Clear</button>
+            </div>
+        </div>
+
+        <!-- Right: Results -->
+        <div id="validatorResults" class="border-l border-gray-200 pl-8">
+            <p class="text-sm text-gray-400 italic">Results will appear here after validation.</p>
+        </div>
+    </div>
+</div>`;
+  }
+  function wireValidationPanel() {
+    const uploadBtn = document.getElementById("btnValidatorUpload");
+    const fileInput2 = document.getElementById("validatorFileInput");
+    const textarea = document.getElementById("validatorTextarea");
+    const runBtn = document.getElementById("btnRunValidation");
+    const clearBtn = document.getElementById("btnClearValidator");
+    const resultsDiv = document.getElementById("validatorResults");
+    if (!uploadBtn) return;
+    uploadBtn.addEventListener("click", () => fileInput2.click());
+    fileInput2.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      textarea.value = text;
+      fileInput2.value = "";
+    });
+    clearBtn.addEventListener("click", () => {
+      textarea.value = "";
+      resultsDiv.innerHTML = '<p class="text-sm text-gray-400 italic">Results will appear here after validation.</p>';
+    });
+    runBtn.addEventListener("click", () => {
+      const text = textarea.value.trim();
+      if (!text) {
+        resultsDiv.innerHTML = '<p class="text-sm text-[#d4351c] font-bold">Please paste or upload a JSON file first.</p>';
+        return;
+      }
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        resultsDiv.innerHTML = renderResults({
+          valid: false,
+          errors: [{ message: `Invalid JSON: ${err.message}` }],
+          warnings: [],
+          info: []
+        });
+        return;
+      }
+      let result;
+      let fileType;
+      if (json.successors && !json.nodes) {
+        result = validateTransitionConfig(json);
+        fileType = "Transition Configuration";
+      } else {
+        result = validateArchitecture(json);
+        fileType = "Council Architecture";
+      }
+      resultsDiv.innerHTML = renderResults(result, fileType);
+    });
+  }
+  function renderResults(result, fileType) {
+    let html = "";
+    const statusIcon = result.valid ? "\u2713" : "\u2717";
+    const statusColour = result.valid ? "text-[#00703c]" : "text-[#d4351c]";
+    const statusText = result.valid ? "Valid" : "Invalid";
+    html += `<div class="flex items-center gap-2 mb-4">`;
+    html += `<span class="text-2xl ${statusColour} font-bold">${statusIcon}</span>`;
+    html += `<span class="text-lg font-bold ${statusColour}">${statusText}</span>`;
+    if (fileType) html += `<span class="text-sm text-gray-500 ml-2">(${fileType})</span>`;
+    html += `</div>`;
+    if (result.info && result.info.length > 0) {
+      html += '<div class="mb-4 space-y-1">';
+      for (const item of result.info) {
+        html += `<p class="text-sm text-gray-700">\u2713 ${escHtml3(item.message)}</p>`;
+      }
+      html += "</div>";
+    }
+    if (result.errors && result.errors.length > 0) {
+      html += `<div class="mb-4 border-l-4 border-[#d4351c] pl-4">`;
+      html += `<h4 class="font-bold text-sm text-[#d4351c] mb-2">${result.errors.length} Error${result.errors.length > 1 ? "s" : ""}</h4>`;
+      html += '<ul class="space-y-1">';
+      for (const err of result.errors) {
+        html += `<li class="text-sm text-[#d4351c]">\u2022 ${escHtml3(err.message)}</li>`;
+      }
+      html += "</ul></div>";
+    }
+    if (result.warnings && result.warnings.length > 0) {
+      html += `<div class="mb-4 border-l-4 border-[#f47738] pl-4">`;
+      html += `<h4 class="font-bold text-sm text-[#f47738] mb-2">${result.warnings.length} Warning${result.warnings.length > 1 ? "s" : ""}</h4>`;
+      html += '<ul class="space-y-1">';
+      for (const warn of result.warnings) {
+        html += `<li class="text-sm text-[#f47738]">\u2022 ${escHtml3(warn.message)}</li>`;
+      }
+      html += "</ul></div>";
+    }
+    if (result.valid) {
+      html += '<div class="mt-6 pt-4 border-t border-gray-200 flex gap-3">';
+      html += '<button id="btnValidatorImport" class="gds-btn px-3 py-1.5 text-sm font-bold">Import to Engine</button>';
+      html += "</div>";
+    }
+    return html;
+  }
+
   // src/main.js
   state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
   function toggleHeaderCollapse() {
@@ -12373,6 +12740,46 @@ tr:nth-child(even){background:#f3f2f1;}
   var fileInput = document.getElementById("fileInput");
   document.getElementById("uploadArea").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("click", (e) => e.stopPropagation());
+  document.getElementById("btnOpenValidator")?.addEventListener("click", () => {
+    const stageContent = document.getElementById("stageUpload");
+    const validatorContainer = document.getElementById("validatorContainer");
+    Array.from(stageContent.children).forEach((child) => {
+      if (child.id !== "validatorContainer") child.classList.add("hidden");
+    });
+    validatorContainer.innerHTML = renderValidationPanel();
+    validatorContainer.classList.remove("hidden");
+    wireValidationPanel();
+    document.getElementById("btnBackFromValidator")?.addEventListener("click", () => {
+      validatorContainer.classList.add("hidden");
+      validatorContainer.innerHTML = "";
+      Array.from(stageContent.children).forEach((child) => {
+        if (child.id !== "validatorContainer") child.classList.remove("hidden");
+      });
+    });
+    validatorContainer.addEventListener("click", (e) => {
+      if (e.target.id !== "btnValidatorImport") return;
+      const textarea = document.getElementById("validatorTextarea");
+      if (!textarea || !textarea.value.trim()) return;
+      try {
+        const json = JSON.parse(textarea.value.trim());
+        if (json.successors && !json.nodes) {
+          state.pendingTransitionConfig = json;
+        } else {
+          state.rawUploads.push({ filename: "validated-file.json", data: json });
+        }
+        document.getElementById("btnBackFromValidator").click();
+        const listUl = document.getElementById("uploadedFilesUl");
+        const fileListEl = document.getElementById("fileList");
+        if (fileListEl) fileListEl.classList.remove("hidden");
+        const li = document.createElement("li");
+        li.textContent = json.councilName ? `${json.councilName} (validated, ${(json.nodes || []).filter((n) => n.type === "ITSystem").length} systems)` : `transition-config.json (validated, ${(json.successors || []).length} successors)`;
+        listUl.appendChild(li);
+        showNotification({ type: "success", message: "File validated and imported successfully." });
+      } catch (err) {
+        showNotification({ type: "error", message: "Failed to import: " + err.message });
+      }
+    });
+  });
   document.getElementById("btnDownloadTemplate")?.addEventListener("click", async () => {
     if (typeof ExcelJS === "undefined") {
       const script = document.createElement("script");
@@ -12514,7 +12921,7 @@ tr:nth-child(even){background:#f3f2f1;}
     } else {
       addSuccessorRow();
     }
-    validateTransitionConfig();
+    validateTransitionConfig2();
   }
   function addSuccessorRow(name, fullPreds, partialPreds) {
     successorCounter++;
@@ -12561,11 +12968,11 @@ tr:nth-child(even){background:#f3f2f1;}
     div.querySelectorAll("input").forEach((input) => {
       input.addEventListener("change", () => {
         enforceTransitionConstraints();
-        validateTransitionConfig();
+        validateTransitionConfig2();
       });
       input.addEventListener("input", () => {
         enforceTransitionConstraints();
-        validateTransitionConfig();
+        validateTransitionConfig2();
       });
     });
     enforceTransitionConstraints();
@@ -12574,7 +12981,7 @@ tr:nth-child(even){background:#f3f2f1;}
       const row = document.getElementById(`successor-row-${removeIdx}`);
       if (row) row.remove();
       enforceTransitionConstraints();
-      validateTransitionConfig();
+      validateTransitionConfig2();
     });
   }
   function collectTransitionStructure() {
@@ -12599,7 +13006,7 @@ tr:nth-child(even){background:#f3f2f1;}
     }
     return { vestingDate, successors };
   }
-  function validateTransitionConfig() {
+  function validateTransitionConfig2() {
     const structure = collectTransitionStructure();
     const allCouncils = Array.from(state.mergedArchitecture.councils);
     const assignedCouncils = /* @__PURE__ */ new Set();
@@ -12727,7 +13134,7 @@ tr:nth-child(even){background:#f3f2f1;}
     state.transitionStructure = { vestingDate: json.vestingDate, successors: json.successors };
     renderTransitionConfigPanel();
     enforceTransitionConstraints();
-    validateTransitionConfig();
+    validateTransitionConfig2();
   }
   function detectFromArchitecture() {
     const authorityMap = /* @__PURE__ */ new Map();
@@ -12758,7 +13165,7 @@ tr:nth-child(even){background:#f3f2f1;}
     state.transitionStructure = { vestingDate: state.transitionStructure ? state.transitionStructure.vestingDate : null, successors };
     renderTransitionConfigPanel();
     enforceTransitionConstraints();
-    validateTransitionConfig();
+    validateTransitionConfig2();
   }
   document.getElementById("btnAddSuccessor").addEventListener("click", () => {
     addSuccessorRow();

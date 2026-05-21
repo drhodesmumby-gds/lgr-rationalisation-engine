@@ -42,6 +42,7 @@ import { showNotification, showConfirm } from './ui-notifications.js';
 import { downloadTemplate } from './features/template-generator.js';
 import { convertXlsxToArchitecture } from './features/template-converter.js';
 import { renderSchemaReference } from './features/schema-reference.js';
+import { renderValidationPanel, wireValidationPanel } from './features/validation-panel.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
@@ -415,6 +416,59 @@ if (schemaRefEl) {
 const fileInput = document.getElementById('fileInput');
 document.getElementById('uploadArea').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('click', (e) => e.stopPropagation());
+
+// --- Validator view navigation ---
+document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
+    const stageContent = document.getElementById('stageUpload');
+    const validatorContainer = document.getElementById('validatorContainer');
+
+    // Hide all direct children of stageUpload except the validatorContainer
+    Array.from(stageContent.children).forEach(child => {
+        if (child.id !== 'validatorContainer') child.classList.add('hidden');
+    });
+
+    validatorContainer.innerHTML = renderValidationPanel();
+    validatorContainer.classList.remove('hidden');
+    wireValidationPanel();
+
+    // Back button
+    document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
+        validatorContainer.classList.add('hidden');
+        validatorContainer.innerHTML = '';
+        Array.from(stageContent.children).forEach(child => {
+            if (child.id !== 'validatorContainer') child.classList.remove('hidden');
+        });
+    });
+
+    // Import button (injected after validation succeeds)
+    validatorContainer.addEventListener('click', (e) => {
+        if (e.target.id !== 'btnValidatorImport') return;
+        const textarea = document.getElementById('validatorTextarea');
+        if (!textarea || !textarea.value.trim()) return;
+        try {
+            const json = JSON.parse(textarea.value.trim());
+            if (json.successors && !json.nodes) {
+                state.pendingTransitionConfig = json;
+            } else {
+                state.rawUploads.push({ filename: 'validated-file.json', data: json });
+            }
+            // Navigate back to upload view
+            document.getElementById('btnBackFromValidator').click();
+            // Update the staged file list
+            const listUl = document.getElementById('uploadedFilesUl');
+            const fileListEl = document.getElementById('fileList');
+            if (fileListEl) fileListEl.classList.remove('hidden');
+            const li = document.createElement('li');
+            li.textContent = json.councilName
+                ? `${json.councilName} (validated, ${(json.nodes || []).filter(n => n.type === 'ITSystem').length} systems)`
+                : `transition-config.json (validated, ${(json.successors || []).length} successors)`;
+            listUl.appendChild(li);
+            showNotification({ type: 'success', message: 'File validated and imported successfully.' });
+        } catch (err) {
+            showNotification({ type: 'error', message: 'Failed to import: ' + err.message });
+        }
+    });
+});
 
 document.getElementById('btnDownloadTemplate')?.addEventListener('click', async () => {
     if (typeof ExcelJS === 'undefined') {

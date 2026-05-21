@@ -82,7 +82,7 @@
                     <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
                         <h4 class="font-bold text-sm mb-1">Validate a File</h4>
                         <p class="text-xs text-gray-600 mb-3">Check a JSON file against the schema before importing.</p>
-                        <button id="btnOpenValidator" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center opacity-50 cursor-not-allowed" type="button" disabled>Coming soon</button>
+                        <button id="btnOpenValidator" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-center" type="button">Open Validator</button>
                     </div>
 
                     <div class="border border-gray-300 p-4 hover:border-[#1d70b8] transition-colors">
@@ -104,6 +104,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Validator full-page view (hidden by default) -->
+            <div id="validatorContainer" class="hidden"></div>
         </div>
 
         <!-- STAGE 1.5: TRANSITION CONFIGURATION -->
