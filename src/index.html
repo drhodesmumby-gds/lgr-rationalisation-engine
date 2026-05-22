@@ -535,28 +535,6 @@
             </div>
         </div>
 
-        <!-- ARCHITECTURE EDITOR MODAL -->
-        <div id="architectureEditorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-            <div class="bg-white w-full max-w-6xl mx-4 p-6 border-t-8 border-[#1d70b8] shadow-2xl relative max-h-[90vh] flex flex-col">
-                <button id="btnCloseArchEditor" class="absolute top-4 right-4 text-gray-500 hover:text-black font-bold text-xl">&times;</button>
-                <h2 id="archEditorTitle" class="text-2xl font-bold mb-4">Edit Architecture</h2>
-                <div id="archEditorTabs" class="flex gap-2 mb-4 border-b border-[#b1b4b6]">
-                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-[#1d70b8]" data-tab="council">Council Info</button>
-                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-transparent" data-tab="functions">Functions</button>
-                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-transparent" data-tab="systems">IT Systems</button>
-                    <button class="arch-tab-btn px-4 py-2 font-bold text-sm border-b-4 border-transparent" data-tab="edges">Edges</button>
-                </div>
-                <div id="archEditorNotifications"></div>
-                <div id="archEditorContent" class="overflow-auto flex-1"></div>
-                <div id="archEditorConfirm" class="hidden mt-3 p-3 bg-green-50 border-l-4 border-l-[#00703c] text-[#00703c] font-bold text-sm"></div>
-                <div class="flex gap-3 mt-4 pt-4 border-t border-[#b1b4b6]">
-                    <button id="btnApplyArchChanges" class="gds-btn" type="button">Apply Changes</button>
-                    <button id="btnExportArchJson" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Export JSON</button>
-                    <button id="btnCancelArchEditor" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Cancel</button>
-                </div>
-            </div>
-        </div>
-
         <!-- IMPORT WIZARD MODAL -->
         <div id="importWizardModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="importWizardTitle">
             <div class="bg-white w-full max-w-5xl mx-4 p-6 border-t-8 border-[#1d70b8] shadow-2xl max-h-[90vh] flex flex-col">

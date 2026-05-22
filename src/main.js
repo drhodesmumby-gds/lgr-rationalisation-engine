@@ -27,7 +27,8 @@ import { generatePersonaQuestions } from './analysis/questions.js';
 
 import { state } from './state.js';
 import { openImportWizard, closeImportWizard, handleImportNext, handleImportBack } from './features/import-wizard.js';
-import { openArchEditor, wireEditArchBtn, generateId } from './features/arch-editor.js';
+import { renderUnifiedEditor, wireUnifiedEditor } from './features/unified-editor/editor.js';
+import { renderWizard, wireWizard } from './features/unified-editor/wizard.js';
 import {
     enterSimulation, exitSimulation, recomputeSimulation,
     renderSimulationWorkspace, renderBeforeAfterMetrics
@@ -43,9 +44,60 @@ import { downloadTemplate } from './features/template-generator.js';
 import { convertXlsxToArchitecture } from './features/template-converter.js';
 import { renderSchemaReference } from './features/schema-reference.js';
 import { renderValidationPanel, wireValidationPanel } from './features/validation-panel.js';
-import { renderPreImportEditor, wirePreImportEditor, renderTransitionConfigEditor, wireTransitionConfigEditor } from './features/pre-import-editor.js';
+import { renderTransitionConfigEditor, wireTransitionConfigEditor } from './features/pre-import-editor.js';
 
 state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
+
+// --- Unified Editor helpers ---
+
+function openUnifiedEditor(uploadIdx) {
+    const upload = state.rawUploads[uploadIdx];
+    if (!upload) return;
+
+    const stageContent = document.getElementById('stageUpload');
+    const validatorContainer = document.getElementById('validatorContainer');
+
+    // Hide Stage 1 content, show editor container
+    Array.from(stageContent.children).forEach(child => {
+        if (child.id !== 'validatorContainer') child.classList.add('hidden');
+    });
+    validatorContainer.classList.remove('hidden');
+    stageContent.classList.remove('max-w-4xl');
+    stageContent.classList.add('max-w-6xl');
+
+    const title = upload.data.councilName || upload.filename || 'Architecture Editor';
+    validatorContainer.innerHTML = renderUnifiedEditor(upload.data, { source: 'edit', title });
+    wireUnifiedEditor(validatorContainer, upload.data, {
+        source: 'edit',
+        onSave(data) {
+            state.rawUploads[uploadIdx] = { filename: upload.filename, data };
+            showNotification({ type: 'success', message: 'Architecture saved.' });
+            closeUnifiedEditor();
+        },
+        onBack() {
+            closeUnifiedEditor();
+        }
+    });
+}
+
+function closeUnifiedEditor() {
+    const stageContent = document.getElementById('stageUpload');
+    const validatorContainer = document.getElementById('validatorContainer');
+    validatorContainer.classList.add('hidden');
+    validatorContainer.innerHTML = '';
+    stageContent.classList.add('max-w-4xl');
+    stageContent.classList.remove('max-w-6xl');
+    Array.from(stageContent.children).forEach(child => {
+        if (child.id !== 'validatorContainer') child.classList.remove('hidden');
+    });
+}
+
+function wireEditArchBtn(btn) {
+    btn.addEventListener('click', function() {
+        const idx = parseInt(this.getAttribute('data-upload-idx'));
+        if (!isNaN(idx) && state.rawUploads[idx]) openUnifiedEditor(idx);
+    });
+}
 
 // =======================================================================
 // INLINE DOCUMENTATION — Sprint 7
@@ -523,11 +575,11 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                     return;
                 }
 
-                // Replace validator with architecture editor
-                validatorContainer.innerHTML = renderPreImportEditor(json);
-                wirePreImportEditor(json,
-                    // onImport callback
-                    (fixedJson) => {
+                // Replace validator with unified architecture editor
+                validatorContainer.innerHTML = renderUnifiedEditor(json, { source: 'validator', title: json.councilName || 'Architecture Editor' });
+                wireUnifiedEditor(validatorContainer, json, {
+                    source: 'validator',
+                    onSave(fixedJson) {
                         if (fixedJson.successors && !fixedJson.nodes) {
                             state.pendingTransitionConfig = fixedJson;
                         } else {
@@ -541,25 +593,21 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                         Array.from(stageContent.children).forEach(child => {
                             if (child.id !== 'validatorContainer') child.classList.remove('hidden');
                         });
-                        // Show file list
                         const fileList = document.getElementById('fileList');
                         const listUl = document.getElementById('uploadedFilesUl');
                         if (fileList) fileList.classList.remove('hidden');
                         const li = document.createElement('li');
                         li.textContent = fixedJson.councilName
                             ? `${fixedJson.councilName} (edited, ${(fixedJson.nodes || []).filter(n => n.type === 'ITSystem').length} systems)`
-                            : `transition-config.json (edited, ${(fixedJson.successors || []).length} successors)`;
+                            : `edited-file.json`;
                         listUl.appendChild(li);
                         showNotification({ type: 'success', message: 'File edited and imported successfully.' });
                     },
-                    // onBack callback — return to validator
-                    () => {
+                    onBack() {
                         validatorContainer.innerHTML = renderValidationPanel();
                         wireValidationPanel();
-                        // Restore the textarea content
                         const ta = document.getElementById('validatorTextarea');
                         if (ta) ta.value = savedTextareaValue;
-                        // Re-wire back button
                         document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
                             validatorContainer.classList.add('hidden');
                             validatorContainer.innerHTML = '';
@@ -570,7 +618,7 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                             });
                         });
                     }
-                );
+                });
             } catch (err) {
                 showNotification({ type: 'error', message: 'Failed to parse JSON for editor: ' + err.message });
             }
