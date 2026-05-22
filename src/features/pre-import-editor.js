@@ -279,6 +279,10 @@ function buildSystemsTabHtml(nodes, edges) {
 
     return `
 <div>
+    <div class="flex items-center gap-3 mb-3">
+        <button id="btnRefreshGroups" class="text-[#1d70b8] underline text-xs font-bold">↻ Refresh grouping</button>
+        <span class="text-xs text-gray-400">Re-sorts systems into domain groups after function changes</span>
+    </div>
     ${groupedHtml}
     <button id="btnAddSystem" class="gds-btn-secondary mt-4 px-3 py-1.5 text-sm font-bold">+ Add System</button>
 </div>`;
@@ -530,11 +534,9 @@ export function wirePreImportEditor(json, onImport, onBack) {
             if (e.target.classList.contains('editor-sys-realizes')) {
                 const sysId = e.target.dataset.sysId;
                 const fnId = e.target.value;
-                // Remove existing REALIZES edges for this system
                 editorState.edges = editorState.edges.filter(
                     edge => !(edge.relationship === 'REALIZES' && edge.source === sysId)
                 );
-                // Add new REALIZES edge if a function was selected
                 if (fnId) {
                     editorState.edges.push({ source: sysId, target: fnId, relationship: 'REALIZES' });
                 }
@@ -575,10 +577,13 @@ export function wirePreImportEditor(json, onImport, onBack) {
         rerenderDependencies();
     }
 
-    // Add System button (delegated from panel)
+    // Add System and Refresh buttons (delegated from panel)
     sysBody.addEventListener('click', (e) => {
         if (e.target.id === 'btnAddSystem') {
             editorState.nodes.push({ id: generateId('sys'), label: '', type: 'ITSystem', vendor: '' });
+            rerenderSystems();
+        }
+        if (e.target.id === 'btnRefreshGroups') {
             rerenderSystems();
         }
     });

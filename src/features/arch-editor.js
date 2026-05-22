@@ -106,27 +106,36 @@ function buildFunctionsTab() {
 
 
 function buildSystemsTab() {
-    const nodes = (state.archEditorState.data.nodes || []).filter(n => n.type === 'ITSystem');
+    const allNodes = state.archEditorState.data.nodes || [];
+    const edges = state.archEditorState.data.edges || [];
+    const nodes = allNodes.filter(n => n.type === 'ITSystem');
+    const functions = allNodes.filter(n => n.type === 'Function');
+    const smOpts = ['vendor-supported','community-supported','unsupported'];
+
     const rows = nodes.map(sys => {
-        const globalIdx = state.archEditorState.data.nodes.indexOf(sys);
+        const globalIdx = allNodes.indexOf(sys);
         const portOpts = ['High','Medium','Low'].map(v => `<option value="${v}" ${sys.portability===v?'selected':''}>${v}</option>`).join('');
         const dpOpts = ['Segmented','Monolithic'].map(v => `<option value="${v}" ${sys.dataPartitioning===v?'selected':''}>${v}</option>`).join('');
+        const supportOpts = smOpts.map(v => `<option value="${v}" ${sys.supportModel===v?'selected':''}>${v}</option>`).join('');
+        const realizedFnId = edges.find(e => e.relationship === 'REALIZES' && e.source === sys.id)?.target || '';
+        const fnOpts = functions.map(fn => `<option value="${fn.id}" ${realizedFnId===fn.id?'selected':''}>${escHtml(fn.label||fn.id)}</option>`).join('');
+
         return `<tr>
             <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-32 arch-sys-input" value="${escHtml(sys.label||'')}" data-field="label" data-node-idx="${globalIdx}"></td>
             <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-28 arch-sys-input" value="${escHtml(sys.vendor||'')}" data-field="vendor" data-node-idx="${globalIdx}"></td>
             <td class="px-2 py-1"><input type="number" class="border border-[#b1b4b6] p-1 text-xs w-20 arch-sys-input" value="${sys.users||''}" data-field="users" data-node-idx="${globalIdx}" min="0"></td>
-            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-24 arch-sys-input" value="${escHtml(sys.cost||'')}" data-field="cost" data-node-idx="${globalIdx}" placeholder="£80k/yr"></td>
             <td class="px-2 py-1"><input type="number" class="border border-[#b1b4b6] p-1 text-xs w-20 arch-sys-input" value="${sys.annualCost||''}" data-field="annualCost" data-node-idx="${globalIdx}" min="0"></td>
             <td class="px-2 py-1"><input type="number" class="border border-[#b1b4b6] p-1 text-xs w-16 arch-sys-input" value="${sys.endYear||''}" data-field="endYear" data-node-idx="${globalIdx}" placeholder="2027"></td>
             <td class="px-2 py-1"><input type="number" class="border border-[#b1b4b6] p-1 text-xs w-12 arch-sys-input" value="${sys.endMonth||''}" data-field="endMonth" data-node-idx="${globalIdx}" min="1" max="12"></td>
             <td class="px-2 py-1"><input type="number" class="border border-[#b1b4b6] p-1 text-xs w-14 arch-sys-input" value="${sys.noticePeriod||''}" data-field="noticePeriod" data-node-idx="${globalIdx}" min="0"></td>
-            <td class="px-2 py-1"><select class="border border-[#b1b4b6] p-1 text-xs w-24 arch-sys-input" data-field="portability" data-node-idx="${globalIdx}"><option value="">--</option>${portOpts}</select></td>
-            <td class="px-2 py-1"><select class="border border-[#b1b4b6] p-1 text-xs w-24 arch-sys-input" data-field="dataPartitioning" data-node-idx="${globalIdx}"><option value="">--</option>${dpOpts}</select></td>
+            <td class="px-2 py-1"><select class="border border-[#b1b4b6] p-1 text-xs arch-sys-input" data-field="portability" data-node-idx="${globalIdx}"><option value="">--</option>${portOpts}</select></td>
+            <td class="px-2 py-1"><select class="border border-[#b1b4b6] p-1 text-xs arch-sys-input" data-field="dataPartitioning" data-node-idx="${globalIdx}"><option value="">--</option>${dpOpts}</select></td>
             <td class="px-2 py-1 text-center"><input type="checkbox" class="arch-sys-input" ${sys.isCloud?'checked':''} data-field="isCloud" data-node-idx="${globalIdx}"></td>
             <td class="px-2 py-1 text-center"><input type="checkbox" class="arch-sys-input" ${sys.isERP?'checked':''} data-field="isERP" data-node-idx="${globalIdx}"></td>
-            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-32 arch-sys-input" value="${escHtml((sys.sharedWith||[]).join(', '))}" data-field="sharedWith" data-node-idx="${globalIdx}" placeholder="Council A, Council B"></td>
-            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-32 arch-sys-input" value="${escHtml((sys.capabilityType||[]).join(', '))}" data-field="capabilityType" data-node-idx="${globalIdx}" placeholder="payments, forms..."></td>
-            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-28 arch-sys-input" value="${escHtml(sys.owner||'')}" data-field="owner" data-node-idx="${globalIdx}"></td>
+            <td class="px-2 py-1"><select class="border border-[#b1b4b6] p-1 text-xs arch-sys-input" data-field="supportModel" data-node-idx="${globalIdx}"><option value="">--</option>${supportOpts}</select></td>
+            <td class="px-2 py-1"><select class="border border-[#b1b4b6] p-1 text-xs arch-realizes-select" data-sys-id="${sys.id}" data-node-idx="${globalIdx}"><option value="">-- none --</option>${fnOpts}</select></td>
+            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-28 arch-sys-input" value="${escHtml((sys.sharedWith||[]).join(', '))}" data-field="sharedWith" data-node-idx="${globalIdx}" placeholder="Council A, B"></td>
+            <td class="px-2 py-1"><input type="text" class="border border-[#b1b4b6] p-1 text-xs w-28 arch-sys-input" value="${escHtml((sys.capabilityType||[]).join(', '))}" data-field="capabilityType" data-node-idx="${globalIdx}" placeholder="payments, forms"></td>
             <td class="px-2 py-1"><button class="btn-remove-sys text-[#d4351c] font-bold text-xs hover:underline" data-node-idx="${globalIdx}">Remove</button></td>
         </tr>`;
     }).join('');
@@ -140,12 +149,13 @@ function buildSystemsTab() {
             <table class="gds-table text-xs whitespace-nowrap [&_th]:top-[38px]">
                 <thead><tr>
                     <th class="px-2 py-1">Label</th><th class="px-2 py-1">Vendor</th>
-                    <th class="px-2 py-1">Users</th><th class="px-2 py-1">Cost</th>
-                    <th class="px-2 py-1">Annual £</th><th class="px-2 py-1">End Yr</th>
-                    <th class="px-2 py-1">End Mo</th><th class="px-2 py-1">Notice</th>
-                    <th class="px-2 py-1">Portability</th><th class="px-2 py-1">Data Layer</th>
-                    <th class="px-2 py-1">Cloud</th><th class="px-2 py-1">ERP</th>
-                    <th class="px-2 py-1">Shared With</th><th class="px-2 py-1">Capabilities</th><th class="px-2 py-1">Owner</th>
+                    <th class="px-2 py-1">Users</th><th class="px-2 py-1">Annual £</th>
+                    <th class="px-2 py-1">End Yr</th><th class="px-2 py-1">End Mo</th>
+                    <th class="px-2 py-1">Notice</th><th class="px-2 py-1">Portability</th>
+                    <th class="px-2 py-1">Data Layer</th><th class="px-2 py-1">Cloud</th>
+                    <th class="px-2 py-1">ERP</th><th class="px-2 py-1">Support Model</th>
+                    <th class="px-2 py-1">Function</th><th class="px-2 py-1">Shared With</th>
+                    <th class="px-2 py-1">Capabilities</th>
                     <th class="px-2 py-1"></th>
                 </tr></thead>
                 <tbody id="sysTableBody">${rows}</tbody>
@@ -276,6 +286,23 @@ function syncEditorFieldsToState() {
             node[field] = arr.length > 0 ? arr : undefined;
         } else if (input.tagName === 'SELECT' || input.type === 'text') {
             node[field] = input.value || undefined;
+        }
+    });
+    // REALIZES edge management via function dropdown
+    document.querySelectorAll('.arch-realizes-select').forEach(sel => {
+        const sysId = sel.getAttribute('data-sys-id');
+        const fnId = sel.value;
+        if (!sysId) return;
+        const edges = state.archEditorState.data.edges;
+        const existingIdx = edges.findIndex(e => e.relationship === 'REALIZES' && e.source === sysId);
+        if (fnId) {
+            if (existingIdx >= 0) {
+                edges[existingIdx].target = fnId;
+            } else {
+                edges.push({ source: sysId, target: fnId, relationship: 'REALIZES' });
+            }
+        } else if (existingIdx >= 0) {
+            edges.splice(existingIdx, 1);
         }
     });
 }
