@@ -5121,13 +5121,374 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     return escHtml4(str);
   }
 
+  // src/features/unified-editor/bulk-mode.js
+  var TABS = [
+    { id: "contract", label: "Contract & Cost" },
+    { id: "technical", label: "Technical" },
+    { id: "relationships", label: "Relationships" }
+  ];
+  var KEY_FIELDS2 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
+  function renderBulkMode(editorState) {
+    const activeTab = editorState._bulkActiveTab || "contract";
+    let html = `<div class="flex flex-col h-full overflow-hidden" data-bulk-mode>`;
+    html += `<div class="flex border-b border-gray-200 bg-white px-4 flex-shrink-0" data-bulk-tabs>`;
+    for (const tab of TABS) {
+      const isActive = tab.id === activeTab;
+      const classes = isActive ? "border-b-2 border-blue-600 text-blue-700" : "text-gray-500 hover:text-gray-700";
+      html += `<button type="button" data-bulk-tab="${tab.id}"
+            class="px-4 py-2 text-sm font-medium ${classes} transition-colors">${escHtml5(tab.label)}</button>`;
+    }
+    html += `</div>`;
+    html += `<div class="flex-1 overflow-auto" data-bulk-table-wrapper>`;
+    html += renderTable(editorState, activeTab);
+    html += `</div>`;
+    html += `</div>`;
+    return html;
+  }
+  function renderTable(editorState, activeTab) {
+    const { nodes, edges } = editorState;
+    const systems = [];
+    nodes.forEach((node, idx) => {
+      if (node.type === "ITSystem") {
+        systems.push({ node, idx });
+      }
+    });
+    const functionLookup = buildFunctionLookup(nodes, edges);
+    const columnDefs = getColumnDefs(activeTab);
+    let html = `<table class="w-full border-collapse" style="min-width:900px" data-bulk-table>`;
+    html += `<thead><tr class="sticky top-0 bg-gray-100 z-10">`;
+    html += `<th class="sticky left-0 z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:150px">System Name</th>`;
+    html += `<th class="sticky z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:100px;left:150px">Vendor</th>`;
+    html += `<th class="sticky z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:120px;left:250px">Function</th>`;
+    for (const col of columnDefs) {
+      html += `<th class="bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:${col.width}px">${escHtml5(col.label)}</th>`;
+    }
+    html += `<th class="sticky right-0 z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-center border-b border-gray-200" style="min-width:50px">Status</th>`;
+    html += `</tr></thead>`;
+    html += `<tbody>`;
+    for (let i = 0; i < systems.length; i++) {
+      const { node, idx } = systems[i];
+      const rowBg = i % 2 === 0 ? "bg-white" : "bg-gray-50";
+      const fnLabel = functionLookup.get(node.id) || "";
+      const status = computeCompleteness(node);
+      html += `<tr class="${rowBg}">`;
+      html += `<td class="sticky left-0 z-10 ${rowBg} py-1 px-2 border-b border-gray-100" style="min-width:150px">`;
+      html += `<input type="text" value="${escAttr5(node.label || "")}" data-bulk-row="${idx}" data-bulk-field="label"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+      html += `</td>`;
+      html += `<td class="sticky z-10 ${rowBg} py-1 px-2 border-b border-gray-100" style="min-width:100px;left:150px">`;
+      html += `<input type="text" value="${escAttr5(node.vendor || "")}" data-bulk-row="${idx}" data-bulk-field="vendor"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+      html += `</td>`;
+      html += `<td class="sticky z-10 ${rowBg} py-1 px-2 border-b border-gray-100 text-xs text-gray-600" style="min-width:120px;left:250px">${escHtml5(fnLabel)}</td>`;
+      for (const col of columnDefs) {
+        html += `<td class="py-1 px-2 border-b border-gray-100">`;
+        html += renderCell(col, node, idx, editorState);
+        html += `</td>`;
+      }
+      html += `<td class="sticky right-0 z-10 ${rowBg} py-1 px-2 border-b border-gray-100 text-center text-xs">${status}</td>`;
+      html += `</tr>`;
+    }
+    html += `</tbody></table>`;
+    return html;
+  }
+  function renderCell(col, node, nodeIdx, editorState) {
+    const { field, type } = col;
+    if (type === "text") {
+      const value = getFieldValue(node, field, editorState);
+      return `<input type="text" value="${escAttr5(value)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+    }
+    if (type === "number") {
+      const raw = node[field];
+      const display = raw != null && !isNaN(raw) ? String(raw) : "";
+      return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded text-right" />`;
+    }
+    if (type === "thousands") {
+      const raw = node[field];
+      const display = raw != null && !isNaN(raw) ? formatThousands(raw, { prefix: "\xA3" }) : "";
+      return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
+            data-format="thousands" data-prefix="\xA3"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded text-right" />`;
+    }
+    if (type === "contract-end") {
+      const mm = node.endMonth ? String(node.endMonth).padStart(2, "0") : "";
+      const yyyy = node.endYear ? String(node.endYear) : "";
+      const display = mm && yyyy ? `${mm}/${yyyy}` : yyyy || "";
+      return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="contractEnd"
+            placeholder="MM/YYYY"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+    }
+    if (type === "select") {
+      const current = getSelectValue(node, field);
+      let opts = `<option value="">--</option>`;
+      for (const opt of col.options) {
+        const sel = opt.value === current ? "selected" : "";
+        opts += `<option value="${escAttr5(opt.value)}" ${sel}>${escHtml5(opt.label)}</option>`;
+      }
+      return `<select data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
+            class="w-full text-xs py-0.5 px-0.5 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded">${opts}</select>`;
+    }
+    if (type === "comma-text") {
+      const arr = node[field] || [];
+      const display = Array.isArray(arr) ? arr.join(", ") : String(arr);
+      return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
+            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+    }
+    if (type === "readonly") {
+      const value = getReadonlyValue(node, field, editorState);
+      return `<span class="text-xs text-gray-500">${escHtml5(value)}</span>`;
+    }
+    return "";
+  }
+  function getColumnDefs(activeTab) {
+    switch (activeTab) {
+      case "contract":
+        return [
+          { field: "annualCost", label: "Annual Cost", type: "thousands", width: 100 },
+          { field: "contractEnd", label: "Contract End", type: "contract-end", width: 80 },
+          { field: "noticePeriod", label: "Notice (months)", type: "number", width: 60 }
+        ];
+      case "technical":
+        return [
+          {
+            field: "isCloud",
+            label: "Hosting",
+            type: "select",
+            width: 90,
+            options: [{ value: "true", label: "Cloud" }, { value: "false", label: "On-Premise" }]
+          },
+          {
+            field: "dataPartitioning",
+            label: "Partitioning",
+            type: "select",
+            width: 100,
+            options: [{ value: "Segmented", label: "Segmented" }, { value: "Monolithic", label: "Monolithic" }]
+          },
+          {
+            field: "portability",
+            label: "Portability",
+            type: "select",
+            width: 80,
+            options: [{ value: "High", label: "High" }, { value: "Medium", label: "Medium" }, { value: "Low", label: "Low" }]
+          },
+          {
+            field: "supportModel",
+            label: "Support Model",
+            type: "select",
+            width: 130,
+            options: [
+              { value: "vendor-supported", label: "vendor-supported" },
+              { value: "community-supported", label: "community-supported" },
+              { value: "unsupported", label: "unsupported" }
+            ]
+          }
+        ];
+      case "relationships":
+        return [
+          { field: "sharedWith", label: "Shared With", type: "comma-text", width: 150 },
+          { field: "capabilityType", label: "Capabilities", type: "comma-text", width: 120 },
+          { field: "dependsOn", label: "Depends On", type: "readonly", width: 150 }
+        ];
+      default:
+        return [];
+    }
+  }
+  function getFieldValue(node, field, editorState) {
+    if (field === "contractEnd") {
+      const mm = node.endMonth ? String(node.endMonth).padStart(2, "0") : "";
+      const yyyy = node.endYear ? String(node.endYear) : "";
+      return mm && yyyy ? `${mm}/${yyyy}` : yyyy || "";
+    }
+    const val = node[field];
+    if (Array.isArray(val)) return val.join(", ");
+    return val != null ? String(val) : "";
+  }
+  function getSelectValue(node, field) {
+    if (field === "isCloud") {
+      if (node.isCloud === true) return "true";
+      if (node.isCloud === false) return "false";
+      return "";
+    }
+    return node[field] || "";
+  }
+  function getReadonlyValue(node, field, editorState) {
+    if (field === "dependsOn") {
+      const { edges, nodes } = editorState;
+      const providers = [];
+      for (const edge of edges) {
+        if (edge.source === node.id && edge.relationship === "CONSUMES_CAPABILITY") {
+          const target = nodes.find((n) => n.id === edge.target);
+          if (target) providers.push(target.label || target.id);
+        }
+      }
+      return providers.join(", ");
+    }
+    return "";
+  }
+  function buildFunctionLookup(nodes, edges) {
+    const lookup = /* @__PURE__ */ new Map();
+    const fnNodes = /* @__PURE__ */ new Map();
+    for (const n of nodes) {
+      if (n.type === "Function") fnNodes.set(n.id, n);
+    }
+    for (const edge of edges) {
+      if (edge.relationship === "REALIZES" && fnNodes.has(edge.target)) {
+        if (!lookup.has(edge.source)) {
+          const fn = fnNodes.get(edge.target);
+          if (fn.lgaFunctionId) {
+            const lgaFn = LGA_FUNCTIONS.find((f) => f.id === fn.lgaFunctionId);
+            if (lgaFn) {
+              lookup.set(edge.source, lgaFn.label);
+            } else {
+              lookup.set(edge.source, fn.label || "");
+            }
+          } else {
+            lookup.set(edge.source, fn.label || "");
+          }
+        }
+      }
+    }
+    return lookup;
+  }
+  function computeCompleteness(node) {
+    let filled = 0;
+    for (const f of KEY_FIELDS2) {
+      const val = node[f];
+      if (val != null && val !== "" && val !== void 0) filled++;
+    }
+    const total = KEY_FIELDS2.length;
+    if (filled === total) {
+      return `<span class="text-green-600 font-medium" title="All key fields complete">\u2713</span>`;
+    }
+    const missing = total - filled;
+    if (filled === 0) {
+      return `<span class="text-red-500 font-medium" title="${missing} fields missing">\u2717</span>`;
+    }
+    return `<span class="text-amber-500 font-medium" title="${missing} fields missing">\u26A0 ${missing}</span>`;
+  }
+  function wireBulkMode(container, editorState, options = {}) {
+    if (!container) return;
+    const { onChange } = options;
+    const tabBar = container.querySelector("[data-bulk-tabs]");
+    if (tabBar) {
+      tabBar.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-bulk-tab]");
+        if (!btn) return;
+        const tabId = btn.dataset.bulkTab;
+        if (tabId === editorState._bulkActiveTab) return;
+        editorState._bulkActiveTab = tabId;
+        tabBar.querySelectorAll("[data-bulk-tab]").forEach((t) => {
+          t.classList.remove("border-b-2", "border-blue-600", "text-blue-700");
+          t.classList.add("text-gray-500", "hover:text-gray-700");
+        });
+        btn.classList.remove("text-gray-500", "hover:text-gray-700");
+        btn.classList.add("border-b-2", "border-blue-600", "text-blue-700");
+        const wrapper = container.querySelector("[data-bulk-table-wrapper]");
+        if (wrapper) {
+          wrapper.innerHTML = renderTable(editorState, tabId);
+          wireTableInputs(wrapper, editorState, options);
+        }
+      });
+    }
+    const tableWrapper = container.querySelector("[data-bulk-table-wrapper]");
+    if (tableWrapper) {
+      wireTableInputs(tableWrapper, editorState, options);
+    }
+  }
+  function wireTableInputs(wrapper, editorState, options) {
+    const { onChange } = options;
+    wrapper.addEventListener("focus", (e) => {
+      const input = e.target;
+      if (input.matches && input.matches('[data-format="thousands"]')) {
+        const raw = parseThousands(input.value);
+        if (!isNaN(raw)) {
+          input.value = String(raw);
+        }
+      }
+    }, true);
+    wrapper.addEventListener("blur", (e) => {
+      const input = e.target;
+      if (input.matches && input.matches('[data-format="thousands"]')) {
+        const raw = parseThousands(input.value);
+        if (!isNaN(raw)) {
+          const prefix = input.dataset.prefix || "";
+          input.value = formatThousands(raw, { prefix });
+        }
+      }
+    }, true);
+    wrapper.addEventListener("change", (e) => {
+      const el = e.target;
+      const row = el.dataset.bulkRow;
+      const field = el.dataset.bulkField;
+      if (row == null || !field) return;
+      const nodeIdx = parseInt(row, 10);
+      const value = parseFieldValue(field, el.value);
+      if (onChange) {
+        onChange(nodeIdx, field, value);
+      }
+    });
+    wrapper.addEventListener("input", (e) => {
+      const el = e.target;
+      if (el.tagName === "SELECT") return;
+      const row = el.dataset.bulkRow;
+      const field = el.dataset.bulkField;
+      if (row == null || !field) return;
+      if (el.dataset.format === "thousands") return;
+      const nodeIdx = parseInt(row, 10);
+      const value = parseFieldValue(field, el.value);
+      if (onChange) {
+        onChange(nodeIdx, field, value);
+      }
+    });
+  }
+  function parseFieldValue(field, rawValue) {
+    if (field === "annualCost") {
+      const n = parseThousands(rawValue);
+      return isNaN(n) ? null : n;
+    }
+    if (field === "contractEnd") {
+      const match = rawValue.match(/^(\d{1,2})\/(\d{4})$/);
+      if (match) {
+        return { endMonth: parseInt(match[1], 10), endYear: parseInt(match[2], 10) };
+      }
+      const yearMatch = rawValue.match(/^(\d{4})$/);
+      if (yearMatch) {
+        return { endMonth: null, endYear: parseInt(yearMatch[1], 10) };
+      }
+      return { endMonth: null, endYear: null };
+    }
+    if (field === "noticePeriod") {
+      const n = parseInt(rawValue, 10);
+      return isNaN(n) ? null : n;
+    }
+    if (field === "isCloud") {
+      if (rawValue === "true") return true;
+      if (rawValue === "false") return false;
+      return null;
+    }
+    if (field === "sharedWith" || field === "capabilityType") {
+      if (!rawValue.trim()) return [];
+      return rawValue.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    return rawValue;
+  }
+  function escHtml5(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function escAttr5(str) {
+    return escHtml5(str);
+  }
+
   // src/features/unified-editor/editor.js
   function renderUnifiedEditor(json, options = {}) {
     const title = options.title || "Architecture Editor";
     let html = `<div class="flex flex-col h-screen bg-gray-50" data-unified-editor>`;
     html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">`;
     html += `<div class="flex items-center gap-4">`;
-    html += `<h2 class="text-lg font-bold text-gray-900">${escHtml5(title)}</h2>`;
+    html += `<h2 class="text-lg font-bold text-gray-900">${escHtml6(title)}</h2>`;
     html += `<div class="inline-flex rounded border border-gray-300 overflow-hidden" data-ue-mode-toggle>`;
     html += `<button type="button" data-ue-mode="focus"
                 class="px-3 py-1 text-sm font-medium bg-blue-600 text-white transition-colors">Focus</button>`;
@@ -5150,7 +5511,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += `<div id="ue-rel-panel" class="overflow-y-auto h-full border-l border-gray-200"></div>`;
     html += `</div>`;
     html += `<div class="flex-1 overflow-hidden hidden" data-ue-bulk-container>`;
-    html += `<div id="ue-bulk-panel" class="p-8 text-center text-gray-500">Bulk mode \u2014 coming soon</div>`;
+    html += `<div id="ue-bulk-panel" class="h-full overflow-auto"></div>`;
     html += `</div>`;
     html += `</div>`;
     return html;
@@ -5401,6 +5762,17 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
       editorState.nodes[nodeIdx].sharedWith = councils;
     }
+    function rerenderBulk() {
+      const bulkPanelEl = container.querySelector("#ue-bulk-panel");
+      if (!bulkPanelEl) return;
+      bulkPanelEl.innerHTML = renderBulkMode(editorState);
+      wireBulkMode(bulkPanelEl, editorState, {
+        onChange(nodeIdx, field, value) {
+          handleFieldChange(nodeIdx, field, value);
+          rerenderBulk();
+        }
+      });
+    }
     function setMode(newMode) {
       if (newMode === mode) return;
       mode = newMode;
@@ -5413,6 +5785,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         focusBtn.classList.add("bg-blue-600", "text-white");
         bulkBtn.classList.remove("bg-blue-600", "text-white");
         bulkBtn.classList.add("bg-white", "text-gray-700");
+        rerenderList();
       } else {
         focusContainer.style.display = "none";
         bulkContainer.classList.remove("hidden");
@@ -5420,6 +5793,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         bulkBtn.classList.add("bg-blue-600", "text-white");
         focusBtn.classList.remove("bg-blue-600", "text-white");
         focusBtn.classList.add("bg-white", "text-gray-700");
+        rerenderBulk();
       }
     }
     const modeToggle = container.querySelector("[data-ue-mode-toggle]");
@@ -5473,7 +5847,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     };
   }
-  function escHtml5(str) {
+  function escHtml6(str) {
     if (!str) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -10185,7 +10559,7 @@ ${hardErrors.join("\n")}`);
     if (amount >= 1e3) return `\xA3${Math.round(amount / 1e3)}k`;
     return `\xA3${amount}`;
   }
-  function escHtml6(str) {
+  function escHtml7(str) {
     if (!str) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -10312,7 +10686,7 @@ ${hardErrors.join("\n")}`);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LGR Transition Report \u2014 ${escHtml6(label)}</title>
+<title>LGR Transition Report \u2014 ${escHtml7(label)}</title>
 <style>
   /* Base */
   body {
@@ -10336,12 +10710,12 @@ ${hardErrors.join("\n")}`);
 
   /* Header banner */
   .report-header {
-    border-bottom: 4px solid ${escHtml6(colour)};
+    border-bottom: 4px solid ${escHtml7(colour)};
     padding-bottom: 16px;
     margin-bottom: 24px;
   }
   .report-title-bar {
-    background: ${escHtml6(colour)};
+    background: ${escHtml7(colour)};
     color: ${colour === "#0b0c0c" ? "#ffffff" : "#ffffff"};
     padding: 12px 16px;
     margin-bottom: 12px;
@@ -10415,13 +10789,13 @@ ${hardErrors.join("\n")}`);
     }
     const pending = totalCells - decisions.size;
     let html = `<div class="report-header">`;
-    html += `<div class="report-title-bar" style="background:${escHtml6(colour)};">`;
-    html += `<h1>LGR Transition Report \u2014 ${escHtml6(label)}</h1>`;
+    html += `<div class="report-title-bar" style="background:${escHtml7(colour)};">`;
+    html += `<h1>LGR Transition Report \u2014 ${escHtml7(label)}</h1>`;
     html += `</div>`;
     html += `<div class="meta-grid">`;
-    html += `<div class="meta-item"><span class="meta-label">Generated</span>${escHtml6(timestamp)}</div>`;
-    html += `<div class="meta-item"><span class="meta-label">Vesting date</span>${escHtml6(vestingDate)}</div>`;
-    html += `<div class="meta-item"><span class="meta-label">Successors</span>${escHtml6(successors)}</div>`;
+    html += `<div class="meta-item"><span class="meta-label">Generated</span>${escHtml7(timestamp)}</div>`;
+    html += `<div class="meta-item"><span class="meta-label">Vesting date</span>${escHtml7(vestingDate)}</div>`;
+    html += `<div class="meta-item"><span class="meta-label">Successors</span>${escHtml7(successors)}</div>`;
     html += `</div>`;
     html += `<div class="meta-grid">`;
     html += `<div class="meta-item"><span class="meta-label">Decisions made</span>${decisions.size}</div>`;
@@ -10436,7 +10810,7 @@ ${hardErrors.join("\n")}`);
       return '<p style="color:#505a5f;">No impact data available \u2014 run simulation first.</p>';
     }
     const { before, after, delta } = impact;
-    const row = (label, beforeVal, afterVal, deltaVal) => `<tr><td>${escHtml6(label)}</td><td>${escHtml6(String(beforeVal))}</td><td>${escHtml6(String(afterVal))}</td><td>${escHtml6(String(deltaVal))}</td></tr>`;
+    const row = (label, beforeVal, afterVal, deltaVal) => `<tr><td>${escHtml7(label)}</td><td>${escHtml7(String(beforeVal))}</td><td>${escHtml7(String(afterVal))}</td><td>${escHtml7(String(deltaVal))}</td></tr>`;
     let html = `<table>`;
     html += `<thead><tr><th scope="col">Metric</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Change</th></tr></thead>`;
     html += `<tbody>`;
@@ -10489,7 +10863,7 @@ ${hardErrors.join("\n")}`);
       const decList = tiers[tier];
       if (decList.length === 0) continue;
       const colour = tierColour(tier);
-      html += `<h3><span class="tier-badge" style="background:${escHtml6(colour)};">${escHtml6(tierLabel(tier))}</span> (${decList.length} decision${decList.length !== 1 ? "s" : ""})</h3>`;
+      html += `<h3><span class="tier-badge" style="background:${escHtml7(colour)};">${escHtml7(tierLabel(tier))}</span> (${decList.length} decision${decList.length !== 1 ? "s" : ""})</h3>`;
       html += `<table>`;
       html += `<thead><tr><th scope="col">Function</th><th scope="col">Successor</th><th scope="col">Decision</th><th scope="col">System</th><th scope="col">Obligations</th></tr></thead>`;
       html += `<tbody>`;
@@ -10509,11 +10883,11 @@ ${hardErrors.join("\n")}`);
         const funcObligations = obligations.filter((obl) => obl.functionId === decision.functionId);
         const sevCounts = countBySeverity(funcObligations, weights);
         html += `<tr>`;
-        html += `<td>${escHtml6(funcLabel)}</td>`;
-        html += `<td>${escHtml6(decision.successorName)}</td>`;
-        html += `<td>${escHtml6(decisionLabel2(decision.systemChoice))}</td>`;
-        html += `<td>${escHtml6(systemLabel)}</td>`;
-        html += `<td>${escHtml6(formatSeverityCounts(sevCounts))}</td>`;
+        html += `<td>${escHtml7(funcLabel)}</td>`;
+        html += `<td>${escHtml7(decision.successorName)}</td>`;
+        html += `<td>${escHtml7(decisionLabel2(decision.systemChoice))}</td>`;
+        html += `<td>${escHtml7(systemLabel)}</td>`;
+        html += `<td>${escHtml7(formatSeverityCounts(sevCounts))}</td>`;
         html += `</tr>`;
       }
       html += `</tbody></table>`;
@@ -10532,12 +10906,12 @@ ${hardErrors.join("\n")}`);
     html += `<tbody>`;
     for (const obl of critical) {
       const bullets = generateMigrationScopeBullets(obl);
-      const notesHtml = bullets.length > 0 ? bullets.map((b) => escHtml6(b)).join("; ") : "\u2014";
+      const notesHtml = bullets.length > 0 ? bullets.map((b) => escHtml7(b)).join("; ") : "\u2014";
       html += `<tr>`;
-      html += `<td>${escHtml6(obl.functionLabel || obl.functionId || "\u2014")}</td>`;
-      html += `<td>${escHtml6(obl.fromSystem ? obl.fromSystem.label : "\u2014")}</td>`;
-      html += `<td>${escHtml6(obl.type)}</td>`;
-      html += `<td>${escHtml6((obl.affectedSuccessors || []).join(", "))}</td>`;
+      html += `<td>${escHtml7(obl.functionLabel || obl.functionId || "\u2014")}</td>`;
+      html += `<td>${escHtml7(obl.fromSystem ? obl.fromSystem.label : "\u2014")}</td>`;
+      html += `<td>${escHtml7(obl.type)}</td>`;
+      html += `<td>${escHtml7((obl.affectedSuccessors || []).join(", "))}</td>`;
       html += `<td style="font-size:12px;">${notesHtml}</td>`;
       html += `</tr>`;
     }
@@ -10559,13 +10933,13 @@ ${hardErrors.join("\n")}`);
       const systemLabel = obl.fromSystem ? obl.fromSystem.label : "\u2014";
       const funcLabel = obl.functionLabel || obl.functionId || "\u2014";
       html += `<tr>`;
-      html += `<td>${escHtml6(funcLabel)}</td>`;
-      html += `<td>${escHtml6(systemLabel)}</td>`;
-      html += `<td>${escHtml6(primarySuccessor)}</td>`;
-      html += `<td>${escHtml6(sharedSuccessors)}</td>`;
+      html += `<td>${escHtml7(funcLabel)}</td>`;
+      html += `<td>${escHtml7(systemLabel)}</td>`;
+      html += `<td>${escHtml7(primarySuccessor)}</td>`;
+      html += `<td>${escHtml7(sharedSuccessors)}</td>`;
       if (includeBullets) {
         const bullets = obl.governanceBullets || generateMigrationScopeBullets(obl);
-        const bulletsHtml = bullets.length > 0 ? `<ul class="scope-bullets">${bullets.map((b) => `<li>${escHtml6(b)}</li>`).join("")}</ul>` : "\u2014";
+        const bulletsHtml = bullets.length > 0 ? `<ul class="scope-bullets">${bullets.map((b) => `<li>${escHtml7(b)}</li>`).join("")}</ul>` : "\u2014";
         html += `<td>${bulletsHtml}</td>`;
       }
       html += `</tr>`;
@@ -10596,10 +10970,10 @@ ${hardErrors.join("\n")}`);
     const savings = delta.totalAnnualSpend !== null ? formatSpendDelta(delta.totalAnnualSpend) : "\u2014";
     let html = `<table class="cost-summary-table">`;
     html += `<tbody>`;
-    html += `<tr><td>Total current spend (annual)</td><td>${escHtml6(currentSpend)}</td></tr>`;
-    html += `<tr><td>Projected spend (annual)</td><td>${escHtml6(projectedSpend)}</td></tr>`;
+    html += `<tr><td>Total current spend (annual)</td><td>${escHtml7(currentSpend)}</td></tr>`;
+    html += `<tr><td>Projected spend (annual)</td><td>${escHtml7(projectedSpend)}</td></tr>`;
     const changeColour = delta.totalAnnualSpend === null || delta.totalAnnualSpend === 0 ? "#0b0c0c" : delta.totalAnnualSpend < 0 ? "#00703c" : "#d4351c";
-    html += `<tr><td>Estimated change</td><td style="color:${changeColour};">${escHtml6(savings)}</td></tr>`;
+    html += `<tr><td>Estimated change</td><td style="color:${changeColour};">${escHtml7(savings)}</td></tr>`;
     html += `</tbody></table>`;
     return html;
   }
@@ -10615,17 +10989,17 @@ ${hardErrors.join("\n")}`);
       const tier = state.tierMap.get(decision.functionId) || 3;
       const colour = tierColour(tier);
       const blockClass = decision.systemChoice === "defer" ? "decision-block deferred" : decision.systemChoice === "procure" ? "decision-block procured" : "decision-block";
-      html += `<div class="${escHtml6(blockClass)}">`;
-      html += `<p style="margin:0 0 4px 0;font-weight:bold;">${escHtml6(funcLabel)} \u2014 ${escHtml6(decision.successorName)} <span class="tier-badge" style="background:${escHtml6(colour)};">${escHtml6(tierLabel(tier))}</span></p>`;
+      html += `<div class="${escHtml7(blockClass)}">`;
+      html += `<p style="margin:0 0 4px 0;font-weight:bold;">${escHtml7(funcLabel)} \u2014 ${escHtml7(decision.successorName)} <span class="tier-badge" style="background:${escHtml7(colour)};">${escHtml7(tierLabel(tier))}</span></p>`;
       if (decision.systemChoice === "choose" && decision.retainedSystemIds.length > 0) {
         const retainedAllocs = allocations.filter((a) => a.system && decision.retainedSystemIds.includes(a.system.id));
         for (const ra of retainedAllocs) {
           const sys = ra.system;
-          html += `<p style="margin:2px 0;"><strong>Decision:</strong> Choose \u2014 ${escHtml6(sys.label || sys.id)}</p>`;
+          html += `<p style="margin:2px 0;"><strong>Decision:</strong> Choose \u2014 ${escHtml7(sys.label || sys.id)}</p>`;
           html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-          if (sys.vendor) html += `Vendor: ${escHtml6(sys.vendor)}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-          html += `Annual cost: ${escHtml6(formatCost(sys.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-          html += `Contract ends: ${escHtml6(formatContractEnd(sys.endYear, sys.endMonth))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+          if (sys.vendor) html += `Vendor: ${escHtml7(sys.vendor)}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+          html += `Annual cost: ${escHtml7(formatCost(sys.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+          html += `Contract ends: ${escHtml7(formatContractEnd(sys.endYear, sys.endMonth))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `Notice: ${sys.noticePeriod ? sys.noticePeriod + " months" : "\u2014"}`;
           html += `</p>`;
           {
@@ -10635,8 +11009,8 @@ ${hardErrors.join("\n")}`);
               const relative = formatVestingRelative(trigger.triggerTotalMonths, vesting);
               const triggerColour = trigger.isOverdue ? "#d4351c" : "#0b0c0c";
               html += `<p style="margin:2px 0;font-size:13px;color:${triggerColour};font-weight:bold;">`;
-              html += `Notice trigger: ${escHtml6(trigger.triggerDate)}`;
-              if (relative) html += ` (${escHtml6(relative)})`;
+              html += `Notice trigger: ${escHtml7(trigger.triggerDate)}`;
+              if (relative) html += ` (${escHtml7(relative)})`;
               if (trigger.isOverdue) html += ` \u2014 OVERDUE`;
               html += `</p>`;
             }
@@ -10644,10 +11018,10 @@ ${hardErrors.join("\n")}`);
         }
       } else if (decision.systemChoice === "procure" && decision.procuredSystem) {
         const ps = decision.procuredSystem;
-        html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new \u2014 ${escHtml6(ps.label)}</p>`;
+        html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new \u2014 ${escHtml7(ps.label)}</p>`;
         html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-        if (ps.vendor) html += `Vendor: ${escHtml6(ps.vendor)}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-        html += `Annual cost: ${escHtml6(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+        if (ps.vendor) html += `Vendor: ${escHtml7(ps.vendor)}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+        html += `Annual cost: ${escHtml7(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
         html += `Hosting: ${ps.isCloud ? "Cloud" : "On-premise"}`;
         html += `</p>`;
       } else if (decision.systemChoice === "defer") {
@@ -10663,16 +11037,16 @@ ${hardErrors.join("\n")}`);
             if (sys.annualCost) parts.push(`${formatCost(sys.annualCost)}/yr`);
             const contractEnd = formatContractEnd(sys.endYear, sys.endMonth);
             if (contractEnd !== "\u2014") parts.push(`contract ends: ${contractEnd}`);
-            html += `<li>${escHtml6(sys.label || sys.id)}`;
-            if (parts.length > 0) html += ` (${escHtml6(parts.join(", "))})`;
+            html += `<li>${escHtml7(sys.label || sys.id)}`;
+            if (parts.length > 0) html += ` (${escHtml7(parts.join(", "))})`;
             const trigger = computeNoticeTrigger(sys);
             if (trigger) {
               const vesting = state.transitionStructure ? state.transitionStructure.vestingDate : null;
               const relative = formatVestingRelative(trigger.triggerTotalMonths, vesting);
               const triggerColour = trigger.isOverdue ? "#d4351c" : "#b54c00";
               html += ` <span style="color:${triggerColour};font-weight:bold;">`;
-              html += `Notice trigger: ${escHtml6(trigger.triggerDate)}`;
-              if (relative) html += ` (${escHtml6(relative)})`;
+              html += `Notice trigger: ${escHtml7(trigger.triggerDate)}`;
+              if (relative) html += ` (${escHtml7(relative)})`;
               if (trigger.isOverdue) html += ` \u2014 OVERDUE`;
               html += `</span>`;
             }
@@ -10689,13 +11063,13 @@ ${hardErrors.join("\n")}`);
           html += `<ul style="margin:0 0 0 16px;padding:0;font-size:12px;color:#505a5f;">`;
           for (const da of decommissioned) {
             const sys = da.system;
-            html += `<li>${escHtml6(sys.label || sys.id)}`;
+            html += `<li>${escHtml7(sys.label || sys.id)}`;
             const parts = [];
             if (sys.annualCost) parts.push(`${formatCost(sys.annualCost)}/yr`);
             if (sys.vendor) parts.push(`vendor: ${sys.vendor}`);
             const contractEnd = formatContractEnd(sys.endYear, sys.endMonth);
             if (contractEnd !== "\u2014") parts.push(`contract ends: ${contractEnd}`);
-            if (parts.length > 0) html += ` (${escHtml6(parts.join(", "))})`;
+            if (parts.length > 0) html += ` (${escHtml7(parts.join(", "))})`;
             html += `</li>`;
           }
           html += `</ul>`;
@@ -10792,12 +11166,12 @@ ${hardErrors.join("\n")}`);
       const deltaStr = row.spendDelta !== 0 ? formatSpendDelta(row.spendDelta) : "\u2014";
       const deltaColour = row.spendDelta < 0 ? "#00703c" : row.spendDelta > 0 ? "#d4351c" : "#0b0c0c";
       html += `<tr>`;
-      html += `<td>${escHtml6(row.vendor)}</td>`;
+      html += `<td>${escHtml7(row.vendor)}</td>`;
       html += `<td>${row.beforeCount}</td>`;
-      html += `<td>${escHtml6(formatCost(row.beforeSpend))}</td>`;
+      html += `<td>${escHtml7(formatCost(row.beforeSpend))}</td>`;
       html += `<td>${row.afterCount}</td>`;
-      html += `<td>${escHtml6(formatCost(row.afterSpend))}</td>`;
-      html += `<td style="color:${escHtml6(deltaColour)};">${escHtml6(deltaStr)}</td>`;
+      html += `<td>${escHtml7(formatCost(row.afterSpend))}</td>`;
+      html += `<td style="color:${escHtml7(deltaColour)};">${escHtml7(deltaStr)}</td>`;
       html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -10820,15 +11194,15 @@ ${hardErrors.join("\n")}`);
       const ts = obl.toSystem;
       const sev = computeObligationSeverity(obl, weights);
       html += `<tr>`;
-      html += `<td>${escHtml6(obl.functionLabel || obl.functionId || "\u2014")}</td>`;
+      html += `<td>${escHtml7(obl.functionLabel || obl.functionId || "\u2014")}</td>`;
       const typeDisplay = obl.type === "capability-gap" && obl.capabilityType && obl.capabilityType.length > 0 ? `Capability gap (${(obl.capabilityType || []).join(", ")})` : (obl.type || "").replace(/-/g, " ");
-      html += `<td>${escHtml6(fs ? fs.label : "\u2014")}</td>`;
-      html += `<td>${escHtml6(ts ? ts.label : "\u2014")}</td>`;
-      html += `<td>${escHtml6(typeDisplay)}</td>`;
-      html += `<td><span class="sev-${sev}">${escHtml6(sev)}</span></td>`;
-      html += `<td>${escHtml6(fs ? formatCost(fs.annualCost) : "\u2014")}</td>`;
-      html += `<td>${escHtml6(obl.contractEndDate || "\u2014")}</td>`;
-      html += `<td>${escHtml6(fs && fs.vendor ? fs.vendor : "\u2014")}</td>`;
+      html += `<td>${escHtml7(fs ? fs.label : "\u2014")}</td>`;
+      html += `<td>${escHtml7(ts ? ts.label : "\u2014")}</td>`;
+      html += `<td>${escHtml7(typeDisplay)}</td>`;
+      html += `<td><span class="sev-${sev}">${escHtml7(sev)}</span></td>`;
+      html += `<td>${escHtml7(fs ? formatCost(fs.annualCost) : "\u2014")}</td>`;
+      html += `<td>${escHtml7(obl.contractEndDate || "\u2014")}</td>`;
+      html += `<td>${escHtml7(fs && fs.vendor ? fs.vendor : "\u2014")}</td>`;
       html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -10923,13 +11297,13 @@ ${hardErrors.join("\n")}`);
     for (const row of rows) {
       const triggerStyle = row.isOverdue ? "color:#d4351c;font-weight:bold;" : "";
       html += `<tr>`;
-      html += `<td style="${triggerStyle}">${escHtml6(row.triggerDate)}${row.isOverdue ? " \u2014 OVERDUE" : ""}</td>`;
-      html += `<td>${escHtml6(row.vestingRelative || "\u2014")}</td>`;
-      html += `<td>${escHtml6(row.systemLabel)}</td>`;
-      html += `<td>${escHtml6(row.vendor)}</td>`;
-      html += `<td>${escHtml6(row.functionLabel)}</td>`;
-      html += `<td>${escHtml6(row.successorName)}</td>`;
-      html += `<td>${escHtml6(row.actionType)}</td>`;
+      html += `<td style="${triggerStyle}">${escHtml7(row.triggerDate)}${row.isOverdue ? " \u2014 OVERDUE" : ""}</td>`;
+      html += `<td>${escHtml7(row.vestingRelative || "\u2014")}</td>`;
+      html += `<td>${escHtml7(row.systemLabel)}</td>`;
+      html += `<td>${escHtml7(row.vendor)}</td>`;
+      html += `<td>${escHtml7(row.functionLabel)}</td>`;
+      html += `<td>${escHtml7(row.successorName)}</td>`;
+      html += `<td>${escHtml7(row.actionType)}</td>`;
       html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -10983,9 +11357,9 @@ ${hardErrors.join("\n")}`);
         const delta = afterVal - beforeVal;
         const deltaStr = delta !== 0 ? delta > 0 ? `+${delta}` : `${delta}` : "0";
         const deltaColour = delta < 0 ? "#00703c" : delta > 0 ? "#d4351c" : "#0b0c0c";
-        return `<tr><td>${escHtml6(label)}</td><td>${beforeVal}</td><td>${afterVal}</td><td style="color:${deltaColour};">${escHtml6(deltaStr)}</td></tr>`;
+        return `<tr><td>${escHtml7(label)}</td><td>${beforeVal}</td><td>${afterVal}</td><td style="color:${deltaColour};">${escHtml7(deltaStr)}</td></tr>`;
       }
-      return `<tr><td>${escHtml6(label)}</td><td>${beforeVal}</td></tr>`;
+      return `<tr><td>${escHtml7(label)}</td><td>${beforeVal}</td></tr>`;
     };
     let html = `<table class="cost-summary-table">`;
     if (after !== null) {
@@ -11007,7 +11381,7 @@ ${hardErrors.join("\n")}`);
         html += `<p style="font-weight:bold;margin:0 0 4px 0;font-size:13px;">Technical posture summary</p>`;
         html += `<ul style="margin:0 0 0 16px;padding:0;font-size:13px;color:#0b0c0c;">`;
         bullets.forEach((b) => {
-          html += `<li>${escHtml6(b)}</li>`;
+          html += `<li>${escHtml7(b)}</li>`;
         });
         html += `</ul>`;
         html += `</div>`;
@@ -11027,15 +11401,15 @@ ${hardErrors.join("\n")}`);
       const tier = state.tierMap.get(decision.functionId) || 3;
       const colour = tierColour(tier);
       html += `<div class="decision-block">`;
-      html += `<p style="margin:0 0 4px 0;font-weight:bold;">${escHtml6(funcLabel)} \u2014 ${escHtml6(decision.successorName)} <span class="tier-badge" style="background:${escHtml6(colour)};">${escHtml6(tierLabel(tier))}</span></p>`;
+      html += `<p style="margin:0 0 4px 0;font-weight:bold;">${escHtml7(funcLabel)} \u2014 ${escHtml7(decision.successorName)} <span class="tier-badge" style="background:${escHtml7(colour)};">${escHtml7(tierLabel(tier))}</span></p>`;
       if (decision.systemChoice === "choose" && decision.retainedSystemIds.length > 0) {
         const retainedAllocs = allocations.filter((a) => a.system && decision.retainedSystemIds.includes(a.system.id));
         for (const ra of retainedAllocs) {
           const sys = ra.system;
-          html += `<p style="margin:2px 0;"><strong>Decision:</strong> Choose \u2014 ${escHtml6(sys.label || sys.id)}</p>`;
+          html += `<p style="margin:2px 0;"><strong>Decision:</strong> Choose \u2014 ${escHtml7(sys.label || sys.id)}</p>`;
           html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-          html += `Data partitioning: ${escHtml6(sys.dataPartitioning || "\u2014")}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-          html += `Portability: ${escHtml6(sys.portability || "\u2014")}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+          html += `Data partitioning: ${escHtml7(sys.dataPartitioning || "\u2014")}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+          html += `Portability: ${escHtml7(sys.portability || "\u2014")}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `Hosting: ${sys.isCloud ? "Cloud" : "On-premise"}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `ERP: ${sys.isERP ? "Yes" : "No"}`;
           html += `</p>`;
@@ -11048,14 +11422,14 @@ ${hardErrors.join("\n")}`);
             html += `<p style="margin:6px 0 2px 0;font-size:12px;font-weight:bold;">TCoP considerations:</p>`;
             html += `<ul style="margin:0 0 0 16px;padding:0;font-size:12px;color:#505a5f;">`;
             tcop.forEach((t) => {
-              html += `<li>${escHtml6(t)}</li>`;
+              html += `<li>${escHtml7(t)}</li>`;
             });
             html += `</ul>`;
           }
         }
       } else if (decision.systemChoice === "procure" && decision.procuredSystem) {
         const ps = decision.procuredSystem;
-        html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new \u2014 ${escHtml6(ps.label)}</p>`;
+        html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new \u2014 ${escHtml7(ps.label)}</p>`;
         html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
         html += `Hosting: ${ps.isCloud ? "Cloud" : "On-premise or unspecified"}`;
         html += `</p>`;
@@ -11067,13 +11441,13 @@ ${hardErrors.join("\n")}`);
           for (const a of allocations) {
             const sys = a.system;
             if (!sys) continue;
-            html += `<li>${escHtml6(sys.label || sys.id)}: `;
+            html += `<li>${escHtml7(sys.label || sys.id)}: `;
             const flags = [];
             if (sys.dataPartitioning === "Monolithic") flags.push("Monolithic");
             if (sys.portability === "Low") flags.push("Low portability");
             if (!sys.isCloud) flags.push("On-premise");
             if (sys.isERP) flags.push("ERP");
-            html += flags.length > 0 ? escHtml6(flags.join(", ")) : "No flags";
+            html += flags.length > 0 ? escHtml7(flags.join(", ")) : "No flags";
             html += `</li>`;
           }
           html += `</ul>`;
@@ -11099,18 +11473,18 @@ ${hardErrors.join("\n")}`);
       const fs = obl.fromSystem;
       const ts = obl.toSystem;
       const bullets = generateMigrationScopeBullets(obl);
-      const scopeHtml = bullets.length > 0 ? `<ul class="scope-bullets">${bullets.map((b) => `<li>${escHtml6(b)}</li>`).join("")}</ul>` : "\u2014";
+      const scopeHtml = bullets.length > 0 ? `<ul class="scope-bullets">${bullets.map((b) => `<li>${escHtml7(b)}</li>`).join("")}</ul>` : "\u2014";
       const yesStyle = "color:#d4351c;font-weight:bold;";
       const noStyle = "color:#505a5f;";
       const sev = computeObligationSeverity(obl, weights);
       const capTypeStr = obl.capabilityType && obl.capabilityType.length > 0 ? obl.capabilityType.join(", ") : "\u2014";
       html += `<tr>`;
-      html += `<td>${escHtml6(obl.functionLabel || obl.functionId || "\u2014")}</td>`;
-      html += `<td>${escHtml6(fs ? fs.label : "\u2014")}</td>`;
-      html += `<td>${escHtml6(ts ? ts.label : "\u2014")}</td>`;
-      html += `<td>${escHtml6(obl.type || "\u2014")}</td>`;
-      html += `<td><span class="sev-${sev}">${escHtml6(sev)}</span></td>`;
-      html += `<td>${escHtml6(capTypeStr)}</td>`;
+      html += `<td>${escHtml7(obl.functionLabel || obl.functionId || "\u2014")}</td>`;
+      html += `<td>${escHtml7(fs ? fs.label : "\u2014")}</td>`;
+      html += `<td>${escHtml7(ts ? ts.label : "\u2014")}</td>`;
+      html += `<td>${escHtml7(obl.type || "\u2014")}</td>`;
+      html += `<td><span class="sev-${sev}">${escHtml7(sev)}</span></td>`;
+      html += `<td>${escHtml7(capTypeStr)}</td>`;
       html += `<td style="${obl.isMonolithic ? yesStyle : noStyle}">${obl.isMonolithic ? "Yes" : "No"}</td>`;
       html += `<td style="${obl.isLowPortability ? yesStyle : noStyle}">${obl.isLowPortability ? "Yes" : "No"}</td>`;
       html += `<td style="${obl.isERP ? yesStyle : noStyle}">${obl.isERP ? "Yes" : "No"}</td>`;
@@ -11174,7 +11548,7 @@ ${hardErrors.join("\n")}`);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LGR Baseline Estate Report \u2014 ${escHtml6(personaLabel(persona))}</title>
+<title>LGR Baseline Estate Report \u2014 ${escHtml7(personaLabel(persona))}</title>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0b0c0c;background:#fff;margin:0;padding:32px;}
 .container{max-width:960px;margin:0 auto;}
@@ -11207,22 +11581,22 @@ tr:nth-child(even){background:#f3f2f1;}
     const timestamp = now.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
     const predList = Array.from(state.mergedArchitecture.councils || []).join(", ");
     let html = `<h1 style="font-size:26px;font-weight:bold;margin:0 0 4px 0;">LGR Baseline Estate Report</h1>`;
-    html += `<p style="font-size:15px;color:#505a5f;margin:0 0 16px 0;">${escHtml6(personaLabel(persona))}</p>`;
+    html += `<p style="font-size:15px;color:#505a5f;margin:0 0 16px 0;">${escHtml7(personaLabel(persona))}</p>`;
     html += `<table style="border-collapse:collapse;font-size:13px;width:auto;">`;
     html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Generated</td><td>${timestamp}</td></tr>`;
     html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Operating Mode</td><td>${state.operatingMode === "transition" ? "Transition Planning" : "Estate Discovery"}</td></tr>`;
     if (state.transitionStructure) {
-      html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Vesting Date</td><td>${escHtml6(state.transitionStructure.vestingDate || "Not set")}</td></tr>`;
+      html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Vesting Date</td><td>${escHtml7(state.transitionStructure.vestingDate || "Not set")}</td></tr>`;
       if (state.transitionStructure.successors && state.transitionStructure.successors.length) {
-        html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Successors</td><td>${escHtml6(state.transitionStructure.successors.map((s) => s.name).join(", "))}</td></tr>`;
+        html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Successors</td><td>${escHtml7(state.transitionStructure.successors.map((s) => s.name).join(", "))}</td></tr>`;
       }
     }
-    html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Predecessors</td><td>${escHtml6(predList)}</td></tr>`;
+    html += `<tr><td style="padding:2px 16px 2px 0;font-weight:bold;">Predecessors</td><td>${escHtml7(predList)}</td></tr>`;
     html += `</table></div>`;
     return html;
   }
   function section(title, body) {
-    return `<div class="section"><h2>${escHtml6(title)}</h2>${body}</div>`;
+    return `<div class="section"><h2>${escHtml7(title)}</h2>${body}</div>`;
   }
   function getSystemsForFunction(entry) {
     const systems = [];
@@ -11284,7 +11658,7 @@ tr:nth-child(even){background:#f3f2f1;}
     html += `</table>`;
     if (tier1Fns.length) {
       html += `<p style="font-size:13px;font-weight:bold;margin:12px 0 4px 0;">Tier 1 functions:</p>`;
-      html += `<p style="font-size:13px;color:#0b0c0c;margin:0;">${tier1Fns.map(escHtml6).join(", ")}</p>`;
+      html += `<p style="font-size:13px;color:#0b0c0c;margin:0;">${tier1Fns.map(escHtml7).join(", ")}</p>`;
     }
     return section(`${sectionNum}. Tier Distribution`, html);
   }
@@ -11348,7 +11722,7 @@ tr:nth-child(even){background:#f3f2f1;}
             badge = `<span class="badge badge-amber">URGENT</span>`;
           }
           const endStr = item.sys.endYear + (item.sys.endMonth ? "/" + String(item.sys.endMonth).padStart(2, "0") : "");
-          s4 += `<tr><td>${escHtml6(item.sys.label)}${badge}</td><td>${escHtml6(item.sys.vendor || "\u2014")}</td><td>${endStr}</td><td>${item.sys.noticePeriod} months</td><td>${item.triggerDateStr}</td><td>${item.monthsBeforeVesting} months before vesting</td></tr>`;
+          s4 += `<tr><td>${escHtml7(item.sys.label)}${badge}</td><td>${escHtml7(item.sys.vendor || "\u2014")}</td><td>${endStr}</td><td>${item.sys.noticePeriod} months</td><td>${item.triggerDateStr}</td><td>${item.monthsBeforeVesting} months before vesting</td></tr>`;
         });
         s4 += `</table>`;
       } else {
@@ -11373,7 +11747,7 @@ tr:nth-child(even){background:#f3f2f1;}
             if (a.isDisaggregation) disagg++;
           });
         });
-        s5 += `<tr><td>${escHtml6(successorName)}</td><td>${seen.size}</td><td>${formatCost(spend)}</td><td>${disagg}</td><td>${t1}</td></tr>`;
+        s5 += `<tr><td>${escHtml7(successorName)}</td><td>${seen.size}</td><td>${formatCost(spend)}</td><td>${disagg}</td><td>${t1}</td></tr>`;
       });
       s5 += `</table>`;
     } else {
@@ -11400,7 +11774,7 @@ tr:nth-child(even){background:#f3f2f1;}
     if (vendors.length) {
       s2 = `<table><tr><th>Vendor</th><th>Systems</th><th>Councils</th><th>Annual Spend</th></tr>`;
       vendors.forEach(([name, data]) => {
-        s2 += `<tr><td>${escHtml6(name)}</td><td>${data.count}</td><td>${data.councils.size}</td><td>${formatCost(data.spend)}</td></tr>`;
+        s2 += `<tr><td>${escHtml7(name)}</td><td>${data.count}</td><td>${data.councils.size}</td><td>${formatCost(data.spend)}</td></tr>`;
       });
       s2 += `</table>`;
     } else {
@@ -11428,7 +11802,7 @@ tr:nth-child(even){background:#f3f2f1;}
         if (item.monthsAway < 0) badge = `<span class="badge badge-red">OVERDUE</span>`;
         else if (item.monthsAway <= 3) badge = `<span class="badge badge-amber">URGENT</span>`;
         else badge = `<span class="badge badge-blue">UPCOMING</span>`;
-        s3 += `<tr><td>${escHtml6(item.sys.label)}</td><td>${escHtml6(item.sys.vendor || "\u2014")}</td><td>${item.triggerDateStr}</td><td>${badge}</td></tr>`;
+        s3 += `<tr><td>${escHtml7(item.sys.label)}</td><td>${escHtml7(item.sys.vendor || "\u2014")}</td><td>${item.triggerDateStr}</td><td>${badge}</td></tr>`;
       });
       s3 += `</table>`;
     } else {
@@ -11451,7 +11825,7 @@ tr:nth-child(even){background:#f3f2f1;}
             if (a.system.vendor) vendorSet.add(a.system.vendor);
           });
         });
-        s5 += `<tr><td>${escHtml6(successorName)}</td><td>${seen.size}</td><td>${formatCost(spend)}</td><td>${vendorSet.size}</td></tr>`;
+        s5 += `<tr><td>${escHtml7(successorName)}</td><td>${seen.size}</td><td>${formatCost(spend)}</td><td>${vendorSet.size}</td></tr>`;
       });
       s5 += `</table>`;
     } else {
@@ -11495,7 +11869,7 @@ tr:nth-child(even){background:#f3f2f1;}
     if (tcopSystems.length) {
       s3 = `<table><tr><th>System</th><th>TCoP Concerns</th></tr>`;
       tcopSystems.slice(0, 15).forEach((item) => {
-        s3 += `<tr><td>${escHtml6(item.sys.label)}</td><td>${item.concerns.map((c) => escHtml6(c.description)).join("; ")}</td></tr>`;
+        s3 += `<tr><td>${escHtml7(item.sys.label)}</td><td>${item.concerns.map((c) => escHtml7(c.description)).join("; ")}</td></tr>`;
       });
       s3 += `</table>`;
     } else {
@@ -11541,7 +11915,7 @@ tr:nth-child(even){background:#f3f2f1;}
     if (top10.length) {
       html = `<table><tr><th>Function</th><th>Tier</th><th>Key Signals</th></tr>`;
       top10.forEach((row) => {
-        html += `<tr><td>${escHtml6(row.label)}</td><td>${row.tier}</td><td>${row.strongSigs.map((sg) => escHtml6(sg.label)).join(", ")}</td></tr>`;
+        html += `<tr><td>${escHtml7(row.label)}</td><td>${row.tier}</td><td>${row.strongSigs.map((sg) => escHtml7(sg.label)).join(", ")}</td></tr>`;
       });
       html += `</table>`;
     } else {
@@ -13069,21 +13443,21 @@ tr:nth-child(even){background:#f3f2f1;}
   // src/features/validation-panel.js
   function renderValidationItem(item, colourClass) {
     if (!item.path) {
-      return `<li class="text-sm ${colourClass}">\u2022 ${escHtml7(item.message)}</li>`;
+      return `<li class="text-sm ${colourClass}">\u2022 ${escHtml8(item.message)}</li>`;
     }
     return `<li class="text-sm">
         <details class="group">
             <summary class="cursor-pointer ${colourClass} list-none">
-                <span>\u2022 ${escHtml7(item.message)}</span>
+                <span>\u2022 ${escHtml8(item.message)}</span>
                 <span class="text-gray-400 text-xs ml-1 group-open:hidden">\u25B8</span>
             </summary>
             <div class="ml-4 mt-1 p-2 bg-gray-100 text-xs border-l-2 border-gray-300">
-                <p class="font-mono text-gray-700">Path: <strong>${escHtml7(item.path)}</strong></p>
+                <p class="font-mono text-gray-700">Path: <strong>${escHtml8(item.path)}</strong></p>
             </div>
         </details>
     </li>`;
   }
-  function escHtml7(str) {
+  function escHtml8(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   function renderValidationPanel() {
@@ -13184,7 +13558,7 @@ tr:nth-child(even){background:#f3f2f1;}
     if (result.info && result.info.length > 0) {
       html += '<div class="mb-4 space-y-1">';
       for (const item of result.info) {
-        html += `<p class="text-sm text-gray-700">\u2713 ${escHtml7(item.message)}</p>`;
+        html += `<p class="text-sm text-gray-700">\u2713 ${escHtml8(item.message)}</p>`;
       }
       html += "</div>";
     }
@@ -13216,7 +13590,7 @@ tr:nth-child(even){background:#f3f2f1;}
   }
 
   // src/features/pre-import-editor.js
-  function escHtml8(str) {
+  function escHtml9(str) {
     return String(str == null ? "" : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
   var LGA_ID_SET = new Set(LGA_FUNCTIONS.map((f) => f.id));
@@ -13231,15 +13605,15 @@ tr:nth-child(even){background:#f3f2f1;}
             <div class="space-y-3">
                 <div>
                     <label class="text-xs font-bold text-gray-600 block mb-1">Name</label>
-                    <input type="text" class="tc-field border border-gray-300 p-2 text-sm w-full" data-succ-idx="${i}" data-field="name" value="${escHtml8(s.name || "")}">
+                    <input type="text" class="tc-field border border-gray-300 p-2 text-sm w-full" data-succ-idx="${i}" data-field="name" value="${escHtml9(s.name || "")}">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-600 block mb-1">Full Predecessors <span class="font-normal text-gray-400">(comma-separated council names)</span></label>
-                    <input type="text" class="tc-field border border-gray-300 p-2 text-sm w-full" data-succ-idx="${i}" data-field="fullPredecessors" value="${escHtml8((s.fullPredecessors || []).join(", "))}">
+                    <input type="text" class="tc-field border border-gray-300 p-2 text-sm w-full" data-succ-idx="${i}" data-field="fullPredecessors" value="${escHtml9((s.fullPredecessors || []).join(", "))}">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-600 block mb-1">Partial Predecessors <span class="font-normal text-gray-400">(comma-separated council names)</span></label>
-                    <input type="text" class="tc-field border border-gray-300 p-2 text-sm w-full" data-succ-idx="${i}" data-field="partialPredecessors" value="${escHtml8((s.partialPredecessors || []).join(", "))}">
+                    <input type="text" class="tc-field border border-gray-300 p-2 text-sm w-full" data-succ-idx="${i}" data-field="partialPredecessors" value="${escHtml9((s.partialPredecessors || []).join(", "))}">
                 </div>
             </div>
         </div>
@@ -13252,7 +13626,7 @@ tr:nth-child(even){background:#f3f2f1;}
 
     <div class="mb-6">
         <label class="text-sm font-bold text-gray-700 block mb-1">Vesting Date</label>
-        <input type="date" id="tcVestingDate" class="border border-gray-300 p-2 text-sm" value="${escHtml8(json.vestingDate || "")}">
+        <input type="date" id="tcVestingDate" class="border border-gray-300 p-2 text-sm" value="${escHtml9(json.vestingDate || "")}">
     </div>
 
     <h3 class="text-lg font-bold mb-3">Successor Authorities</h3>

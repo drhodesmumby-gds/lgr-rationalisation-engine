@@ -7,6 +7,7 @@
 import { renderListPanel, wireListPanel } from './list-panel.js';
 import { renderPropsPanel, wirePropsPanel } from './props-panel.js';
 import { renderRelPanel, wireRelPanel } from './rel-panel.js';
+import { renderBulkMode, wireBulkMode } from './bulk-mode.js';
 import { LGA_FUNCTIONS } from '../../constants/lga-functions.js';
 
 // --- Rendering ---
@@ -59,7 +60,7 @@ export function renderUnifiedEditor(json, options = {}) {
 
     // === Bulk mode: full-width container (hidden by default) ===
     html += `<div class="flex-1 overflow-hidden hidden" data-ue-bulk-container>`;
-    html += `<div id="ue-bulk-panel" class="p-8 text-center text-gray-500">Bulk mode — coming soon</div>`;
+    html += `<div id="ue-bulk-panel" class="h-full overflow-auto"></div>`;
     html += `</div>`;
 
     html += `</div>`;
@@ -386,6 +387,18 @@ export function wireUnifiedEditor(container, json, options = {}) {
 
     // --- Mode toggle ---
 
+    function rerenderBulk() {
+        const bulkPanelEl = container.querySelector('#ue-bulk-panel');
+        if (!bulkPanelEl) return;
+        bulkPanelEl.innerHTML = renderBulkMode(editorState);
+        wireBulkMode(bulkPanelEl, editorState, {
+            onChange(nodeIdx, field, value) {
+                handleFieldChange(nodeIdx, field, value);
+                rerenderBulk();
+            }
+        });
+    }
+
     function setMode(newMode) {
         if (newMode === mode) return;
         mode = newMode;
@@ -400,6 +413,7 @@ export function wireUnifiedEditor(container, json, options = {}) {
             focusBtn.classList.add('bg-blue-600', 'text-white');
             bulkBtn.classList.remove('bg-blue-600', 'text-white');
             bulkBtn.classList.add('bg-white', 'text-gray-700');
+            rerenderList();
         } else {
             focusContainer.style.display = 'none';
             bulkContainer.classList.remove('hidden');
@@ -407,6 +421,7 @@ export function wireUnifiedEditor(container, json, options = {}) {
             bulkBtn.classList.add('bg-blue-600', 'text-white');
             focusBtn.classList.remove('bg-blue-600', 'text-white');
             focusBtn.classList.add('bg-white', 'text-gray-700');
+            rerenderBulk();
         }
     }
 
