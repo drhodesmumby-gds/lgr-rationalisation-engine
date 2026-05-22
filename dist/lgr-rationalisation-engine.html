@@ -2757,6 +2757,427 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     return questions;
   }
 
+  // src/features/template-converter.js
+  var DOMAIN_SHEET_NAMES = [
+    "Health & Social Care",
+    "Administration & Government",
+    "Environmental Protection",
+    "Planning & Building Control",
+    "Housing",
+    "Transport & Highways",
+    "Advice & Benefits",
+    "Leisure & Culture",
+    "Business & Employment"
+  ];
+  var COL = {
+    ESD_ID: 0,
+    // A
+    FUNCTION: 1,
+    // B
+    SYSTEM_NAME: 2,
+    // C
+    VENDOR: 3,
+    // D
+    USERS: 4,
+    // E
+    ANNUAL_COST: 5,
+    // F
+    CONTRACT_END: 6,
+    // G
+    NOTICE_PERIOD: 7,
+    // H
+    PORTABILITY: 8,
+    // I
+    DATA_PARTITIONING: 9,
+    // J
+    CLOUD_HOSTED: 10,
+    // K
+    ERP: 11,
+    // L
+    SHARED_WITH: 12,
+    // M
+    SUPPORT_MODEL: 13,
+    // N
+    CAPABILITIES: 14
+    // O
+  };
+  function excelSerialToDate(serial) {
+    const MS_PER_DAY = 864e5;
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    return new Date(epoch.getTime() + serial * MS_PER_DAY);
+  }
+  function parseContractEnd(value) {
+    if (value === null || value === void 0 || value === "") return null;
+    if (typeof value === "number") {
+      if (value < 1) return null;
+      const d2 = excelSerialToDate(Math.floor(value));
+      if (isNaN(d2.getTime())) return null;
+      return { endYear: d2.getUTCFullYear(), endMonth: d2.getUTCMonth() + 1 };
+    }
+    const s = String(value).trim();
+    if (!s) return null;
+    const mmYyyy = s.match(/^(\d{1,2})\/(\d{4})$/);
+    if (mmYyyy) {
+      const month = parseInt(mmYyyy[1], 10);
+      const year = parseInt(mmYyyy[2], 10);
+      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
+    }
+    const yyyyMm = s.match(/^(\d{4})-(\d{1,2})/);
+    if (yyyyMm) {
+      const year = parseInt(yyyyMm[1], 10);
+      const month = parseInt(yyyyMm[2], 10);
+      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
+    }
+    const mmYy = s.match(/^(\d{1,2})\/(\d{2})$/);
+    if (mmYy) {
+      const month = parseInt(mmYy[1], 10);
+      const year = 2e3 + parseInt(mmYy[2], 10);
+      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
+    }
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      return { endYear: d.getFullYear(), endMonth: d.getMonth() + 1 };
+    }
+    return null;
+  }
+  function safeStr(v) {
+    if (v === null || v === void 0) return "";
+    return String(v).trim();
+  }
+  function safeInt(v) {
+    if (v === null || v === void 0 || v === "") return void 0;
+    const n = typeof v === "number" ? v : parseInt(String(v).replace(/[^0-9.-]/g, ""), 10);
+    return isNaN(n) ? void 0 : n;
+  }
+  function parseBool(v) {
+    if (v === null || v === void 0 || v === "") return void 0;
+    const s = String(v).trim().toLowerCase();
+    if (s === "yes" || s === "true" || s === "1") return true;
+    if (s === "no" || s === "false" || s === "0") return false;
+    return void 0;
+  }
+  function parseCommaSeparated(v) {
+    if (v === null || v === void 0 || v === "") return [];
+    return String(v).split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  function parsePortability(v) {
+    const s = safeStr(v);
+    if (["High", "Medium", "Low"].includes(s)) return s;
+    const match = ["High", "Medium", "Low"].find((p) => p.toLowerCase() === s.toLowerCase());
+    return match || void 0;
+  }
+  function parseDataPartitioning(v) {
+    const s = safeStr(v);
+    if (["Segmented", "Monolithic"].includes(s)) return s;
+    const match = ["Segmented", "Monolithic"].find((p) => p.toLowerCase() === s.toLowerCase());
+    return match || void 0;
+  }
+  function parseSupportModel(v) {
+    const s = safeStr(v).toLowerCase();
+    if (s === "vendor-supported" || s === "vendor supported") return "vendor-supported";
+    if (s === "community-supported" || s === "community supported") return "community-supported";
+    if (s === "unsupported") return "unsupported";
+    return void 0;
+  }
+  function findHeaderRow(rows) {
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (!Array.isArray(row)) continue;
+      const cell0 = safeStr(row[0]);
+      const cell1 = safeStr(row[1]);
+      if (cell0.toLowerCase().includes("esd") || cell1.toLowerCase().includes("function") || cell0.toLowerCase() === "esd id") {
+        return { headerRowIndex: i, dataStartIndex: i + 2 };
+      }
+      if (/^\d+$/.test(cell0)) {
+        return { headerRowIndex: -1, dataStartIndex: i };
+      }
+    }
+    return { headerRowIndex: -1, dataStartIndex: 0 };
+  }
+  function convertXlsxToArchitecture(workbook) {
+    const warnings = [];
+    let councilName = "Unknown Council";
+    let councilTier = "unitary";
+    let financialDistress = false;
+    const lgaLookup = new Map(LGA_FUNCTIONS.map((f) => [String(f.id), f.label]));
+    const infoSheet = workbook.Sheets["Council Info"];
+    if (infoSheet) {
+      const rows = XLSX.utils.sheet_to_json(infoSheet, { header: 1 });
+      for (const row of rows) {
+        if (!Array.isArray(row) || row.length < 2) continue;
+        const key = safeStr(row[0]).toLowerCase();
+        const val = row[1];
+        if (key.includes("council") && key.includes("name")) {
+          councilName = safeStr(val) || councilName;
+        } else if (key === "tier" || key === "council tier") {
+          const t = safeStr(val).toLowerCase();
+          if (["county", "district", "borough", "unitary"].includes(t)) councilTier = t;
+        } else if (key.includes("financial") && key.includes("distress")) {
+          const b = parseBool(val);
+          if (b !== void 0) financialDistress = b;
+        }
+      }
+    } else {
+      warnings.push('Sheet "Council Info" not found \u2014 using defaults.');
+    }
+    const nodes = [];
+    const edges = [];
+    const functionsSeen = /* @__PURE__ */ new Set();
+    const systemsByName = /* @__PURE__ */ new Map();
+    let sysCounter = 0;
+    for (const sheetName of DOMAIN_SHEET_NAMES) {
+      const sheet = workbook.Sheets[sheetName];
+      if (!sheet) {
+        continue;
+      }
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const { dataStartIndex } = findHeaderRow(rows);
+      for (let ri = dataStartIndex; ri < rows.length; ri++) {
+        const row = rows[ri];
+        if (!Array.isArray(row)) continue;
+        const systemName = safeStr(row[COL.SYSTEM_NAME]);
+        if (!systemName || systemName.toUpperCase().includes("EXAMPLE")) continue;
+        const rawEsdId = safeStr(row[COL.ESD_ID]);
+        const esdId = rawEsdId.replace(/\D/g, "");
+        let fnLabel = safeStr(row[COL.FUNCTION]);
+        if (!fnLabel && esdId && lgaLookup.has(esdId)) {
+          fnLabel = lgaLookup.get(esdId);
+        }
+        if (!fnLabel && esdId) {
+          fnLabel = `Function ${esdId}`;
+        }
+        if (!fnLabel) {
+          warnings.push(`Row ${ri + 1} in "${sheetName}": system "${systemName}" has no ESD ID or Function name \u2014 skipped.`);
+          continue;
+        }
+        if (esdId && !lgaLookup.has(esdId)) {
+          warnings.push(`ESD ID "${esdId}" (system "${systemName}" in "${sheetName}") not found in LGA taxonomy.`);
+        }
+        const fnNodeId = esdId ? `fn-${esdId}` : `fn-${sheetName.replace(/\W/g, "")}-${ri}`;
+        const dedupeKey = esdId || fnNodeId;
+        if (!functionsSeen.has(dedupeKey)) {
+          functionsSeen.add(dedupeKey);
+          const fnNode = {
+            id: fnNodeId,
+            label: fnLabel,
+            type: "Function"
+          };
+          if (esdId) fnNode.lgaFunctionId = esdId;
+          nodes.push(fnNode);
+        }
+        sysCounter++;
+        const sysNodeId = `sys-${sysCounter}`;
+        const sysNode = {
+          id: sysNodeId,
+          label: systemName,
+          type: "ITSystem"
+        };
+        const vendor = safeStr(row[COL.VENDOR]);
+        if (vendor) sysNode.vendor = vendor;
+        const users = safeInt(row[COL.USERS]);
+        if (users !== void 0) sysNode.users = users;
+        const rawCost = row[COL.ANNUAL_COST];
+        const costStr = safeStr(rawCost).replace(/[£$,\s]/g, "");
+        const annualCost = costStr ? parseFloat(costStr) : NaN;
+        if (!isNaN(annualCost) && annualCost > 0) {
+          sysNode.annualCost = annualCost;
+        }
+        const contractEndParsed = parseContractEnd(row[COL.CONTRACT_END]);
+        if (contractEndParsed) {
+          sysNode.endYear = contractEndParsed.endYear;
+          sysNode.endMonth = contractEndParsed.endMonth;
+        }
+        const noticePeriod = safeInt(row[COL.NOTICE_PERIOD]);
+        if (noticePeriod !== void 0) sysNode.noticePeriod = noticePeriod;
+        const portability = parsePortability(row[COL.PORTABILITY]);
+        if (portability !== void 0) sysNode.portability = portability;
+        const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING]);
+        if (dataPartitioning !== void 0) sysNode.dataPartitioning = dataPartitioning;
+        const isCloud = parseBool(row[COL.CLOUD_HOSTED]);
+        if (isCloud !== void 0) sysNode.isCloud = isCloud;
+        const isERP = parseBool(row[COL.ERP]);
+        if (isERP !== void 0) sysNode.isERP = isERP;
+        const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH]);
+        if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
+        const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL]);
+        if (supportModel !== void 0) sysNode.supportModel = supportModel;
+        const capabilitiesArr = parseCommaSeparated(row[COL.CAPABILITIES]).map((c) => c.toLowerCase());
+        if (capabilitiesArr.length > 0) sysNode.capabilityType = capabilitiesArr;
+        nodes.push(sysNode);
+        systemsByName.set(systemName.toLowerCase(), sysNodeId);
+        edges.push({
+          source: sysNodeId,
+          target: fnNodeId,
+          relationship: "REALIZES"
+        });
+      }
+    }
+    const depsSheet = workbook.Sheets["Dependencies"];
+    if (depsSheet) {
+      const rows = XLSX.utils.sheet_to_json(depsSheet, { header: 1 });
+      let depStart = 0;
+      for (let i = 0; i < Math.min(rows.length, 5); i++) {
+        const cell0 = safeStr(rows[i]?.[0]).toLowerCase();
+        if (cell0.includes("system that depends") || cell0.includes("dependent") || cell0.includes("depends on")) {
+          depStart = i + 1;
+          break;
+        }
+        if (cell0 && !cell0.includes("depend") && /\w/.test(cell0)) {
+          depStart = i;
+          break;
+        }
+      }
+      for (let ri = depStart; ri < rows.length; ri++) {
+        const row = rows[ri];
+        if (!Array.isArray(row)) continue;
+        const dependentName = safeStr(row[0]).toLowerCase();
+        const dependedOnName = safeStr(row[1]).toLowerCase();
+        const whatFor = parseCommaSeparated(row[2]).map((c) => c.toLowerCase());
+        if (!dependentName || !dependedOnName) continue;
+        const dependentId = systemsByName.get(dependentName);
+        const dependedOnId = systemsByName.get(dependedOnName);
+        if (!dependentId) {
+          warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain sheets \u2014 edge skipped.`);
+          continue;
+        }
+        if (!dependedOnId) {
+          warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain sheets \u2014 edge skipped.`);
+          continue;
+        }
+        edges.push({
+          source: dependentId,
+          target: dependedOnId,
+          relationship: "CONSUMES_CAPABILITY",
+          capabilities: whatFor.length > 0 ? whatFor : void 0
+        });
+      }
+    }
+    const architecture = {
+      councilName,
+      councilMetadata: {
+        tier: councilTier,
+        financialDistress
+      },
+      nodes,
+      edges
+    };
+    return { architecture, warnings };
+  }
+
+  // src/ui-notifications.js
+  var TYPE_CONFIG = {
+    error: { borderColor: "#d4351c", bgClass: "bg-red-50", defaultTitle: "Error", role: "alert" },
+    warning: { borderColor: "#f47738", bgClass: "bg-yellow-50", defaultTitle: "Warning", role: "alert" },
+    success: { borderColor: "#00703c", bgClass: "bg-green-50", defaultTitle: "Success", role: "status" },
+    info: { borderColor: "#1d70b8", bgClass: "bg-blue-50", defaultTitle: "Important", role: "status" }
+  };
+  var MAX_NOTIFICATIONS = 3;
+  function getContainer(containerId) {
+    if (containerId) {
+      return document.getElementById(containerId);
+    }
+    const area = document.getElementById("notificationArea");
+    return area ? area.firstElementChild : document.body;
+  }
+  function enforceLimit(container) {
+    const notifications = container.querySelectorAll(".app-notification");
+    while (notifications.length >= MAX_NOTIFICATIONS) {
+      notifications[0].remove();
+    }
+  }
+  function showNotification({ type = "info", title, message, autoDismissMs = 8e3, containerId } = {}) {
+    const config = TYPE_CONFIG[type] || TYPE_CONFIG.info;
+    const container = getContainer(containerId);
+    if (!container) return null;
+    enforceLimit(container);
+    const el = document.createElement("div");
+    el.className = `app-notification flex items-start gap-3 p-4 mb-2 border-l-4 ${config.bgClass} rounded-r shadow-md`;
+    el.style.borderLeftColor = config.borderColor;
+    el.setAttribute("role", config.role);
+    el.innerHTML = `
+    <div class="flex-1">
+      <p class="font-bold text-sm" style="color: ${config.borderColor}">${title || config.defaultTitle}</p>
+      <p class="text-sm text-gray-700 mt-1">${message}</p>
+    </div>
+    <button class="notification-dismiss text-gray-600 hover:text-gray-800 text-lg leading-none p-1" aria-label="Dismiss notification">&times;</button>
+  `;
+    el.querySelector(".notification-dismiss").addEventListener("click", () => dismissNotification(el));
+    container.appendChild(el);
+    if (autoDismissMs > 0) {
+      setTimeout(() => {
+        if (el.parentNode) dismissNotification(el);
+      }, autoDismissMs);
+    }
+    return el;
+  }
+  function showConfirm({ title = "Confirm", message, confirmLabel = "Confirm", cancelLabel = "Cancel", containerId } = {}) {
+    return new Promise((resolve) => {
+      const config = TYPE_CONFIG.warning;
+      const container = getContainer(containerId);
+      if (!container) {
+        resolve(false);
+        return;
+      }
+      enforceLimit(container);
+      const triggerEl = document.activeElement;
+      const descId = "notification-desc-" + Date.now();
+      const el = document.createElement("div");
+      el.className = `app-notification flex items-start gap-3 p-4 mb-2 border-l-4 ${config.bgClass} rounded-r shadow-md`;
+      el.style.borderLeftColor = config.borderColor;
+      el.setAttribute("role", "alertdialog");
+      el.setAttribute("aria-label", title);
+      el.setAttribute("aria-describedby", descId);
+      el.innerHTML = `
+      <div class="flex-1">
+        <p class="font-bold text-sm" style="color: ${config.borderColor}">${title}</p>
+        <p id="${descId}" class="text-sm text-gray-700 mt-1">${message}</p>
+        <div class="flex gap-2 mt-3">
+          <button class="confirm-btn px-3 py-1 text-sm font-bold rounded" style="background-color: ${config.borderColor}; color: #0b0c0c">${confirmLabel}</button>
+          <button class="cancel-btn px-3 py-1 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded">${cancelLabel}</button>
+        </div>
+      </div>
+      <button class="notification-dismiss text-gray-600 hover:text-gray-800 text-lg leading-none p-1" aria-label="Dismiss">&times;</button>
+    `;
+      function cleanup(result) {
+        if (el.parentNode) el.remove();
+        if (triggerEl && triggerEl.focus) triggerEl.focus();
+        resolve(result);
+      }
+      el.querySelector(".confirm-btn").addEventListener("click", () => cleanup(true));
+      el.querySelector(".cancel-btn").addEventListener("click", () => cleanup(false));
+      el.querySelector(".notification-dismiss").addEventListener("click", () => cleanup(false));
+      container.appendChild(el);
+      const focusableEls = el.querySelectorAll("button");
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+          const first = focusableEls[0];
+          const last = focusableEls[focusableEls.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cleanup(false);
+        }
+      });
+      el.querySelector(".confirm-btn").focus();
+    });
+  }
+  function dismissNotification(el) {
+    if (el && el.parentNode) {
+      el.remove();
+    }
+  }
+
   // src/features/import-wizard.js
   var IMPORT_TARGET_FIELDS = [
     { section: "System Details", fields: [
@@ -3093,6 +3514,21 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const s = state.importWizardState;
     const headers = s.headers;
     const previewRows = (s.rawRows || []).slice(0, 5);
+    const headerRowIdx = s._headerRowIdx || 1;
+    const totalRawRows = s._rawArrayData ? s._rawArrayData.length : s.rawRows ? s.rawRows.length + 1 : 1;
+    const maxHeaderOpt = Math.min(totalRawRows, 10);
+    let headerRowSelector = "";
+    if (s._rawArrayData) {
+      const options = Array.from({ length: maxHeaderOpt }, (_, i) => {
+        const label = s._rawArrayData[i] ? String(s._rawArrayData[i][0] || "").slice(0, 40) : `Row ${i + 1}`;
+        const sel = i + 1 === headerRowIdx ? "selected" : "";
+        return `<option value="${i + 1}" ${sel}>Row ${i + 1}: ${escHtml(label)}</option>`;
+      }).join("");
+      headerRowSelector = `<div class="mb-3 flex items-center gap-2">
+            <label class="text-sm font-bold text-[#0b0c0c]">Headers in row:</label>
+            <select id="importHeaderRowSelect" class="border-2 border-[#0b0c0c] p-1 text-sm">${options}</select>
+        </div>`;
+    }
     let previewTableHTML = `<div class="overflow-x-auto text-xs">
         <table class="gds-table">
             <thead><tr>${headers.map((h) => `<th class="px-2 py-1 whitespace-nowrap">${escHtml(h)}</th>`).join("")}</tr></thead>
@@ -3119,6 +3555,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     <div class="flex flex-col lg:flex-row gap-4 h-full">
         <!-- Left: preview table (60%) -->
         <div class="lg:w-3/5 flex-shrink-0">
+            ${headerRowSelector}
             <p class="font-bold text-sm mb-2">Data preview (first 5 rows)</p>
             ${previewTableHTML}
         </div>
@@ -3702,6 +4139,34 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     reader.onload = (e) => {
       try {
         const workbook = XLSX.read(e.target.result, { type: "array" });
+        const templateSheets = ["Health & Social Care", "Administration & Government", "Environmental Protection"];
+        const isTemplate = templateSheets.every((s) => workbook.SheetNames.includes(s));
+        if (isTemplate) {
+          try {
+            const { architecture, warnings } = convertXlsxToArchitecture(workbook);
+            if (!architecture || !architecture.nodes || architecture.nodes.length === 0) {
+              setImportWizardError("Template detected but no system data found. Fill in at least one domain sheet with system names.");
+              return;
+            }
+            closeImportWizard();
+            const sysCount = architecture.nodes.filter((n) => n.type === "ITSystem").length;
+            state.rawUploads.push({ filename: file.name, data: architecture });
+            const fileList = document.getElementById("fileList");
+            const listUl = document.getElementById("uploadedFilesUl");
+            if (fileList) fileList.classList.remove("hidden");
+            const li = document.createElement("li");
+            li.className = "flex items-center gap-3";
+            const span = document.createElement("span");
+            const warnText = warnings.length > 0 ? ` (${warnings.length} warning${warnings.length > 1 ? "s" : ""})` : "";
+            span.textContent = `${architecture.councilName || file.name} (${sysCount} systems from template)${warnText}`;
+            li.appendChild(span);
+            listUl.appendChild(li);
+            showNotification({ type: "success", message: `Template imported: ${sysCount} systems found.` });
+          } catch (convErr) {
+            setImportWizardError("Template detected but conversion failed: " + convErr.message);
+          }
+          return;
+        }
         if (!sheetName && workbook.SheetNames.length > 1) {
           const fileLabel = document.getElementById("importFileLabel");
           if (fileLabel) {
@@ -3739,21 +4204,31 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   function parseExcelSheetFromWorkbook(workbook, sheetName) {
     try {
       const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      const normalisedRows = rows.map((row) => {
-        const out = {};
-        Object.keys(row).forEach((k) => {
-          out[k.trim()] = row[k];
-        });
-        return out;
-      });
-      state.importWizardState.rawRows = normalisedRows;
-      state.importWizardState.headers = normalisedRows.length ? Object.keys(normalisedRows[0]) : [];
-      state.importWizardState.columnMap = autoDetectColumnMap(state.importWizardState.headers);
+      const rawArrayData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      state.importWizardState._rawArrayData = rawArrayData;
+      state.importWizardState._headerRowIdx = 1;
+      applyHeaderRow(1);
       renderImportWizardStep();
     } catch (err) {
       setImportWizardError("Could not parse Excel sheet: " + err.message);
     }
+  }
+  function applyHeaderRow(headerRowIdx) {
+    const rawArrayData = state.importWizardState._rawArrayData;
+    if (!rawArrayData || rawArrayData.length < headerRowIdx) return;
+    const headerRow = rawArrayData[headerRowIdx - 1];
+    const headers = headerRow.map((h, i) => String(h || `Column ${i + 1}`).trim());
+    const dataRows = rawArrayData.slice(headerRowIdx).map((row) => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = row[i] !== void 0 ? row[i] : "";
+      });
+      return obj;
+    }).filter((row) => headers.some((h) => row[h] !== ""));
+    state.importWizardState._headerRowIdx = headerRowIdx;
+    state.importWizardState.rawRows = dataRows;
+    state.importWizardState.headers = headers;
+    state.importWizardState.columnMap = autoDetectColumnMap(headers);
   }
   function handleImportNext() {
     const s = state.importWizardState;
@@ -3894,6 +4369,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (e.target.id === "importFileInput") {
         const file = e.target.files[0];
         if (file) handleImportFileSelect(file);
+        return;
+      }
+      if (e.target.id === "importHeaderRowSelect") {
+        const rowIdx = parseInt(e.target.value, 10);
+        applyHeaderRow(rowIdx);
+        renderImportWizardStep();
         return;
       }
       if (e.target.classList.contains("import-col-map-select")) {
@@ -9759,120 +10240,6 @@ ${hardErrors.join("\n")}`);
     });
   }
 
-  // src/ui-notifications.js
-  var TYPE_CONFIG = {
-    error: { borderColor: "#d4351c", bgClass: "bg-red-50", defaultTitle: "Error", role: "alert" },
-    warning: { borderColor: "#f47738", bgClass: "bg-yellow-50", defaultTitle: "Warning", role: "alert" },
-    success: { borderColor: "#00703c", bgClass: "bg-green-50", defaultTitle: "Success", role: "status" },
-    info: { borderColor: "#1d70b8", bgClass: "bg-blue-50", defaultTitle: "Important", role: "status" }
-  };
-  var MAX_NOTIFICATIONS = 3;
-  function getContainer(containerId) {
-    if (containerId) {
-      return document.getElementById(containerId);
-    }
-    const area = document.getElementById("notificationArea");
-    return area ? area.firstElementChild : document.body;
-  }
-  function enforceLimit(container) {
-    const notifications = container.querySelectorAll(".app-notification");
-    while (notifications.length >= MAX_NOTIFICATIONS) {
-      notifications[0].remove();
-    }
-  }
-  function showNotification({ type = "info", title, message, autoDismissMs = 8e3, containerId } = {}) {
-    const config = TYPE_CONFIG[type] || TYPE_CONFIG.info;
-    const container = getContainer(containerId);
-    if (!container) return null;
-    enforceLimit(container);
-    const el = document.createElement("div");
-    el.className = `app-notification flex items-start gap-3 p-4 mb-2 border-l-4 ${config.bgClass} rounded-r shadow-md`;
-    el.style.borderLeftColor = config.borderColor;
-    el.setAttribute("role", config.role);
-    el.innerHTML = `
-    <div class="flex-1">
-      <p class="font-bold text-sm" style="color: ${config.borderColor}">${title || config.defaultTitle}</p>
-      <p class="text-sm text-gray-700 mt-1">${message}</p>
-    </div>
-    <button class="notification-dismiss text-gray-600 hover:text-gray-800 text-lg leading-none p-1" aria-label="Dismiss notification">&times;</button>
-  `;
-    el.querySelector(".notification-dismiss").addEventListener("click", () => dismissNotification(el));
-    container.appendChild(el);
-    if (autoDismissMs > 0) {
-      setTimeout(() => {
-        if (el.parentNode) dismissNotification(el);
-      }, autoDismissMs);
-    }
-    return el;
-  }
-  function showConfirm({ title = "Confirm", message, confirmLabel = "Confirm", cancelLabel = "Cancel", containerId } = {}) {
-    return new Promise((resolve) => {
-      const config = TYPE_CONFIG.warning;
-      const container = getContainer(containerId);
-      if (!container) {
-        resolve(false);
-        return;
-      }
-      enforceLimit(container);
-      const triggerEl = document.activeElement;
-      const descId = "notification-desc-" + Date.now();
-      const el = document.createElement("div");
-      el.className = `app-notification flex items-start gap-3 p-4 mb-2 border-l-4 ${config.bgClass} rounded-r shadow-md`;
-      el.style.borderLeftColor = config.borderColor;
-      el.setAttribute("role", "alertdialog");
-      el.setAttribute("aria-label", title);
-      el.setAttribute("aria-describedby", descId);
-      el.innerHTML = `
-      <div class="flex-1">
-        <p class="font-bold text-sm" style="color: ${config.borderColor}">${title}</p>
-        <p id="${descId}" class="text-sm text-gray-700 mt-1">${message}</p>
-        <div class="flex gap-2 mt-3">
-          <button class="confirm-btn px-3 py-1 text-sm font-bold rounded" style="background-color: ${config.borderColor}; color: #0b0c0c">${confirmLabel}</button>
-          <button class="cancel-btn px-3 py-1 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded">${cancelLabel}</button>
-        </div>
-      </div>
-      <button class="notification-dismiss text-gray-600 hover:text-gray-800 text-lg leading-none p-1" aria-label="Dismiss">&times;</button>
-    `;
-      function cleanup(result) {
-        if (el.parentNode) el.remove();
-        if (triggerEl && triggerEl.focus) triggerEl.focus();
-        resolve(result);
-      }
-      el.querySelector(".confirm-btn").addEventListener("click", () => cleanup(true));
-      el.querySelector(".cancel-btn").addEventListener("click", () => cleanup(false));
-      el.querySelector(".notification-dismiss").addEventListener("click", () => cleanup(false));
-      container.appendChild(el);
-      const focusableEls = el.querySelectorAll("button");
-      el.addEventListener("keydown", (e) => {
-        if (e.key === "Tab") {
-          const first = focusableEls[0];
-          const last = focusableEls[focusableEls.length - 1];
-          if (e.shiftKey) {
-            if (document.activeElement === first) {
-              e.preventDefault();
-              last.focus();
-            }
-          } else {
-            if (document.activeElement === last) {
-              e.preventDefault();
-              first.focus();
-            }
-          }
-        }
-        if (e.key === "Escape") {
-          e.preventDefault();
-          cleanup(false);
-        }
-      });
-      el.querySelector(".confirm-btn").focus();
-    });
-  }
-  function dismissNotification(el) {
-    if (el && el.parentNode) {
-      el.remove();
-    }
-  }
-
   // src/features/decision-panel.js
   var _currentFunctionId = null;
   var _currentSuccessorName = null;
@@ -12859,313 +13226,6 @@ tr:nth-child(even){background:#f3f2f1;}
             </button>`;
     }).join("");
     return `<div class="domain-cards-grid" role="group" aria-label="Function domains">${cards}${workstreamCards}</div>`;
-  }
-
-  // src/features/template-converter.js
-  var DOMAIN_SHEET_NAMES = [
-    "Health & Social Care",
-    "Administration & Government",
-    "Environmental Protection",
-    "Planning & Building Control",
-    "Housing",
-    "Transport & Highways",
-    "Advice & Benefits",
-    "Leisure & Culture",
-    "Business & Employment"
-  ];
-  var COL = {
-    ESD_ID: 0,
-    // A
-    FUNCTION: 1,
-    // B
-    SYSTEM_NAME: 2,
-    // C
-    VENDOR: 3,
-    // D
-    USERS: 4,
-    // E
-    ANNUAL_COST: 5,
-    // F
-    CONTRACT_END: 6,
-    // G
-    NOTICE_PERIOD: 7,
-    // H
-    PORTABILITY: 8,
-    // I
-    DATA_PARTITIONING: 9,
-    // J
-    CLOUD_HOSTED: 10,
-    // K
-    ERP: 11,
-    // L
-    SHARED_WITH: 12,
-    // M
-    SUPPORT_MODEL: 13,
-    // N
-    CAPABILITIES: 14
-    // O
-  };
-  function excelSerialToDate(serial) {
-    const MS_PER_DAY = 864e5;
-    const epoch = new Date(Date.UTC(1899, 11, 30));
-    return new Date(epoch.getTime() + serial * MS_PER_DAY);
-  }
-  function parseContractEnd(value) {
-    if (value === null || value === void 0 || value === "") return null;
-    if (typeof value === "number") {
-      if (value < 1) return null;
-      const d2 = excelSerialToDate(Math.floor(value));
-      if (isNaN(d2.getTime())) return null;
-      return { endYear: d2.getUTCFullYear(), endMonth: d2.getUTCMonth() + 1 };
-    }
-    const s = String(value).trim();
-    if (!s) return null;
-    const mmYyyy = s.match(/^(\d{1,2})\/(\d{4})$/);
-    if (mmYyyy) {
-      const month = parseInt(mmYyyy[1], 10);
-      const year = parseInt(mmYyyy[2], 10);
-      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
-    }
-    const yyyyMm = s.match(/^(\d{4})-(\d{1,2})/);
-    if (yyyyMm) {
-      const year = parseInt(yyyyMm[1], 10);
-      const month = parseInt(yyyyMm[2], 10);
-      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
-    }
-    const mmYy = s.match(/^(\d{1,2})\/(\d{2})$/);
-    if (mmYy) {
-      const month = parseInt(mmYy[1], 10);
-      const year = 2e3 + parseInt(mmYy[2], 10);
-      if (month >= 1 && month <= 12) return { endYear: year, endMonth: month };
-    }
-    const d = new Date(s);
-    if (!isNaN(d.getTime())) {
-      return { endYear: d.getFullYear(), endMonth: d.getMonth() + 1 };
-    }
-    return null;
-  }
-  function safeStr(v) {
-    if (v === null || v === void 0) return "";
-    return String(v).trim();
-  }
-  function safeInt(v) {
-    if (v === null || v === void 0 || v === "") return void 0;
-    const n = typeof v === "number" ? v : parseInt(String(v).replace(/[^0-9.-]/g, ""), 10);
-    return isNaN(n) ? void 0 : n;
-  }
-  function parseBool(v) {
-    if (v === null || v === void 0 || v === "") return void 0;
-    const s = String(v).trim().toLowerCase();
-    if (s === "yes" || s === "true" || s === "1") return true;
-    if (s === "no" || s === "false" || s === "0") return false;
-    return void 0;
-  }
-  function parseCommaSeparated(v) {
-    if (v === null || v === void 0 || v === "") return [];
-    return String(v).split(",").map((s) => s.trim()).filter(Boolean);
-  }
-  function parsePortability(v) {
-    const s = safeStr(v);
-    if (["High", "Medium", "Low"].includes(s)) return s;
-    const match = ["High", "Medium", "Low"].find((p) => p.toLowerCase() === s.toLowerCase());
-    return match || void 0;
-  }
-  function parseDataPartitioning(v) {
-    const s = safeStr(v);
-    if (["Segmented", "Monolithic"].includes(s)) return s;
-    const match = ["Segmented", "Monolithic"].find((p) => p.toLowerCase() === s.toLowerCase());
-    return match || void 0;
-  }
-  function parseSupportModel(v) {
-    const s = safeStr(v).toLowerCase();
-    if (s === "vendor-supported" || s === "vendor supported") return "vendor-supported";
-    if (s === "community-supported" || s === "community supported") return "community-supported";
-    if (s === "unsupported") return "unsupported";
-    return void 0;
-  }
-  function findHeaderRow(rows) {
-    for (let i = 0; i < Math.min(rows.length, 10); i++) {
-      const row = rows[i];
-      if (!Array.isArray(row)) continue;
-      const cell0 = safeStr(row[0]);
-      const cell1 = safeStr(row[1]);
-      if (cell0.toLowerCase().includes("esd") || cell1.toLowerCase().includes("function") || cell0.toLowerCase() === "esd id") {
-        return { headerRowIndex: i, dataStartIndex: i + 2 };
-      }
-      if (/^\d+$/.test(cell0)) {
-        return { headerRowIndex: -1, dataStartIndex: i };
-      }
-    }
-    return { headerRowIndex: -1, dataStartIndex: 0 };
-  }
-  function convertXlsxToArchitecture(workbook) {
-    const warnings = [];
-    let councilName = "Unknown Council";
-    let councilTier = "unitary";
-    let financialDistress = false;
-    const lgaLookup = new Map(LGA_FUNCTIONS.map((f) => [String(f.id), f.label]));
-    const infoSheet = workbook.Sheets["Council Info"];
-    if (infoSheet) {
-      const rows = XLSX.utils.sheet_to_json(infoSheet, { header: 1 });
-      for (const row of rows) {
-        if (!Array.isArray(row) || row.length < 2) continue;
-        const key = safeStr(row[0]).toLowerCase();
-        const val = row[1];
-        if (key.includes("council") && key.includes("name")) {
-          councilName = safeStr(val) || councilName;
-        } else if (key === "tier" || key === "council tier") {
-          const t = safeStr(val).toLowerCase();
-          if (["county", "district", "borough", "unitary"].includes(t)) councilTier = t;
-        } else if (key.includes("financial") && key.includes("distress")) {
-          const b = parseBool(val);
-          if (b !== void 0) financialDistress = b;
-        }
-      }
-    } else {
-      warnings.push('Sheet "Council Info" not found \u2014 using defaults.');
-    }
-    const nodes = [];
-    const edges = [];
-    const functionsSeen = /* @__PURE__ */ new Set();
-    const systemsByName = /* @__PURE__ */ new Map();
-    let sysCounter = 0;
-    for (const sheetName of DOMAIN_SHEET_NAMES) {
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) {
-        continue;
-      }
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      const { dataStartIndex } = findHeaderRow(rows);
-      for (let ri = dataStartIndex; ri < rows.length; ri++) {
-        const row = rows[ri];
-        if (!Array.isArray(row)) continue;
-        const systemName = safeStr(row[COL.SYSTEM_NAME]);
-        if (!systemName || systemName.toUpperCase().includes("EXAMPLE")) continue;
-        const rawEsdId = safeStr(row[COL.ESD_ID]);
-        const esdId = rawEsdId.replace(/\D/g, "");
-        let fnLabel = safeStr(row[COL.FUNCTION]);
-        if (!fnLabel && esdId && lgaLookup.has(esdId)) {
-          fnLabel = lgaLookup.get(esdId);
-        }
-        if (!fnLabel && esdId) {
-          fnLabel = `Function ${esdId}`;
-        }
-        if (!fnLabel) {
-          warnings.push(`Row ${ri + 1} in "${sheetName}": system "${systemName}" has no ESD ID or Function name \u2014 skipped.`);
-          continue;
-        }
-        if (esdId && !lgaLookup.has(esdId)) {
-          warnings.push(`ESD ID "${esdId}" (system "${systemName}" in "${sheetName}") not found in LGA taxonomy.`);
-        }
-        const fnNodeId = esdId ? `fn-${esdId}` : `fn-${sheetName.replace(/\W/g, "")}-${ri}`;
-        const dedupeKey = esdId || fnNodeId;
-        if (!functionsSeen.has(dedupeKey)) {
-          functionsSeen.add(dedupeKey);
-          const fnNode = {
-            id: fnNodeId,
-            label: fnLabel,
-            type: "Function"
-          };
-          if (esdId) fnNode.lgaFunctionId = esdId;
-          nodes.push(fnNode);
-        }
-        sysCounter++;
-        const sysNodeId = `sys-${sysCounter}`;
-        const sysNode = {
-          id: sysNodeId,
-          label: systemName,
-          type: "ITSystem"
-        };
-        const vendor = safeStr(row[COL.VENDOR]);
-        if (vendor) sysNode.vendor = vendor;
-        const users = safeInt(row[COL.USERS]);
-        if (users !== void 0) sysNode.users = users;
-        const rawCost = row[COL.ANNUAL_COST];
-        const costStr = safeStr(rawCost).replace(/[£$,\s]/g, "");
-        const annualCost = costStr ? parseFloat(costStr) : NaN;
-        if (!isNaN(annualCost) && annualCost > 0) {
-          sysNode.annualCost = annualCost;
-        }
-        const contractEndParsed = parseContractEnd(row[COL.CONTRACT_END]);
-        if (contractEndParsed) {
-          sysNode.endYear = contractEndParsed.endYear;
-          sysNode.endMonth = contractEndParsed.endMonth;
-        }
-        const noticePeriod = safeInt(row[COL.NOTICE_PERIOD]);
-        if (noticePeriod !== void 0) sysNode.noticePeriod = noticePeriod;
-        const portability = parsePortability(row[COL.PORTABILITY]);
-        if (portability !== void 0) sysNode.portability = portability;
-        const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING]);
-        if (dataPartitioning !== void 0) sysNode.dataPartitioning = dataPartitioning;
-        const isCloud = parseBool(row[COL.CLOUD_HOSTED]);
-        if (isCloud !== void 0) sysNode.isCloud = isCloud;
-        const isERP = parseBool(row[COL.ERP]);
-        if (isERP !== void 0) sysNode.isERP = isERP;
-        const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH]);
-        if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
-        const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL]);
-        if (supportModel !== void 0) sysNode.supportModel = supportModel;
-        const capabilitiesArr = parseCommaSeparated(row[COL.CAPABILITIES]).map((c) => c.toLowerCase());
-        if (capabilitiesArr.length > 0) sysNode.capabilityType = capabilitiesArr;
-        nodes.push(sysNode);
-        systemsByName.set(systemName.toLowerCase(), sysNodeId);
-        edges.push({
-          source: sysNodeId,
-          target: fnNodeId,
-          relationship: "REALIZES"
-        });
-      }
-    }
-    const depsSheet = workbook.Sheets["Dependencies"];
-    if (depsSheet) {
-      const rows = XLSX.utils.sheet_to_json(depsSheet, { header: 1 });
-      let depStart = 0;
-      for (let i = 0; i < Math.min(rows.length, 5); i++) {
-        const cell0 = safeStr(rows[i]?.[0]).toLowerCase();
-        if (cell0.includes("system that depends") || cell0.includes("dependent") || cell0.includes("depends on")) {
-          depStart = i + 1;
-          break;
-        }
-        if (cell0 && !cell0.includes("depend") && /\w/.test(cell0)) {
-          depStart = i;
-          break;
-        }
-      }
-      for (let ri = depStart; ri < rows.length; ri++) {
-        const row = rows[ri];
-        if (!Array.isArray(row)) continue;
-        const dependentName = safeStr(row[0]).toLowerCase();
-        const dependedOnName = safeStr(row[1]).toLowerCase();
-        const whatFor = parseCommaSeparated(row[2]).map((c) => c.toLowerCase());
-        if (!dependentName || !dependedOnName) continue;
-        const dependentId = systemsByName.get(dependentName);
-        const dependedOnId = systemsByName.get(dependedOnName);
-        if (!dependentId) {
-          warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain sheets \u2014 edge skipped.`);
-          continue;
-        }
-        if (!dependedOnId) {
-          warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain sheets \u2014 edge skipped.`);
-          continue;
-        }
-        edges.push({
-          source: dependentId,
-          target: dependedOnId,
-          relationship: "CONSUMES_CAPABILITY",
-          capabilities: whatFor.length > 0 ? whatFor : void 0
-        });
-      }
-    }
-    const architecture = {
-      councilName,
-      councilMetadata: {
-        tier: councilTier,
-        financialDistress
-      },
-      nodes,
-      edges
-    };
-    return { architecture, warnings };
   }
 
   // src/features/template-generator.js

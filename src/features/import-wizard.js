@@ -2,6 +2,8 @@ import { state } from '../state.js';
 import { LGA_FUNCTIONS } from '../constants/lga-functions.js';
 import { getLgaFunction } from '../taxonomy.js';
 import { escHtml } from '../ui-helpers.js';
+import { convertXlsxToArchitecture } from './template-converter.js';
+import { showNotification } from '../ui-notifications.js';
 
 
 const IMPORT_TARGET_FIELDS = [
@@ -389,6 +391,23 @@ function buildImportStep2HTML() {
     const s = state.importWizardState;
     const headers = s.headers;
     const previewRows = (s.rawRows || []).slice(0, 5);
+    const headerRowIdx = s._headerRowIdx || 1;
+    const totalRawRows = s._rawArrayData ? s._rawArrayData.length : (s.rawRows ? s.rawRows.length + 1 : 1);
+    const maxHeaderOpt = Math.min(totalRawRows, 10);
+
+    // Header row selector
+    let headerRowSelector = '';
+    if (s._rawArrayData) {
+        const options = Array.from({ length: maxHeaderOpt }, (_, i) => {
+            const label = s._rawArrayData[i] ? String(s._rawArrayData[i][0] || '').slice(0, 40) : `Row ${i + 1}`;
+            const sel = (i + 1) === headerRowIdx ? 'selected' : '';
+            return `<option value="${i + 1}" ${sel}>Row ${i + 1}: ${escHtml(label)}</option>`;
+        }).join('');
+        headerRowSelector = `<div class="mb-3 flex items-center gap-2">
+            <label class="text-sm font-bold text-[#0b0c0c]">Headers in row:</label>
+            <select id="importHeaderRowSelect" class="border-2 border-[#0b0c0c] p-1 text-sm">${options}</select>
+        </div>`;
+    }
 
     // Build preview table
     let previewTableHTML = `<div class="overflow-x-auto text-xs">
@@ -420,6 +439,7 @@ function buildImportStep2HTML() {
     <div class="flex flex-col lg:flex-row gap-4 h-full">
         <!-- Left: preview table (60%) -->
         <div class="lg:w-3/5 flex-shrink-0">
+            ${headerRowSelector}
             <p class="font-bold text-sm mb-2">Data preview (first 5 rows)</p>
             ${previewTableHTML}
         </div>
@@ -1075,6 +1095,39 @@ function parseExcelFile(file, sheetName) {
     reader.onload = e => {
         try {
             const workbook = XLSX.read(e.target.result, { type: 'array' });
+
+            // Detect if this is our structured template (has domain sheet names)
+            const templateSheets = ['Health & Social Care', 'Administration & Government', 'Environmental Protection'];
+            const isTemplate = templateSheets.every(s => workbook.SheetNames.includes(s));
+            if (isTemplate) {
+                // Route through the template converter instead of generic column mapping
+                try {
+                    const { architecture, warnings } = convertXlsxToArchitecture(workbook);
+                    if (!architecture || !architecture.nodes || architecture.nodes.length === 0) {
+                        setImportWizardError('Template detected but no system data found. Fill in at least one domain sheet with system names.');
+                        return;
+                    }
+                    // Close wizard and stage the file directly
+                    closeImportWizard();
+                    const sysCount = architecture.nodes.filter(n => n.type === 'ITSystem').length;
+                    state.rawUploads.push({ filename: file.name, data: architecture });
+                    const fileList = document.getElementById('fileList');
+                    const listUl = document.getElementById('uploadedFilesUl');
+                    if (fileList) fileList.classList.remove('hidden');
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center gap-3';
+                    const span = document.createElement('span');
+                    const warnText = warnings.length > 0 ? ` (${warnings.length} warning${warnings.length > 1 ? 's' : ''})` : '';
+                    span.textContent = `${architecture.councilName || file.name} (${sysCount} systems from template)${warnText}`;
+                    li.appendChild(span);
+                    listUl.appendChild(li);
+                    showNotification({ type: 'success', message: `Template imported: ${sysCount} systems found.` });
+                } catch (convErr) {
+                    setImportWizardError('Template detected but conversion failed: ' + convErr.message);
+                }
+                return;
+            }
+
             // If multiple sheets and no sheet selected yet, show selector
             if (!sheetName && workbook.SheetNames.length > 1) {
                 // Show sheet selector inline
@@ -1116,19 +1169,31 @@ function parseExcelFile(file, sheetName) {
 function parseExcelSheetFromWorkbook(workbook, sheetName) {
     try {
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        const normalisedRows = rows.map(row => {
-            const out = {};
-            Object.keys(row).forEach(k => { out[k.trim()] = row[k]; });
-            return out;
-        });
-        state.importWizardState.rawRows = normalisedRows;
-        state.importWizardState.headers = normalisedRows.length ? Object.keys(normalisedRows[0]) : [];
-        state.importWizardState.columnMap = autoDetectColumnMap(state.importWizardState.headers);
+        // Parse as raw array (header: 1) so user can pick header row
+        const rawArrayData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        state.importWizardState._rawArrayData = rawArrayData;
+        state.importWizardState._headerRowIdx = 1;
+        applyHeaderRow(1);
         renderImportWizardStep();
     } catch (err) {
         setImportWizardError('Could not parse Excel sheet: ' + err.message);
     }
+}
+
+function applyHeaderRow(headerRowIdx) {
+    const rawArrayData = state.importWizardState._rawArrayData;
+    if (!rawArrayData || rawArrayData.length < headerRowIdx) return;
+    const headerRow = rawArrayData[headerRowIdx - 1];
+    const headers = headerRow.map((h, i) => String(h || `Column ${i + 1}`).trim());
+    const dataRows = rawArrayData.slice(headerRowIdx).map(row => {
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+        return obj;
+    }).filter(row => headers.some(h => row[h] !== ''));
+    state.importWizardState._headerRowIdx = headerRowIdx;
+    state.importWizardState.rawRows = dataRows;
+    state.importWizardState.headers = headers;
+    state.importWizardState.columnMap = autoDetectColumnMap(headers);
 }
 
 
@@ -1286,6 +1351,14 @@ function handleImportBack() {
         if (e.target.id === 'importFileInput') {
             const file = e.target.files[0];
             if (file) handleImportFileSelect(file);
+            return;
+        }
+
+        // Header row selector change — reparse data from selected row
+        if (e.target.id === 'importHeaderRowSelect') {
+            const rowIdx = parseInt(e.target.value, 10);
+            applyHeaderRow(rowIdx);
+            renderImportWizardStep();
             return;
         }
 
