@@ -4189,19 +4189,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     "105": "Transport and Highways"
   };
   var GROUP_COLOURS = [
-    "bg-blue-50",
-    "bg-green-50",
-    "bg-amber-50",
-    "bg-purple-50",
-    "bg-rose-50",
-    "bg-teal-50",
-    "bg-indigo-50",
-    "bg-orange-50",
-    "bg-cyan-50",
-    "bg-lime-50",
-    "bg-fuchsia-50",
-    "bg-sky-50",
-    "bg-emerald-50"
+    "bg-[#f3f2f1]"
   ];
   var KEY_FIELDS = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
   function countFilledFields(system) {
@@ -4218,11 +4206,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const filled = countFilledFields(system);
     const missing = KEY_FIELDS.length - filled;
     if (missing === 0) {
-      return { icon: "\u2713", cls: "text-green-700", label: "Complete" };
+      return { icon: "\u2713", cls: "text-[#00703c]", label: "Complete" };
     } else if (filled >= 3) {
-      return { icon: `\u26A0 ${missing}`, cls: "text-amber-600", label: `${missing} fields missing` };
+      return { icon: `\u26A0 ${missing}`, cls: "text-[#f47738]", label: `${missing} fields missing` };
     } else {
-      return { icon: "\u2717", cls: "text-red-600", label: "Mostly empty" };
+      return { icon: "\u2717", cls: "text-[#d4351c]", label: "Mostly empty" };
     }
   }
   function resolveSystemDomain(system, nodes, edges) {
@@ -4275,12 +4263,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     })).filter((g) => g.systems.length > 0) : groups;
     let html = "";
     html += `<div class="px-3 pt-2 pb-1">
-        <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+        <div class="flex items-center justify-between text-xs text-[#505a5f] mb-1">
             <span>${completeSystems}/${totalSystems} complete</span>
             <span>${progressPct}%</span>
         </div>
-        <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div class="h-full bg-green-600 rounded-full transition-all" style="width: ${progressPct}%"></div>
+        <div class="w-full h-1.5 bg-[#f3f2f1] overflow-hidden">
+            <div class="h-full bg-[#00703c] transition-all" style="width: ${progressPct}%"></div>
         </div>
     </div>`;
     html += `<div class="px-3 pt-2 pb-1">
@@ -4289,32 +4277,32 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 data-list-search
                 placeholder="Search systems..."
                 value="${escAttr(searchQuery)}"
-                class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 pr-7 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
-            ${searchQuery ? `<button data-list-search-clear class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-sm px-1" title="Clear search">&times;</button>` : ""}
+                class="w-full text-sm border-2 border-[#0b0c0c] p-2 pr-7 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />
+            ${searchQuery ? `<button data-list-search-clear class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#505a5f] hover:text-[#0b0c0c] text-sm px-1" title="Clear search">&times;</button>` : ""}
         </div>
     </div>`;
-    html += `<div class="px-3 pt-1 pb-2 border-b border-gray-200">
-        <button data-list-add class="text-sm text-blue-700 hover:text-blue-900 hover:underline font-medium">+ Add system</button>
+    html += `<div class="px-3 pt-1 pb-2 border-b border-[#b1b4b6]">
+        <button data-list-add class="text-[#1d70b8] hover:text-[#003078] underline font-bold text-sm">+ Add system</button>
     </div>`;
     html += `<div class="flex-1 overflow-y-auto" data-list-scroll>`;
     let colourIdx = 0;
     for (const group of filteredGroups) {
       const bgClass = GROUP_COLOURS[colourIdx % GROUP_COLOURS.length];
       colourIdx++;
-      html += `<div class="border-b border-gray-200">`;
+      html += `<div class="border-b border-[#b1b4b6]">`;
       html += `<div class="${bgClass} px-3 py-1.5 flex items-center justify-between sticky top-0 z-10">
-            <span class="text-xs font-semibold text-gray-700 truncate">${esc(group.domainLabel)}</span>
-            <span class="text-xs text-gray-500 ml-1 flex-shrink-0">${group.systems.length}</span>
+            <span class="font-bold text-sm text-[#0b0c0c] truncate">${esc(group.domainLabel)}</span>
+            <span class="bg-[#b1b4b6] text-white text-xs font-bold px-1.5 ml-1 flex-shrink-0">${group.systems.length}</span>
         </div>`;
       for (const { system, functionLabel, nodeIdx } of group.systems) {
         const isSelected = nodeIdx === selectedIdx;
         const comp = completenessIndicator(system);
-        const borderCls = isSelected ? "border-l-4 border-l-blue-600 bg-blue-50" : "border-l-4 border-l-transparent";
-        html += `<div class="px-3 py-2 cursor-pointer hover:bg-gray-50 ${borderCls} flex items-start gap-2"
+        const borderCls = isSelected ? "border-l-4 border-[#1d70b8] bg-[#f3f2f1]" : "border-l-4 border-l-transparent";
+        html += `<div class="px-3 py-2 cursor-pointer hover:bg-[#f3f2f1] ${borderCls} flex items-start gap-2"
                 data-list-item="${nodeIdx}" role="button" tabindex="0">
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-gray-900 truncate">${esc(system.label || "Untitled")}</div>
-                    <div class="text-xs text-gray-500 truncate">${esc(system.vendor || "\u2014")}${functionLabel ? " \xB7 " + esc(functionLabel) : ""}</div>
+                    <div class="font-bold text-sm text-[#0b0c0c] truncate">${esc(system.label || "Untitled")}</div>
+                    <div class="text-xs text-[#505a5f] truncate">${esc(system.vendor || "\u2014")}${functionLabel ? " \xB7 " + esc(functionLabel) : ""}</div>
                 </div>
                 <div class="flex-shrink-0 text-xs ${comp.cls} font-medium whitespace-nowrap" title="${esc(comp.label)}">${comp.icon}</div>
             </div>`;
@@ -4322,13 +4310,13 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       html += `</div>`;
     }
     if (filteredGroups.length === 0 && query) {
-      html += `<div class="px-3 py-6 text-center text-sm text-gray-400">No systems match "${esc(query)}"</div>`;
+      html += `<div class="px-3 py-6 text-center text-sm text-[#505a5f]">No systems match "${esc(query)}"</div>`;
     }
     if (totalSystems === 0) {
-      html += `<div class="px-3 py-6 text-center text-sm text-gray-400">No systems yet. Click "+ Add system" to begin.</div>`;
+      html += `<div class="px-3 py-6 text-center text-sm text-[#505a5f]">No systems yet. Click "+ Add system" to begin.</div>`;
     }
     html += `</div>`;
-    return `<div class="flex flex-col h-full bg-white border-r border-gray-200">${html}</div>`;
+    return `<div class="flex flex-col h-full bg-white border-r border-[#b1b4b6]">${html}</div>`;
   }
   function wireListPanel(container, options = {}) {
     const { onSelect, onAdd, onSearch, onFilter } = options;
@@ -4397,11 +4385,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   function renderChipSelector(options) {
     const { chips = [], placeholder = "", name, datalistId, datalistOptions = [] } = options;
     const chipHtml = chips.map((chip) => `
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm bg-blue-100 text-blue-800 border border-blue-200"
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-[#f3f2f1] text-[#0b0c0c] border border-[#b1b4b6]"
               data-chip-name="${name}" data-chip-value="${escAttr2(chip)}">
             <span>${escHtml2(chip)}</span>
             <button type="button"
-                    class="ml-0.5 text-blue-500 hover:text-blue-800 font-bold leading-none"
+                    class="ml-0.5 text-[#d4351c] hover:text-[#942514] font-bold leading-none"
                     data-chip-action="remove"
                     data-chip-name="${name}"
                     data-chip-value="${escAttr2(chip)}"
@@ -4411,7 +4399,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const datalistHtml = datalistId && datalistOptions.length > 0 ? `<datalist id="${datalistId}">${datalistOptions.map((o) => `<option value="${escAttr2(o)}">`).join("")}</datalist>` : "";
     const listAttr = datalistId ? `list="${datalistId}"` : "";
     return `
-        <div class="flex flex-wrap items-center gap-1.5 p-1.5 border border-gray-300 rounded bg-white min-h-[2.25rem]"
+        <div class="flex flex-wrap items-center gap-1.5 p-1.5 border-2 border-[#0b0c0c] bg-white min-h-[2.25rem]"
              data-chip-container="${name}">
             ${chipHtml}
             <input type="text"
@@ -4428,10 +4416,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const { active = [], vocabulary = [], allowCustom = false } = options;
     const pillsHtml = vocabulary.map((cap) => {
       const isActive = active.includes(cap.id);
-      const activeClasses = isActive ? "bg-blue-600 text-white border-blue-600" : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200";
+      const activeClasses = isActive ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]";
       return `
             <button type="button"
-                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${activeClasses}"
+                    class="inline-flex items-center px-2 py-1 text-xs font-bold border transition-colors ${activeClasses}"
                     data-cap-pill="${cap.id}"
                     aria-pressed="${isActive}"
                     title="${escAttr2(cap.label)}">
@@ -4442,11 +4430,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const customHtml = allowCustom ? `
         <div class="flex items-center gap-1 mt-1">
             <input type="text"
-                   class="px-2 py-0.5 text-xs border border-gray-300 rounded w-28"
+                   class="px-2 py-0.5 text-xs border-2 border-[#0b0c0c] w-28"
                    placeholder="Custom..."
                    data-cap-custom-input />
             <button type="button"
-                    class="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded border border-gray-300"
+                    class="gds-btn-secondary px-2 py-0.5 text-xs font-bold"
                     data-cap-custom-add>Add</button>
         </div>
     ` : "";
@@ -4459,21 +4447,21 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   }
   function renderRadioGroup(options) {
     const { name, title, options: opts = [], selected, hint } = options;
-    const hintHtml = hint ? `<span class="block text-xs text-gray-500 mt-0.5 mb-1">${escHtml2(hint)}</span>` : "";
+    const hintHtml = hint ? `<span class="block text-xs text-[#505a5f] mt-0.5 mb-1">${escHtml2(hint)}</span>` : "";
     const radiosHtml = opts.map((opt) => {
       const checked = opt === selected ? "checked" : "";
       const id = `radio-${name}-${opt.replace(/\s+/g, "-").toLowerCase()}`;
       return `
             <label class="inline-flex items-center gap-1 cursor-pointer text-sm" for="${id}">
                 <input type="radio" id="${id}" name="${name}" value="${escAttr2(opt)}" ${checked}
-                       class="w-3.5 h-3.5 text-blue-600 border-gray-300" />
+                       class="w-4 h-4 border-2 border-[#0b0c0c]" />
                 <span>${escHtml2(opt)}</span>
             </label>
         `;
     }).join("");
     return `
         <fieldset class="mb-2">
-            <legend class="text-sm font-medium text-gray-700">${escHtml2(title)}</legend>
+            <legend class="font-bold text-[#0b0c0c] text-sm">${escHtml2(title)}</legend>
             ${hintHtml}
             <div class="flex flex-wrap items-center gap-3 mt-1">
                 ${radiosHtml}
@@ -4524,11 +4512,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const nowActive = !wasActive;
         pill.setAttribute("aria-pressed", String(nowActive));
         if (nowActive) {
-          pill.classList.remove("bg-gray-100", "text-gray-600", "border-gray-300", "hover:bg-gray-200");
-          pill.classList.add("bg-blue-600", "text-white", "border-blue-600");
+          pill.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+          pill.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
         } else {
-          pill.classList.remove("bg-blue-600", "text-white", "border-blue-600");
-          pill.classList.add("bg-gray-100", "text-gray-600", "border-gray-300", "hover:bg-gray-200");
+          pill.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+          pill.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
         }
         if (callbacks.onCapabilityToggle) {
           callbacks.onCapabilityToggle(capId, nowActive);
@@ -4542,7 +4530,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const customLabel = input.value.trim();
           const newPill = `
                     <button type="button"
-                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors bg-blue-600 text-white border-blue-600"
+                            class="inline-flex items-center px-2 py-1 text-xs font-bold border transition-colors bg-[#1d70b8] text-white border-[#1d70b8]"
                             data-cap-pill="${escAttr2(customId)}"
                             aria-pressed="true"
                             title="${escAttr2(customLabel)}">
@@ -4575,11 +4563,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           return;
         }
         const chipHtml = `
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm bg-blue-100 text-blue-800 border border-blue-200"
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-[#f3f2f1] text-[#0b0c0c] border border-[#b1b4b6]"
                       data-chip-name="${chipName}" data-chip-value="${escAttr2(value)}">
                     <span>${escHtml2(value)}</span>
                     <button type="button"
-                            class="ml-0.5 text-blue-500 hover:text-blue-800 font-bold leading-none"
+                            class="ml-0.5 text-[#d4351c] hover:text-[#942514] font-bold leading-none"
                             data-chip-action="remove"
                             data-chip-name="${chipName}"
                             data-chip-value="${escAttr2(value)}"
@@ -4618,7 +4606,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   // src/features/unified-editor/props-panel.js
   function renderPropsPanel(system, editorState) {
     if (!system) {
-      return `<div class="flex items-center justify-center h-full text-sm text-gray-400">
+      return `<div class="flex items-center justify-center h-full text-sm text-[#505a5f]">
             Select a system from the list to edit its properties.
         </div>`;
     }
@@ -4636,18 +4624,18 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += fieldRow(
       "System Name",
       `<input type="text" data-prop-field="label" value="${escAttr3(system.label || "")}"
-                class="w-[200px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[200px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Vendor",
       `<input type="text" data-prop-field="vendor" value="${escAttr3(system.vendor || "")}"
-                class="w-[120px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Users",
       `<input type="text" data-prop-field="users" data-format="thousands"
                 value="${system.users ? formatThousands(system.users) : ""}"
-                class="w-[120px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Functions",
@@ -4663,8 +4651,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       "ERP system",
       `<label class="inline-flex items-center gap-2 cursor-pointer text-sm">
             <input type="checkbox" data-prop-field="isERP" ${system.isERP ? "checked" : ""}
-                   class="w-4 h-4 text-blue-600 border-gray-300 rounded" />
-            <span class="text-gray-700">This is a monolithic ERP</span>
+                   class="w-5 h-5 border-2 border-[#0b0c0c]" />
+            <span class="text-[#0b0c0c]">This is a monolithic ERP</span>
         </label>`
     );
     html += `</div>`;
@@ -4674,18 +4662,18 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       "Annual Cost",
       `<input type="text" data-prop-field="annualCost" data-format="thousands" data-prefix="\xA3"
                 value="${system.annualCost ? formatThousands(system.annualCost, { prefix: "\xA3" }) : ""}"
-                class="w-[140px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[140px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Contract End",
       `<div class="flex items-center gap-1">
             <input type="number" data-prop-field="endMonth" value="${system.endMonth || ""}" placeholder="MM"
                    min="1" max="12"
-                   class="w-[3rem] text-sm border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center" />
-            <span class="text-gray-400 text-sm">/</span>
+                   class="w-[3rem] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 text-center" />
+            <span class="text-[#505a5f] text-sm">/</span>
             <input type="number" data-prop-field="endYear" value="${system.endYear || ""}" placeholder="YYYY"
                    min="2020" max="2040"
-                   class="w-[4rem] text-sm border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center" />
+                   class="w-[4rem] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 text-center" />
         </div>`
     );
     html += fieldRow(
@@ -4693,8 +4681,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       `<div class="flex items-center gap-1.5">
             <input type="number" data-prop-field="noticePeriod" value="${system.noticePeriod || ""}"
                    min="0"
-                   class="w-[3rem] text-sm border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center" />
-            <span class="text-xs text-gray-500">months</span>
+                   class="w-[3rem] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 text-center" />
+            <span class="text-xs text-[#505a5f]">months</span>
         </div>`
     );
     html += `</div>`;
@@ -4725,7 +4713,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += fieldRow(
       "Support Model",
       `<select data-prop-field="supportModel"
-                 class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                 class="text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0">
             <option value="" ${!system.supportModel ? "selected" : ""}>\u2014 Select \u2014</option>
             <option value="vendor-supported" ${system.supportModel === "vendor-supported" ? "selected" : ""}>Vendor-supported</option>
             <option value="community-supported" ${system.supportModel === "community-supported" ? "selected" : ""}>Community-supported</option>
@@ -4823,12 +4811,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     });
   }
   function sectionHeading(title) {
-    return `<div class="text-sm font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200 pb-1 mb-3">${escHtml3(title)}</div>`;
+    return `<div class="font-bold text-[#0b0c0c] text-sm border-b border-[#b1b4b6] pb-1 mb-3">${escHtml3(title)}</div>`;
   }
   function fieldRow(label, inputHtml, hint) {
-    const hintHtml = hint ? `<span class="text-xs text-gray-400 mt-0.5">${escHtml3(hint)}</span>` : "";
+    const hintHtml = hint ? `<span class="text-xs text-[#505a5f] mt-0.5">${escHtml3(hint)}</span>` : "";
     return `<div class="flex flex-col gap-0.5">
-        <label class="text-xs font-medium text-gray-600">${escHtml3(label)}</label>
+        <label class="font-bold text-[#0b0c0c] text-sm">${escHtml3(label)}</label>
         ${hintHtml}
         ${inputHtml}
     </div>`;
@@ -4844,7 +4832,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   // src/features/unified-editor/rel-panel.js
   function renderRelPanel(system, editorState) {
     if (!system) {
-      return `<div class="flex items-center justify-center h-full text-sm text-gray-400">
+      return `<div class="flex items-center justify-center h-full text-sm text-[#505a5f]">
             Select a system to view its relationships.
         </div>`;
     }
@@ -4866,17 +4854,17 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       html += sectionHeading2("Systems Consuming from This");
       html += `<div class="mb-5" data-rel-consumers>`;
       if (consumerEdges.length === 0) {
-        html += `<p class="text-xs text-gray-400 italic mb-2">No systems consume capabilities from this system.</p>`;
+        html += `<p class="text-xs text-[#505a5f] italic mb-2">No systems consume capabilities from this system.</p>`;
       }
       for (const edge of consumerEdges) {
         const consumerNode = nodes.find((n) => n.id === edge.source);
         if (!consumerNode) continue;
         const edgeCaps = edge.capabilities || [];
-        html += `<div class="ml-2 mb-2 p-2 bg-gray-50 rounded border border-gray-100">`;
+        html += `<div class="ml-2 mb-2 p-2 bg-[#f3f2f1] border border-[#b1b4b6]">`;
         html += `<div class="flex items-center justify-between">`;
-        html += `<span class="text-sm font-semibold text-gray-800">${escHtml4(consumerNode.label || consumerNode.id)}</span>`;
+        html += `<span class="text-sm font-bold text-[#0b0c0c]">${escHtml4(consumerNode.label || consumerNode.id)}</span>`;
         html += `<button type="button"
-                        class="text-gray-400 hover:text-red-600 text-sm leading-none"
+                        class="text-[#d4351c] hover:text-[#942514] text-sm leading-none"
                         data-rel-action="remove-consumer"
                         data-rel-consumer-id="${escAttr4(consumerNode.id)}"
                         aria-label="Remove ${escAttr4(consumerNode.label || consumerNode.id)}">&times;</button>`;
@@ -4885,9 +4873,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         for (const cap of activeCaps) {
           const capDef = LGAM_CAPABILITIES.find((c) => c.id === cap) || { id: cap, label: cap };
           const isUsed = edgeCaps.includes(cap);
-          const classes = isUsed ? "bg-blue-600 text-white border-blue-600" : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200";
+          const classes = isUsed ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]";
           html += `<button type="button"
-                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${classes}"
+                            class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
                             data-rel-action="toggle-consumer-cap"
                             data-rel-consumer-id="${escAttr4(consumerNode.id)}"
                             data-rel-cap-id="${escAttr4(cap)}"
@@ -4904,7 +4892,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += sectionHeading2("Depends On");
     html += `<div class="mb-5" data-rel-dependencies>`;
     if (dependencyEdges.length === 0) {
-      html += `<p class="text-xs text-gray-400 italic mb-2">This system does not consume capabilities from others.</p>`;
+      html += `<p class="text-xs text-[#505a5f] italic mb-2">This system does not consume capabilities from others.</p>`;
     }
     for (const edge of dependencyEdges) {
       const providerNode = nodes.find((n) => n.id === edge.target);
@@ -4914,11 +4902,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const def = LGAM_CAPABILITIES.find((x) => x.id === c);
         return def ? def.label : c;
       });
-      html += `<div class="ml-2 mb-2 p-2 bg-gray-50 rounded border border-gray-100">`;
+      html += `<div class="ml-2 mb-2 p-2 bg-[#f3f2f1] border border-[#b1b4b6]">`;
       html += `<div class="flex items-center justify-between">`;
-      html += `<span class="text-sm font-semibold text-gray-800">${escHtml4(providerNode.label || providerNode.id)}</span>`;
+      html += `<span class="text-sm font-bold text-[#0b0c0c]">${escHtml4(providerNode.label || providerNode.id)}</span>`;
       html += `<button type="button"
-                    class="text-gray-400 hover:text-red-600 text-sm leading-none"
+                    class="text-[#d4351c] hover:text-[#942514] text-sm leading-none"
                     data-rel-action="remove-dependency"
                     data-rel-edge-idx="${edge._edgeIdx}"
                     aria-label="Remove dependency on ${escAttr4(providerNode.label || providerNode.id)}">&times;</button>`;
@@ -4926,7 +4914,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (capLabels.length > 0) {
         html += `<div class="flex flex-wrap gap-1 mt-1">`;
         for (const label of capLabels) {
-          html += `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">${escHtml4(label)}</span>`;
+          html += `<span class="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-[#f3f2f1] text-[#53284f] border border-[#53284f]">${escHtml4(label)}</span>`;
         }
         html += `</div>`;
       }
@@ -5001,11 +4989,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const nowActive = !wasActive;
           target.setAttribute("aria-pressed", String(nowActive));
           if (nowActive) {
-            target.classList.remove("bg-gray-100", "text-gray-600", "border-gray-300", "hover:bg-gray-200");
-            target.classList.add("bg-blue-600", "text-white", "border-blue-600");
+            target.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+            target.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
           } else {
-            target.classList.remove("bg-blue-600", "text-white", "border-blue-600");
-            target.classList.add("bg-gray-100", "text-gray-600", "border-gray-300", "hover:bg-gray-200");
+            target.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+            target.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
           }
           if (consumerId && capId && onConsumerCapToggle) {
             onConsumerCapToggle(nodeIdx, consumerId, capId, nowActive);
@@ -5061,16 +5049,16 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       (n) => n.type === "ITSystem" && n.id !== system.id && !existingConsumerIds.has(n.id)
     );
     if (candidates.length === 0) {
-      return `<p class="text-xs text-gray-400 mt-1">No other systems available to add.</p>`;
+      return `<p class="text-xs text-[#505a5f] mt-1">No other systems available to add.</p>`;
     }
     let html = `<div class="mt-2">`;
     html += `<button type="button"
-                class="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-consumer">+ Add consuming system</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded bg-white shadow-sm" data-rel-consumer-dropdown>`;
+    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-consumer-dropdown>`;
     for (const node of candidates) {
       html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-blue-50 text-gray-700"
+                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
                     data-rel-action="select-consumer"
                     data-rel-sys-id="${escAttr4(node.id)}">
                     ${escHtml4(node.label || node.id)}
@@ -5086,24 +5074,24 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       (n) => n.type === "ITSystem" && n.id !== system.id && !existingProviderIds.has(n.id) && n.capabilityType && n.capabilityType.length > 0
     );
     if (candidates.length === 0) {
-      return `<p class="text-xs text-gray-400 mt-1">No capability providers available to add.</p>`;
+      return `<p class="text-xs text-[#505a5f] mt-1">No capability providers available to add.</p>`;
     }
     let html = `<div class="mt-2">`;
     html += `<button type="button"
-                class="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-dependency">+ Add dependency</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded bg-white shadow-sm" data-rel-dependency-dropdown>`;
+    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-dependency-dropdown>`;
     for (const node of candidates) {
       const caps = (node.capabilityType || []).map((c) => {
         const def = LGAM_CAPABILITIES.find((x) => x.id === c);
         return def ? def.label : c;
       }).join(", ");
       html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-blue-50 text-gray-700"
+                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
                     data-rel-action="select-dependency"
                     data-rel-sys-id="${escAttr4(node.id)}">
                     <span class="font-medium">${escHtml4(node.label || node.id)}</span>
-                    <span class="text-xs text-gray-500 ml-1">(${escHtml4(caps)})</span>
+                    <span class="text-xs text-[#505a5f] ml-1">(${escHtml4(caps)})</span>
                 </button>`;
     }
     html += `</div>`;
@@ -5111,7 +5099,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     return html;
   }
   function sectionHeading2(title) {
-    return `<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200 pb-1 mb-3">${escHtml4(title)}</div>`;
+    return `<div class="font-bold text-[#0b0c0c] text-sm border-b border-[#b1b4b6] pb-1 mb-3">${escHtml4(title)}</div>`;
   }
   function escHtml4(str) {
     if (!str) return "";
@@ -5131,12 +5119,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   function renderBulkMode(editorState) {
     const activeTab = editorState._bulkActiveTab || "contract";
     let html = `<div class="flex flex-col h-full overflow-hidden" data-bulk-mode>`;
-    html += `<div class="flex border-b border-gray-200 bg-white px-4 flex-shrink-0" data-bulk-tabs>`;
+    html += `<div class="flex border-b border-[#b1b4b6] bg-white px-4 flex-shrink-0" data-bulk-tabs>`;
     for (const tab of TABS) {
       const isActive = tab.id === activeTab;
-      const classes = isActive ? "border-b-2 border-blue-600 text-blue-700" : "text-gray-500 hover:text-gray-700";
+      const classes = isActive ? "font-bold text-[#0b0c0c] border-b-[3px] border-[#1d70b8]" : "font-bold text-[#505a5f] border-b-[3px] border-transparent hover:text-[#0b0c0c] hover:border-[#b1b4b6]";
       html += `<button type="button" data-bulk-tab="${tab.id}"
-            class="px-4 py-2 text-sm font-medium ${classes} transition-colors">${escHtml5(tab.label)}</button>`;
+            class="px-4 py-2 text-sm ${classes} transition-colors">${escHtml5(tab.label)}</button>`;
     }
     html += `</div>`;
     html += `<div class="flex-1 overflow-auto" data-bulk-table-wrapper>`;
@@ -5156,37 +5144,37 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const functionLookup = buildFunctionLookup(nodes, edges);
     const columnDefs = getColumnDefs(activeTab);
     let html = `<table class="w-full border-collapse" style="min-width:900px" data-bulk-table>`;
-    html += `<thead><tr class="sticky top-0 bg-gray-100 z-10">`;
-    html += `<th class="sticky left-0 z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:150px">System Name</th>`;
-    html += `<th class="sticky z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:100px;left:150px">Vendor</th>`;
-    html += `<th class="sticky z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:120px;left:250px">Function</th>`;
+    html += `<thead><tr class="sticky top-0 bg-[#f3f2f1] z-10">`;
+    html += `<th class="sticky left-0 z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:150px">System Name</th>`;
+    html += `<th class="sticky z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:100px;left:150px">Vendor</th>`;
+    html += `<th class="sticky z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:120px;left:250px">Function</th>`;
     for (const col of columnDefs) {
-      html += `<th class="bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:${col.width}px">${escHtml5(col.label)}</th>`;
+      html += `<th class="bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:${col.width}px">${escHtml5(col.label)}</th>`;
     }
-    html += `<th class="sticky right-0 z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-center border-b border-gray-200" style="min-width:50px">Status</th>`;
+    html += `<th class="sticky right-0 z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-center border-b-2 border-[#0b0c0c]" style="min-width:50px">Status</th>`;
     html += `</tr></thead>`;
     html += `<tbody>`;
     for (let i = 0; i < systems.length; i++) {
       const { node, idx } = systems[i];
-      const rowBg = i % 2 === 0 ? "bg-white" : "bg-gray-50";
+      const rowBg = i % 2 === 0 ? "bg-white" : "bg-[#f3f2f1]";
       const fnLabel = functionLookup.get(node.id) || "";
       const status = computeCompleteness(node);
       html += `<tr class="${rowBg}">`;
-      html += `<td class="sticky left-0 z-10 ${rowBg} py-1 px-2 border-b border-gray-100" style="min-width:150px">`;
+      html += `<td class="sticky left-0 z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6]" style="min-width:150px">`;
       html += `<input type="text" value="${escAttr5(node.label || "")}" data-bulk-row="${idx}" data-bulk-field="label"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
       html += `</td>`;
-      html += `<td class="sticky z-10 ${rowBg} py-1 px-2 border-b border-gray-100" style="min-width:100px;left:150px">`;
+      html += `<td class="sticky z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6]" style="min-width:100px;left:150px">`;
       html += `<input type="text" value="${escAttr5(node.vendor || "")}" data-bulk-row="${idx}" data-bulk-field="vendor"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
       html += `</td>`;
-      html += `<td class="sticky z-10 ${rowBg} py-1 px-2 border-b border-gray-100 text-xs text-gray-600" style="min-width:120px;left:250px">${escHtml5(fnLabel)}</td>`;
+      html += `<td class="sticky z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6] text-sm text-[#505a5f]" style="min-width:120px;left:250px">${escHtml5(fnLabel)}</td>`;
       for (const col of columnDefs) {
-        html += `<td class="py-1 px-2 border-b border-gray-100">`;
+        html += `<td class="py-2 px-3 border-b border-[#b1b4b6]">`;
         html += renderCell(col, node, idx, editorState);
         html += `</td>`;
       }
-      html += `<td class="sticky right-0 z-10 ${rowBg} py-1 px-2 border-b border-gray-100 text-center text-xs">${status}</td>`;
+      html += `<td class="sticky right-0 z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6] text-center text-sm">${status}</td>`;
       html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -5197,20 +5185,20 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (type === "text") {
       const value = getFieldValue(node, field, editorState);
       return `<input type="text" value="${escAttr5(value)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
     }
     if (type === "number") {
       const raw = node[field];
       const display = raw != null && !isNaN(raw) ? String(raw) : "";
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded text-right" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0 text-right" />`;
     }
     if (type === "thousands") {
       const raw = node[field];
       const display = raw != null && !isNaN(raw) ? formatThousands(raw, { prefix: "\xA3" }) : "";
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
             data-format="thousands" data-prefix="\xA3"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded text-right" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0 text-right" />`;
     }
     if (type === "contract-end") {
       const mm = node.endMonth ? String(node.endMonth).padStart(2, "0") : "";
@@ -5218,7 +5206,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const display = mm && yyyy ? `${mm}/${yyyy}` : yyyy || "";
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="contractEnd"
             placeholder="MM/YYYY"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
     }
     if (type === "select") {
       const current = getSelectValue(node, field);
@@ -5228,17 +5216,17 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         opts += `<option value="${escAttr5(opt.value)}" ${sel}>${escHtml5(opt.label)}</option>`;
       }
       return `<select data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-0.5 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded">${opts}</select>`;
+            class="w-full text-sm py-0.5 px-0.5 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]">${opts}</select>`;
     }
     if (type === "comma-text") {
       const arr = node[field] || [];
       const display = Array.isArray(arr) ? arr.join(", ") : String(arr);
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
     }
     if (type === "readonly") {
       const value = getReadonlyValue(node, field, editorState);
-      return `<span class="text-xs text-gray-500">${escHtml5(value)}</span>`;
+      return `<span class="text-sm text-[#505a5f]">${escHtml5(value)}</span>`;
     }
     return "";
   }
@@ -5360,13 +5348,13 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     const total = KEY_FIELDS2.length;
     if (filled === total) {
-      return `<span class="text-green-600 font-medium" title="All key fields complete">\u2713</span>`;
+      return `<span class="text-[#00703c] font-medium" title="All key fields complete">\u2713</span>`;
     }
     const missing = total - filled;
     if (filled === 0) {
-      return `<span class="text-red-500 font-medium" title="${missing} fields missing">\u2717</span>`;
+      return `<span class="text-[#d4351c] font-medium" title="${missing} fields missing">\u2717</span>`;
     }
-    return `<span class="text-amber-500 font-medium" title="${missing} fields missing">\u26A0 ${missing}</span>`;
+    return `<span class="text-[#f47738] font-medium" title="${missing} fields missing">\u26A0 ${missing}</span>`;
   }
   function wireBulkMode(container, editorState, options = {}) {
     if (!container) return;
@@ -5380,11 +5368,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         if (tabId === editorState._bulkActiveTab) return;
         editorState._bulkActiveTab = tabId;
         tabBar.querySelectorAll("[data-bulk-tab]").forEach((t) => {
-          t.classList.remove("border-b-2", "border-blue-600", "text-blue-700");
-          t.classList.add("text-gray-500", "hover:text-gray-700");
+          t.classList.remove("text-[#0b0c0c]", "border-b-[3px]", "border-[#1d70b8]");
+          t.classList.add("text-[#505a5f]", "border-b-[3px]", "border-transparent", "hover:text-[#0b0c0c]", "hover:border-[#b1b4b6]");
         });
-        btn.classList.remove("text-gray-500", "hover:text-gray-700");
-        btn.classList.add("border-b-2", "border-blue-600", "text-blue-700");
+        btn.classList.remove("text-[#505a5f]", "border-transparent", "hover:text-[#0b0c0c]", "hover:border-[#b1b4b6]");
+        btn.classList.add("text-[#0b0c0c]", "border-b-[3px]", "border-[#1d70b8]");
         const wrapper = container.querySelector("[data-bulk-table-wrapper]");
         if (wrapper) {
           wrapper.innerHTML = renderTable(editorState, tabId);
@@ -5490,10 +5478,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       return `
       <div class="p-6">
         <div class="flex items-center gap-4 mb-4">
-          <button data-dep-back class="text-blue-600 hover:underline text-sm font-medium">&larr; Back to editor</button>
-          <h2 class="text-xl font-bold">Dependency Matrix</h2>
+          <button data-dep-back class="text-[#1d70b8] hover:text-[#003078] underline font-bold text-sm">&larr; Back to editor</button>
+          <h2 class="text-xl font-bold text-[#0b0c0c]">Dependency Matrix</h2>
         </div>
-        <p class="text-gray-500 mt-6">No capability dependencies defined. Add capabilities to systems in the editor to see the dependency matrix.</p>
+        <p class="text-[#505a5f] mt-6">No capability dependencies defined. Add capabilities to systems in the editor to see the dependency matrix.</p>
       </div>`;
     }
     const providers = nodes.map((n, idx) => ({ node: n, idx })).filter(({ node }) => node.type === "ITSystem" && Array.isArray(node.capabilityType) && node.capabilityType.length > 0);
@@ -5510,44 +5498,44 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     const headerCells = providers.map(({ node }) => {
       const label = escLabel(node.label || node.id);
-      return `<th class="text-xs font-medium text-gray-700 px-2 py-1 align-bottom" style="height:100px; min-width:60px;">
-      <div style="transform:rotate(-45deg); transform-origin:left bottom; white-space:nowrap;">${label}</div>
+      return `<th class="bg-[#f3f2f1] text-[#0b0c0c] font-bold text-xs p-2 border-b-2 border-[#0b0c0c] text-left" style="min-width:100px; max-width:120px; word-wrap:break-word;">
+      ${label}
     </th>`;
     }).join("");
     const bodyRows = consumers.map(({ node: consumer, idx: consumerIdx }, rowIndex) => {
-      const rowBg = rowIndex % 2 === 0 ? "" : "bg-gray-50";
+      const rowBg = rowIndex % 2 === 0 ? "" : "bg-[#f3f2f1]";
       const cells = providers.map(({ node: provider }) => {
         const key = `${consumer.id}::${provider.id}`;
         const caps = cellLookup.get(key);
         if (!caps || caps.length === 0) {
-          return `<td class="text-xs text-gray-300 text-center px-2 py-1 border border-gray-100">&mdash;</td>`;
+          return `<td class="text-[#b1b4b6] text-center text-xs p-2 border-b border-[#b1b4b6]">&mdash;</td>`;
         }
         const count = caps.length;
-        const bgClass = count >= 3 ? "bg-blue-300" : count === 2 ? "bg-blue-200" : "bg-blue-100";
+        const bgClass = count >= 3 ? "bg-[#7fb3d9]" : count === 2 ? "bg-[#a8cce8]" : "bg-[#d4e5f7]";
         const capText = escLabel(caps.join(", "));
-        return `<td class="${bgClass} text-xs px-2 py-1 border border-gray-100">
+        return `<td class="${bgClass} text-[#0b0c0c] text-xs p-2 border-b border-[#b1b4b6]">
         <div>${capText}</div>
-        <a href="#" data-dep-jump="${consumerIdx}" class="text-xs text-blue-600 hover:underline">Edit</a>
+        <a href="#" data-dep-jump="${consumerIdx}" class="text-[#1d70b8] hover:text-[#003078] underline text-xs">Edit</a>
       </td>`;
       }).join("");
       const label = escLabel(consumer.label || consumer.id);
       return `<tr class="${rowBg}">
-      <th class="text-xs font-medium text-gray-700 px-2 py-1 text-left sticky left-0 bg-white border border-gray-100 whitespace-nowrap">${label}</th>
+      <th class="bg-white font-bold text-sm text-[#0b0c0c] border-b border-[#b1b4b6] p-2 text-left sticky left-0 whitespace-nowrap">${label}</th>
       ${cells}
     </tr>`;
     }).join("");
     return `
     <div class="p-6">
       <div class="flex items-center gap-4 mb-1">
-        <button data-dep-back class="text-blue-600 hover:underline text-sm font-medium">&larr; Back to editor</button>
-        <h2 class="text-xl font-bold">Dependency Matrix</h2>
+        <button data-dep-back class="text-[#1d70b8] hover:text-[#003078] underline font-bold text-sm">&larr; Back to editor</button>
+        <h2 class="text-xl font-bold text-[#0b0c0c]">Dependency Matrix</h2>
       </div>
-      <p class="text-gray-500 text-sm mb-4">Shows which systems consume capabilities from which providers</p>
-      <div class="overflow-auto border border-gray-200 rounded">
+      <p class="text-[#505a5f] text-sm mb-4">Shows which systems consume capabilities from which providers</p>
+      <div class="overflow-auto border border-[#b1b4b6]">
         <table class="border-collapse w-full">
           <thead>
             <tr>
-              <th class="sticky left-0 bg-white px-2 py-1 border border-gray-100"></th>
+              <th class="sticky left-0 bg-[#f3f2f1] p-2 border-b-2 border-[#0b0c0c]"></th>
               ${headerCells}
             </tr>
           </thead>
@@ -5585,15 +5573,15 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   // src/features/unified-editor/editor.js
   function renderUnifiedEditor(json, options = {}) {
     const title = options.title || "Architecture Editor";
-    let html = `<div class="flex flex-col h-screen bg-gray-50 border-t-4 border-[#1d70b8]" data-unified-editor>`;
+    let html = `<div class="flex flex-col h-screen bg-[#f3f2f1] border-t-4 border-[#1d70b8]" data-unified-editor>`;
     html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-[#b1b4b6] flex-shrink-0">`;
     html += `<div class="flex items-center gap-4">`;
-    html += `<h2 class="text-lg font-bold text-gray-900">${escHtml6(title)}</h2>`;
-    html += `<div class="inline-flex rounded border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
+    html += `<h2 class="text-lg font-bold text-[#0b0c0c]">${escHtml6(title)}</h2>`;
+    html += `<div class="inline-flex border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
     html += `<button type="button" data-ue-mode="focus"
-                class="px-3 py-1 text-sm font-medium bg-[#1d70b8] text-white transition-colors">Focus</button>`;
+                class="px-3 py-1 text-sm font-bold bg-[#1d70b8] text-white transition-colors">Focus</button>`;
     html += `<button type="button" data-ue-mode="bulk"
-                class="px-3 py-1 text-sm font-medium bg-white text-[#0b0c0c] border-l border-[#b1b4b6] hover:bg-gray-50 transition-colors">Bulk</button>`;
+                class="px-3 py-1 text-sm font-bold bg-white text-[#0b0c0c] border-l border-[#b1b4b6] transition-colors">Bulk</button>`;
     html += `</div>`;
     html += `</div>`;
     html += `<div class="flex items-center gap-2">`;
@@ -5609,8 +5597,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += `</div>`;
     html += `<div class="flex-1 overflow-hidden" data-ue-focus-container style="display: grid; grid-template-columns: 230px 1fr 280px;">`;
     html += `<div id="ue-list-panel" class="overflow-y-auto h-full"></div>`;
-    html += `<div id="ue-props-panel" class="overflow-y-auto h-full border-l border-gray-200"></div>`;
-    html += `<div id="ue-rel-panel" class="overflow-y-auto h-full border-l border-gray-200"></div>`;
+    html += `<div id="ue-props-panel" class="overflow-y-auto h-full border-l border-[#b1b4b6]"></div>`;
+    html += `<div id="ue-rel-panel" class="overflow-y-auto h-full border-l border-[#b1b4b6]"></div>`;
     html += `</div>`;
     html += `<div class="flex-1 overflow-hidden hidden" data-ue-bulk-container>`;
     html += `<div id="ue-bulk-panel" class="h-full overflow-auto"></div>`;

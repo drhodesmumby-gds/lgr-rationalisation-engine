@@ -29,14 +29,14 @@ export function renderBulkMode(editorState) {
     let html = `<div class="flex flex-col h-full overflow-hidden" data-bulk-mode>`;
 
     // Tab bar
-    html += `<div class="flex border-b border-gray-200 bg-white px-4 flex-shrink-0" data-bulk-tabs>`;
+    html += `<div class="flex border-b border-[#b1b4b6] bg-white px-4 flex-shrink-0" data-bulk-tabs>`;
     for (const tab of TABS) {
         const isActive = tab.id === activeTab;
         const classes = isActive
-            ? 'border-b-2 border-blue-600 text-blue-700'
-            : 'text-gray-500 hover:text-gray-700';
+            ? 'font-bold text-[#0b0c0c] border-b-[3px] border-[#1d70b8]'
+            : 'font-bold text-[#505a5f] border-b-[3px] border-transparent hover:text-[#0b0c0c] hover:border-[#b1b4b6]';
         html += `<button type="button" data-bulk-tab="${tab.id}"
-            class="px-4 py-2 text-sm font-medium ${classes} transition-colors">${escHtml(tab.label)}</button>`;
+            class="px-4 py-2 text-sm ${classes} transition-colors">${escHtml(tab.label)}</button>`;
     }
     html += `</div>`;
 
@@ -67,48 +67,48 @@ function renderTable(editorState, activeTab) {
     let html = `<table class="w-full border-collapse" style="min-width:900px" data-bulk-table>`;
 
     // Header
-    html += `<thead><tr class="sticky top-0 bg-gray-100 z-10">`;
+    html += `<thead><tr class="sticky top-0 bg-[#f3f2f1] z-10">`;
     // Pinned columns
-    html += `<th class="sticky left-0 z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:150px">System Name</th>`;
-    html += `<th class="sticky z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:100px;left:150px">Vendor</th>`;
-    html += `<th class="sticky z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:120px;left:250px">Function</th>`;
+    html += `<th class="sticky left-0 z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:150px">System Name</th>`;
+    html += `<th class="sticky z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:100px;left:150px">Vendor</th>`;
+    html += `<th class="sticky z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:120px;left:250px">Function</th>`;
     // Dynamic columns
     for (const col of columnDefs) {
-        html += `<th class="bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-left border-b border-gray-200" style="min-width:${col.width}px">${escHtml(col.label)}</th>`;
+        html += `<th class="bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:${col.width}px">${escHtml(col.label)}</th>`;
     }
     // Status column (pinned right)
-    html += `<th class="sticky right-0 z-20 bg-gray-100 text-xs font-medium text-gray-600 uppercase py-1 px-2 text-center border-b border-gray-200" style="min-width:50px">Status</th>`;
+    html += `<th class="sticky right-0 z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-center border-b-2 border-[#0b0c0c]" style="min-width:50px">Status</th>`;
     html += `</tr></thead>`;
 
     // Body
     html += `<tbody>`;
     for (let i = 0; i < systems.length; i++) {
         const { node, idx } = systems[i];
-        const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+        const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-[#f3f2f1]';
         const fnLabel = functionLookup.get(node.id) || '';
         const status = computeCompleteness(node);
 
         html += `<tr class="${rowBg}">`;
         // Pinned: System Name
-        html += `<td class="sticky left-0 z-10 ${rowBg} py-1 px-2 border-b border-gray-100" style="min-width:150px">`;
+        html += `<td class="sticky left-0 z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6]" style="min-width:150px">`;
         html += `<input type="text" value="${escAttr(node.label || '')}" data-bulk-row="${idx}" data-bulk-field="label"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
         html += `</td>`;
         // Pinned: Vendor
-        html += `<td class="sticky z-10 ${rowBg} py-1 px-2 border-b border-gray-100" style="min-width:100px;left:150px">`;
+        html += `<td class="sticky z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6]" style="min-width:100px;left:150px">`;
         html += `<input type="text" value="${escAttr(node.vendor || '')}" data-bulk-row="${idx}" data-bulk-field="vendor"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
         html += `</td>`;
         // Pinned: Function (read-only)
-        html += `<td class="sticky z-10 ${rowBg} py-1 px-2 border-b border-gray-100 text-xs text-gray-600" style="min-width:120px;left:250px">${escHtml(fnLabel)}</td>`;
+        html += `<td class="sticky z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6] text-sm text-[#505a5f]" style="min-width:120px;left:250px">${escHtml(fnLabel)}</td>`;
         // Dynamic columns
         for (const col of columnDefs) {
-            html += `<td class="py-1 px-2 border-b border-gray-100">`;
+            html += `<td class="py-2 px-3 border-b border-[#b1b4b6]">`;
             html += renderCell(col, node, idx, editorState);
             html += `</td>`;
         }
         // Status
-        html += `<td class="sticky right-0 z-10 ${rowBg} py-1 px-2 border-b border-gray-100 text-center text-xs">${status}</td>`;
+        html += `<td class="sticky right-0 z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6] text-center text-sm">${status}</td>`;
         html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -125,14 +125,14 @@ function renderCell(col, node, nodeIdx, editorState) {
     if (type === 'text') {
         const value = getFieldValue(node, field, editorState);
         return `<input type="text" value="${escAttr(value)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
     }
 
     if (type === 'number') {
         const raw = node[field];
         const display = (raw != null && !isNaN(raw)) ? String(raw) : '';
         return `<input type="text" value="${escAttr(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded text-right" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0 text-right" />`;
     }
 
     if (type === 'thousands') {
@@ -140,7 +140,7 @@ function renderCell(col, node, nodeIdx, editorState) {
         const display = (raw != null && !isNaN(raw)) ? formatThousands(raw, { prefix: '£' }) : '';
         return `<input type="text" value="${escAttr(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
             data-format="thousands" data-prefix="£"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded text-right" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0 text-right" />`;
     }
 
     if (type === 'contract-end') {
@@ -149,7 +149,7 @@ function renderCell(col, node, nodeIdx, editorState) {
         const display = (mm && yyyy) ? `${mm}/${yyyy}` : (yyyy || '');
         return `<input type="text" value="${escAttr(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="contractEnd"
             placeholder="MM/YYYY"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
     }
 
     if (type === 'select') {
@@ -160,19 +160,19 @@ function renderCell(col, node, nodeIdx, editorState) {
             opts += `<option value="${escAttr(opt.value)}" ${sel}>${escHtml(opt.label)}</option>`;
         }
         return `<select data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-0.5 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded">${opts}</select>`;
+            class="w-full text-sm py-0.5 px-0.5 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]">${opts}</select>`;
     }
 
     if (type === 'comma-text') {
         const arr = node[field] || [];
         const display = Array.isArray(arr) ? arr.join(', ') : String(arr);
         return `<input type="text" value="${escAttr(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-xs py-0.5 px-1 border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:outline-none rounded" />`;
+            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
     }
 
     if (type === 'readonly') {
         const value = getReadonlyValue(node, field, editorState);
-        return `<span class="text-xs text-gray-500">${escHtml(value)}</span>`;
+        return `<span class="text-sm text-[#505a5f]">${escHtml(value)}</span>`;
     }
 
     return '';
@@ -287,13 +287,13 @@ function computeCompleteness(node) {
     }
     const total = KEY_FIELDS.length;
     if (filled === total) {
-        return `<span class="text-green-600 font-medium" title="All key fields complete">✓</span>`;
+        return `<span class="text-[#00703c] font-medium" title="All key fields complete">✓</span>`;
     }
     const missing = total - filled;
     if (filled === 0) {
-        return `<span class="text-red-500 font-medium" title="${missing} fields missing">✗</span>`;
+        return `<span class="text-[#d4351c] font-medium" title="${missing} fields missing">✗</span>`;
     }
-    return `<span class="text-amber-500 font-medium" title="${missing} fields missing">⚠ ${missing}</span>`;
+    return `<span class="text-[#f47738] font-medium" title="${missing} fields missing">⚠ ${missing}</span>`;
 }
 
 // --- Event wiring ---
@@ -322,11 +322,11 @@ export function wireBulkMode(container, editorState, options = {}) {
 
             // Update tab styles
             tabBar.querySelectorAll('[data-bulk-tab]').forEach(t => {
-                t.classList.remove('border-b-2', 'border-blue-600', 'text-blue-700');
-                t.classList.add('text-gray-500', 'hover:text-gray-700');
+                t.classList.remove('text-[#0b0c0c]', 'border-b-[3px]', 'border-[#1d70b8]');
+                t.classList.add('text-[#505a5f]', 'border-b-[3px]', 'border-transparent', 'hover:text-[#0b0c0c]', 'hover:border-[#b1b4b6]');
             });
-            btn.classList.remove('text-gray-500', 'hover:text-gray-700');
-            btn.classList.add('border-b-2', 'border-blue-600', 'text-blue-700');
+            btn.classList.remove('text-[#505a5f]', 'border-transparent', 'hover:text-[#0b0c0c]', 'hover:border-[#b1b4b6]');
+            btn.classList.add('text-[#0b0c0c]', 'border-b-[3px]', 'border-[#1d70b8]');
 
             // Re-render table
             const wrapper = container.querySelector('[data-bulk-table-wrapper]');

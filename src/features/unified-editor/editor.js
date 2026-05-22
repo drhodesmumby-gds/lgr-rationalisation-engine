@@ -22,21 +22,21 @@ import { LGA_FUNCTIONS } from '../../constants/lga-functions.js';
 export function renderUnifiedEditor(json, options = {}) {
     const title = options.title || 'Architecture Editor';
 
-    let html = `<div class="flex flex-col h-screen bg-gray-50 border-t-4 border-[#1d70b8]" data-unified-editor>`;
+    let html = `<div class="flex flex-col h-screen bg-[#f3f2f1] border-t-4 border-[#1d70b8]" data-unified-editor>`;
 
     // === Header ===
     html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-[#b1b4b6] flex-shrink-0">`;
 
     // Left: title + mode toggle
     html += `<div class="flex items-center gap-4">`;
-    html += `<h2 class="text-lg font-bold text-gray-900">${escHtml(title)}</h2>`;
+    html += `<h2 class="text-lg font-bold text-[#0b0c0c]">${escHtml(title)}</h2>`;
 
     // Mode toggle (segmented control)
-    html += `<div class="inline-flex rounded border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
+    html += `<div class="inline-flex border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
     html += `<button type="button" data-ue-mode="focus"
-                class="px-3 py-1 text-sm font-medium bg-[#1d70b8] text-white transition-colors">Focus</button>`;
+                class="px-3 py-1 text-sm font-bold bg-[#1d70b8] text-white transition-colors">Focus</button>`;
     html += `<button type="button" data-ue-mode="bulk"
-                class="px-3 py-1 text-sm font-medium bg-white text-[#0b0c0c] border-l border-[#b1b4b6] hover:bg-gray-50 transition-colors">Bulk</button>`;
+                class="px-3 py-1 text-sm font-bold bg-white text-[#0b0c0c] border-l border-[#b1b4b6] transition-colors">Bulk</button>`;
     html += `</div>`;
     html += `</div>`;
 
@@ -57,8 +57,8 @@ export function renderUnifiedEditor(json, options = {}) {
     // === Focus mode: three-pane grid ===
     html += `<div class="flex-1 overflow-hidden" data-ue-focus-container style="display: grid; grid-template-columns: 230px 1fr 280px;">`;
     html += `<div id="ue-list-panel" class="overflow-y-auto h-full"></div>`;
-    html += `<div id="ue-props-panel" class="overflow-y-auto h-full border-l border-gray-200"></div>`;
-    html += `<div id="ue-rel-panel" class="overflow-y-auto h-full border-l border-gray-200"></div>`;
+    html += `<div id="ue-props-panel" class="overflow-y-auto h-full border-l border-[#b1b4b6]"></div>`;
+    html += `<div id="ue-rel-panel" class="overflow-y-auto h-full border-l border-[#b1b4b6]"></div>`;
     html += `</div>`;
 
     // === Bulk mode: full-width container (hidden by default) ===

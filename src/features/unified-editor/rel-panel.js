@@ -16,7 +16,7 @@ import { renderCapabilityPills, renderChipSelector, wireSmartInputs } from './sm
  */
 export function renderRelPanel(system, editorState) {
     if (!system) {
-        return `<div class="flex items-center justify-center h-full text-sm text-gray-400">
+        return `<div class="flex items-center justify-center h-full text-sm text-[#505a5f]">
             Select a system to view its relationships.
         </div>`;
     }
@@ -53,7 +53,7 @@ export function renderRelPanel(system, editorState) {
         html += `<div class="mb-5" data-rel-consumers>`;
 
         if (consumerEdges.length === 0) {
-            html += `<p class="text-xs text-gray-400 italic mb-2">No systems consume capabilities from this system.</p>`;
+            html += `<p class="text-xs text-[#505a5f] italic mb-2">No systems consume capabilities from this system.</p>`;
         }
 
         for (const edge of consumerEdges) {
@@ -61,11 +61,11 @@ export function renderRelPanel(system, editorState) {
             if (!consumerNode) continue;
             const edgeCaps = edge.capabilities || [];
 
-            html += `<div class="ml-2 mb-2 p-2 bg-gray-50 rounded border border-gray-100">`;
+            html += `<div class="ml-2 mb-2 p-2 bg-[#f3f2f1] border border-[#b1b4b6]">`;
             html += `<div class="flex items-center justify-between">`;
-            html += `<span class="text-sm font-semibold text-gray-800">${escHtml(consumerNode.label || consumerNode.id)}</span>`;
+            html += `<span class="text-sm font-bold text-[#0b0c0c]">${escHtml(consumerNode.label || consumerNode.id)}</span>`;
             html += `<button type="button"
-                        class="text-gray-400 hover:text-red-600 text-sm leading-none"
+                        class="text-[#d4351c] hover:text-[#942514] text-sm leading-none"
                         data-rel-action="remove-consumer"
                         data-rel-consumer-id="${escAttr(consumerNode.id)}"
                         aria-label="Remove ${escAttr(consumerNode.label || consumerNode.id)}">&times;</button>`;
@@ -77,10 +77,10 @@ export function renderRelPanel(system, editorState) {
                 const capDef = LGAM_CAPABILITIES.find(c => c.id === cap) || { id: cap, label: cap };
                 const isUsed = edgeCaps.includes(cap);
                 const classes = isUsed
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200';
+                    ? 'bg-[#1d70b8] text-white border-[#1d70b8]'
+                    : 'bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]';
                 html += `<button type="button"
-                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${classes}"
+                            class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
                             data-rel-action="toggle-consumer-cap"
                             data-rel-consumer-id="${escAttr(consumerNode.id)}"
                             data-rel-cap-id="${escAttr(cap)}"
@@ -102,7 +102,7 @@ export function renderRelPanel(system, editorState) {
     html += `<div class="mb-5" data-rel-dependencies>`;
 
     if (dependencyEdges.length === 0) {
-        html += `<p class="text-xs text-gray-400 italic mb-2">This system does not consume capabilities from others.</p>`;
+        html += `<p class="text-xs text-[#505a5f] italic mb-2">This system does not consume capabilities from others.</p>`;
     }
 
     for (const edge of dependencyEdges) {
@@ -114,11 +114,11 @@ export function renderRelPanel(system, editorState) {
             return def ? def.label : c;
         });
 
-        html += `<div class="ml-2 mb-2 p-2 bg-gray-50 rounded border border-gray-100">`;
+        html += `<div class="ml-2 mb-2 p-2 bg-[#f3f2f1] border border-[#b1b4b6]">`;
         html += `<div class="flex items-center justify-between">`;
-        html += `<span class="text-sm font-semibold text-gray-800">${escHtml(providerNode.label || providerNode.id)}</span>`;
+        html += `<span class="text-sm font-bold text-[#0b0c0c]">${escHtml(providerNode.label || providerNode.id)}</span>`;
         html += `<button type="button"
-                    class="text-gray-400 hover:text-red-600 text-sm leading-none"
+                    class="text-[#d4351c] hover:text-[#942514] text-sm leading-none"
                     data-rel-action="remove-dependency"
                     data-rel-edge-idx="${edge._edgeIdx}"
                     aria-label="Remove dependency on ${escAttr(providerNode.label || providerNode.id)}">&times;</button>`;
@@ -126,7 +126,7 @@ export function renderRelPanel(system, editorState) {
         if (capLabels.length > 0) {
             html += `<div class="flex flex-wrap gap-1 mt-1">`;
             for (const label of capLabels) {
-                html += `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">${escHtml(label)}</span>`;
+                html += `<span class="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-[#f3f2f1] text-[#53284f] border border-[#53284f]">${escHtml(label)}</span>`;
             }
             html += `</div>`;
         }
@@ -235,11 +235,11 @@ export function wireRelPanel(container, options = {}) {
                 // Update visual state
                 target.setAttribute('aria-pressed', String(nowActive));
                 if (nowActive) {
-                    target.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-gray-200');
-                    target.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                    target.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                    target.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
                 } else {
-                    target.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
-                    target.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-gray-200');
+                    target.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
+                    target.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
                 }
 
                 if (consumerId && capId && onConsumerCapToggle) {
@@ -315,17 +315,17 @@ function renderAddConsumerControl(system, nodes, consumerEdges) {
     );
 
     if (candidates.length === 0) {
-        return `<p class="text-xs text-gray-400 mt-1">No other systems available to add.</p>`;
+        return `<p class="text-xs text-[#505a5f] mt-1">No other systems available to add.</p>`;
     }
 
     let html = `<div class="mt-2">`;
     html += `<button type="button"
-                class="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-consumer">+ Add consuming system</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded bg-white shadow-sm" data-rel-consumer-dropdown>`;
+    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-consumer-dropdown>`;
     for (const node of candidates) {
         html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-blue-50 text-gray-700"
+                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
                     data-rel-action="select-consumer"
                     data-rel-sys-id="${escAttr(node.id)}">
                     ${escHtml(node.label || node.id)}
@@ -350,25 +350,25 @@ function renderAddDependencyControl(system, nodes, dependencyEdges) {
     );
 
     if (candidates.length === 0) {
-        return `<p class="text-xs text-gray-400 mt-1">No capability providers available to add.</p>`;
+        return `<p class="text-xs text-[#505a5f] mt-1">No capability providers available to add.</p>`;
     }
 
     let html = `<div class="mt-2">`;
     html += `<button type="button"
-                class="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-dependency">+ Add dependency</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded bg-white shadow-sm" data-rel-dependency-dropdown>`;
+    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-dependency-dropdown>`;
     for (const node of candidates) {
         const caps = (node.capabilityType || []).map(c => {
             const def = LGAM_CAPABILITIES.find(x => x.id === c);
             return def ? def.label : c;
         }).join(', ');
         html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-blue-50 text-gray-700"
+                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
                     data-rel-action="select-dependency"
                     data-rel-sys-id="${escAttr(node.id)}">
                     <span class="font-medium">${escHtml(node.label || node.id)}</span>
-                    <span class="text-xs text-gray-500 ml-1">(${escHtml(caps)})</span>
+                    <span class="text-xs text-[#505a5f] ml-1">(${escHtml(caps)})</span>
                 </button>`;
     }
     html += `</div>`;
@@ -380,7 +380,7 @@ function renderAddDependencyControl(system, nodes, dependencyEdges) {
  * Render a section heading.
  */
 function sectionHeading(title) {
-    return `<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200 pb-1 mb-3">${escHtml(title)}</div>`;
+    return `<div class="font-bold text-[#0b0c0c] text-sm border-b border-[#b1b4b6] pb-1 mb-3">${escHtml(title)}</div>`;
 }
 
 function escHtml(str) {

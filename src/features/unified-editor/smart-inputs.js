@@ -46,11 +46,11 @@ export function renderChipSelector(options) {
     const { chips = [], placeholder = '', name, datalistId, datalistOptions = [] } = options;
 
     const chipHtml = chips.map(chip => `
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm bg-blue-100 text-blue-800 border border-blue-200"
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-[#f3f2f1] text-[#0b0c0c] border border-[#b1b4b6]"
               data-chip-name="${name}" data-chip-value="${escAttr(chip)}">
             <span>${escHtml(chip)}</span>
             <button type="button"
-                    class="ml-0.5 text-blue-500 hover:text-blue-800 font-bold leading-none"
+                    class="ml-0.5 text-[#d4351c] hover:text-[#942514] font-bold leading-none"
                     data-chip-action="remove"
                     data-chip-name="${name}"
                     data-chip-value="${escAttr(chip)}"
@@ -65,7 +65,7 @@ export function renderChipSelector(options) {
     const listAttr = datalistId ? `list="${datalistId}"` : '';
 
     return `
-        <div class="flex flex-wrap items-center gap-1.5 p-1.5 border border-gray-300 rounded bg-white min-h-[2.25rem]"
+        <div class="flex flex-wrap items-center gap-1.5 p-1.5 border-2 border-[#0b0c0c] bg-white min-h-[2.25rem]"
              data-chip-container="${name}">
             ${chipHtml}
             <input type="text"
@@ -93,11 +93,11 @@ export function renderCapabilityPills(options) {
     const pillsHtml = vocabulary.map(cap => {
         const isActive = active.includes(cap.id);
         const activeClasses = isActive
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200';
+            ? 'bg-[#1d70b8] text-white border-[#1d70b8]'
+            : 'bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]';
         return `
             <button type="button"
-                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${activeClasses}"
+                    class="inline-flex items-center px-2 py-1 text-xs font-bold border transition-colors ${activeClasses}"
                     data-cap-pill="${cap.id}"
                     aria-pressed="${isActive}"
                     title="${escAttr(cap.label)}">
@@ -109,11 +109,11 @@ export function renderCapabilityPills(options) {
     const customHtml = allowCustom ? `
         <div class="flex items-center gap-1 mt-1">
             <input type="text"
-                   class="px-2 py-0.5 text-xs border border-gray-300 rounded w-28"
+                   class="px-2 py-0.5 text-xs border-2 border-[#0b0c0c] w-28"
                    placeholder="Custom..."
                    data-cap-custom-input />
             <button type="button"
-                    class="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded border border-gray-300"
+                    class="gds-btn-secondary px-2 py-0.5 text-xs font-bold"
                     data-cap-custom-add>Add</button>
         </div>
     ` : '';
@@ -140,7 +140,7 @@ export function renderRadioGroup(options) {
     const { name, title, options: opts = [], selected, hint } = options;
 
     const hintHtml = hint
-        ? `<span class="block text-xs text-gray-500 mt-0.5 mb-1">${escHtml(hint)}</span>`
+        ? `<span class="block text-xs text-[#505a5f] mt-0.5 mb-1">${escHtml(hint)}</span>`
         : '';
 
     const radiosHtml = opts.map(opt => {
@@ -149,7 +149,7 @@ export function renderRadioGroup(options) {
         return `
             <label class="inline-flex items-center gap-1 cursor-pointer text-sm" for="${id}">
                 <input type="radio" id="${id}" name="${name}" value="${escAttr(opt)}" ${checked}
-                       class="w-3.5 h-3.5 text-blue-600 border-gray-300" />
+                       class="w-4 h-4 border-2 border-[#0b0c0c]" />
                 <span>${escHtml(opt)}</span>
             </label>
         `;
@@ -157,7 +157,7 @@ export function renderRadioGroup(options) {
 
     return `
         <fieldset class="mb-2">
-            <legend class="text-sm font-medium text-gray-700">${escHtml(title)}</legend>
+            <legend class="font-bold text-[#0b0c0c] text-sm">${escHtml(title)}</legend>
             ${hintHtml}
             <div class="flex flex-wrap items-center gap-3 mt-1">
                 ${radiosHtml}
@@ -241,11 +241,11 @@ export function wireSmartInputs(container, callbacks = {}) {
 
             // Toggle visual classes
             if (nowActive) {
-                pill.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-gray-200');
-                pill.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                pill.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                pill.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
             } else {
-                pill.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
-                pill.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-gray-200');
+                pill.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
+                pill.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
             }
 
             if (callbacks.onCapabilityToggle) {
@@ -264,7 +264,7 @@ export function wireSmartInputs(container, callbacks = {}) {
                 // Add new pill before the custom input container
                 const newPill = `
                     <button type="button"
-                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors bg-blue-600 text-white border-blue-600"
+                            class="inline-flex items-center px-2 py-1 text-xs font-bold border transition-colors bg-[#1d70b8] text-white border-[#1d70b8]"
                             data-cap-pill="${escAttr(customId)}"
                             aria-pressed="true"
                             title="${escAttr(customLabel)}">
@@ -307,11 +307,11 @@ export function wireSmartInputs(container, callbacks = {}) {
 
             // Insert new chip before the input
             const chipHtml = `
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm bg-blue-100 text-blue-800 border border-blue-200"
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-[#f3f2f1] text-[#0b0c0c] border border-[#b1b4b6]"
                       data-chip-name="${chipName}" data-chip-value="${escAttr(value)}">
                     <span>${escHtml(value)}</span>
                     <button type="button"
-                            class="ml-0.5 text-blue-500 hover:text-blue-800 font-bold leading-none"
+                            class="ml-0.5 text-[#d4351c] hover:text-[#942514] font-bold leading-none"
                             data-chip-action="remove"
                             data-chip-name="${chipName}"
                             data-chip-value="${escAttr(value)}"

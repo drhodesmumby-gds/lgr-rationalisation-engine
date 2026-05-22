@@ -16,7 +16,7 @@ import { formatThousands, parseThousands, renderChipSelector, renderRadioGroup, 
  */
 export function renderPropsPanel(system, editorState) {
     if (!system) {
-        return `<div class="flex items-center justify-center h-full text-sm text-gray-400">
+        return `<div class="flex items-center justify-center h-full text-sm text-[#505a5f]">
             Select a system from the list to edit its properties.
         </div>`;
     }
@@ -42,18 +42,18 @@ export function renderPropsPanel(system, editorState) {
 
     html += fieldRow('System Name',
         `<input type="text" data-prop-field="label" value="${escAttr(system.label || '')}"
-                class="w-[200px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[200px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Vendor',
         `<input type="text" data-prop-field="vendor" value="${escAttr(system.vendor || '')}"
-                class="w-[120px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Users',
         `<input type="text" data-prop-field="users" data-format="thousands"
                 value="${system.users ? formatThousands(system.users) : ''}"
-                class="w-[120px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Functions',
@@ -69,8 +69,8 @@ export function renderPropsPanel(system, editorState) {
     html += fieldRow('ERP system',
         `<label class="inline-flex items-center gap-2 cursor-pointer text-sm">
             <input type="checkbox" data-prop-field="isERP" ${system.isERP ? 'checked' : ''}
-                   class="w-4 h-4 text-blue-600 border-gray-300 rounded" />
-            <span class="text-gray-700">This is a monolithic ERP</span>
+                   class="w-5 h-5 border-2 border-[#0b0c0c]" />
+            <span class="text-[#0b0c0c]">This is a monolithic ERP</span>
         </label>`
     );
 
@@ -83,18 +83,18 @@ export function renderPropsPanel(system, editorState) {
     html += fieldRow('Annual Cost',
         `<input type="text" data-prop-field="annualCost" data-format="thousands" data-prefix="£"
                 value="${system.annualCost ? formatThousands(system.annualCost, { prefix: '£' }) : ''}"
-                class="w-[140px] text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />`
+                class="w-[140px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Contract End',
         `<div class="flex items-center gap-1">
             <input type="number" data-prop-field="endMonth" value="${system.endMonth || ''}" placeholder="MM"
                    min="1" max="12"
-                   class="w-[3rem] text-sm border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center" />
-            <span class="text-gray-400 text-sm">/</span>
+                   class="w-[3rem] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 text-center" />
+            <span class="text-[#505a5f] text-sm">/</span>
             <input type="number" data-prop-field="endYear" value="${system.endYear || ''}" placeholder="YYYY"
                    min="2020" max="2040"
-                   class="w-[4rem] text-sm border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center" />
+                   class="w-[4rem] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 text-center" />
         </div>`
     );
 
@@ -102,8 +102,8 @@ export function renderPropsPanel(system, editorState) {
         `<div class="flex items-center gap-1.5">
             <input type="number" data-prop-field="noticePeriod" value="${system.noticePeriod || ''}"
                    min="0"
-                   class="w-[3rem] text-sm border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center" />
-            <span class="text-xs text-gray-500">months</span>
+                   class="w-[3rem] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 text-center" />
+            <span class="text-xs text-[#505a5f]">months</span>
         </div>`
     );
 
@@ -144,7 +144,7 @@ export function renderPropsPanel(system, editorState) {
     // Support Model
     html += fieldRow('Support Model',
         `<select data-prop-field="supportModel"
-                 class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                 class="text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0">
             <option value="" ${!system.supportModel ? 'selected' : ''}>— Select —</option>
             <option value="vendor-supported" ${system.supportModel === 'vendor-supported' ? 'selected' : ''}>Vendor-supported</option>
             <option value="community-supported" ${system.supportModel === 'community-supported' ? 'selected' : ''}>Community-supported</option>
@@ -288,7 +288,7 @@ export function wirePropsPanel(container, options = {}) {
  * Render a section heading.
  */
 function sectionHeading(title) {
-    return `<div class="text-sm font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200 pb-1 mb-3">${escHtml(title)}</div>`;
+    return `<div class="font-bold text-[#0b0c0c] text-sm border-b border-[#b1b4b6] pb-1 mb-3">${escHtml(title)}</div>`;
 }
 
 /**
@@ -298,9 +298,9 @@ function sectionHeading(title) {
  * @param {string} [hint] — optional hint text
  */
 function fieldRow(label, inputHtml, hint) {
-    const hintHtml = hint ? `<span class="text-xs text-gray-400 mt-0.5">${escHtml(hint)}</span>` : '';
+    const hintHtml = hint ? `<span class="text-xs text-[#505a5f] mt-0.5">${escHtml(hint)}</span>` : '';
     return `<div class="flex flex-col gap-0.5">
-        <label class="text-xs font-medium text-gray-600">${escHtml(label)}</label>
+        <label class="font-bold text-[#0b0c0c] text-sm">${escHtml(label)}</label>
         ${hintHtml}
         ${inputHtml}
     </div>`;

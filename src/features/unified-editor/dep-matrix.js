@@ -17,10 +17,10 @@ export function renderDepMatrix(editorState) {
     return `
       <div class="p-6">
         <div class="flex items-center gap-4 mb-4">
-          <button data-dep-back class="text-blue-600 hover:underline text-sm font-medium">&larr; Back to editor</button>
-          <h2 class="text-xl font-bold">Dependency Matrix</h2>
+          <button data-dep-back class="text-[#1d70b8] hover:text-[#003078] underline font-bold text-sm">&larr; Back to editor</button>
+          <h2 class="text-xl font-bold text-[#0b0c0c]">Dependency Matrix</h2>
         </div>
-        <p class="text-gray-500 mt-6">No capability dependencies defined. Add capabilities to systems in the editor to see the dependency matrix.</p>
+        <p class="text-[#505a5f] mt-6">No capability dependencies defined. Add capabilities to systems in the editor to see the dependency matrix.</p>
       </div>`;
   }
 
@@ -49,32 +49,32 @@ export function renderDepMatrix(editorState) {
   // Render header row
   const headerCells = providers.map(({ node }) => {
     const label = escLabel(node.label || node.id);
-    return `<th class="text-xs font-medium text-gray-700 px-2 py-1 align-bottom" style="height:100px; min-width:60px;">
-      <div style="transform:rotate(-45deg); transform-origin:left bottom; white-space:nowrap;">${label}</div>
+    return `<th class="bg-[#f3f2f1] text-[#0b0c0c] font-bold text-xs p-2 border-b-2 border-[#0b0c0c] text-left" style="min-width:100px; max-width:120px; word-wrap:break-word;">
+      ${label}
     </th>`;
   }).join('');
 
   // Render body rows
   const bodyRows = consumers.map(({ node: consumer, idx: consumerIdx }, rowIndex) => {
-    const rowBg = rowIndex % 2 === 0 ? '' : 'bg-gray-50';
+    const rowBg = rowIndex % 2 === 0 ? '' : 'bg-[#f3f2f1]';
     const cells = providers.map(({ node: provider }) => {
       const key = `${consumer.id}::${provider.id}`;
       const caps = cellLookup.get(key);
       if (!caps || caps.length === 0) {
-        return `<td class="text-xs text-gray-300 text-center px-2 py-1 border border-gray-100">&mdash;</td>`;
+        return `<td class="text-[#b1b4b6] text-center text-xs p-2 border-b border-[#b1b4b6]">&mdash;</td>`;
       }
       const count = caps.length;
-      const bgClass = count >= 3 ? 'bg-blue-300' : count === 2 ? 'bg-blue-200' : 'bg-blue-100';
+      const bgClass = count >= 3 ? 'bg-[#7fb3d9]' : count === 2 ? 'bg-[#a8cce8]' : 'bg-[#d4e5f7]';
       const capText = escLabel(caps.join(', '));
-      return `<td class="${bgClass} text-xs px-2 py-1 border border-gray-100">
+      return `<td class="${bgClass} text-[#0b0c0c] text-xs p-2 border-b border-[#b1b4b6]">
         <div>${capText}</div>
-        <a href="#" data-dep-jump="${consumerIdx}" class="text-xs text-blue-600 hover:underline">Edit</a>
+        <a href="#" data-dep-jump="${consumerIdx}" class="text-[#1d70b8] hover:text-[#003078] underline text-xs">Edit</a>
       </td>`;
     }).join('');
 
     const label = escLabel(consumer.label || consumer.id);
     return `<tr class="${rowBg}">
-      <th class="text-xs font-medium text-gray-700 px-2 py-1 text-left sticky left-0 bg-white border border-gray-100 whitespace-nowrap">${label}</th>
+      <th class="bg-white font-bold text-sm text-[#0b0c0c] border-b border-[#b1b4b6] p-2 text-left sticky left-0 whitespace-nowrap">${label}</th>
       ${cells}
     </tr>`;
   }).join('');
@@ -82,15 +82,15 @@ export function renderDepMatrix(editorState) {
   return `
     <div class="p-6">
       <div class="flex items-center gap-4 mb-1">
-        <button data-dep-back class="text-blue-600 hover:underline text-sm font-medium">&larr; Back to editor</button>
-        <h2 class="text-xl font-bold">Dependency Matrix</h2>
+        <button data-dep-back class="text-[#1d70b8] hover:text-[#003078] underline font-bold text-sm">&larr; Back to editor</button>
+        <h2 class="text-xl font-bold text-[#0b0c0c]">Dependency Matrix</h2>
       </div>
-      <p class="text-gray-500 text-sm mb-4">Shows which systems consume capabilities from which providers</p>
-      <div class="overflow-auto border border-gray-200 rounded">
+      <p class="text-[#505a5f] text-sm mb-4">Shows which systems consume capabilities from which providers</p>
+      <div class="overflow-auto border border-[#b1b4b6]">
         <table class="border-collapse w-full">
           <thead>
             <tr>
-              <th class="sticky left-0 bg-white px-2 py-1 border border-gray-100"></th>
+              <th class="sticky left-0 bg-[#f3f2f1] p-2 border-b-2 border-[#0b0c0c]"></th>
               ${headerCells}
             </tr>
           </thead>

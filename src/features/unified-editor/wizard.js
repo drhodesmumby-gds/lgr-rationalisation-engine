@@ -21,31 +21,31 @@ export function renderWizard(step) {
 function renderStep1() {
     return `
         <div class="max-w-md mx-auto mt-8">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-8">
-                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-4">Step 1 of 2</p>
-                <h2 class="text-xl font-bold text-gray-900 mb-1">Council Information</h2>
-                <p class="text-sm text-gray-600 mb-6">Tell us about the council whose architecture you are modelling.</p>
+            <div class="bg-[#f3f2f1] border border-[#b1b4b6] shadow-sm p-8">
+                <p class="text-xs text-[#505a5f] font-bold mb-4">Step 1 of 2</p>
+                <h2 class="text-xl font-bold text-[#0b0c0c] mb-1">Council Information</h2>
+                <p class="text-sm text-[#505a5f] mb-6">Tell us about the council whose architecture you are modelling.</p>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="wizard-council-name">
+                        <label class="block font-bold text-[#0b0c0c] text-sm mb-1" for="wizard-council-name">
                             Council Name
                         </label>
-                        <p class="text-xs text-gray-500 mb-1">The official name of the local authority</p>
+                        <p class="text-xs text-[#505a5f] mb-1">The official name of the local authority</p>
                         <input type="text"
                                id="wizard-council-name"
-                               class="w-full px-3 py-2 text-base border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               class="w-full p-2 text-base border-2 border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0"
                                placeholder="e.g. Essex County Council"
                                data-wizard-field="councilName" />
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="wizard-tier">
+                        <label class="block font-bold text-[#0b0c0c] text-sm mb-1" for="wizard-tier">
                             Tier
                         </label>
-                        <p class="text-xs text-gray-500 mb-1">The authority type within the local government structure</p>
+                        <p class="text-xs text-[#505a5f] mb-1">The authority type within the local government structure</p>
                         <select id="wizard-tier"
-                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                class="w-full p-2 text-sm border-2 border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0"
                                 data-wizard-field="tier">
                             <option value="county">County</option>
                             <option value="district">District</option>
@@ -57,9 +57,9 @@ function renderStep1() {
                     <div class="flex items-center gap-2 pt-1">
                         <input type="checkbox"
                                id="wizard-distress"
-                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                               class="w-5 h-5 border-2 border-[#0b0c0c]"
                                data-wizard-field="financialDistress" />
-                        <label class="text-sm text-gray-700" for="wizard-distress">
+                        <label class="text-sm text-[#0b0c0c]" for="wizard-distress">
                             Under s114 notice or equivalent
                         </label>
                     </div>
@@ -67,7 +67,7 @@ function renderStep1() {
 
                 <div class="mt-8">
                     <button type="button"
-                            class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            class="gds-btn w-full px-4 py-2 font-bold"
                             data-wizard-action="next">
                         Next
                     </button>
@@ -88,44 +88,44 @@ function renderStep2() {
 
     return `
         <div class="max-w-md mx-auto mt-8">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-8">
-                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-4">Step 2 of 2</p>
-                <h2 class="text-xl font-bold text-gray-900 mb-1">Add Your First System</h2>
-                <p class="text-sm text-gray-600 mb-6">Optionally add an IT system to get started. You can always add more in the editor.</p>
+            <div class="bg-[#f3f2f1] border border-[#b1b4b6] shadow-sm p-8">
+                <p class="text-xs text-[#505a5f] font-bold mb-4">Step 2 of 2</p>
+                <h2 class="text-xl font-bold text-[#0b0c0c] mb-1">Add Your First System</h2>
+                <p class="text-sm text-[#505a5f] mb-6">Optionally add an IT system to get started. You can always add more in the editor.</p>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="wizard-system-name">
+                        <label class="block font-bold text-[#0b0c0c] text-sm mb-1" for="wizard-system-name">
                             System Name
                         </label>
-                        <p class="text-xs text-gray-500 mb-1">What the system is called internally</p>
+                        <p class="text-xs text-[#505a5f] mb-1">What the system is called internally</p>
                         <input type="text"
                                id="wizard-system-name"
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               class="w-full p-2 text-sm border-2 border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0"
                                placeholder="e.g. Liquidlogic LAS"
                                data-wizard-field="systemName" />
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="wizard-vendor">
+                        <label class="block font-bold text-[#0b0c0c] text-sm mb-1" for="wizard-vendor">
                             Vendor
                         </label>
-                        <p class="text-xs text-gray-500 mb-1">Who supplies or maintains the software</p>
+                        <p class="text-xs text-[#505a5f] mb-1">Who supplies or maintains the software</p>
                         <input type="text"
                                id="wizard-vendor"
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               class="w-full p-2 text-sm border-2 border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0"
                                placeholder="e.g. System C"
                                data-wizard-field="vendor" />
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="wizard-cost">
+                        <label class="block font-bold text-[#0b0c0c] text-sm mb-1" for="wizard-cost">
                             Annual Cost
                         </label>
-                        <p class="text-xs text-gray-500 mb-1">Approximate yearly licence/hosting cost</p>
+                        <p class="text-xs text-[#505a5f] mb-1">Approximate yearly licence/hosting cost</p>
                         <input type="text"
                                id="wizard-cost"
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               class="w-full p-2 text-sm border-2 border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0"
                                placeholder="e.g. 50,000"
                                data-format="thousands"
                                data-prefix="£"
@@ -139,12 +139,12 @@ function renderStep2() {
 
                 <div class="mt-8 space-y-3">
                     <button type="button"
-                            class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            class="gds-btn w-full px-4 py-2 font-bold"
                             data-wizard-action="add-system">
                         Add to editor
                     </button>
                     <button type="button"
-                            class="w-full px-4 py-2 text-sm text-blue-600 hover:text-blue-800 underline bg-transparent border-0 cursor-pointer"
+                            class="w-full px-4 py-2 text-sm text-[#1d70b8] hover:text-[#003078] underline bg-transparent border-0 cursor-pointer"
                             data-wizard-action="skip">
                         Skip — go to editor
                     </button>
@@ -186,10 +186,10 @@ export function wireWizard(container, options = {}) {
             if (!name) {
                 // Highlight the field
                 if (nameInput) {
-                    nameInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    nameInput.classList.add('border-[#d4351c]', 'outline-2', 'outline-[#d4351c]');
                     nameInput.focus();
                     nameInput.addEventListener('input', () => {
-                        nameInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                        nameInput.classList.remove('border-[#d4351c]', 'outline-2', 'outline-[#d4351c]');
                     }, { once: true });
                 }
                 return;
@@ -220,10 +220,10 @@ export function wireWizard(container, options = {}) {
 
             if (!sysName) {
                 if (sysNameInput) {
-                    sysNameInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    sysNameInput.classList.add('border-[#d4351c]', 'outline-2', 'outline-[#d4351c]');
                     sysNameInput.focus();
                     sysNameInput.addEventListener('input', () => {
-                        sysNameInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                        sysNameInput.classList.remove('border-[#d4351c]', 'outline-2', 'outline-[#d4351c]');
                     }, { once: true });
                 }
                 return;

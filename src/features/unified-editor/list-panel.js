@@ -23,21 +23,9 @@ const ROOT_CATEGORY_LABELS = {
     '105': 'Transport and Highways'
 };
 
-// Cycling background colours for domain groups
+// Consistent GDS grey for all domain group headers
 const GROUP_COLOURS = [
-    'bg-blue-50',
-    'bg-green-50',
-    'bg-amber-50',
-    'bg-purple-50',
-    'bg-rose-50',
-    'bg-teal-50',
-    'bg-indigo-50',
-    'bg-orange-50',
-    'bg-cyan-50',
-    'bg-lime-50',
-    'bg-fuchsia-50',
-    'bg-sky-50',
-    'bg-emerald-50'
+    'bg-[#f3f2f1]'
 ];
 
 // Key fields for completeness assessment
@@ -65,11 +53,11 @@ function completenessIndicator(system) {
     const filled = countFilledFields(system);
     const missing = KEY_FIELDS.length - filled;
     if (missing === 0) {
-        return { icon: '✓', cls: 'text-green-700', label: 'Complete' };
+        return { icon: '✓', cls: 'text-[#00703c]', label: 'Complete' };
     } else if (filled >= 3) {
-        return { icon: `⚠ ${missing}`, cls: 'text-amber-600', label: `${missing} fields missing` };
+        return { icon: `⚠ ${missing}`, cls: 'text-[#f47738]', label: `${missing} fields missing` };
     } else {
-        return { icon: '✗', cls: 'text-red-600', label: 'Mostly empty' };
+        return { icon: '✗', cls: 'text-[#d4351c]', label: 'Mostly empty' };
     }
 }
 
@@ -160,12 +148,12 @@ export function renderListPanel(editorState, options = {}) {
 
     // Progress bar
     html += `<div class="px-3 pt-2 pb-1">
-        <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+        <div class="flex items-center justify-between text-xs text-[#505a5f] mb-1">
             <span>${completeSystems}/${totalSystems} complete</span>
             <span>${progressPct}%</span>
         </div>
-        <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div class="h-full bg-green-600 rounded-full transition-all" style="width: ${progressPct}%"></div>
+        <div class="w-full h-1.5 bg-[#f3f2f1] overflow-hidden">
+            <div class="h-full bg-[#00703c] transition-all" style="width: ${progressPct}%"></div>
         </div>
     </div>`;
 
@@ -176,14 +164,14 @@ export function renderListPanel(editorState, options = {}) {
                 data-list-search
                 placeholder="Search systems..."
                 value="${escAttr(searchQuery)}"
-                class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 pr-7 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
-            ${searchQuery ? `<button data-list-search-clear class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-sm px-1" title="Clear search">&times;</button>` : ''}
+                class="w-full text-sm border-2 border-[#0b0c0c] p-2 pr-7 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />
+            ${searchQuery ? `<button data-list-search-clear class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#505a5f] hover:text-[#0b0c0c] text-sm px-1" title="Clear search">&times;</button>` : ''}
         </div>
     </div>`;
 
     // Add button
-    html += `<div class="px-3 pt-1 pb-2 border-b border-gray-200">
-        <button data-list-add class="text-sm text-blue-700 hover:text-blue-900 hover:underline font-medium">+ Add system</button>
+    html += `<div class="px-3 pt-1 pb-2 border-b border-[#b1b4b6]">
+        <button data-list-add class="text-[#1d70b8] hover:text-[#003078] underline font-bold text-sm">+ Add system</button>
     </div>`;
 
     // Scrollable grouped list
@@ -194,24 +182,24 @@ export function renderListPanel(editorState, options = {}) {
         const bgClass = GROUP_COLOURS[colourIdx % GROUP_COLOURS.length];
         colourIdx++;
 
-        html += `<div class="border-b border-gray-200">`;
+        html += `<div class="border-b border-[#b1b4b6]">`;
         // Group header
         html += `<div class="${bgClass} px-3 py-1.5 flex items-center justify-between sticky top-0 z-10">
-            <span class="text-xs font-semibold text-gray-700 truncate">${esc(group.domainLabel)}</span>
-            <span class="text-xs text-gray-500 ml-1 flex-shrink-0">${group.systems.length}</span>
+            <span class="font-bold text-sm text-[#0b0c0c] truncate">${esc(group.domainLabel)}</span>
+            <span class="bg-[#b1b4b6] text-white text-xs font-bold px-1.5 ml-1 flex-shrink-0">${group.systems.length}</span>
         </div>`;
 
         // System items
         for (const { system, functionLabel, nodeIdx } of group.systems) {
             const isSelected = nodeIdx === selectedIdx;
             const comp = completenessIndicator(system);
-            const borderCls = isSelected ? 'border-l-4 border-l-blue-600 bg-blue-50' : 'border-l-4 border-l-transparent';
+            const borderCls = isSelected ? 'border-l-4 border-[#1d70b8] bg-[#f3f2f1]' : 'border-l-4 border-l-transparent';
 
-            html += `<div class="px-3 py-2 cursor-pointer hover:bg-gray-50 ${borderCls} flex items-start gap-2"
+            html += `<div class="px-3 py-2 cursor-pointer hover:bg-[#f3f2f1] ${borderCls} flex items-start gap-2"
                 data-list-item="${nodeIdx}" role="button" tabindex="0">
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-gray-900 truncate">${esc(system.label || 'Untitled')}</div>
-                    <div class="text-xs text-gray-500 truncate">${esc(system.vendor || '—')}${functionLabel ? ' · ' + esc(functionLabel) : ''}</div>
+                    <div class="font-bold text-sm text-[#0b0c0c] truncate">${esc(system.label || 'Untitled')}</div>
+                    <div class="text-xs text-[#505a5f] truncate">${esc(system.vendor || '—')}${functionLabel ? ' · ' + esc(functionLabel) : ''}</div>
                 </div>
                 <div class="flex-shrink-0 text-xs ${comp.cls} font-medium whitespace-nowrap" title="${esc(comp.label)}">${comp.icon}</div>
             </div>`;
@@ -221,17 +209,17 @@ export function renderListPanel(editorState, options = {}) {
     }
 
     if (filteredGroups.length === 0 && query) {
-        html += `<div class="px-3 py-6 text-center text-sm text-gray-400">No systems match "${esc(query)}"</div>`;
+        html += `<div class="px-3 py-6 text-center text-sm text-[#505a5f]">No systems match "${esc(query)}"</div>`;
     }
 
     if (totalSystems === 0) {
-        html += `<div class="px-3 py-6 text-center text-sm text-gray-400">No systems yet. Click "+ Add system" to begin.</div>`;
+        html += `<div class="px-3 py-6 text-center text-sm text-[#505a5f]">No systems yet. Click "+ Add system" to begin.</div>`;
     }
 
     html += `</div>`;
 
     // Wrap in flex column container
-    return `<div class="flex flex-col h-full bg-white border-r border-gray-200">${html}</div>`;
+    return `<div class="flex flex-col h-full bg-white border-r border-[#b1b4b6]">${html}</div>`;
 }
 
 /**
