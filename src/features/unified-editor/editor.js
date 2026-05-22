@@ -8,6 +8,7 @@ import { renderListPanel, wireListPanel } from './list-panel.js';
 import { renderPropsPanel, wirePropsPanel } from './props-panel.js';
 import { renderRelPanel, wireRelPanel } from './rel-panel.js';
 import { renderBulkMode, wireBulkMode } from './bulk-mode.js';
+import { renderDepMatrix, wireDepMatrix } from './dep-matrix.js';
 import { LGA_FUNCTIONS } from '../../constants/lga-functions.js';
 
 // --- Rendering ---
@@ -21,32 +22,34 @@ import { LGA_FUNCTIONS } from '../../constants/lga-functions.js';
 export function renderUnifiedEditor(json, options = {}) {
     const title = options.title || 'Architecture Editor';
 
-    let html = `<div class="flex flex-col h-screen bg-gray-50" data-unified-editor>`;
+    let html = `<div class="flex flex-col h-screen bg-gray-50 border-t-4 border-[#1d70b8]" data-unified-editor>`;
 
     // === Header ===
-    html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">`;
+    html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-[#b1b4b6] flex-shrink-0">`;
 
     // Left: title + mode toggle
     html += `<div class="flex items-center gap-4">`;
     html += `<h2 class="text-lg font-bold text-gray-900">${escHtml(title)}</h2>`;
 
     // Mode toggle (segmented control)
-    html += `<div class="inline-flex rounded border border-gray-300 overflow-hidden" data-ue-mode-toggle>`;
+    html += `<div class="inline-flex rounded border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
     html += `<button type="button" data-ue-mode="focus"
-                class="px-3 py-1 text-sm font-medium bg-blue-600 text-white transition-colors">Focus</button>`;
+                class="px-3 py-1 text-sm font-medium bg-[#1d70b8] text-white transition-colors">Focus</button>`;
     html += `<button type="button" data-ue-mode="bulk"
-                class="px-3 py-1 text-sm font-medium bg-white text-gray-700 border-l border-gray-300 hover:bg-gray-50 transition-colors">Bulk</button>`;
+                class="px-3 py-1 text-sm font-medium bg-white text-[#0b0c0c] border-l border-[#b1b4b6] hover:bg-gray-50 transition-colors">Bulk</button>`;
     html += `</div>`;
     html += `</div>`;
 
     // Right: action buttons
     html += `<div class="flex items-center gap-2">`;
+    html += `<button type="button" data-ue-action="dep-matrix"
+                class="px-3 py-1.5 text-sm text-[#1d70b8] hover:text-[#003078] font-bold hover:underline">Dependencies</button>`;
     html += `<button type="button" data-ue-action="back"
-                class="px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:underline">Back</button>`;
+                class="px-3 py-1.5 text-sm text-[#1d70b8] hover:text-[#003078] font-bold hover:underline">Back</button>`;
     html += `<button type="button" data-ue-action="export"
-                class="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 font-medium">Export JSON</button>`;
+                class="gds-btn-secondary px-3 py-1.5 text-sm font-bold">Export JSON</button>`;
     html += `<button type="button" data-ue-action="save"
-                class="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">Save</button>`;
+                class="gds-btn px-4 py-1.5 text-sm">Save</button>`;
     html += `</div>`;
 
     html += `</div>`;
@@ -61,6 +64,11 @@ export function renderUnifiedEditor(json, options = {}) {
     // === Bulk mode: full-width container (hidden by default) ===
     html += `<div class="flex-1 overflow-hidden hidden" data-ue-bulk-container>`;
     html += `<div id="ue-bulk-panel" class="h-full overflow-auto"></div>`;
+    html += `</div>`;
+
+    // === Dependency matrix: full-width container (hidden by default) ===
+    html += `<div class="flex-1 overflow-hidden hidden" data-ue-depmatrix-container>`;
+    html += `<div id="ue-depmatrix-panel" class="h-full overflow-auto p-4"></div>`;
     html += `</div>`;
 
     html += `</div>`;
@@ -92,6 +100,7 @@ export function wireUnifiedEditor(container, json, options = {}) {
     // --- DOM references ---
     const focusContainer = container.querySelector('[data-ue-focus-container]');
     const bulkContainer = container.querySelector('[data-ue-bulk-container]');
+    const depMatrixContainer = container.querySelector('[data-ue-depmatrix-container]');
     const listPanelEl = container.querySelector('#ue-list-panel');
     const propsPanelEl = container.querySelector('#ue-props-panel');
     const relPanelEl = container.querySelector('#ue-rel-panel');
@@ -393,8 +402,12 @@ export function wireUnifiedEditor(container, json, options = {}) {
         bulkPanelEl.innerHTML = renderBulkMode(editorState);
         wireBulkMode(bulkPanelEl, editorState, {
             onChange(nodeIdx, field, value) {
-                handleFieldChange(nodeIdx, field, value);
-                rerenderBulk();
+                if (field === 'contractEnd' && typeof value === 'object') {
+                    editorState.nodes[nodeIdx].endMonth = value.endMonth;
+                    editorState.nodes[nodeIdx].endYear = value.endYear;
+                } else {
+                    editorState.nodes[nodeIdx][field] = value;
+                }
             }
         });
     }
@@ -403,26 +416,68 @@ export function wireUnifiedEditor(container, json, options = {}) {
         if (newMode === mode) return;
         mode = newMode;
 
+        // Hide dep matrix when switching modes
+        depMatrixContainer.classList.add('hidden');
+
         const focusBtn = container.querySelector('[data-ue-mode="focus"]');
         const bulkBtn = container.querySelector('[data-ue-mode="bulk"]');
 
         if (newMode === 'focus') {
             focusContainer.style.display = 'grid';
             bulkContainer.classList.add('hidden');
-            focusBtn.classList.remove('bg-white', 'text-gray-700');
-            focusBtn.classList.add('bg-blue-600', 'text-white');
-            bulkBtn.classList.remove('bg-blue-600', 'text-white');
-            bulkBtn.classList.add('bg-white', 'text-gray-700');
+            focusBtn.classList.remove('bg-white', 'text-[#0b0c0c]', 'border-l', 'border-[#b1b4b6]');
+            focusBtn.classList.add('bg-[#1d70b8]', 'text-white');
+            bulkBtn.classList.remove('bg-[#1d70b8]', 'text-white');
+            bulkBtn.classList.add('bg-white', 'text-[#0b0c0c]', 'border-l', 'border-[#b1b4b6]');
             rerenderList();
         } else {
             focusContainer.style.display = 'none';
             bulkContainer.classList.remove('hidden');
-            bulkBtn.classList.remove('bg-white', 'text-gray-700');
-            bulkBtn.classList.add('bg-blue-600', 'text-white');
-            focusBtn.classList.remove('bg-blue-600', 'text-white');
-            focusBtn.classList.add('bg-white', 'text-gray-700');
+            bulkBtn.classList.remove('bg-white', 'text-[#0b0c0c]', 'border-l', 'border-[#b1b4b6]');
+            bulkBtn.classList.add('bg-[#1d70b8]', 'text-white');
+            focusBtn.classList.remove('bg-[#1d70b8]', 'text-white');
+            focusBtn.classList.add('bg-white', 'text-[#0b0c0c]', 'border-l', 'border-[#b1b4b6]');
             rerenderBulk();
         }
+    }
+
+    function showDepMatrix() {
+        // Hide focus and bulk, show dep matrix
+        focusContainer.style.display = 'none';
+        bulkContainer.classList.add('hidden');
+        depMatrixContainer.classList.remove('hidden');
+
+        const depPanelEl = container.querySelector('#ue-depmatrix-panel');
+        if (!depPanelEl) return;
+        depPanelEl.innerHTML = renderDepMatrix(editorState);
+        wireDepMatrix(depPanelEl, {
+            onBack() {
+                depMatrixContainer.classList.add('hidden');
+                setMode(mode); // restore previous mode view
+                // Force the mode re-display since setMode guards against same-mode
+                if (mode === 'focus') {
+                    focusContainer.style.display = 'grid';
+                } else {
+                    bulkContainer.classList.remove('hidden');
+                }
+            },
+            onJumpToSystem(nodeIdx) {
+                depMatrixContainer.classList.add('hidden');
+                focusContainer.style.display = 'grid';
+                bulkContainer.classList.add('hidden');
+                mode = 'focus';
+                const focusBtn = container.querySelector('[data-ue-mode="focus"]');
+                const bulkBtn = container.querySelector('[data-ue-mode="bulk"]');
+                focusBtn.classList.remove('bg-white', 'text-[#0b0c0c]', 'border-l', 'border-[#b1b4b6]');
+                focusBtn.classList.add('bg-[#1d70b8]', 'text-white');
+                bulkBtn.classList.remove('bg-[#1d70b8]', 'text-white');
+                bulkBtn.classList.add('bg-white', 'text-[#0b0c0c]', 'border-l', 'border-[#b1b4b6]');
+                selectedIdx = nodeIdx;
+                rerenderList();
+                rerenderProps();
+                rerenderRel();
+            }
+        });
     }
 
     // --- Wire mode toggle buttons ---
@@ -464,6 +519,9 @@ export function wireUnifiedEditor(container, json, options = {}) {
                 URL.revokeObjectURL(url);
                 break;
             }
+            case 'dep-matrix':
+                showDepMatrix();
+                break;
         }
     });
 

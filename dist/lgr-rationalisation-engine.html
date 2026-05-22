@@ -5482,27 +5482,129 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     return escHtml5(str);
   }
 
+  // src/features/unified-editor/dep-matrix.js
+  function renderDepMatrix(editorState) {
+    const { nodes, edges } = editorState;
+    const capEdges = edges.filter((e) => e.relationship === "CONSUMES_CAPABILITY");
+    if (capEdges.length === 0) {
+      return `
+      <div class="p-6">
+        <div class="flex items-center gap-4 mb-4">
+          <button data-dep-back class="text-blue-600 hover:underline text-sm font-medium">&larr; Back to editor</button>
+          <h2 class="text-xl font-bold">Dependency Matrix</h2>
+        </div>
+        <p class="text-gray-500 mt-6">No capability dependencies defined. Add capabilities to systems in the editor to see the dependency matrix.</p>
+      </div>`;
+    }
+    const providers = nodes.map((n, idx) => ({ node: n, idx })).filter(({ node }) => node.type === "ITSystem" && Array.isArray(node.capabilityType) && node.capabilityType.length > 0);
+    const consumerIds = new Set(capEdges.map((e) => e.source));
+    const consumers = nodes.map((n, idx) => ({ node: n, idx })).filter(({ node }) => consumerIds.has(node.id));
+    const cellLookup = /* @__PURE__ */ new Map();
+    for (const edge of capEdges) {
+      const key = `${edge.source}::${edge.target}`;
+      if (!cellLookup.has(key)) {
+        cellLookup.set(key, []);
+      }
+      const caps = Array.isArray(edge.capabilities) ? edge.capabilities : [];
+      cellLookup.set(key, cellLookup.get(key).concat(caps));
+    }
+    const headerCells = providers.map(({ node }) => {
+      const label = escLabel(node.label || node.id);
+      return `<th class="text-xs font-medium text-gray-700 px-2 py-1 align-bottom" style="height:100px; min-width:60px;">
+      <div style="transform:rotate(-45deg); transform-origin:left bottom; white-space:nowrap;">${label}</div>
+    </th>`;
+    }).join("");
+    const bodyRows = consumers.map(({ node: consumer, idx: consumerIdx }, rowIndex) => {
+      const rowBg = rowIndex % 2 === 0 ? "" : "bg-gray-50";
+      const cells = providers.map(({ node: provider }) => {
+        const key = `${consumer.id}::${provider.id}`;
+        const caps = cellLookup.get(key);
+        if (!caps || caps.length === 0) {
+          return `<td class="text-xs text-gray-300 text-center px-2 py-1 border border-gray-100">&mdash;</td>`;
+        }
+        const count = caps.length;
+        const bgClass = count >= 3 ? "bg-blue-300" : count === 2 ? "bg-blue-200" : "bg-blue-100";
+        const capText = escLabel(caps.join(", "));
+        return `<td class="${bgClass} text-xs px-2 py-1 border border-gray-100">
+        <div>${capText}</div>
+        <a href="#" data-dep-jump="${consumerIdx}" class="text-xs text-blue-600 hover:underline">Edit</a>
+      </td>`;
+      }).join("");
+      const label = escLabel(consumer.label || consumer.id);
+      return `<tr class="${rowBg}">
+      <th class="text-xs font-medium text-gray-700 px-2 py-1 text-left sticky left-0 bg-white border border-gray-100 whitespace-nowrap">${label}</th>
+      ${cells}
+    </tr>`;
+    }).join("");
+    return `
+    <div class="p-6">
+      <div class="flex items-center gap-4 mb-1">
+        <button data-dep-back class="text-blue-600 hover:underline text-sm font-medium">&larr; Back to editor</button>
+        <h2 class="text-xl font-bold">Dependency Matrix</h2>
+      </div>
+      <p class="text-gray-500 text-sm mb-4">Shows which systems consume capabilities from which providers</p>
+      <div class="overflow-auto border border-gray-200 rounded">
+        <table class="border-collapse w-full">
+          <thead>
+            <tr>
+              <th class="sticky left-0 bg-white px-2 py-1 border border-gray-100"></th>
+              ${headerCells}
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyRows}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+  function wireDepMatrix(container, options) {
+    const { onBack, onJumpToSystem } = options;
+    const backBtn = container.querySelector("[data-dep-back]");
+    if (backBtn) {
+      backBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        onBack();
+      });
+    }
+    container.querySelectorAll("[data-dep-jump]").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const idx = parseInt(link.getAttribute("data-dep-jump"), 10);
+        if (!isNaN(idx)) {
+          onJumpToSystem(idx);
+        }
+      });
+    });
+  }
+  function escLabel(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
   // src/features/unified-editor/editor.js
   function renderUnifiedEditor(json, options = {}) {
     const title = options.title || "Architecture Editor";
-    let html = `<div class="flex flex-col h-screen bg-gray-50" data-unified-editor>`;
-    html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">`;
+    let html = `<div class="flex flex-col h-screen bg-gray-50 border-t-4 border-[#1d70b8]" data-unified-editor>`;
+    html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-[#b1b4b6] flex-shrink-0">`;
     html += `<div class="flex items-center gap-4">`;
     html += `<h2 class="text-lg font-bold text-gray-900">${escHtml6(title)}</h2>`;
-    html += `<div class="inline-flex rounded border border-gray-300 overflow-hidden" data-ue-mode-toggle>`;
+    html += `<div class="inline-flex rounded border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
     html += `<button type="button" data-ue-mode="focus"
-                class="px-3 py-1 text-sm font-medium bg-blue-600 text-white transition-colors">Focus</button>`;
+                class="px-3 py-1 text-sm font-medium bg-[#1d70b8] text-white transition-colors">Focus</button>`;
     html += `<button type="button" data-ue-mode="bulk"
-                class="px-3 py-1 text-sm font-medium bg-white text-gray-700 border-l border-gray-300 hover:bg-gray-50 transition-colors">Bulk</button>`;
+                class="px-3 py-1 text-sm font-medium bg-white text-[#0b0c0c] border-l border-[#b1b4b6] hover:bg-gray-50 transition-colors">Bulk</button>`;
     html += `</div>`;
     html += `</div>`;
     html += `<div class="flex items-center gap-2">`;
+    html += `<button type="button" data-ue-action="dep-matrix"
+                class="px-3 py-1.5 text-sm text-[#1d70b8] hover:text-[#003078] font-bold hover:underline">Dependencies</button>`;
     html += `<button type="button" data-ue-action="back"
-                class="px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:underline">Back</button>`;
+                class="px-3 py-1.5 text-sm text-[#1d70b8] hover:text-[#003078] font-bold hover:underline">Back</button>`;
     html += `<button type="button" data-ue-action="export"
-                class="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 font-medium">Export JSON</button>`;
+                class="gds-btn-secondary px-3 py-1.5 text-sm font-bold">Export JSON</button>`;
     html += `<button type="button" data-ue-action="save"
-                class="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">Save</button>`;
+                class="gds-btn px-4 py-1.5 text-sm">Save</button>`;
     html += `</div>`;
     html += `</div>`;
     html += `<div class="flex-1 overflow-hidden" data-ue-focus-container style="display: grid; grid-template-columns: 230px 1fr 280px;">`;
@@ -5512,6 +5614,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += `</div>`;
     html += `<div class="flex-1 overflow-hidden hidden" data-ue-bulk-container>`;
     html += `<div id="ue-bulk-panel" class="h-full overflow-auto"></div>`;
+    html += `</div>`;
+    html += `<div class="flex-1 overflow-hidden hidden" data-ue-depmatrix-container>`;
+    html += `<div id="ue-depmatrix-panel" class="h-full overflow-auto p-4"></div>`;
     html += `</div>`;
     html += `</div>`;
     return html;
@@ -5527,6 +5632,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     let searchQuery = "";
     const focusContainer = container.querySelector("[data-ue-focus-container]");
     const bulkContainer = container.querySelector("[data-ue-bulk-container]");
+    const depMatrixContainer = container.querySelector("[data-ue-depmatrix-container]");
     const listPanelEl = container.querySelector("#ue-list-panel");
     const propsPanelEl = container.querySelector("#ue-props-panel");
     const relPanelEl = container.querySelector("#ue-rel-panel");
@@ -5768,33 +5874,73 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       bulkPanelEl.innerHTML = renderBulkMode(editorState);
       wireBulkMode(bulkPanelEl, editorState, {
         onChange(nodeIdx, field, value) {
-          handleFieldChange(nodeIdx, field, value);
-          rerenderBulk();
+          if (field === "contractEnd" && typeof value === "object") {
+            editorState.nodes[nodeIdx].endMonth = value.endMonth;
+            editorState.nodes[nodeIdx].endYear = value.endYear;
+          } else {
+            editorState.nodes[nodeIdx][field] = value;
+          }
         }
       });
     }
     function setMode(newMode) {
       if (newMode === mode) return;
       mode = newMode;
+      depMatrixContainer.classList.add("hidden");
       const focusBtn = container.querySelector('[data-ue-mode="focus"]');
       const bulkBtn = container.querySelector('[data-ue-mode="bulk"]');
       if (newMode === "focus") {
         focusContainer.style.display = "grid";
         bulkContainer.classList.add("hidden");
-        focusBtn.classList.remove("bg-white", "text-gray-700");
-        focusBtn.classList.add("bg-blue-600", "text-white");
-        bulkBtn.classList.remove("bg-blue-600", "text-white");
-        bulkBtn.classList.add("bg-white", "text-gray-700");
+        focusBtn.classList.remove("bg-white", "text-[#0b0c0c]", "border-l", "border-[#b1b4b6]");
+        focusBtn.classList.add("bg-[#1d70b8]", "text-white");
+        bulkBtn.classList.remove("bg-[#1d70b8]", "text-white");
+        bulkBtn.classList.add("bg-white", "text-[#0b0c0c]", "border-l", "border-[#b1b4b6]");
         rerenderList();
       } else {
         focusContainer.style.display = "none";
         bulkContainer.classList.remove("hidden");
-        bulkBtn.classList.remove("bg-white", "text-gray-700");
-        bulkBtn.classList.add("bg-blue-600", "text-white");
-        focusBtn.classList.remove("bg-blue-600", "text-white");
-        focusBtn.classList.add("bg-white", "text-gray-700");
+        bulkBtn.classList.remove("bg-white", "text-[#0b0c0c]", "border-l", "border-[#b1b4b6]");
+        bulkBtn.classList.add("bg-[#1d70b8]", "text-white");
+        focusBtn.classList.remove("bg-[#1d70b8]", "text-white");
+        focusBtn.classList.add("bg-white", "text-[#0b0c0c]", "border-l", "border-[#b1b4b6]");
         rerenderBulk();
       }
+    }
+    function showDepMatrix() {
+      focusContainer.style.display = "none";
+      bulkContainer.classList.add("hidden");
+      depMatrixContainer.classList.remove("hidden");
+      const depPanelEl = container.querySelector("#ue-depmatrix-panel");
+      if (!depPanelEl) return;
+      depPanelEl.innerHTML = renderDepMatrix(editorState);
+      wireDepMatrix(depPanelEl, {
+        onBack() {
+          depMatrixContainer.classList.add("hidden");
+          setMode(mode);
+          if (mode === "focus") {
+            focusContainer.style.display = "grid";
+          } else {
+            bulkContainer.classList.remove("hidden");
+          }
+        },
+        onJumpToSystem(nodeIdx) {
+          depMatrixContainer.classList.add("hidden");
+          focusContainer.style.display = "grid";
+          bulkContainer.classList.add("hidden");
+          mode = "focus";
+          const focusBtn = container.querySelector('[data-ue-mode="focus"]');
+          const bulkBtn = container.querySelector('[data-ue-mode="bulk"]');
+          focusBtn.classList.remove("bg-white", "text-[#0b0c0c]", "border-l", "border-[#b1b4b6]");
+          focusBtn.classList.add("bg-[#1d70b8]", "text-white");
+          bulkBtn.classList.remove("bg-[#1d70b8]", "text-white");
+          bulkBtn.classList.add("bg-white", "text-[#0b0c0c]", "border-l", "border-[#b1b4b6]");
+          selectedIdx = nodeIdx;
+          rerenderList();
+          rerenderProps();
+          rerenderRel();
+        }
+      });
     }
     const modeToggle = container.querySelector("[data-ue-mode-toggle]");
     if (modeToggle) {
@@ -5831,6 +5977,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           URL.revokeObjectURL(url);
           break;
         }
+        case "dep-matrix":
+          showDepMatrix();
+          break;
       }
     });
     rerenderList();
@@ -13697,17 +13846,17 @@ tr:nth-child(even){background:#f3f2f1;}
   function openUnifiedEditor(uploadIdx) {
     const upload = state.rawUploads[uploadIdx];
     if (!upload) return;
-    const stageContent = document.getElementById("stageUpload");
-    const validatorContainer = document.getElementById("validatorContainer");
-    Array.from(stageContent.children).forEach((child) => {
-      if (child.id !== "validatorContainer") child.classList.add("hidden");
-    });
-    validatorContainer.classList.remove("hidden");
-    stageContent.classList.remove("max-w-4xl");
-    stageContent.classList.add("max-w-6xl");
+    let editorOverlay = document.getElementById("unifiedEditorOverlay");
+    if (!editorOverlay) {
+      editorOverlay = document.createElement("div");
+      editorOverlay.id = "unifiedEditorOverlay";
+      editorOverlay.className = "fixed inset-0 z-50 bg-white overflow-auto";
+      document.body.appendChild(editorOverlay);
+    }
+    editorOverlay.classList.remove("hidden");
     const title = upload.data.councilName || upload.filename || "Architecture Editor";
-    validatorContainer.innerHTML = renderUnifiedEditor(upload.data, { source: "edit", title });
-    wireUnifiedEditor(validatorContainer, upload.data, {
+    editorOverlay.innerHTML = renderUnifiedEditor(upload.data, { source: "edit", title });
+    wireUnifiedEditor(editorOverlay, upload.data, {
       source: "edit",
       onSave(data) {
         state.rawUploads[uploadIdx] = { filename: upload.filename, data };
@@ -13720,15 +13869,11 @@ tr:nth-child(even){background:#f3f2f1;}
     });
   }
   function closeUnifiedEditor() {
-    const stageContent = document.getElementById("stageUpload");
-    const validatorContainer = document.getElementById("validatorContainer");
-    validatorContainer.classList.add("hidden");
-    validatorContainer.innerHTML = "";
-    stageContent.classList.add("max-w-4xl");
-    stageContent.classList.remove("max-w-6xl");
-    Array.from(stageContent.children).forEach((child) => {
-      if (child.id !== "validatorContainer") child.classList.remove("hidden");
-    });
+    const editorOverlay = document.getElementById("unifiedEditorOverlay");
+    if (editorOverlay) {
+      editorOverlay.classList.add("hidden");
+      editorOverlay.innerHTML = "";
+    }
   }
   function wireEditArchBtn2(btn) {
     btn.addEventListener("click", function() {
@@ -14104,8 +14249,16 @@ tr:nth-child(even){background:#f3f2f1;}
             );
             return;
           }
-          validatorContainer.innerHTML = renderUnifiedEditor(json, { source: "validator", title: json.councilName || "Architecture Editor" });
-          wireUnifiedEditor(validatorContainer, json, {
+          let editorOverlay = document.getElementById("unifiedEditorOverlay");
+          if (!editorOverlay) {
+            editorOverlay = document.createElement("div");
+            editorOverlay.id = "unifiedEditorOverlay";
+            editorOverlay.className = "fixed inset-0 z-50 bg-white overflow-auto";
+            document.body.appendChild(editorOverlay);
+          }
+          editorOverlay.classList.remove("hidden");
+          editorOverlay.innerHTML = renderUnifiedEditor(json, { source: "validator", title: json.councilName || "Architecture Editor" });
+          wireUnifiedEditor(editorOverlay, json, {
             source: "validator",
             onSave(fixedJson) {
               if (fixedJson.successors && !fixedJson.nodes) {
@@ -14113,35 +14266,17 @@ tr:nth-child(even){background:#f3f2f1;}
               } else {
                 state.rawUploads.push({ filename: "edited-file.json", data: fixedJson });
               }
-              validatorContainer.classList.add("hidden");
-              validatorContainer.innerHTML = "";
-              stageContent.classList.add("max-w-4xl");
-              stageContent.classList.remove("max-w-6xl");
-              Array.from(stageContent.children).forEach((child) => {
-                if (child.id !== "validatorContainer") child.classList.remove("hidden");
-              });
+              closeUnifiedEditor();
               const fileList = document.getElementById("fileList");
               const listUl = document.getElementById("uploadedFilesUl");
               if (fileList) fileList.classList.remove("hidden");
               const li = document.createElement("li");
               li.textContent = fixedJson.councilName ? `${fixedJson.councilName} (edited, ${(fixedJson.nodes || []).filter((n) => n.type === "ITSystem").length} systems)` : `edited-file.json`;
-              listUl.appendChild(li);
+              if (listUl) listUl.appendChild(li);
               showNotification({ type: "success", message: "File edited and imported successfully." });
             },
             onBack() {
-              validatorContainer.innerHTML = renderValidationPanel();
-              wireValidationPanel();
-              const ta = document.getElementById("validatorTextarea");
-              if (ta) ta.value = savedTextareaValue;
-              document.getElementById("btnBackFromValidator")?.addEventListener("click", () => {
-                validatorContainer.classList.add("hidden");
-                validatorContainer.innerHTML = "";
-                stageContent.classList.add("max-w-4xl");
-                stageContent.classList.remove("max-w-6xl");
-                Array.from(stageContent.children).forEach((child) => {
-                  if (child.id !== "validatorContainer") child.classList.remove("hidden");
-                });
-              });
+              closeUnifiedEditor();
             }
           });
         } catch (err) {

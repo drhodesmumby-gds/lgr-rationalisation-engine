@@ -54,20 +54,19 @@ function openUnifiedEditor(uploadIdx) {
     const upload = state.rawUploads[uploadIdx];
     if (!upload) return;
 
-    const stageContent = document.getElementById('stageUpload');
-    const validatorContainer = document.getElementById('validatorContainer');
-
-    // Hide Stage 1 content, show editor container
-    Array.from(stageContent.children).forEach(child => {
-        if (child.id !== 'validatorContainer') child.classList.add('hidden');
-    });
-    validatorContainer.classList.remove('hidden');
-    stageContent.classList.remove('max-w-4xl');
-    stageContent.classList.add('max-w-6xl');
+    // Create a full-page overlay container for the editor
+    let editorOverlay = document.getElementById('unifiedEditorOverlay');
+    if (!editorOverlay) {
+        editorOverlay = document.createElement('div');
+        editorOverlay.id = 'unifiedEditorOverlay';
+        editorOverlay.className = 'fixed inset-0 z-50 bg-white overflow-auto';
+        document.body.appendChild(editorOverlay);
+    }
+    editorOverlay.classList.remove('hidden');
 
     const title = upload.data.councilName || upload.filename || 'Architecture Editor';
-    validatorContainer.innerHTML = renderUnifiedEditor(upload.data, { source: 'edit', title });
-    wireUnifiedEditor(validatorContainer, upload.data, {
+    editorOverlay.innerHTML = renderUnifiedEditor(upload.data, { source: 'edit', title });
+    wireUnifiedEditor(editorOverlay, upload.data, {
         source: 'edit',
         onSave(data) {
             state.rawUploads[uploadIdx] = { filename: upload.filename, data };
@@ -81,15 +80,11 @@ function openUnifiedEditor(uploadIdx) {
 }
 
 function closeUnifiedEditor() {
-    const stageContent = document.getElementById('stageUpload');
-    const validatorContainer = document.getElementById('validatorContainer');
-    validatorContainer.classList.add('hidden');
-    validatorContainer.innerHTML = '';
-    stageContent.classList.add('max-w-4xl');
-    stageContent.classList.remove('max-w-6xl');
-    Array.from(stageContent.children).forEach(child => {
-        if (child.id !== 'validatorContainer') child.classList.remove('hidden');
-    });
+    const editorOverlay = document.getElementById('unifiedEditorOverlay');
+    if (editorOverlay) {
+        editorOverlay.classList.add('hidden');
+        editorOverlay.innerHTML = '';
+    }
 }
 
 function wireEditArchBtn(btn) {
@@ -575,9 +570,18 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                     return;
                 }
 
-                // Replace validator with unified architecture editor
-                validatorContainer.innerHTML = renderUnifiedEditor(json, { source: 'validator', title: json.councilName || 'Architecture Editor' });
-                wireUnifiedEditor(validatorContainer, json, {
+                // Open unified architecture editor in full-page overlay
+                let editorOverlay = document.getElementById('unifiedEditorOverlay');
+                if (!editorOverlay) {
+                    editorOverlay = document.createElement('div');
+                    editorOverlay.id = 'unifiedEditorOverlay';
+                    editorOverlay.className = 'fixed inset-0 z-50 bg-white overflow-auto';
+                    document.body.appendChild(editorOverlay);
+                }
+                editorOverlay.classList.remove('hidden');
+
+                editorOverlay.innerHTML = renderUnifiedEditor(json, { source: 'validator', title: json.councilName || 'Architecture Editor' });
+                wireUnifiedEditor(editorOverlay, json, {
                     source: 'validator',
                     onSave(fixedJson) {
                         if (fixedJson.successors && !fixedJson.nodes) {
@@ -585,14 +589,8 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                         } else {
                             state.rawUploads.push({ filename: 'edited-file.json', data: fixedJson });
                         }
-                        // Navigate back to Stage 1
-                        validatorContainer.classList.add('hidden');
-                        validatorContainer.innerHTML = '';
-                        stageContent.classList.add('max-w-4xl');
-                        stageContent.classList.remove('max-w-6xl');
-                        Array.from(stageContent.children).forEach(child => {
-                            if (child.id !== 'validatorContainer') child.classList.remove('hidden');
-                        });
+                        // Close overlay and return to Stage 1
+                        closeUnifiedEditor();
                         const fileList = document.getElementById('fileList');
                         const listUl = document.getElementById('uploadedFilesUl');
                         if (fileList) fileList.classList.remove('hidden');
@@ -600,23 +598,11 @@ document.getElementById('btnOpenValidator')?.addEventListener('click', () => {
                         li.textContent = fixedJson.councilName
                             ? `${fixedJson.councilName} (edited, ${(fixedJson.nodes || []).filter(n => n.type === 'ITSystem').length} systems)`
                             : `edited-file.json`;
-                        listUl.appendChild(li);
+                        if (listUl) listUl.appendChild(li);
                         showNotification({ type: 'success', message: 'File edited and imported successfully.' });
                     },
                     onBack() {
-                        validatorContainer.innerHTML = renderValidationPanel();
-                        wireValidationPanel();
-                        const ta = document.getElementById('validatorTextarea');
-                        if (ta) ta.value = savedTextareaValue;
-                        document.getElementById('btnBackFromValidator')?.addEventListener('click', () => {
-                            validatorContainer.classList.add('hidden');
-                            validatorContainer.innerHTML = '';
-                            stageContent.classList.add('max-w-4xl');
-                            stageContent.classList.remove('max-w-6xl');
-                            Array.from(stageContent.children).forEach(child => {
-                                if (child.id !== 'validatorContainer') child.classList.remove('hidden');
-                            });
-                        });
+                        closeUnifiedEditor();
                     }
                 });
             } catch (err) {
