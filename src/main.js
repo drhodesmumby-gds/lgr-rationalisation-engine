@@ -69,16 +69,23 @@ function openUnifiedEditor(uploadIdx) {
     editorOverlay.setAttribute('aria-labelledby', 'ue-editor-title');
 
     const title = upload.data.councilName || upload.filename || 'Architecture Editor';
-    editorOverlay.innerHTML = renderUnifiedEditor(upload.data, { source: 'edit', title });
+    editorOverlay.innerHTML = renderUnifiedEditor(upload.data, {
+        source: 'edit',
+        title,
+        allUploads: state.rawUploads,
+        currentUploadIdx: uploadIdx
+    });
     wireUnifiedEditor(editorOverlay, upload.data, {
         source: 'edit',
         onSave(data) {
             state.rawUploads[uploadIdx] = { filename: upload.filename, data };
             showNotification({ type: 'success', message: 'Architecture saved.' });
-            closeUnifiedEditor();
         },
         onBack() {
             closeUnifiedEditor();
+        },
+        onSwitchCouncil(newIdx) {
+            openUnifiedEditor(newIdx);
         }
     });
 
@@ -87,6 +94,7 @@ function openUnifiedEditor(uploadIdx) {
     if (firstFocusable) firstFocusable.focus();
 
     // Escape key handler
+    if (_editorEscHandler) document.removeEventListener('keydown', _editorEscHandler);
     _editorEscHandler = (e) => {
         if (e.key === 'Escape') closeUnifiedEditor();
     };

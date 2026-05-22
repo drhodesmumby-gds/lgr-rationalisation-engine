@@ -21,15 +21,27 @@ import { LGA_FUNCTIONS } from '../../constants/lga-functions.js';
  */
 export function renderUnifiedEditor(json, options = {}) {
     const title = options.title || 'Architecture Editor';
+    const allUploads = options.allUploads || [];
+    const currentIdx = options.currentUploadIdx != null ? options.currentUploadIdx : -1;
 
     let html = `<div class="flex flex-col h-screen bg-[#f3f2f1] border-t-4 border-[#1d70b8]" data-unified-editor>`;
 
     // === Header ===
     html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-[#b1b4b6] flex-shrink-0">`;
 
-    // Left: title + mode toggle
+    // Left: title/council switcher + mode toggle
     html += `<div class="flex items-center gap-4">`;
-    html += `<h2 id="ue-editor-title" class="text-lg font-bold text-[#0b0c0c]">${escHtml(title)}</h2>`;
+    if (allUploads.length > 1) {
+        html += `<select id="ue-editor-title" data-ue-action="switch-council" class="text-lg font-bold text-[#0b0c0c] border-2 border-[#0b0c0c] px-2 py-0.5 focus:outline-3 focus:outline-[#ffdd00]">`;
+        allUploads.forEach((u, i) => {
+            const name = u.data.councilName || u.filename || `Upload ${i + 1}`;
+            const sel = i === currentIdx ? 'selected' : '';
+            html += `<option value="${i}" ${sel}>${escHtml(name)}</option>`;
+        });
+        html += `</select>`;
+    } else {
+        html += `<h2 id="ue-editor-title" class="text-lg font-bold text-[#0b0c0c]">${escHtml(title)}</h2>`;
+    }
 
     // Mode toggle (segmented control)
     html += `<div class="inline-flex border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
@@ -587,6 +599,17 @@ export function wireUnifiedEditor(container, json, options = {}) {
             case 'dep-matrix':
                 showDepMatrix();
                 break;
+        }
+    });
+
+    // --- Council switcher ---
+    container.addEventListener('change', (e) => {
+        if (e.target.matches('[data-ue-action="switch-council"]')) {
+            const newIdx = parseInt(e.target.value, 10);
+            if (!isNaN(newIdx) && options.onSwitchCouncil) {
+                if (onSave) onSave(editorState);
+                options.onSwitchCouncil(newIdx);
+            }
         }
     });
 

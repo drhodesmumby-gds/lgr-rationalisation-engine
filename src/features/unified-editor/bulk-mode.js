@@ -6,6 +6,7 @@
 import { formatThousands, parseThousands } from './smart-inputs.js';
 import { LGA_FUNCTIONS } from '../../constants/lga-functions.js';
 import { LGAM_CAPABILITIES } from '../../constants/capabilities.js';
+import { getRootCategoryId } from '../../taxonomy.js';
 
 // --- Constants ---
 
@@ -17,6 +18,11 @@ const TABS = [
 
 const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'isCloud', 'supportModel'];
 
+const ROOT_LABELS = { '42': 'Administration & Government', '1': 'Advice & Benefits', '6': 'Business & Employment', '16': 'Community Safety', '30': 'Environmental Protection', '58': 'Health & Social Care', '66': 'Housing', '72': 'Leisure & Culture', '82': 'Licences & Permits', '99': 'Planning & Building', '23': 'Schools & Education', '105': 'Transport & Highways' };
+
+// Column fields that are NOT sortable (complex relationship types)
+const UNSORTABLE_TYPES = new Set(['cap-pills', 'chip-cell', 'dep-cell']);
+
 // --- Rendering ---
 
 /**
@@ -26,6 +32,15 @@ const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataParti
  */
 export function renderBulkMode(editorState) {
     const activeTab = editorState._bulkActiveTab || 'contract';
+
+    // Initialize filter/sort state if not set
+    if (!editorState._bulkFilters) editorState._bulkFilters = {};
+    if (editorState._bulkSort === undefined) editorState._bulkSort = null;
+
+    const filters = editorState._bulkFilters;
+
+    // Build domain options from data
+    const domainOptions = buildDomainOptions(editorState);
 
     let html = `<div class="flex flex-col h-full overflow-hidden" data-bulk-mode>`;
 
@@ -39,6 +54,25 @@ export function renderBulkMode(editorState) {
         html += `<button type="button" data-bulk-tab="${tab.id}"
             class="px-4 py-2 text-sm ${classes} transition-colors">${escHtml(tab.label)}</button>`;
     }
+    html += `</div>`;
+
+    // Filter bar
+    html += `<div class="flex items-center gap-3 px-4 py-2 bg-white border-b border-[#b1b4b6]" data-bulk-filter-bar>`;
+    html += `<input type="text" placeholder="Search name or vendor..." value="${escAttr(filters.search || '')}"
+        data-bulk-filter="search"
+        class="text-sm border-2 border-[#0b0c0c] px-2 py-1 w-48 focus:outline-3 focus:outline-[#ffdd00]" />`;
+    html += `<select data-bulk-filter="completeness" class="text-sm border-2 border-[#0b0c0c] px-2 py-1 focus:outline-3 focus:outline-[#ffdd00]">`;
+    html += `<option value=""${filters.completeness === '' || !filters.completeness ? ' selected' : ''}>All systems</option>`;
+    html += `<option value="complete"${filters.completeness === 'complete' ? ' selected' : ''}>Complete only</option>`;
+    html += `<option value="incomplete"${filters.completeness === 'incomplete' ? ' selected' : ''}>Incomplete only</option>`;
+    html += `</select>`;
+    html += `<select data-bulk-filter="domain" class="text-sm border-2 border-[#0b0c0c] px-2 py-1 focus:outline-3 focus:outline-[#ffdd00]">`;
+    html += `<option value=""${!filters.domain ? ' selected' : ''}>All domains</option>`;
+    for (const d of domainOptions) {
+        html += `<option value="${escAttr(d.id)}"${filters.domain === d.id ? ' selected' : ''}>${escHtml(d.label)}</option>`;
+    }
+    html += `</select>`;
+    html += `<span class="text-xs text-[#505a5f] ml-auto" data-bulk-row-count></span>`;
     html += `</div>`;
 
     // Table wrapper
@@ -55,7 +89,7 @@ export function renderBulkMode(editorState) {
  */
 function renderTable(editorState, activeTab) {
     const { nodes, edges } = editorState;
-    const systems = [];
+    let systems = [];
     nodes.forEach((node, idx) => {
         if (node.type === 'ITSystem') {
             systems.push({ node, idx });
@@ -66,17 +100,51 @@ function renderTable(editorState, activeTab) {
     const functionLookupMulti = buildFunctionLookupMulti(nodes, edges);
     const columnDefs = getColumnDefs(activeTab);
 
+    // Apply filters
+    const filters = editorState._bulkFilters || {};
+    if (filters.search) {
+        const q = filters.search.toLowerCase();
+        systems = systems.filter(s =>
+            (s.node.label || '').toLowerCase().includes(q) ||
+            (s.node.vendor || '').toLowerCase().includes(q)
+        );
+    }
+    if (filters.completeness === 'complete') {
+        systems = systems.filter(s => countMissing(s.node) === 0);
+    } else if (filters.completeness === 'incomplete') {
+        systems = systems.filter(s => countMissing(s.node) > 0);
+    }
+    if (filters.domain) {
+        systems = systems.filter(s => getSystemDomain(s.node, editorState) === filters.domain);
+    }
+
+    // Apply sort
+    const sort = editorState._bulkSort;
+    if (sort) {
+        systems.sort((a, b) => {
+            const result = compareField(a.node, b.node, sort.field, editorState, functionLookup);
+            return sort.dir === 'desc' ? -result : result;
+        });
+    }
+
     let html = `<table class="w-full border-collapse" style="min-width:900px" data-bulk-table>`;
 
-    // Header
+    // Header with sort indicators
+    const sortField = sort ? sort.field : null;
+    const sortDir = sort ? sort.dir : null;
+
     html += `<thead><tr class="sticky top-0 bg-[#f3f2f1] z-10">`;
-    // Pinned columns
-    html += `<th class="sticky left-0 z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:150px">System Name</th>`;
-    html += `<th class="sticky z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:100px;left:150px">Vendor</th>`;
-    html += `<th class="sticky z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:120px;left:250px">Function</th>`;
+    // Pinned columns (all sortable)
+    html += renderSortableHeader('label', 'System Name', sortField, sortDir, 'sticky left-0 z-20 bg-[#f3f2f1]', 'min-width:150px');
+    html += renderSortableHeader('vendor', 'Vendor', sortField, sortDir, 'sticky z-20 bg-[#f3f2f1]', 'min-width:100px;left:150px');
+    html += renderSortableHeader('function', 'Function', sortField, sortDir, 'sticky z-20 bg-[#f3f2f1]', 'min-width:120px;left:250px');
     // Dynamic columns
     for (const col of columnDefs) {
-        html += `<th class="bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:${col.width}px">${escHtml(col.label)}</th>`;
+        if (UNSORTABLE_TYPES.has(col.type)) {
+            html += `<th class="bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-left border-b-2 border-[#0b0c0c]" style="min-width:${col.width}px">${escHtml(col.label)}</th>`;
+        } else {
+            html += renderSortableHeader(col.field, col.label, sortField, sortDir, 'bg-[#f3f2f1]', `min-width:${col.width}px`);
+        }
     }
     // Status column (pinned right)
     html += `<th class="sticky right-0 z-20 bg-[#f3f2f1] text-sm font-bold text-[#0b0c0c] py-2 px-3 text-center border-b-2 border-[#0b0c0c]" style="min-width:50px">Status</th>`;
@@ -488,8 +556,34 @@ export function wireBulkMode(container, editorState, options = {}) {
 
     // --- Single-registration handlers (must NOT be in wireTableInputs since that's called per tab switch) ---
 
-    // Capability pill toggles, chip removes, dep removes, edit links
+    // Initial row count update
+    updateRowCount(container, editorState);
+
+    // Capability pill toggles, chip removes, dep removes, edit links, sort clicks
     container.addEventListener('click', (e) => {
+        // Sort header click
+        const sortTh = e.target.closest('[data-bulk-sort-field]');
+        if (sortTh) {
+            const field = sortTh.dataset.bulkSortField;
+            const current = editorState._bulkSort;
+            if (!current || current.field !== field) {
+                editorState._bulkSort = { field, dir: 'asc' };
+            } else if (current.dir === 'asc') {
+                editorState._bulkSort = { field, dir: 'desc' };
+            } else {
+                editorState._bulkSort = null;
+            }
+            // Re-render table only (not full bulk mode)
+            const wrapper = container.querySelector('[data-bulk-table-wrapper]');
+            const activeTab = editorState._bulkActiveTab || 'contract';
+            if (wrapper) {
+                wrapper.innerHTML = renderTable(editorState, activeTab);
+                wireTableInputs(wrapper, editorState, options);
+            }
+            updateRowCount(container, editorState);
+            return;
+        }
+
         // Edit link → switch to focus mode
         const editBtn = e.target.closest('[data-bulk-focus-row]');
         if (editBtn && options.onFocusSystem) {
@@ -602,6 +696,35 @@ export function wireBulkMode(container, editorState, options = {}) {
             if (Array.from(datalist.options).some(o => o.value === value)) {
                 addDepFromInput(input, editorState);
             }
+        }
+        // Filter: search input
+        if (input.matches && input.matches('[data-bulk-filter="search"]')) {
+            editorState._bulkFilters = editorState._bulkFilters || {};
+            editorState._bulkFilters.search = input.value;
+            const wrapper = container.querySelector('[data-bulk-table-wrapper]');
+            const activeTab = editorState._bulkActiveTab || 'contract';
+            if (wrapper) {
+                wrapper.innerHTML = renderTable(editorState, activeTab);
+                wireTableInputs(wrapper, editorState, options);
+            }
+            updateRowCount(container, editorState);
+        }
+    });
+
+    // Filter: select changes (completeness, domain)
+    container.addEventListener('change', (e) => {
+        if (e.target.matches && e.target.matches('[data-bulk-filter]')) {
+            const filterType = e.target.dataset.bulkFilter;
+            if (filterType === 'search') return; // handled by input event
+            editorState._bulkFilters = editorState._bulkFilters || {};
+            editorState._bulkFilters[filterType] = e.target.value;
+            const wrapper = container.querySelector('[data-bulk-table-wrapper]');
+            const activeTab = editorState._bulkActiveTab || 'contract';
+            if (wrapper) {
+                wrapper.innerHTML = renderTable(editorState, activeTab);
+                wireTableInputs(wrapper, editorState, options);
+            }
+            updateRowCount(container, editorState);
         }
     });
 }
@@ -790,6 +913,125 @@ function parseFieldValue(field, rawValue) {
 
     // String fields (vendor, label, portability, dataPartitioning, supportModel)
     return rawValue;
+}
+
+// --- Sort & Filter helpers ---
+
+function renderSortableHeader(field, label, activeField, activeDir, extraClasses, style) {
+    const isActive = activeField === field;
+    const indicator = isActive ? (activeDir === 'asc' ? ' ▲' : ' ▼') : '';
+    const colorClass = isActive ? 'text-[#1d70b8]' : 'text-[#0b0c0c]';
+    return `<th data-bulk-sort-field="${escHtml(field)}" class="${extraClasses} text-sm font-bold ${colorClass} py-2 px-3 text-left border-b-2 border-[#0b0c0c] cursor-pointer select-none" style="${style}">${escHtml(label)}${indicator}</th>`;
+}
+
+function compareField(nodeA, nodeB, field, editorState, functionLookup) {
+    let a, b;
+
+    switch (field) {
+        case 'label':
+        case 'vendor':
+        case 'supportModel':
+        case 'dataPartitioning':
+        case 'portability':
+            a = (nodeA[field] || '').toLowerCase();
+            b = (nodeB[field] || '').toLowerCase();
+            return a.localeCompare(b) || (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+
+        case 'annualCost':
+        case 'noticePeriod':
+        case 'users': {
+            a = nodeA[field];
+            b = nodeB[field];
+            const aNull = (a == null || isNaN(a));
+            const bNull = (b == null || isNaN(b));
+            if (aNull && bNull) return (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+            if (aNull) return 1;
+            if (bNull) return -1;
+            const diff = a - b;
+            return diff !== 0 ? diff : (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+        }
+
+        case 'contractEnd': {
+            const aVal = (nodeA.endYear != null ? nodeA.endYear * 12 + (nodeA.endMonth || 0) : null);
+            const bVal = (nodeB.endYear != null ? nodeB.endYear * 12 + (nodeB.endMonth || 0) : null);
+            if (aVal == null && bVal == null) return (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+            if (aVal == null) return 1;
+            if (bVal == null) return -1;
+            const diff = aVal - bVal;
+            return diff !== 0 ? diff : (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+        }
+
+        case 'isCloud': {
+            a = nodeA.isCloud === true ? 'true' : (nodeA.isCloud === false ? 'false' : '');
+            b = nodeB.isCloud === true ? 'true' : (nodeB.isCloud === false ? 'false' : '');
+            const cmp = a.localeCompare(b);
+            return cmp !== 0 ? cmp : (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+        }
+
+        case 'function': {
+            a = (functionLookup.get(nodeA.id) || '').toLowerCase();
+            b = (functionLookup.get(nodeB.id) || '').toLowerCase();
+            const cmp = a.localeCompare(b);
+            return cmp !== 0 ? cmp : (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
+        }
+
+        default:
+            return 0;
+    }
+}
+
+function countMissing(node) {
+    let count = 0;
+    for (const f of KEY_FIELDS) {
+        const val = node[f];
+        if (val == null || val === '' || val === undefined) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function getSystemDomain(node, editorState) {
+    const { edges, nodes } = editorState;
+    for (const edge of edges) {
+        if (edge.source === node.id && edge.relationship === 'REALIZES') {
+            const fnNode = nodes.find(n => n.id === edge.target && n.type === 'Function');
+            if (fnNode && fnNode.lgaFunctionId) {
+                const rootId = getRootCategoryId(fnNode.lgaFunctionId);
+                if (rootId) return rootId;
+            }
+        }
+    }
+    return null;
+}
+
+function buildDomainOptions(editorState) {
+    const { nodes, edges } = editorState;
+    const domainIds = new Set();
+    for (const edge of edges) {
+        if (edge.relationship === 'REALIZES') {
+            const fnNode = nodes.find(n => n.id === edge.target && n.type === 'Function');
+            if (fnNode && fnNode.lgaFunctionId) {
+                const rootId = getRootCategoryId(fnNode.lgaFunctionId);
+                if (rootId) domainIds.add(rootId);
+            }
+        }
+    }
+    const options = [];
+    for (const id of domainIds) {
+        const label = ROOT_LABELS[id] || `Domain ${id}`;
+        options.push({ id, label });
+    }
+    options.sort((a, b) => a.label.localeCompare(b.label));
+    return options;
+}
+
+function updateRowCount(container, editorState) {
+    const countEl = container.querySelector('[data-bulk-row-count]');
+    if (!countEl) return;
+    const total = editorState.nodes.filter(n => n.type === 'ITSystem').length;
+    const shown = container.querySelectorAll('[data-bulk-table] tbody tr').length;
+    countEl.textContent = shown === total ? `${total} systems` : `Showing ${shown} of ${total} systems`;
 }
 
 // --- Internal HTML helpers ---
