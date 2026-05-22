@@ -36,6 +36,9 @@ export function renderPropsPanel(system, editorState) {
 
     let html = `<div class="p-4 overflow-y-auto h-full" data-props-panel>`;
 
+    // === Completeness indicator ===
+    html += renderCompletenessBanner(system, editorState);
+
     // === Section 1: Identity ===
     html += sectionHeading('Identity');
     html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
@@ -156,6 +159,12 @@ export function renderPropsPanel(system, editorState) {
 
     html += `</div>`;
 
+    // === Delete system ===
+    html += `<div class="mt-6 pt-4 border-t border-[#b1b4b6]">`;
+    html += `<button type="button" data-prop-action="delete"
+        class="text-sm text-[#d4351c] hover:text-[#942514] font-bold underline">Delete this system</button>`;
+    html += `</div>`;
+
     html += `</div>`;
     return html;
 }
@@ -171,7 +180,7 @@ export function renderPropsPanel(system, editorState) {
  * @param {function} options.onFunctionRemove — (nodeIdx, lgaId) called when a function chip is removed
  */
 export function wirePropsPanel(container, options = {}) {
-    const { onChange, onFunctionAdd, onFunctionRemove } = options;
+    const { onChange, onFunctionAdd, onFunctionRemove, onDelete } = options;
     const panel = container.querySelector('[data-props-panel]');
     if (!panel) return;
 
@@ -208,15 +217,23 @@ export function wirePropsPanel(container, options = {}) {
     // Chip removal — functions
     panel.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-chip-action="remove"][data-chip-name="functions"]');
-        if (!btn) return;
-        const chipValue = btn.dataset.chipValue;
-        const nodeIdx = getNodeIdx();
-        if (nodeIdx == null || !onFunctionRemove) return;
+        if (btn) {
+            const chipValue = btn.dataset.chipValue;
+            const nodeIdx = getNodeIdx();
+            if (nodeIdx == null || !onFunctionRemove) return;
+            const lgaFn = LGA_FUNCTIONS.find(f => f.label === chipValue);
+            if (lgaFn) onFunctionRemove(nodeIdx, lgaFn.id);
+            return;
+        }
 
-        // Resolve lgaFunctionId from chip label
-        const lgaFn = LGA_FUNCTIONS.find(f => f.label === chipValue);
-        if (lgaFn) {
-            onFunctionRemove(nodeIdx, lgaFn.id);
+        // Delete system
+        const deleteBtn = e.target.closest('[data-prop-action="delete"]');
+        if (deleteBtn && onDelete) {
+            const nodeIdx = getNodeIdx();
+            if (nodeIdx == null) return;
+            if (confirm('Delete this system? This will also remove all its edges.')) {
+                onDelete(nodeIdx);
+            }
         }
     });
 
@@ -284,6 +301,53 @@ export function wirePropsPanel(container, options = {}) {
 }
 
 // --- Internal helpers ---
+
+const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'isCloud', 'supportModel'];
+const KEY_FIELD_LABELS = {
+    vendor: 'Vendor',
+    annualCost: 'Annual Cost',
+    endYear: 'Contract End Year',
+    portability: 'Data Portability',
+    dataPartitioning: 'Data Partitioning',
+    isCloud: 'Hosting',
+    supportModel: 'Support Model'
+};
+
+function renderCompletenessBanner(system, editorState) {
+    let html = '';
+
+    // Critical structural errors (red)
+    const errors = [];
+    if (!system.label || !system.label.trim()) errors.push('System has no name');
+    const hasFunction = editorState.edges.some(e => e.source === system.id && e.relationship === 'REALIZES');
+    if (!hasFunction) errors.push('No function assigned — system won\'t appear in analysis');
+
+    if (errors.length > 0) {
+        html += `<div class="mb-2 p-2 bg-[#fce4e4] border-l-4 border-[#d4351c] text-sm">
+            <span class="font-bold text-[#d4351c]">✗ ${errors.length} error${errors.length > 1 ? 's' : ''}:</span>
+            <span class="text-[#0b0c0c] ml-1">${errors.join('; ')}</span>
+        </div>`;
+    }
+
+    // Analysis field completeness (amber/green)
+    const missing = KEY_FIELDS.filter(f => {
+        const val = system[f];
+        return val == null || val === '' || val === undefined;
+    });
+    if (missing.length === 0 && errors.length === 0) {
+        html += `<div class="mb-3 p-2 bg-[#e6f4ea] border-l-4 border-[#00703c] text-sm text-[#00703c] font-bold">
+            ✓ All fields complete
+        </div>`;
+    } else if (missing.length > 0) {
+        const labels = missing.map(f => KEY_FIELD_LABELS[f]);
+        html += `<div class="mb-3 p-2 bg-[#fef3e8] border-l-4 border-[#f47738] text-sm">
+            <span class="font-bold text-[#f47738]">⚠ ${missing.length} field${missing.length > 1 ? 's' : ''} needed for analysis:</span>
+            <span class="text-[#505a5f] ml-1">${labels.join(', ')}</span>
+        </div>`;
+    }
+
+    return html;
+}
 
 /**
  * Render a section heading.

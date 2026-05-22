@@ -328,6 +328,55 @@ export function wireSmartInputs(container, callbacks = {}) {
         }
     });
 
+    // --- Datalist selection detection (chip auto-add) ---
+    container.addEventListener('input', (e) => {
+        const target = e.target;
+        if (!target.matches || !target.matches('[data-chip-action="input"]')) return;
+
+        const listId = target.getAttribute('list');
+        if (!listId) return;
+        const datalist = document.getElementById(listId);
+        if (!datalist) return;
+
+        const value = target.value.trim();
+        if (!value) return;
+
+        // Check if the value exactly matches a datalist option
+        const options = Array.from(datalist.options).map(o => o.value);
+        if (!options.includes(value)) return;
+
+        // Auto-add as chip
+        const chipName = target.dataset.chipName;
+        const containerEl = target.closest(`[data-chip-container="${chipName}"]`);
+        if (!containerEl) return;
+
+        const existing = getChipValues(containerEl, chipName);
+        if (existing.includes(value)) {
+            target.value = '';
+            return;
+        }
+
+        const chipHtml = `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-[#f3f2f1] text-[#0b0c0c] border border-[#b1b4b6]"
+                  data-chip-name="${chipName}" data-chip-value="${escAttr(value)}">
+                <span>${escHtml(value)}</span>
+                <button type="button"
+                        class="ml-0.5 text-[#d4351c] hover:text-[#942514] font-bold leading-none"
+                        data-chip-action="remove"
+                        data-chip-name="${chipName}"
+                        data-chip-value="${escAttr(value)}"
+                        aria-label="Remove ${escAttr(value)}">&times;</button>
+            </span>
+        `;
+        target.insertAdjacentHTML('beforebegin', chipHtml);
+        target.value = '';
+
+        if (callbacks.onChipChange) {
+            const updated = getChipValues(containerEl, chipName);
+            callbacks.onChipChange(chipName, updated);
+        }
+    });
+
     // --- Change delegation (radio groups) ---
     container.addEventListener('change', (e) => {
         const target = e.target;

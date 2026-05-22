@@ -109,10 +109,7 @@ export function renderRelPanel(system, editorState) {
         const providerNode = nodes.find(n => n.id === edge.target);
         if (!providerNode) continue;
         const edgeCaps = edge.capabilities || [];
-        const capLabels = edgeCaps.map(c => {
-            const def = LGAM_CAPABILITIES.find(x => x.id === c);
-            return def ? def.label : c;
-        });
+        const providerCaps = providerNode.capabilityType || [];
 
         html += `<div class="ml-2 mb-2 p-2 bg-[#f3f2f1] border border-[#b1b4b6]">`;
         html += `<div class="flex items-center justify-between">`;
@@ -123,10 +120,22 @@ export function renderRelPanel(system, editorState) {
                     data-rel-edge-idx="${edge._edgeIdx}"
                     aria-label="Remove dependency on ${escAttr(providerNode.label || providerNode.id)}">&times;</button>`;
         html += `</div>`;
-        if (capLabels.length > 0) {
-            html += `<div class="flex flex-wrap gap-1 mt-1">`;
-            for (const label of capLabels) {
-                html += `<span class="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-[#f3f2f1] text-[#53284f] border border-[#53284f]">${escHtml(label)}</span>`;
+        if (providerCaps.length > 0) {
+            html += `<div class="flex flex-wrap gap-1 mt-1.5">`;
+            for (const capId of providerCaps) {
+                const capDef = LGAM_CAPABILITIES.find(c => c.id === capId) || { id: capId, label: capId };
+                const isActive = edgeCaps.includes(capId);
+                const classes = isActive
+                    ? 'bg-[#1d70b8] text-white border-[#1d70b8]'
+                    : 'bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]';
+                html += `<button type="button"
+                            class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
+                            data-rel-action="toggle-dep-cap"
+                            data-rel-edge-idx="${edge._edgeIdx}"
+                            data-rel-cap-id="${escAttr(capId)}"
+                            aria-pressed="${isActive}">
+                            ${escHtml(capDef.label)}
+                        </button>`;
             }
             html += `</div>`;
         }
@@ -135,15 +144,27 @@ export function renderRelPanel(system, editorState) {
 
     // Add dependency link/dropdown
     html += renderAddDependencyControl(system, nodes, dependencyEdges);
+    html += `<div data-rel-dep-cap-picker></div>`;
     html += `</div>`;
 
     // === Section 4: Shared With ===
     html += sectionHeading('Shared With');
     html += `<div class="mb-5">`;
+    // Collect all council names from sharedWith arrays across all systems
+    const allCouncilNames = [...new Set(
+        nodes.filter(n => n.type === 'ITSystem' && n.sharedWith)
+            .flatMap(n => n.sharedWith)
+    )].sort();
+    if (editorState.councilName && !allCouncilNames.includes(editorState.councilName)) {
+        allCouncilNames.push(editorState.councilName);
+        allCouncilNames.sort();
+    }
     html += renderChipSelector({
         chips: system.sharedWith || [],
         placeholder: 'Council name...',
-        name: 'sharedWith'
+        name: 'sharedWith',
+        datalistId: 'shared-with-datalist',
+        datalistOptions: allCouncilNames
     });
     html += `</div>`;
 
@@ -175,6 +196,7 @@ export function wireRelPanel(container, options = {}) {
         onConsumerCapToggle,
         onDependencyAdd,
         onDependencyRemove,
+        onDependencyCapToggle,
         onSharedWithChange
     } = options;
 
@@ -205,6 +227,21 @@ export function wireRelPanel(container, options = {}) {
             } else if (onCapabilityToggle) {
                 onCapabilityToggle(nodeIdx, capId, isActive);
             }
+        }
+    });
+
+    // Capability picker toggle (dependency flow)
+    panel.addEventListener('click', (e) => {
+        const capBtn = e.target.closest('[data-dep-cap-select]');
+        if (!capBtn) return;
+        const wasActive = capBtn.getAttribute('aria-pressed') === 'true';
+        capBtn.setAttribute('aria-pressed', String(!wasActive));
+        if (wasActive) {
+            capBtn.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
+            capBtn.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+        } else {
+            capBtn.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+            capBtn.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
         }
     });
 
@@ -248,6 +285,28 @@ export function wireRelPanel(container, options = {}) {
                 break;
             }
 
+            case 'toggle-dep-cap': {
+                const edgeIdx = parseInt(target.dataset.relEdgeIdx, 10);
+                const capId = target.dataset.relCapId;
+                const wasActive = target.getAttribute('aria-pressed') === 'true';
+                const nowActive = !wasActive;
+
+                // Update visual state
+                target.setAttribute('aria-pressed', String(nowActive));
+                if (nowActive) {
+                    target.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                    target.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
+                } else {
+                    target.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
+                    target.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                }
+
+                if (!isNaN(edgeIdx) && capId && onDependencyCapToggle) {
+                    onDependencyCapToggle(nodeIdx, edgeIdx, capId, nowActive);
+                }
+                break;
+            }
+
             case 'remove-dependency': {
                 const edgeIdx = parseInt(target.dataset.relEdgeIdx, 10);
                 if (!isNaN(edgeIdx) && onDependencyRemove) {
@@ -286,13 +345,80 @@ export function wireRelPanel(container, options = {}) {
             case 'select-dependency': {
                 const sysId = target.dataset.relSysId;
                 const capsStr = target.dataset.relCaps || '';
-                const caps = capsStr ? capsStr.split(',') : [];
-                if (sysId && onDependencyAdd) {
-                    onDependencyAdd(nodeIdx, sysId, caps);
-                }
+                const allCaps = capsStr ? capsStr.split(',') : [];
+                // Hide system list, show capability picker for this provider
                 const dropdown = panel.querySelector('[data-rel-dependency-dropdown]');
                 if (dropdown) dropdown.classList.add('hidden');
+                const pickerArea = panel.querySelector('[data-rel-dep-cap-picker]');
+                if (pickerArea && allCaps.length > 0) {
+                    const providerLabel = target.querySelector('.font-bold')?.textContent || sysId;
+                    let pickerHtml = `<div class="mt-2 p-2 border-2 border-[#0b0c0c] bg-white">`;
+                    pickerHtml += `<p class="text-xs font-bold text-[#0b0c0c] mb-1">Select capabilities to consume from ${escHtml(providerLabel)}:</p>`;
+                    pickerHtml += `<div class="flex flex-wrap gap-1 mb-2">`;
+                    for (const capId of allCaps) {
+                        const def = LGAM_CAPABILITIES.find(x => x.id === capId);
+                        const label = def ? def.label : capId;
+                        pickerHtml += `<button type="button"
+                            class="inline-flex items-center px-2 py-1 text-xs font-bold border bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]"
+                            data-dep-cap-select="${escAttr(capId)}" aria-pressed="false">${escHtml(label)}</button>`;
+                    }
+                    pickerHtml += `</div>`;
+                    pickerHtml += `<div class="flex gap-2">`;
+                    pickerHtml += `<button type="button" data-rel-action="confirm-dependency" data-rel-sys-id="${escAttr(sysId)}"
+                        class="gds-btn px-3 py-1 text-xs">Add dependency</button>`;
+                    pickerHtml += `<button type="button" data-rel-action="cancel-dependency"
+                        class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold">Cancel</button>`;
+                    pickerHtml += `</div></div>`;
+                    pickerArea.innerHTML = pickerHtml;
+                } else if (sysId && onDependencyAdd) {
+                    onDependencyAdd(nodeIdx, sysId, allCaps);
+                }
                 break;
+            }
+
+            case 'confirm-dependency': {
+                const sysId = target.dataset.relSysId;
+                const pickerArea = panel.querySelector('[data-rel-dep-cap-picker]');
+                if (pickerArea && sysId && onDependencyAdd) {
+                    const selectedCaps = [];
+                    pickerArea.querySelectorAll('[data-dep-cap-select][aria-pressed="true"]').forEach(btn => {
+                        selectedCaps.push(btn.dataset.depCapSelect);
+                    });
+                    onDependencyAdd(nodeIdx, sysId, selectedCaps);
+                    pickerArea.innerHTML = '';
+                }
+                break;
+            }
+
+            case 'cancel-dependency': {
+                const pickerArea = panel.querySelector('[data-rel-dep-cap-picker]');
+                if (pickerArea) pickerArea.innerHTML = '';
+                break;
+            }
+        }
+    });
+
+    // Filter input delegation for dropdowns
+    panel.addEventListener('input', (e) => {
+        if (e.target.matches('[data-rel-filter]')) {
+            const query = e.target.value.toLowerCase();
+            const dropdown = e.target.closest('[data-rel-consumer-dropdown], [data-rel-dependency-dropdown]');
+            if (dropdown) {
+                dropdown.querySelectorAll('[data-rel-action^="select-"]').forEach(btn => {
+                    const text = btn.textContent.toLowerCase();
+                    btn.style.display = text.includes(query) ? '' : 'none';
+                });
+                // Also show/hide group headers if all their items are hidden
+                dropdown.querySelectorAll('[data-rel-group-header]').forEach(header => {
+                    const next = [];
+                    let sibling = header.nextElementSibling;
+                    while (sibling && !sibling.hasAttribute('data-rel-group-header')) {
+                        next.push(sibling);
+                        sibling = sibling.nextElementSibling;
+                    }
+                    const anyVisible = next.some(el => el.style.display !== 'none');
+                    header.style.display = anyVisible ? '' : 'none';
+                });
             }
         }
     });
@@ -323,9 +449,11 @@ function renderAddConsumerControl(system, nodes, edges, consumerEdges) {
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-consumer">+ Add consuming system</button>`;
     html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-consumer-dropdown>`;
+    html += `<input type="text" placeholder="Filter systems..." data-rel-filter="consumer"
+        class="w-full px-2 py-1 text-sm border-b-2 border-[#0b0c0c] mb-1 sticky top-0 bg-white z-10 focus:outline-3 focus:outline-[#ffdd00]" />`;
     for (const group of grouped) {
         if (group.label) {
-            html += `<div class="px-2 py-0.5 bg-[#f3f2f1] text-xs font-bold text-[#505a5f] border-b border-[#b1b4b6]">${escHtml(group.label)}</div>`;
+            html += `<div class="px-2 py-0.5 bg-[#f3f2f1] text-xs font-bold text-[#505a5f] border-b border-[#b1b4b6]" data-rel-group-header>${escHtml(group.label)}</div>`;
         }
         for (const node of group.systems) {
             html += `<button type="button"
@@ -364,6 +492,8 @@ function renderAddDependencyControl(system, nodes, dependencyEdges) {
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-dependency">+ Add dependency</button>`;
     html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-dependency-dropdown>`;
+    html += `<input type="text" placeholder="Filter systems..." data-rel-filter="dependency"
+        class="w-full px-2 py-1 text-sm border-b-2 border-[#0b0c0c] mb-1 sticky top-0 bg-white z-10 focus:outline-3 focus:outline-[#ffdd00]" />`;
     for (const node of candidates) {
         const caps = (node.capabilityType || []).join(',');
         const capLabels = (node.capabilityType || []).map(c => {

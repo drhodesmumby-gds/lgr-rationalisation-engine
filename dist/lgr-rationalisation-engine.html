@@ -4582,6 +4582,44 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         }
       }
     });
+    container.addEventListener("input", (e) => {
+      const target = e.target;
+      if (!target.matches || !target.matches('[data-chip-action="input"]')) return;
+      const listId = target.getAttribute("list");
+      if (!listId) return;
+      const datalist = document.getElementById(listId);
+      if (!datalist) return;
+      const value = target.value.trim();
+      if (!value) return;
+      const options = Array.from(datalist.options).map((o) => o.value);
+      if (!options.includes(value)) return;
+      const chipName = target.dataset.chipName;
+      const containerEl = target.closest(`[data-chip-container="${chipName}"]`);
+      if (!containerEl) return;
+      const existing = getChipValues(containerEl, chipName);
+      if (existing.includes(value)) {
+        target.value = "";
+        return;
+      }
+      const chipHtml = `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-sm bg-[#f3f2f1] text-[#0b0c0c] border border-[#b1b4b6]"
+                  data-chip-name="${chipName}" data-chip-value="${escAttr2(value)}">
+                <span>${escHtml2(value)}</span>
+                <button type="button"
+                        class="ml-0.5 text-[#d4351c] hover:text-[#942514] font-bold leading-none"
+                        data-chip-action="remove"
+                        data-chip-name="${chipName}"
+                        data-chip-value="${escAttr2(value)}"
+                        aria-label="Remove ${escAttr2(value)}">&times;</button>
+            </span>
+        `;
+      target.insertAdjacentHTML("beforebegin", chipHtml);
+      target.value = "";
+      if (callbacks.onChipChange) {
+        const updated = getChipValues(containerEl, chipName);
+        callbacks.onChipChange(chipName, updated);
+      }
+    });
     container.addEventListener("change", (e) => {
       const target = e.target;
       if (target.matches && target.matches('input[type="radio"]')) {
@@ -4619,6 +4657,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const availableFunctions = LGA_FUNCTIONS.filter((f) => !assignedIds.has(f.id));
     const datalistOptions = availableFunctions.map((f) => f.label);
     let html = `<div class="p-4 overflow-y-auto h-full" data-props-panel>`;
+    html += renderCompletenessBanner(system, editorState);
     html += sectionHeading("Identity");
     html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
     html += fieldRow(
@@ -4724,11 +4763,15 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       "Ongoing maintenance and support model for this system."
     );
     html += `</div>`;
+    html += `<div class="mt-6 pt-4 border-t border-[#b1b4b6]">`;
+    html += `<button type="button" data-prop-action="delete"
+        class="text-sm text-[#d4351c] hover:text-[#942514] font-bold underline">Delete this system</button>`;
+    html += `</div>`;
     html += `</div>`;
     return html;
   }
   function wirePropsPanel(container, options = {}) {
-    const { onChange, onFunctionAdd, onFunctionRemove } = options;
+    const { onChange, onFunctionAdd, onFunctionRemove, onDelete } = options;
     const panel = container.querySelector("[data-props-panel]");
     if (!panel) return;
     function getNodeIdx() {
@@ -4755,13 +4798,21 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     });
     panel.addEventListener("click", (e) => {
       const btn = e.target.closest('[data-chip-action="remove"][data-chip-name="functions"]');
-      if (!btn) return;
-      const chipValue = btn.dataset.chipValue;
-      const nodeIdx = getNodeIdx();
-      if (nodeIdx == null || !onFunctionRemove) return;
-      const lgaFn = LGA_FUNCTIONS.find((f) => f.label === chipValue);
-      if (lgaFn) {
-        onFunctionRemove(nodeIdx, lgaFn.id);
+      if (btn) {
+        const chipValue = btn.dataset.chipValue;
+        const nodeIdx = getNodeIdx();
+        if (nodeIdx == null || !onFunctionRemove) return;
+        const lgaFn = LGA_FUNCTIONS.find((f) => f.label === chipValue);
+        if (lgaFn) onFunctionRemove(nodeIdx, lgaFn.id);
+        return;
+      }
+      const deleteBtn = e.target.closest('[data-prop-action="delete"]');
+      if (deleteBtn && onDelete) {
+        const nodeIdx = getNodeIdx();
+        if (nodeIdx == null) return;
+        if (confirm("Delete this system? This will also remove all its edges.")) {
+          onDelete(nodeIdx);
+        }
       }
     });
     panel.addEventListener("keydown", (e) => {
@@ -4811,6 +4862,45 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         onChange(nodeIdx, field, input.value || null);
       }
     });
+  }
+  var KEY_FIELDS2 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
+  var KEY_FIELD_LABELS = {
+    vendor: "Vendor",
+    annualCost: "Annual Cost",
+    endYear: "Contract End Year",
+    portability: "Data Portability",
+    dataPartitioning: "Data Partitioning",
+    isCloud: "Hosting",
+    supportModel: "Support Model"
+  };
+  function renderCompletenessBanner(system, editorState) {
+    let html = "";
+    const errors = [];
+    if (!system.label || !system.label.trim()) errors.push("System has no name");
+    const hasFunction = editorState.edges.some((e) => e.source === system.id && e.relationship === "REALIZES");
+    if (!hasFunction) errors.push("No function assigned \u2014 system won't appear in analysis");
+    if (errors.length > 0) {
+      html += `<div class="mb-2 p-2 bg-[#fce4e4] border-l-4 border-[#d4351c] text-sm">
+            <span class="font-bold text-[#d4351c]">\u2717 ${errors.length} error${errors.length > 1 ? "s" : ""}:</span>
+            <span class="text-[#0b0c0c] ml-1">${errors.join("; ")}</span>
+        </div>`;
+    }
+    const missing = KEY_FIELDS2.filter((f) => {
+      const val = system[f];
+      return val == null || val === "" || val === void 0;
+    });
+    if (missing.length === 0 && errors.length === 0) {
+      html += `<div class="mb-3 p-2 bg-[#e6f4ea] border-l-4 border-[#00703c] text-sm text-[#00703c] font-bold">
+            \u2713 All fields complete
+        </div>`;
+    } else if (missing.length > 0) {
+      const labels = missing.map((f) => KEY_FIELD_LABELS[f]);
+      html += `<div class="mb-3 p-2 bg-[#fef3e8] border-l-4 border-[#f47738] text-sm">
+            <span class="font-bold text-[#f47738]">\u26A0 ${missing.length} field${missing.length > 1 ? "s" : ""} needed for analysis:</span>
+            <span class="text-[#505a5f] ml-1">${labels.join(", ")}</span>
+        </div>`;
+    }
+    return html;
   }
   function sectionHeading(title) {
     return `<div class="font-bold text-[#0b0c0c] text-sm border-b border-[#b1b4b6] pb-1 mb-3">${escHtml3(title)}</div>`;
@@ -4900,10 +4990,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const providerNode = nodes.find((n) => n.id === edge.target);
       if (!providerNode) continue;
       const edgeCaps = edge.capabilities || [];
-      const capLabels = edgeCaps.map((c) => {
-        const def = LGAM_CAPABILITIES.find((x) => x.id === c);
-        return def ? def.label : c;
-      });
+      const providerCaps = providerNode.capabilityType || [];
       html += `<div class="ml-2 mb-2 p-2 bg-[#f3f2f1] border border-[#b1b4b6]">`;
       html += `<div class="flex items-center justify-between">`;
       html += `<span class="text-sm font-bold text-[#0b0c0c]">${escHtml4(providerNode.label || providerNode.id)}</span>`;
@@ -4913,23 +5000,43 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                     data-rel-edge-idx="${edge._edgeIdx}"
                     aria-label="Remove dependency on ${escAttr4(providerNode.label || providerNode.id)}">&times;</button>`;
       html += `</div>`;
-      if (capLabels.length > 0) {
-        html += `<div class="flex flex-wrap gap-1 mt-1">`;
-        for (const label of capLabels) {
-          html += `<span class="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-[#f3f2f1] text-[#53284f] border border-[#53284f]">${escHtml4(label)}</span>`;
+      if (providerCaps.length > 0) {
+        html += `<div class="flex flex-wrap gap-1 mt-1.5">`;
+        for (const capId of providerCaps) {
+          const capDef = LGAM_CAPABILITIES.find((c) => c.id === capId) || { id: capId, label: capId };
+          const isActive = edgeCaps.includes(capId);
+          const classes = isActive ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]";
+          html += `<button type="button"
+                            class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
+                            data-rel-action="toggle-dep-cap"
+                            data-rel-edge-idx="${edge._edgeIdx}"
+                            data-rel-cap-id="${escAttr4(capId)}"
+                            aria-pressed="${isActive}">
+                            ${escHtml4(capDef.label)}
+                        </button>`;
         }
         html += `</div>`;
       }
       html += `</div>`;
     }
     html += renderAddDependencyControl(system, nodes, dependencyEdges);
+    html += `<div data-rel-dep-cap-picker></div>`;
     html += `</div>`;
     html += sectionHeading2("Shared With");
     html += `<div class="mb-5">`;
+    const allCouncilNames = [...new Set(
+      nodes.filter((n) => n.type === "ITSystem" && n.sharedWith).flatMap((n) => n.sharedWith)
+    )].sort();
+    if (editorState.councilName && !allCouncilNames.includes(editorState.councilName)) {
+      allCouncilNames.push(editorState.councilName);
+      allCouncilNames.sort();
+    }
     html += renderChipSelector({
       chips: system.sharedWith || [],
       placeholder: "Council name...",
-      name: "sharedWith"
+      name: "sharedWith",
+      datalistId: "shared-with-datalist",
+      datalistOptions: allCouncilNames
     });
     html += `</div>`;
     html += `</div>`;
@@ -4944,6 +5051,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       onConsumerCapToggle,
       onDependencyAdd,
       onDependencyRemove,
+      onDependencyCapToggle,
       onSharedWithChange
     } = options;
     const panel = container.querySelector("[data-rel-panel]");
@@ -4968,6 +5076,19 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         } else if (onCapabilityToggle) {
           onCapabilityToggle(nodeIdx, capId, isActive);
         }
+      }
+    });
+    panel.addEventListener("click", (e) => {
+      const capBtn = e.target.closest("[data-dep-cap-select]");
+      if (!capBtn) return;
+      const wasActive = capBtn.getAttribute("aria-pressed") === "true";
+      capBtn.setAttribute("aria-pressed", String(!wasActive));
+      if (wasActive) {
+        capBtn.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+        capBtn.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+      } else {
+        capBtn.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+        capBtn.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
       }
     });
     panel.addEventListener("click", (e) => {
@@ -4999,6 +5120,24 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           }
           if (consumerId && capId && onConsumerCapToggle) {
             onConsumerCapToggle(nodeIdx, consumerId, capId, nowActive);
+          }
+          break;
+        }
+        case "toggle-dep-cap": {
+          const edgeIdx = parseInt(target.dataset.relEdgeIdx, 10);
+          const capId = target.dataset.relCapId;
+          const wasActive = target.getAttribute("aria-pressed") === "true";
+          const nowActive = !wasActive;
+          target.setAttribute("aria-pressed", String(nowActive));
+          if (nowActive) {
+            target.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+            target.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+          } else {
+            target.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+            target.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+          }
+          if (!isNaN(edgeIdx) && capId && onDependencyCapToggle) {
+            onDependencyCapToggle(nodeIdx, edgeIdx, capId, nowActive);
           }
           break;
         }
@@ -5035,13 +5174,74 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         case "select-dependency": {
           const sysId = target.dataset.relSysId;
           const capsStr = target.dataset.relCaps || "";
-          const caps = capsStr ? capsStr.split(",") : [];
-          if (sysId && onDependencyAdd) {
-            onDependencyAdd(nodeIdx, sysId, caps);
-          }
+          const allCaps = capsStr ? capsStr.split(",") : [];
           const dropdown = panel.querySelector("[data-rel-dependency-dropdown]");
           if (dropdown) dropdown.classList.add("hidden");
+          const pickerArea = panel.querySelector("[data-rel-dep-cap-picker]");
+          if (pickerArea && allCaps.length > 0) {
+            const providerLabel = target.querySelector(".font-bold")?.textContent || sysId;
+            let pickerHtml = `<div class="mt-2 p-2 border-2 border-[#0b0c0c] bg-white">`;
+            pickerHtml += `<p class="text-xs font-bold text-[#0b0c0c] mb-1">Select capabilities to consume from ${escHtml4(providerLabel)}:</p>`;
+            pickerHtml += `<div class="flex flex-wrap gap-1 mb-2">`;
+            for (const capId of allCaps) {
+              const def = LGAM_CAPABILITIES.find((x) => x.id === capId);
+              const label = def ? def.label : capId;
+              pickerHtml += `<button type="button"
+                            class="inline-flex items-center px-2 py-1 text-xs font-bold border bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]"
+                            data-dep-cap-select="${escAttr4(capId)}" aria-pressed="false">${escHtml4(label)}</button>`;
+            }
+            pickerHtml += `</div>`;
+            pickerHtml += `<div class="flex gap-2">`;
+            pickerHtml += `<button type="button" data-rel-action="confirm-dependency" data-rel-sys-id="${escAttr4(sysId)}"
+                        class="gds-btn px-3 py-1 text-xs">Add dependency</button>`;
+            pickerHtml += `<button type="button" data-rel-action="cancel-dependency"
+                        class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold">Cancel</button>`;
+            pickerHtml += `</div></div>`;
+            pickerArea.innerHTML = pickerHtml;
+          } else if (sysId && onDependencyAdd) {
+            onDependencyAdd(nodeIdx, sysId, allCaps);
+          }
           break;
+        }
+        case "confirm-dependency": {
+          const sysId = target.dataset.relSysId;
+          const pickerArea = panel.querySelector("[data-rel-dep-cap-picker]");
+          if (pickerArea && sysId && onDependencyAdd) {
+            const selectedCaps = [];
+            pickerArea.querySelectorAll('[data-dep-cap-select][aria-pressed="true"]').forEach((btn) => {
+              selectedCaps.push(btn.dataset.depCapSelect);
+            });
+            onDependencyAdd(nodeIdx, sysId, selectedCaps);
+            pickerArea.innerHTML = "";
+          }
+          break;
+        }
+        case "cancel-dependency": {
+          const pickerArea = panel.querySelector("[data-rel-dep-cap-picker]");
+          if (pickerArea) pickerArea.innerHTML = "";
+          break;
+        }
+      }
+    });
+    panel.addEventListener("input", (e) => {
+      if (e.target.matches("[data-rel-filter]")) {
+        const query = e.target.value.toLowerCase();
+        const dropdown = e.target.closest("[data-rel-consumer-dropdown], [data-rel-dependency-dropdown]");
+        if (dropdown) {
+          dropdown.querySelectorAll('[data-rel-action^="select-"]').forEach((btn) => {
+            const text = btn.textContent.toLowerCase();
+            btn.style.display = text.includes(query) ? "" : "none";
+          });
+          dropdown.querySelectorAll("[data-rel-group-header]").forEach((header) => {
+            const next = [];
+            let sibling = header.nextElementSibling;
+            while (sibling && !sibling.hasAttribute("data-rel-group-header")) {
+              next.push(sibling);
+              sibling = sibling.nextElementSibling;
+            }
+            const anyVisible = next.some((el) => el.style.display !== "none");
+            header.style.display = anyVisible ? "" : "none";
+          });
         }
       }
     });
@@ -5060,9 +5260,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-consumer">+ Add consuming system</button>`;
     html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-consumer-dropdown>`;
+    html += `<input type="text" placeholder="Filter systems..." data-rel-filter="consumer"
+        class="w-full px-2 py-1 text-sm border-b-2 border-[#0b0c0c] mb-1 sticky top-0 bg-white z-10 focus:outline-3 focus:outline-[#ffdd00]" />`;
     for (const group of grouped) {
       if (group.label) {
-        html += `<div class="px-2 py-0.5 bg-[#f3f2f1] text-xs font-bold text-[#505a5f] border-b border-[#b1b4b6]">${escHtml4(group.label)}</div>`;
+        html += `<div class="px-2 py-0.5 bg-[#f3f2f1] text-xs font-bold text-[#505a5f] border-b border-[#b1b4b6]" data-rel-group-header>${escHtml4(group.label)}</div>`;
       }
       for (const node of group.systems) {
         html += `<button type="button"
@@ -5091,6 +5293,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-dependency">+ Add dependency</button>`;
     html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-dependency-dropdown>`;
+    html += `<input type="text" placeholder="Filter systems..." data-rel-filter="dependency"
+        class="w-full px-2 py-1 text-sm border-b-2 border-[#0b0c0c] mb-1 sticky top-0 bg-white z-10 focus:outline-3 focus:outline-[#ffdd00]" />`;
     for (const node of candidates) {
       const caps = (node.capabilityType || []).join(",");
       const capLabels = (node.capabilityType || []).map((c) => {
@@ -5147,7 +5351,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     { id: "technical", label: "Technical" },
     { id: "relationships", label: "Relationships" }
   ];
-  var KEY_FIELDS2 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
+  var KEY_FIELDS3 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
   function renderBulkMode(editorState) {
     const activeTab = editorState._bulkActiveTab || "contract";
     let html = `<div class="flex flex-col h-full overflow-hidden" data-bulk-mode>`;
@@ -5174,6 +5378,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     });
     const functionLookup = buildFunctionLookup(nodes, edges);
+    const functionLookupMulti = buildFunctionLookupMulti(nodes, edges);
     const columnDefs = getColumnDefs(activeTab);
     let html = `<table class="w-full border-collapse" style="min-width:900px" data-bulk-table>`;
     html += `<thead><tr class="sticky top-0 bg-[#f3f2f1] z-10">`;
@@ -5192,24 +5397,54 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const fnLabel = functionLookup.get(node.id) || "";
       const status = computeCompleteness(node);
       html += `<tr class="${rowBg}">`;
-      html += `<td class="sticky left-0 z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6]" style="min-width:150px">`;
+      html += `<td class="sticky left-0 z-10 ${rowBg} py-3 px-3 border-b border-[#b1b4b6]" style="min-width:150px">`;
       html += `<input type="text" value="${escAttr5(node.label || "")}" data-bulk-row="${idx}" data-bulk-field="label"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
       html += `</td>`;
-      html += `<td class="sticky z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6]" style="min-width:100px;left:150px">`;
-      html += `<input type="text" value="${escAttr5(node.vendor || "")}" data-bulk-row="${idx}" data-bulk-field="vendor"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
+      html += `<td class="sticky z-10 ${rowBg} py-3 px-3 border-b border-[#b1b4b6]" style="min-width:100px;left:150px">`;
+      html += `<input type="text" value="${escAttr5(node.vendor || "")}" data-bulk-row="${idx}" data-bulk-field="vendor" list="bulk-vendor-datalist"
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
       html += `</td>`;
-      html += `<td class="sticky z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6] text-sm text-[#505a5f]" style="min-width:120px;left:250px">${escHtml5(fnLabel)}</td>`;
+      const fnLabels = functionLookupMulti.get(node.id) || [];
+      html += `<td class="sticky z-10 ${rowBg} py-3 px-3 border-b border-[#b1b4b6]" style="min-width:160px;left:250px">`;
+      html += `<div class="flex flex-wrap items-center gap-0.5" data-bulk-chip-container="${idx}-function">`;
+      for (const fn of fnLabels) {
+        html += `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] bg-[#f3f2f1] border border-[#b1b4b6]"
+                data-bulk-chip-row="${idx}" data-bulk-chip-field="function" data-bulk-chip-value="${escAttr5(fn)}">
+                ${escHtml5(fn)}
+                <button type="button" class="text-[#d4351c] font-bold leading-none ml-0.5"
+                    data-bulk-chip-remove data-bulk-chip-row="${idx}" data-bulk-chip-field="function" data-bulk-chip-value="${escAttr5(fn)}">&times;</button>
+            </span>`;
+      }
+      html += `<input type="text" placeholder="+" list="bulk-fn-datalist" data-bulk-chip-input="${idx}-function" data-bulk-chip-row="${idx}" data-bulk-chip-field="function"
+            class="w-20 text-[11px] px-1 py-0.5 border border-[#b1b4b6] bg-white focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
+      html += `</div></td>`;
       for (const col of columnDefs) {
-        html += `<td class="py-2 px-3 border-b border-[#b1b4b6]">`;
+        html += `<td class="py-3 px-3 border-b border-[#b1b4b6]">`;
         html += renderCell(col, node, idx, editorState);
         html += `</td>`;
       }
-      html += `<td class="sticky right-0 z-10 ${rowBg} py-2 px-3 border-b border-[#b1b4b6] text-center text-sm">${status}</td>`;
+      html += `<td class="sticky right-0 z-10 ${rowBg} py-3 px-3 border-b border-[#b1b4b6] text-center text-sm">${status}</td>`;
       html += `</tr>`;
     }
     html += `</tbody></table>`;
+    html += `<datalist id="bulk-fn-datalist">`;
+    for (const fn of LGA_FUNCTIONS) {
+      html += `<option value="${escAttr5(fn.label)}">`;
+    }
+    html += `</datalist>`;
+    const vendors = [...new Set(systems.map((s) => s.node.vendor).filter(Boolean))].sort();
+    html += `<datalist id="bulk-vendor-datalist">`;
+    for (const v of vendors) {
+      html += `<option value="${escAttr5(v)}">`;
+    }
+    html += `</datalist>`;
+    const councils = [...new Set(systems.flatMap((s) => s.node.sharedWith || []).filter(Boolean))].sort();
+    html += `<datalist id="bulk-council-datalist">`;
+    for (const c of councils) {
+      html += `<option value="${escAttr5(c)}">`;
+    }
+    html += `</datalist>`;
     return html;
   }
   function renderCell(col, node, nodeIdx, editorState) {
@@ -5217,20 +5452,20 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (type === "text") {
       const value = getFieldValue(node, field, editorState);
       return `<input type="text" value="${escAttr5(value)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
     }
     if (type === "number") {
       const raw = node[field];
       const display = raw != null && !isNaN(raw) ? String(raw) : "";
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0 text-right" />`;
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] text-right" />`;
     }
     if (type === "thousands") {
       const raw = node[field];
       const display = raw != null && !isNaN(raw) ? formatThousands(raw, { prefix: "\xA3" }) : "";
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
             data-format="thousands" data-prefix="\xA3"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0 text-right" />`;
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] text-right" />`;
     }
     if (type === "contract-end") {
       const mm = node.endMonth ? String(node.endMonth).padStart(2, "0") : "";
@@ -5238,7 +5473,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const display = mm && yyyy ? `${mm}/${yyyy}` : yyyy || "";
       return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="contractEnd"
             placeholder="MM/YYYY"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
     }
     if (type === "select") {
       const current = getSelectValue(node, field);
@@ -5248,17 +5483,78 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         opts += `<option value="${escAttr5(opt.value)}" ${sel}>${escHtml5(opt.label)}</option>`;
       }
       return `<select data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-sm py-0.5 px-0.5 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]">${opts}</select>`;
+            class="w-full text-sm py-0.5 px-0.5 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]">${opts}</select>`;
     }
     if (type === "comma-text") {
       const arr = node[field] || [];
       const display = Array.isArray(arr) ? arr.join(", ") : String(arr);
-      return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"
-            class="w-full text-sm py-0.5 px-1 border-0 bg-transparent focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00] p-0" />`;
+      const listAttr = field === "sharedWith" ? ' list="bulk-council-datalist"' : "";
+      return `<input type="text" value="${escAttr5(display)}" data-bulk-row="${nodeIdx}" data-bulk-field="${field}"${listAttr}
+            class="w-full text-sm py-0.5 px-1 border border-[#b1b4b6] bg-white p-1 focus:border-2 focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
     }
     if (type === "readonly") {
       const value = getReadonlyValue(node, field, editorState);
       return `<span class="text-sm text-[#505a5f]">${escHtml5(value)}</span>`;
+    }
+    if (type === "cap-pills") {
+      const active = node.capabilityType || [];
+      let h = `<div class="flex flex-wrap gap-0.5">`;
+      for (const cap of LGAM_CAPABILITIES) {
+        const isOn = active.includes(cap.id);
+        const cls = isOn ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-white text-[#505a5f] border-[#b1b4b6]";
+        h += `<button type="button" data-bulk-cap-row="${nodeIdx}" data-bulk-cap-id="${cap.id}" aria-pressed="${isOn}"
+                class="px-1.5 py-0.5 text-[10px] font-bold border ${cls}">${escHtml5(cap.label)}</button>`;
+      }
+      h += `</div>`;
+      return h;
+    }
+    if (type === "chip-cell") {
+      const arr = node[field] || [];
+      let h = `<div class="flex flex-wrap items-center gap-0.5" data-bulk-chip-container="${nodeIdx}-${field}">`;
+      for (const val of arr) {
+        h += `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] bg-[#f3f2f1] border border-[#b1b4b6]"
+                data-bulk-chip-row="${nodeIdx}" data-bulk-chip-field="${field}" data-bulk-chip-value="${escAttr5(val)}">
+                ${escHtml5(val)}
+                <button type="button" class="text-[#d4351c] font-bold leading-none ml-0.5"
+                    data-bulk-chip-remove data-bulk-chip-row="${nodeIdx}" data-bulk-chip-field="${field}" data-bulk-chip-value="${escAttr5(val)}">&times;</button>
+            </span>`;
+      }
+      const listAttr = field === "sharedWith" ? ' list="bulk-council-datalist"' : "";
+      h += `<input type="text" placeholder="+"${listAttr} data-bulk-chip-input="${nodeIdx}-${field}" data-bulk-chip-row="${nodeIdx}" data-bulk-chip-field="${field}"
+            class="w-16 text-[11px] px-1 py-0.5 border border-[#b1b4b6] bg-white focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
+      h += `</div>`;
+      return h;
+    }
+    if (type === "dep-cell") {
+      const { edges, nodes: allNodes } = editorState;
+      const deps = edges.filter((e) => e.source === node.id && e.relationship === "CONSUMES_CAPABILITY");
+      let h = `<div class="flex flex-wrap items-center gap-0.5" data-bulk-dep-container="${nodeIdx}">`;
+      for (const edge of deps) {
+        const provider = allNodes.find((n) => n.id === edge.target);
+        const label = provider ? provider.label : edge.target;
+        const caps = (edge.capabilities || []).join(", ");
+        h += `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] bg-[#f3f2f1] border border-[#b1b4b6]"
+                title="${escAttr5(caps ? "Caps: " + caps : "All capabilities")}">
+                ${escHtml5(label)}
+                <button type="button" class="text-[#d4351c] font-bold leading-none ml-0.5"
+                    data-bulk-dep-remove data-bulk-dep-row="${nodeIdx}" data-bulk-dep-target="${escAttr5(edge.target)}">&times;</button>
+            </span>`;
+      }
+      h += `<input type="text" placeholder="+" list="bulk-dep-datalist-${nodeIdx}" data-bulk-dep-input="${nodeIdx}"
+            class="w-16 text-[11px] px-1 py-0.5 border border-[#b1b4b6] bg-white focus:border-[#0b0c0c] focus:outline-3 focus:outline-[#ffdd00]" />`;
+      const existingTargets = new Set(deps.map((e) => e.target));
+      const providers = allNodes.filter((n) => n.type === "ITSystem" && n.id !== node.id && n.capabilityType && n.capabilityType.length > 0 && !existingTargets.has(n.id));
+      h += `<datalist id="bulk-dep-datalist-${nodeIdx}">`;
+      for (const p of providers) {
+        h += `<option value="${escAttr5(p.label)}" data-sys-id="${escAttr5(p.id)}">`;
+      }
+      h += `</datalist>`;
+      h += `</div>`;
+      return h;
+    }
+    if (type === "edit-link") {
+      return `<button type="button" data-bulk-focus-row="${nodeIdx}"
+            class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold">Edit</button>`;
     }
     return "";
   }
@@ -5307,9 +5603,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         ];
       case "relationships":
         return [
-          { field: "sharedWith", label: "Shared With", type: "comma-text", width: 150 },
-          { field: "capabilityType", label: "Capabilities", type: "comma-text", width: 120 },
-          { field: "dependsOn", label: "Depends On", type: "readonly", width: 150 }
+          { field: "capabilityType", label: "Provides", type: "cap-pills", width: 260 },
+          { field: "sharedWith", label: "Shared With", type: "chip-cell", width: 180 },
+          { field: "dependsOn", label: "Depends On", type: "dep-cell", width: 200 }
         ];
       default:
         return [];
@@ -5372,21 +5668,55 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     return lookup;
   }
+  function buildFunctionLookupMulti(nodes, edges) {
+    const lookup = /* @__PURE__ */ new Map();
+    const fnNodes = /* @__PURE__ */ new Map();
+    for (const n of nodes) {
+      if (n.type === "Function") fnNodes.set(n.id, n);
+    }
+    for (const edge of edges) {
+      if (edge.relationship === "REALIZES" && fnNodes.has(edge.target)) {
+        const fn = fnNodes.get(edge.target);
+        let label;
+        if (fn.lgaFunctionId) {
+          const lgaFn = LGA_FUNCTIONS.find((f) => f.id === fn.lgaFunctionId);
+          label = lgaFn ? lgaFn.label : fn.label || "";
+        } else {
+          label = fn.label || "";
+        }
+        if (!lookup.has(edge.source)) lookup.set(edge.source, []);
+        lookup.get(edge.source).push(label);
+      }
+    }
+    return lookup;
+  }
+  var KEY_FIELD_LABELS2 = {
+    vendor: "Vendor",
+    annualCost: "Annual Cost",
+    endYear: "Contract End Year",
+    portability: "Data Portability",
+    dataPartitioning: "Data Partitioning",
+    isCloud: "Hosting (Cloud/On-Prem)",
+    supportModel: "Support Model"
+  };
   function computeCompleteness(node) {
-    let filled = 0;
-    for (const f of KEY_FIELDS2) {
+    const missingFields = [];
+    for (const f of KEY_FIELDS3) {
       const val = node[f];
-      if (val != null && val !== "" && val !== void 0) filled++;
+      if (val == null || val === "" || val === void 0) {
+        missingFields.push(KEY_FIELD_LABELS2[f] || f);
+      }
     }
-    const total = KEY_FIELDS2.length;
+    const total = KEY_FIELDS3.length;
+    const filled = total - missingFields.length;
     if (filled === total) {
-      return `<span class="text-[#00703c] font-medium" title="All key fields complete">\u2713</span>`;
+      return `<span class="text-[#00703c] font-medium" title="All analysis fields complete \u2014 this system will generate full signals">\u2713</span>`;
     }
-    const missing = total - filled;
+    const tooltip = `Missing: ${missingFields.join(", ")}. These fields drive rationalisation signals.`;
     if (filled === 0) {
-      return `<span class="text-[#d4351c] font-medium" title="${missing} fields missing">\u2717</span>`;
+      return `<span class="text-[#d4351c] font-medium cursor-help" title="${escAttr5(tooltip)}">\u2717 ${missingFields.length}</span>`;
     }
-    return `<span class="text-[#f47738] font-medium" title="${missing} fields missing">\u26A0 ${missing}</span>`;
+    return `<span class="text-[#f47738] font-medium cursor-help" title="${escAttr5(tooltip)}">\u26A0 ${missingFields.length}</span>`;
   }
   function wireBulkMode(container, editorState, options = {}) {
     if (!container) return;
@@ -5416,6 +5746,107 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (tableWrapper) {
       wireTableInputs(tableWrapper, editorState, options);
     }
+    container.addEventListener("click", (e) => {
+      const editBtn = e.target.closest("[data-bulk-focus-row]");
+      if (editBtn && options.onFocusSystem) {
+        options.onFocusSystem(parseInt(editBtn.dataset.bulkFocusRow, 10));
+        return;
+      }
+      const pill = e.target.closest("[data-bulk-cap-row]");
+      if (pill && pill.dataset.bulkCapId) {
+        const nodeIdx = parseInt(pill.dataset.bulkCapRow, 10);
+        const capId = pill.dataset.bulkCapId;
+        const wasOn = pill.getAttribute("aria-pressed") === "true";
+        const nowOn = !wasOn;
+        pill.setAttribute("aria-pressed", String(nowOn));
+        if (nowOn) {
+          pill.classList.remove("bg-white", "text-[#505a5f]", "border-[#b1b4b6]");
+          pill.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+        } else {
+          pill.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
+          pill.classList.add("bg-white", "text-[#505a5f]", "border-[#b1b4b6]");
+        }
+        const node = editorState.nodes[nodeIdx];
+        if (!node.capabilityType) node.capabilityType = [];
+        if (nowOn && !node.capabilityType.includes(capId)) {
+          node.capabilityType.push(capId);
+        } else if (!nowOn) {
+          node.capabilityType = node.capabilityType.filter((c) => c !== capId);
+        }
+        return;
+      }
+      const removeBtn = e.target.closest("[data-bulk-chip-remove]");
+      if (removeBtn) {
+        const row = parseInt(removeBtn.dataset.bulkChipRow, 10);
+        const field = removeBtn.dataset.bulkChipField;
+        const value = removeBtn.dataset.bulkChipValue;
+        const node = editorState.nodes[row];
+        if (field === "function") {
+          const lgaFn = LGA_FUNCTIONS.find((f) => f.label.toLowerCase() === value.toLowerCase());
+          if (lgaFn) {
+            const fnNode = editorState.nodes.find((n) => n.type === "Function" && n.lgaFunctionId === lgaFn.id);
+            if (fnNode) {
+              editorState.edges = editorState.edges.filter(
+                (edge) => !(edge.source === node.id && edge.target === fnNode.id && edge.relationship === "REALIZES")
+              );
+            }
+          }
+        } else if (node && Array.isArray(node[field])) {
+          node[field] = node[field].filter((v) => v !== value);
+        }
+        const chipEl = removeBtn.parentElement;
+        if (chipEl && chipEl.hasAttribute("data-bulk-chip-value")) chipEl.remove();
+        return;
+      }
+      const depRemove = e.target.closest("[data-bulk-dep-remove]");
+      if (depRemove) {
+        const row = parseInt(depRemove.dataset.bulkDepRow, 10);
+        const targetId = depRemove.dataset.bulkDepTarget;
+        const node = editorState.nodes[row];
+        editorState.edges = editorState.edges.filter(
+          (edge) => !(edge.source === node.id && edge.target === targetId && edge.relationship === "CONSUMES_CAPABILITY")
+        );
+        const chipEl = depRemove.closest("span");
+        if (chipEl) chipEl.remove();
+        return;
+      }
+    });
+    container.addEventListener("keydown", (e) => {
+      const input = e.target;
+      if (input.matches && input.matches("[data-bulk-chip-input]") && e.key === "Enter") {
+        e.preventDefault();
+        addChipFromInput(input, editorState);
+      }
+      if (input.matches && input.matches("[data-bulk-dep-input]") && e.key === "Enter") {
+        e.preventDefault();
+        addDepFromInput(input, editorState);
+      }
+    });
+    container.addEventListener("input", (e) => {
+      const input = e.target;
+      if (input.matches && input.matches("[data-bulk-chip-input]")) {
+        const listId = input.getAttribute("list");
+        if (!listId) return;
+        const datalist = document.getElementById(listId);
+        if (!datalist) return;
+        const value = input.value.trim();
+        if (!value) return;
+        if (Array.from(datalist.options).some((o) => o.value === value)) {
+          addChipFromInput(input, editorState);
+        }
+      }
+      if (input.matches && input.matches("[data-bulk-dep-input]")) {
+        const listId = input.getAttribute("list");
+        if (!listId) return;
+        const datalist = document.getElementById(listId);
+        if (!datalist) return;
+        const value = input.value.trim();
+        if (!value) return;
+        if (Array.from(datalist.options).some((o) => o.value === value)) {
+          addDepFromInput(input, editorState);
+        }
+      }
+    });
   }
   function wireTableInputs(wrapper, editorState, options) {
     const { onChange } = options;
@@ -5463,6 +5894,78 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     });
   }
+  function addChipFromInput(input, editorState) {
+    const value = input.value.trim();
+    if (!value) return;
+    const row = parseInt(input.dataset.bulkChipRow, 10);
+    const field = input.dataset.bulkChipField;
+    const node = editorState.nodes[row];
+    if (!node) return;
+    if (field === "function") {
+      const lgaFn = LGA_FUNCTIONS.find((f) => f.label.toLowerCase() === value.toLowerCase());
+      if (!lgaFn) {
+        input.value = "";
+        return;
+      }
+      let fnNode = editorState.nodes.find((n) => n.type === "Function" && n.lgaFunctionId === lgaFn.id);
+      if (!fnNode) {
+        fnNode = { id: `fn-${lgaFn.id}`, label: lgaFn.label, type: "Function", lgaFunctionId: lgaFn.id };
+        editorState.nodes.push(fnNode);
+      }
+      const alreadyLinked = editorState.edges.some((e) => e.source === node.id && e.target === fnNode.id && e.relationship === "REALIZES");
+      if (alreadyLinked) {
+        input.value = "";
+        return;
+      }
+      editorState.edges.push({ source: node.id, target: fnNode.id, relationship: "REALIZES" });
+    } else {
+      if (!node[field]) node[field] = [];
+      if (node[field].includes(value)) {
+        input.value = "";
+        return;
+      }
+      node[field].push(value);
+    }
+    const chipHtml = `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] bg-[#f3f2f1] border border-[#b1b4b6]"
+        data-bulk-chip-row="${row}" data-bulk-chip-field="${field}" data-bulk-chip-value="${escAttr5(value)}">
+        ${escHtml5(value)}
+        <button type="button" class="text-[#d4351c] font-bold leading-none ml-0.5"
+            data-bulk-chip-remove data-bulk-chip-row="${row}" data-bulk-chip-field="${field}" data-bulk-chip-value="${escAttr5(value)}">&times;</button>
+    </span>`;
+    input.insertAdjacentHTML("beforebegin", chipHtml);
+    input.value = "";
+  }
+  function addDepFromInput(input, editorState) {
+    const value = input.value.trim();
+    if (!value) return;
+    const row = parseInt(input.dataset.bulkDepInput, 10);
+    const node = editorState.nodes[row];
+    if (!node) return;
+    const provider = editorState.nodes.find((n) => n.type === "ITSystem" && n.label === value && n.id !== node.id);
+    if (!provider) {
+      input.value = "";
+      return;
+    }
+    const exists = editorState.edges.some((e) => e.source === node.id && e.target === provider.id && e.relationship === "CONSUMES_CAPABILITY");
+    if (exists) {
+      input.value = "";
+      return;
+    }
+    editorState.edges.push({
+      source: node.id,
+      target: provider.id,
+      relationship: "CONSUMES_CAPABILITY",
+      capabilities: [...provider.capabilityType || []]
+    });
+    const chipHtml = `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] bg-[#f3f2f1] border border-[#b1b4b6]"
+        title="Caps: ${escAttr5((provider.capabilityType || []).join(", "))}">
+        ${escHtml5(provider.label)}
+        <button type="button" class="text-[#d4351c] font-bold leading-none ml-0.5"
+            data-bulk-dep-remove data-bulk-dep-row="${row}" data-bulk-dep-target="${escAttr5(provider.id)}">&times;</button>
+    </span>`;
+    input.insertAdjacentHTML("beforebegin", chipHtml);
+    input.value = "";
+  }
   function parseFieldValue(field, rawValue) {
     if (field === "annualCost") {
       const n = parseThousands(rawValue);
@@ -5487,6 +5990,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (rawValue === "true") return true;
       if (rawValue === "false") return false;
       return null;
+    }
+    if (field === "function") {
+      const lgaFn = LGA_FUNCTIONS.find((f) => f.label.toLowerCase() === rawValue.trim().toLowerCase());
+      return { type: "function", lgaId: lgaFn ? lgaFn.id : null, label: rawValue.trim() };
     }
     if (field === "sharedWith" || field === "capabilityType") {
       if (!rawValue.trim()) return [];
@@ -5681,7 +6188,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       wirePropsPanel(propsPanelEl, {
         onChange: handleFieldChange,
         onFunctionAdd: handleFunctionAdd,
-        onFunctionRemove: handleFunctionRemove
+        onFunctionRemove: handleFunctionRemove,
+        onDelete: handleDelete
       });
     }
     function rerenderRel() {
@@ -5701,6 +6209,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         onConsumerCapToggle: handleConsumerCapToggle,
         onDependencyAdd: handleDependencyAdd,
         onDependencyRemove: handleDependencyRemove,
+        onDependencyCapToggle: handleDependencyCapToggle,
         onSharedWithChange: handleSharedWithChange
       });
     }
@@ -5801,6 +6310,18 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       rerenderProps();
       rerenderRel();
     }
+    function handleDelete(nodeIdx) {
+      if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
+      const system = editorState.nodes[nodeIdx];
+      editorState.edges = editorState.edges.filter(
+        (e) => e.source !== system.id && e.target !== system.id
+      );
+      editorState.nodes.splice(nodeIdx, 1);
+      selectedIdx = null;
+      rerenderList();
+      rerenderProps();
+      rerenderRel();
+    }
     function handleCapabilityToggle(nodeIdx, capId, active) {
       if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
       const system = editorState.nodes[nodeIdx];
@@ -5884,6 +6405,16 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       editorState.edges.splice(edgeIdx, 1);
       rerenderRel();
     }
+    function handleDependencyCapToggle(nodeIdx, edgeIdx, capId, active) {
+      if (edgeIdx == null || edgeIdx < 0 || edgeIdx >= editorState.edges.length) return;
+      const edge = editorState.edges[edgeIdx];
+      if (!edge.capabilities) edge.capabilities = [];
+      if (active) {
+        if (!edge.capabilities.includes(capId)) edge.capabilities.push(capId);
+      } else {
+        edge.capabilities = edge.capabilities.filter((c) => c !== capId);
+      }
+    }
     function handleSharedWithChange(nodeIdx, councils) {
       if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
       editorState.nodes[nodeIdx].sharedWith = councils;
@@ -5897,9 +6428,41 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           if (field === "contractEnd" && typeof value === "object") {
             editorState.nodes[nodeIdx].endMonth = value.endMonth;
             editorState.nodes[nodeIdx].endYear = value.endYear;
+          } else if (field === "function" && typeof value === "object" && value.type === "function") {
+            if (value.lgaId) {
+              const system = editorState.nodes[nodeIdx];
+              editorState.edges = editorState.edges.filter(
+                (e) => !(e.source === system.id && e.relationship === "REALIZES")
+              );
+              let fnNode = editorState.nodes.find(
+                (n) => n.type === "Function" && n.lgaFunctionId === value.lgaId
+              );
+              if (!fnNode) {
+                const lgaEntry = LGA_FUNCTIONS.find((f) => f.id === value.lgaId);
+                fnNode = {
+                  id: `fn-${value.lgaId}`,
+                  label: lgaEntry ? lgaEntry.label : value.label,
+                  type: "Function",
+                  lgaFunctionId: value.lgaId
+                };
+                editorState.nodes.push(fnNode);
+              }
+              editorState.edges.push({
+                source: system.id,
+                target: fnNode.id,
+                relationship: "REALIZES"
+              });
+            }
           } else {
             editorState.nodes[nodeIdx][field] = value;
           }
+        },
+        onFocusSystem(nodeIdx) {
+          selectedIdx = nodeIdx;
+          setMode("focus");
+          rerenderList();
+          rerenderProps();
+          rerenderRel();
         }
       });
     }

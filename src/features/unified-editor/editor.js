@@ -138,7 +138,8 @@ export function wireUnifiedEditor(container, json, options = {}) {
         wirePropsPanel(propsPanelEl, {
             onChange: handleFieldChange,
             onFunctionAdd: handleFunctionAdd,
-            onFunctionRemove: handleFunctionRemove
+            onFunctionRemove: handleFunctionRemove,
+            onDelete: handleDelete
         });
     }
 
@@ -162,6 +163,7 @@ export function wireUnifiedEditor(container, json, options = {}) {
             onConsumerCapToggle: handleConsumerCapToggle,
             onDependencyAdd: handleDependencyAdd,
             onDependencyRemove: handleDependencyRemove,
+            onDependencyCapToggle: handleDependencyCapToggle,
             onSharedWithChange: handleSharedWithChange
         });
     }
@@ -286,6 +288,22 @@ export function wireUnifiedEditor(container, json, options = {}) {
         rerenderRel();
     }
 
+    function handleDelete(nodeIdx) {
+        if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
+        const system = editorState.nodes[nodeIdx];
+        // Remove all edges involving this system
+        editorState.edges = editorState.edges.filter(
+            e => e.source !== system.id && e.target !== system.id
+        );
+        // Remove the node
+        editorState.nodes.splice(nodeIdx, 1);
+        // Clear selection
+        selectedIdx = null;
+        rerenderList();
+        rerenderProps();
+        rerenderRel();
+    }
+
     function handleCapabilityToggle(nodeIdx, capId, active) {
         if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
         const system = editorState.nodes[nodeIdx];
@@ -389,6 +407,17 @@ export function wireUnifiedEditor(container, json, options = {}) {
         rerenderRel();
     }
 
+    function handleDependencyCapToggle(nodeIdx, edgeIdx, capId, active) {
+        if (edgeIdx == null || edgeIdx < 0 || edgeIdx >= editorState.edges.length) return;
+        const edge = editorState.edges[edgeIdx];
+        if (!edge.capabilities) edge.capabilities = [];
+        if (active) {
+            if (!edge.capabilities.includes(capId)) edge.capabilities.push(capId);
+        } else {
+            edge.capabilities = edge.capabilities.filter(c => c !== capId);
+        }
+    }
+
     function handleSharedWithChange(nodeIdx, councils) {
         if (nodeIdx == null || !editorState.nodes[nodeIdx]) return;
         editorState.nodes[nodeIdx].sharedWith = councils;
@@ -405,9 +434,45 @@ export function wireUnifiedEditor(container, json, options = {}) {
                 if (field === 'contractEnd' && typeof value === 'object') {
                     editorState.nodes[nodeIdx].endMonth = value.endMonth;
                     editorState.nodes[nodeIdx].endYear = value.endYear;
+                } else if (field === 'function' && typeof value === 'object' && value.type === 'function') {
+                    // Update function assignment via edges
+                    if (value.lgaId) {
+                        const system = editorState.nodes[nodeIdx];
+                        // Remove existing REALIZES edges for this system
+                        editorState.edges = editorState.edges.filter(
+                            e => !(e.source === system.id && e.relationship === 'REALIZES')
+                        );
+                        // Find or create function node
+                        let fnNode = editorState.nodes.find(
+                            n => n.type === 'Function' && n.lgaFunctionId === value.lgaId
+                        );
+                        if (!fnNode) {
+                            const lgaEntry = LGA_FUNCTIONS.find(f => f.id === value.lgaId);
+                            fnNode = {
+                                id: `fn-${value.lgaId}`,
+                                label: lgaEntry ? lgaEntry.label : value.label,
+                                type: 'Function',
+                                lgaFunctionId: value.lgaId
+                            };
+                            editorState.nodes.push(fnNode);
+                        }
+                        // Add REALIZES edge
+                        editorState.edges.push({
+                            source: system.id,
+                            target: fnNode.id,
+                            relationship: 'REALIZES'
+                        });
+                    }
                 } else {
                     editorState.nodes[nodeIdx][field] = value;
                 }
+            },
+            onFocusSystem(nodeIdx) {
+                selectedIdx = nodeIdx;
+                setMode('focus');
+                rerenderList();
+                rerenderProps();
+                rerenderRel();
             }
         });
     }
