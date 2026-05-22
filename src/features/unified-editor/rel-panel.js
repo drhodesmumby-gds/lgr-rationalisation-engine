@@ -93,7 +93,7 @@ export function renderRelPanel(system, editorState) {
         }
 
         // Add consumer link/dropdown
-        html += renderAddConsumerControl(system, nodes, consumerEdges);
+        html += renderAddConsumerControl(system, nodes, edges, consumerEdges);
         html += `</div>`;
     }
 
@@ -285,14 +285,11 @@ export function wireRelPanel(container, options = {}) {
 
             case 'select-dependency': {
                 const sysId = target.dataset.relSysId;
+                const capsStr = target.dataset.relCaps || '';
+                const caps = capsStr ? capsStr.split(',') : [];
                 if (sysId && onDependencyAdd) {
-                    // When adding a dependency, default to all provider's capabilities
-                    const providerNode = panel.closest('[data-rel-panel]')
-                        ? null // We'll pass empty caps; the parent orchestrator can enrich
-                        : null;
-                    onDependencyAdd(nodeIdx, sysId, []);
+                    onDependencyAdd(nodeIdx, sysId, caps);
                 }
-                // Hide dropdown
                 const dropdown = panel.querySelector('[data-rel-dependency-dropdown]');
                 if (dropdown) dropdown.classList.add('hidden');
                 break;
@@ -306,30 +303,39 @@ export function wireRelPanel(container, options = {}) {
 /**
  * Render the "+ Add consuming system" control with a hideable dropdown.
  */
-function renderAddConsumerControl(system, nodes, consumerEdges) {
+function renderAddConsumerControl(system, nodes, edges, consumerEdges) {
     const existingConsumerIds = new Set(consumerEdges.map(e => e.source));
     const candidates = nodes.filter(n =>
         n.type === 'ITSystem' &&
         n.id !== system.id &&
         !existingConsumerIds.has(n.id)
-    );
+    ).sort((a, b) => (a.label || '').localeCompare(b.label || ''));
 
     if (candidates.length === 0) {
         return `<p class="text-xs text-[#505a5f] mt-1">No other systems available to add.</p>`;
     }
 
+    // Group candidates by domain (function) for easier navigation
+    const grouped = groupCandidatesByDomain(candidates, nodes, edges);
+
     let html = `<div class="mt-2">`;
     html += `<button type="button"
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-consumer">+ Add consuming system</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-consumer-dropdown>`;
-    for (const node of candidates) {
-        html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
-                    data-rel-action="select-consumer"
-                    data-rel-sys-id="${escAttr(node.id)}">
-                    ${escHtml(node.label || node.id)}
-                </button>`;
+    html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-consumer-dropdown>`;
+    for (const group of grouped) {
+        if (group.label) {
+            html += `<div class="px-2 py-0.5 bg-[#f3f2f1] text-xs font-bold text-[#505a5f] border-b border-[#b1b4b6]">${escHtml(group.label)}</div>`;
+        }
+        for (const node of group.systems) {
+            html += `<button type="button"
+                        class="block w-full text-left px-3 py-1.5 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c] border-b border-[#f3f2f1]"
+                        data-rel-action="select-consumer"
+                        data-rel-sys-id="${escAttr(node.id)}">
+                        ${escHtml(node.label || node.id)}
+                        ${node.vendor ? `<span class="text-xs text-[#505a5f] ml-1">(${escHtml(node.vendor)})</span>` : ''}
+                    </button>`;
+        }
     }
     html += `</div>`;
     html += `</div>`;
@@ -347,7 +353,7 @@ function renderAddDependencyControl(system, nodes, dependencyEdges) {
         n.id !== system.id &&
         !existingProviderIds.has(n.id) &&
         n.capabilityType && n.capabilityType.length > 0
-    );
+    ).sort((a, b) => (a.label || '').localeCompare(b.label || ''));
 
     if (candidates.length === 0) {
         return `<p class="text-xs text-[#505a5f] mt-1">No capability providers available to add.</p>`;
@@ -357,23 +363,48 @@ function renderAddDependencyControl(system, nodes, dependencyEdges) {
     html += `<button type="button"
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-dependency">+ Add dependency</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-dependency-dropdown>`;
+    html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-dependency-dropdown>`;
     for (const node of candidates) {
-        const caps = (node.capabilityType || []).map(c => {
+        const caps = (node.capabilityType || []).join(',');
+        const capLabels = (node.capabilityType || []).map(c => {
             const def = LGAM_CAPABILITIES.find(x => x.id === c);
             return def ? def.label : c;
         }).join(', ');
         html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
+                    class="block w-full text-left px-3 py-1.5 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c] border-b border-[#f3f2f1]"
                     data-rel-action="select-dependency"
-                    data-rel-sys-id="${escAttr(node.id)}">
-                    <span class="font-medium">${escHtml(node.label || node.id)}</span>
-                    <span class="text-xs text-[#505a5f] ml-1">(${escHtml(caps)})</span>
+                    data-rel-sys-id="${escAttr(node.id)}"
+                    data-rel-caps="${escAttr(caps)}">
+                    <span class="font-bold">${escHtml(node.label || node.id)}</span>
+                    <span class="block text-xs text-[#505a5f]">Provides: ${escHtml(capLabels)}</span>
                 </button>`;
     }
     html += `</div>`;
     html += `</div>`;
     return html;
+}
+
+function groupCandidatesByDomain(candidates, nodes, edges) {
+    const ungrouped = [];
+    const grouped = new Map();
+    for (const sys of candidates) {
+        const realizeEdge = edges.find(e => e.source === sys.id && e.relationship === 'REALIZES');
+        if (realizeEdge) {
+            const fnNode = nodes.find(n => n.id === realizeEdge.target && n.type === 'Function');
+            const label = fnNode ? fnNode.label : 'Other';
+            if (!grouped.has(label)) grouped.set(label, []);
+            grouped.get(label).push(sys);
+        } else {
+            ungrouped.push(sys);
+        }
+    }
+    const result = [...grouped.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([label, systems]) => ({ label, systems }));
+    if (ungrouped.length > 0) {
+        result.push({ label: 'Other', systems: ungrouped });
+    }
+    return result;
 }
 
 /**

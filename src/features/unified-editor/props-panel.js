@@ -38,24 +38,34 @@ export function renderPropsPanel(system, editorState) {
 
     // === Section 1: Identity ===
     html += sectionHeading('Identity');
-    html += `<div class="flex flex-col gap-2 mb-5">`;
+    html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
 
     html += fieldRow('System Name',
         `<input type="text" data-prop-field="label" value="${escAttr(system.label || '')}"
-                class="w-[200px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Vendor',
         `<input type="text" data-prop-field="vendor" value="${escAttr(system.vendor || '')}"
-                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Users',
         `<input type="text" data-prop-field="users" data-format="thousands"
                 value="${system.users ? formatThousands(system.users) : ''}"
-                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
+    html += fieldRow('ERP system',
+        `<label class="inline-flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" data-prop-field="isERP" ${system.isERP ? 'checked' : ''}
+                   class="w-5 h-5 border-2 border-[#0b0c0c]" />
+            <span class="text-[#0b0c0c]">Monolithic ERP</span>
+        </label>`
+    );
+
+    html += `</div>`;
+    html += `<div class="flex flex-col gap-2 mb-5">`;
     html += fieldRow('Functions',
         renderChipSelector({
             chips: functionChips,
@@ -65,25 +75,16 @@ export function renderPropsPanel(system, editorState) {
             datalistOptions
         })
     );
-
-    html += fieldRow('ERP system',
-        `<label class="inline-flex items-center gap-2 cursor-pointer text-sm">
-            <input type="checkbox" data-prop-field="isERP" ${system.isERP ? 'checked' : ''}
-                   class="w-5 h-5 border-2 border-[#0b0c0c]" />
-            <span class="text-[#0b0c0c]">This is a monolithic ERP</span>
-        </label>`
-    );
-
     html += `</div>`;
 
     // === Section 2: Contract & Cost ===
     html += sectionHeading('Contract & Cost');
-    html += `<div class="flex flex-col gap-2 mb-5">`;
+    html += `<div class="grid grid-cols-3 gap-x-4 gap-y-2 mb-5">`;
 
     html += fieldRow('Annual Cost',
         `<input type="text" data-prop-field="annualCost" data-format="thousands" data-prefix="£"
                 value="${system.annualCost ? formatThousands(system.annualCost, { prefix: '£' }) : ''}"
-                class="w-[140px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
 
     html += fieldRow('Contract End',
@@ -111,7 +112,7 @@ export function renderPropsPanel(system, editorState) {
 
     // === Section 3: Technical Profile ===
     html += sectionHeading('Technical Profile');
-    html += `<div class="flex flex-col gap-2 mb-5">`;
+    html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
 
     // Hosting
     const hostingSelected = system.isCloud === true ? 'Cloud' : (system.isCloud === false ? 'On-Premise' : '');

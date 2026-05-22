@@ -4620,23 +4620,33 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const datalistOptions = availableFunctions.map((f) => f.label);
     let html = `<div class="p-4 overflow-y-auto h-full" data-props-panel>`;
     html += sectionHeading("Identity");
-    html += `<div class="flex flex-col gap-2 mb-5">`;
+    html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
     html += fieldRow(
       "System Name",
       `<input type="text" data-prop-field="label" value="${escAttr3(system.label || "")}"
-                class="w-[200px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Vendor",
       `<input type="text" data-prop-field="vendor" value="${escAttr3(system.vendor || "")}"
-                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Users",
       `<input type="text" data-prop-field="users" data-format="thousands"
                 value="${system.users ? formatThousands(system.users) : ""}"
-                class="w-[120px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
+    html += fieldRow(
+      "ERP system",
+      `<label class="inline-flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" data-prop-field="isERP" ${system.isERP ? "checked" : ""}
+                   class="w-5 h-5 border-2 border-[#0b0c0c]" />
+            <span class="text-[#0b0c0c]">Monolithic ERP</span>
+        </label>`
+    );
+    html += `</div>`;
+    html += `<div class="flex flex-col gap-2 mb-5">`;
     html += fieldRow(
       "Functions",
       renderChipSelector({
@@ -4647,22 +4657,14 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         datalistOptions
       })
     );
-    html += fieldRow(
-      "ERP system",
-      `<label class="inline-flex items-center gap-2 cursor-pointer text-sm">
-            <input type="checkbox" data-prop-field="isERP" ${system.isERP ? "checked" : ""}
-                   class="w-5 h-5 border-2 border-[#0b0c0c]" />
-            <span class="text-[#0b0c0c]">This is a monolithic ERP</span>
-        </label>`
-    );
     html += `</div>`;
     html += sectionHeading("Contract & Cost");
-    html += `<div class="flex flex-col gap-2 mb-5">`;
+    html += `<div class="grid grid-cols-3 gap-x-4 gap-y-2 mb-5">`;
     html += fieldRow(
       "Annual Cost",
       `<input type="text" data-prop-field="annualCost" data-format="thousands" data-prefix="\xA3"
                 value="${system.annualCost ? formatThousands(system.annualCost, { prefix: "\xA3" }) : ""}"
-                class="w-[140px] text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0" />`
     );
     html += fieldRow(
       "Contract End",
@@ -4687,7 +4689,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     );
     html += `</div>`;
     html += sectionHeading("Technical Profile");
-    html += `<div class="flex flex-col gap-2 mb-5">`;
+    html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
     const hostingSelected = system.isCloud === true ? "Cloud" : system.isCloud === false ? "On-Premise" : "";
     html += renderRadioGroup({
       name: "hosting",
@@ -4886,7 +4888,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         html += `</div>`;
         html += `</div>`;
       }
-      html += renderAddConsumerControl(system, nodes, consumerEdges);
+      html += renderAddConsumerControl(system, nodes, edges, consumerEdges);
       html += `</div>`;
     }
     html += sectionHeading2("Depends On");
@@ -5032,9 +5034,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         }
         case "select-dependency": {
           const sysId = target.dataset.relSysId;
+          const capsStr = target.dataset.relCaps || "";
+          const caps = capsStr ? capsStr.split(",") : [];
           if (sysId && onDependencyAdd) {
-            const providerNode = panel.closest("[data-rel-panel]") ? null : null;
-            onDependencyAdd(nodeIdx, sysId, []);
+            onDependencyAdd(nodeIdx, sysId, caps);
           }
           const dropdown = panel.querySelector("[data-rel-dependency-dropdown]");
           if (dropdown) dropdown.classList.add("hidden");
@@ -5043,26 +5046,33 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     });
   }
-  function renderAddConsumerControl(system, nodes, consumerEdges) {
+  function renderAddConsumerControl(system, nodes, edges, consumerEdges) {
     const existingConsumerIds = new Set(consumerEdges.map((e) => e.source));
     const candidates = nodes.filter(
       (n) => n.type === "ITSystem" && n.id !== system.id && !existingConsumerIds.has(n.id)
-    );
+    ).sort((a, b) => (a.label || "").localeCompare(b.label || ""));
     if (candidates.length === 0) {
       return `<p class="text-xs text-[#505a5f] mt-1">No other systems available to add.</p>`;
     }
+    const grouped = groupCandidatesByDomain(candidates, nodes, edges);
     let html = `<div class="mt-2">`;
     html += `<button type="button"
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-consumer">+ Add consuming system</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-consumer-dropdown>`;
-    for (const node of candidates) {
-      html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
-                    data-rel-action="select-consumer"
-                    data-rel-sys-id="${escAttr4(node.id)}">
-                    ${escHtml4(node.label || node.id)}
-                </button>`;
+    html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-consumer-dropdown>`;
+    for (const group of grouped) {
+      if (group.label) {
+        html += `<div class="px-2 py-0.5 bg-[#f3f2f1] text-xs font-bold text-[#505a5f] border-b border-[#b1b4b6]">${escHtml4(group.label)}</div>`;
+      }
+      for (const node of group.systems) {
+        html += `<button type="button"
+                        class="block w-full text-left px-3 py-1.5 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c] border-b border-[#f3f2f1]"
+                        data-rel-action="select-consumer"
+                        data-rel-sys-id="${escAttr4(node.id)}">
+                        ${escHtml4(node.label || node.id)}
+                        ${node.vendor ? `<span class="text-xs text-[#505a5f] ml-1">(${escHtml4(node.vendor)})</span>` : ""}
+                    </button>`;
+      }
     }
     html += `</div>`;
     html += `</div>`;
@@ -5072,7 +5082,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const existingProviderIds = new Set(dependencyEdges.map((e) => e.target));
     const candidates = nodes.filter(
       (n) => n.type === "ITSystem" && n.id !== system.id && !existingProviderIds.has(n.id) && n.capabilityType && n.capabilityType.length > 0
-    );
+    ).sort((a, b) => (a.label || "").localeCompare(b.label || ""));
     if (candidates.length === 0) {
       return `<p class="text-xs text-[#505a5f] mt-1">No capability providers available to add.</p>`;
     }
@@ -5080,23 +5090,45 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += `<button type="button"
                 class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold"
                 data-rel-action="show-add-dependency">+ Add dependency</button>`;
-    html += `<div class="hidden mt-1 max-h-32 overflow-y-auto border border-[#b1b4b6] bg-white shadow-sm" data-rel-dependency-dropdown>`;
+    html += `<div class="hidden mt-1 max-h-48 overflow-y-auto border-2 border-[#0b0c0c] bg-white" data-rel-dependency-dropdown>`;
     for (const node of candidates) {
-      const caps = (node.capabilityType || []).map((c) => {
+      const caps = (node.capabilityType || []).join(",");
+      const capLabels = (node.capabilityType || []).map((c) => {
         const def = LGAM_CAPABILITIES.find((x) => x.id === c);
         return def ? def.label : c;
       }).join(", ");
       html += `<button type="button"
-                    class="block w-full text-left px-2 py-1 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c]"
+                    class="block w-full text-left px-3 py-1.5 text-sm hover:bg-[#f3f2f1] text-[#0b0c0c] border-b border-[#f3f2f1]"
                     data-rel-action="select-dependency"
-                    data-rel-sys-id="${escAttr4(node.id)}">
-                    <span class="font-medium">${escHtml4(node.label || node.id)}</span>
-                    <span class="text-xs text-[#505a5f] ml-1">(${escHtml4(caps)})</span>
+                    data-rel-sys-id="${escAttr4(node.id)}"
+                    data-rel-caps="${escAttr4(caps)}">
+                    <span class="font-bold">${escHtml4(node.label || node.id)}</span>
+                    <span class="block text-xs text-[#505a5f]">Provides: ${escHtml4(capLabels)}</span>
                 </button>`;
     }
     html += `</div>`;
     html += `</div>`;
     return html;
+  }
+  function groupCandidatesByDomain(candidates, nodes, edges) {
+    const ungrouped = [];
+    const grouped = /* @__PURE__ */ new Map();
+    for (const sys of candidates) {
+      const realizeEdge = edges.find((e) => e.source === sys.id && e.relationship === "REALIZES");
+      if (realizeEdge) {
+        const fnNode = nodes.find((n) => n.id === realizeEdge.target && n.type === "Function");
+        const label = fnNode ? fnNode.label : "Other";
+        if (!grouped.has(label)) grouped.set(label, []);
+        grouped.get(label).push(sys);
+      } else {
+        ungrouped.push(sys);
+      }
+    }
+    const result = [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([label, systems]) => ({ label, systems }));
+    if (ungrouped.length > 0) {
+      result.push({ label: "Other", systems: ungrouped });
+    }
+    return result;
   }
   function sectionHeading2(title) {
     return `<div class="font-bold text-[#0b0c0c] text-sm border-b border-[#b1b4b6] pb-1 mb-3">${escHtml4(title)}</div>`;
