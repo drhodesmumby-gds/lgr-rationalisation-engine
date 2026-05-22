@@ -50,19 +50,23 @@ state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
 
 // --- Unified Editor helpers ---
 
+let _editorEscHandler = null;
+
 function openUnifiedEditor(uploadIdx) {
     const upload = state.rawUploads[uploadIdx];
     if (!upload) return;
 
-    // Create a full-page overlay container for the editor
     let editorOverlay = document.getElementById('unifiedEditorOverlay');
     if (!editorOverlay) {
         editorOverlay = document.createElement('div');
         editorOverlay.id = 'unifiedEditorOverlay';
         editorOverlay.className = 'fixed inset-0 z-50 bg-white overflow-auto';
+        editorOverlay.setAttribute('role', 'dialog');
+        editorOverlay.setAttribute('aria-modal', 'true');
         document.body.appendChild(editorOverlay);
     }
     editorOverlay.classList.remove('hidden');
+    editorOverlay.setAttribute('aria-labelledby', 'ue-editor-title');
 
     const title = upload.data.councilName || upload.filename || 'Architecture Editor';
     editorOverlay.innerHTML = renderUnifiedEditor(upload.data, { source: 'edit', title });
@@ -77,6 +81,16 @@ function openUnifiedEditor(uploadIdx) {
             closeUnifiedEditor();
         }
     });
+
+    // Focus the first focusable element
+    const firstFocusable = editorOverlay.querySelector('button, input, select, [tabindex]');
+    if (firstFocusable) firstFocusable.focus();
+
+    // Escape key handler
+    _editorEscHandler = (e) => {
+        if (e.key === 'Escape') closeUnifiedEditor();
+    };
+    document.addEventListener('keydown', _editorEscHandler);
 }
 
 function closeUnifiedEditor() {
@@ -84,6 +98,10 @@ function closeUnifiedEditor() {
     if (editorOverlay) {
         editorOverlay.classList.add('hidden');
         editorOverlay.innerHTML = '';
+    }
+    if (_editorEscHandler) {
+        document.removeEventListener('keydown', _editorEscHandler);
+        _editorEscHandler = null;
     }
 }
 

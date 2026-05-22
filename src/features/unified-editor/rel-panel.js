@@ -78,7 +78,7 @@ export function renderRelPanel(system, editorState) {
                 const isUsed = edgeCaps.includes(cap);
                 const classes = isUsed
                     ? 'bg-[#1d70b8] text-white border-[#1d70b8]'
-                    : 'bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]';
+                    : 'bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]';
                 html += `<button type="button"
                             class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
                             data-rel-action="toggle-consumer-cap"
@@ -127,7 +127,7 @@ export function renderRelPanel(system, editorState) {
                 const isActive = edgeCaps.includes(capId);
                 const classes = isActive
                     ? 'bg-[#1d70b8] text-white border-[#1d70b8]'
-                    : 'bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]';
+                    : 'bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]';
                 html += `<button type="button"
                             class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
                             data-rel-action="toggle-dep-cap"
@@ -238,9 +238,9 @@ export function wireRelPanel(container, options = {}) {
         capBtn.setAttribute('aria-pressed', String(!wasActive));
         if (wasActive) {
             capBtn.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
-            capBtn.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+            capBtn.classList.add('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
         } else {
-            capBtn.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+            capBtn.classList.remove('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
             capBtn.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
         }
     });
@@ -272,11 +272,11 @@ export function wireRelPanel(container, options = {}) {
                 // Update visual state
                 target.setAttribute('aria-pressed', String(nowActive));
                 if (nowActive) {
-                    target.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                    target.classList.remove('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
                     target.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
                 } else {
                     target.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
-                    target.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                    target.classList.add('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
                 }
 
                 if (consumerId && capId && onConsumerCapToggle) {
@@ -294,11 +294,11 @@ export function wireRelPanel(container, options = {}) {
                 // Update visual state
                 target.setAttribute('aria-pressed', String(nowActive));
                 if (nowActive) {
-                    target.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                    target.classList.remove('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
                     target.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
                 } else {
                     target.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
-                    target.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                    target.classList.add('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
                 }
 
                 if (!isNaN(edgeIdx) && capId && onDependencyCapToggle) {
@@ -359,7 +359,7 @@ export function wireRelPanel(container, options = {}) {
                         const def = LGAM_CAPABILITIES.find(x => x.id === capId);
                         const label = def ? def.label : capId;
                         pickerHtml += `<button type="button"
-                            class="inline-flex items-center px-2 py-1 text-xs font-bold border bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]"
+                            class="inline-flex items-center px-2 py-1 text-xs font-bold border bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]"
                             data-dep-cap-select="${escAttr(capId)}" aria-pressed="false">${escHtml(label)}</button>`;
                     }
                     pickerHtml += `</div>`;

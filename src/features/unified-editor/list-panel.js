@@ -186,7 +186,7 @@ export function renderListPanel(editorState, options = {}) {
         // Group header
         html += `<div class="${bgClass} px-3 py-1.5 flex items-center justify-between sticky top-0 z-10">
             <span class="font-bold text-sm text-[#0b0c0c] truncate">${esc(group.domainLabel)}</span>
-            <span class="bg-[#b1b4b6] text-white text-xs font-bold px-1.5 ml-1 flex-shrink-0">${group.systems.length}</span>
+            <span class="bg-[#0b0c0c] text-white text-xs font-bold px-1.5 ml-1 flex-shrink-0">${group.systems.length}</span>
         </div>`;
 
         // System items

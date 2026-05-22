@@ -506,11 +506,11 @@ export function wireBulkMode(container, editorState, options = {}) {
             const nowOn = !wasOn;
             pill.setAttribute('aria-pressed', String(nowOn));
             if (nowOn) {
-                pill.classList.remove('bg-white', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                pill.classList.remove('bg-white', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
                 pill.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
             } else {
                 pill.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
-                pill.classList.add('bg-white', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                pill.classList.add('bg-white', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
             }
             const node = editorState.nodes[nodeIdx];
             if (!node.capabilityType) node.capabilityType = [];

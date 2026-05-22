@@ -94,7 +94,7 @@ export function renderCapabilityPills(options) {
         const isActive = active.includes(cap.id);
         const activeClasses = isActive
             ? 'bg-[#1d70b8] text-white border-[#1d70b8]'
-            : 'bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]';
+            : 'bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]';
         return `
             <button type="button"
                     class="inline-flex items-center px-2 py-1 text-xs font-bold border transition-colors ${activeClasses}"
@@ -241,11 +241,11 @@ export function wireSmartInputs(container, callbacks = {}) {
 
             // Toggle visual classes
             if (nowActive) {
-                pill.classList.remove('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                pill.classList.remove('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
                 pill.classList.add('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
             } else {
                 pill.classList.remove('bg-[#1d70b8]', 'text-white', 'border-[#1d70b8]');
-                pill.classList.add('bg-[#f3f2f1]', 'text-[#505a5f]', 'border-[#b1b4b6]');
+                pill.classList.add('bg-[#f3f2f1]', 'text-[#0b0c0c]', 'border-[#b1b4b6]');
             }
 
             if (callbacks.onCapabilityToggle) {

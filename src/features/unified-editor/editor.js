@@ -29,7 +29,7 @@ export function renderUnifiedEditor(json, options = {}) {
 
     // Left: title + mode toggle
     html += `<div class="flex items-center gap-4">`;
-    html += `<h2 class="text-lg font-bold text-[#0b0c0c]">${escHtml(title)}</h2>`;
+    html += `<h2 id="ue-editor-title" class="text-lg font-bold text-[#0b0c0c]">${escHtml(title)}</h2>`;
 
     // Mode toggle (segmented control)
     html += `<div class="inline-flex border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;

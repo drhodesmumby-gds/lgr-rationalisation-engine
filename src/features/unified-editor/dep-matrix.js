@@ -64,11 +64,12 @@ export function renderDepMatrix(editorState) {
         return `<td class="text-[#b1b4b6] text-center text-xs p-2 border-b border-[#b1b4b6]">&mdash;</td>`;
       }
       const count = caps.length;
-      const bgClass = count >= 3 ? 'bg-[#7fb3d9]' : count === 2 ? 'bg-[#a8cce8]' : 'bg-[#d4e5f7]';
+      const bgClass = count >= 3 ? 'bg-[#1d70b8]' : count === 2 ? 'bg-[#2b8cc4]' : 'bg-[#5694ca]';
+      const textClass = 'text-white';
       const capText = escLabel(caps.join(', '));
-      return `<td class="${bgClass} text-[#0b0c0c] text-xs p-2 border-b border-[#b1b4b6]">
+      return `<td class="${bgClass} ${textClass} text-xs p-2 border-b border-[#b1b4b6]">
         <div>${capText}</div>
-        <a href="#" data-dep-jump="${consumerIdx}" class="text-[#1d70b8] hover:text-[#003078] underline text-xs">Edit</a>
+        <button type="button" data-dep-jump="${consumerIdx}" class="text-white underline text-xs hover:text-[#f3f2f1]">Edit</button>
       </td>`;
     }).join('');
 

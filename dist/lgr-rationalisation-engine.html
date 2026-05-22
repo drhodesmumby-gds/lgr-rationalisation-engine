@@ -4292,7 +4292,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       html += `<div class="border-b border-[#b1b4b6]">`;
       html += `<div class="${bgClass} px-3 py-1.5 flex items-center justify-between sticky top-0 z-10">
             <span class="font-bold text-sm text-[#0b0c0c] truncate">${esc(group.domainLabel)}</span>
-            <span class="bg-[#b1b4b6] text-white text-xs font-bold px-1.5 ml-1 flex-shrink-0">${group.systems.length}</span>
+            <span class="bg-[#0b0c0c] text-white text-xs font-bold px-1.5 ml-1 flex-shrink-0">${group.systems.length}</span>
         </div>`;
       for (const { system, functionLabel, nodeIdx } of group.systems) {
         const isSelected = nodeIdx === selectedIdx;
@@ -4416,7 +4416,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const { active = [], vocabulary = [], allowCustom = false } = options;
     const pillsHtml = vocabulary.map((cap) => {
       const isActive = active.includes(cap.id);
-      const activeClasses = isActive ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]";
+      const activeClasses = isActive ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]";
       return `
             <button type="button"
                     class="inline-flex items-center px-2 py-1 text-xs font-bold border transition-colors ${activeClasses}"
@@ -4512,11 +4512,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const nowActive = !wasActive;
         pill.setAttribute("aria-pressed", String(nowActive));
         if (nowActive) {
-          pill.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+          pill.classList.remove("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
           pill.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
         } else {
           pill.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
-          pill.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+          pill.classList.add("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
         }
         if (callbacks.onCapabilityToggle) {
           callbacks.onCapabilityToggle(capId, nowActive);
@@ -4965,7 +4965,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         for (const cap of activeCaps) {
           const capDef = LGAM_CAPABILITIES.find((c) => c.id === cap) || { id: cap, label: cap };
           const isUsed = edgeCaps.includes(cap);
-          const classes = isUsed ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]";
+          const classes = isUsed ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]";
           html += `<button type="button"
                             class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
                             data-rel-action="toggle-consumer-cap"
@@ -5005,7 +5005,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         for (const capId of providerCaps) {
           const capDef = LGAM_CAPABILITIES.find((c) => c.id === capId) || { id: capId, label: capId };
           const isActive = edgeCaps.includes(capId);
-          const classes = isActive ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]";
+          const classes = isActive ? "bg-[#1d70b8] text-white border-[#1d70b8]" : "bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]";
           html += `<button type="button"
                             class="inline-flex items-center px-2 py-0.5 text-xs font-bold border transition-colors ${classes}"
                             data-rel-action="toggle-dep-cap"
@@ -5085,9 +5085,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       capBtn.setAttribute("aria-pressed", String(!wasActive));
       if (wasActive) {
         capBtn.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
-        capBtn.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+        capBtn.classList.add("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
       } else {
-        capBtn.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+        capBtn.classList.remove("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
         capBtn.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
       }
     });
@@ -5112,11 +5112,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const nowActive = !wasActive;
           target.setAttribute("aria-pressed", String(nowActive));
           if (nowActive) {
-            target.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+            target.classList.remove("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
             target.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
           } else {
             target.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
-            target.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+            target.classList.add("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
           }
           if (consumerId && capId && onConsumerCapToggle) {
             onConsumerCapToggle(nodeIdx, consumerId, capId, nowActive);
@@ -5130,11 +5130,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const nowActive = !wasActive;
           target.setAttribute("aria-pressed", String(nowActive));
           if (nowActive) {
-            target.classList.remove("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+            target.classList.remove("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
             target.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
           } else {
             target.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
-            target.classList.add("bg-[#f3f2f1]", "text-[#505a5f]", "border-[#b1b4b6]");
+            target.classList.add("bg-[#f3f2f1]", "text-[#0b0c0c]", "border-[#b1b4b6]");
           }
           if (!isNaN(edgeIdx) && capId && onDependencyCapToggle) {
             onDependencyCapToggle(nodeIdx, edgeIdx, capId, nowActive);
@@ -5187,7 +5187,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
               const def = LGAM_CAPABILITIES.find((x) => x.id === capId);
               const label = def ? def.label : capId;
               pickerHtml += `<button type="button"
-                            class="inline-flex items-center px-2 py-1 text-xs font-bold border bg-[#f3f2f1] text-[#505a5f] border-[#b1b4b6]"
+                            class="inline-flex items-center px-2 py-1 text-xs font-bold border bg-[#f3f2f1] text-[#0b0c0c] border-[#b1b4b6]"
                             data-dep-cap-select="${escAttr4(capId)}" aria-pressed="false">${escHtml4(label)}</button>`;
             }
             pickerHtml += `</div>`;
@@ -5760,11 +5760,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const nowOn = !wasOn;
         pill.setAttribute("aria-pressed", String(nowOn));
         if (nowOn) {
-          pill.classList.remove("bg-white", "text-[#505a5f]", "border-[#b1b4b6]");
+          pill.classList.remove("bg-white", "text-[#0b0c0c]", "border-[#b1b4b6]");
           pill.classList.add("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
         } else {
           pill.classList.remove("bg-[#1d70b8]", "text-white", "border-[#1d70b8]");
-          pill.classList.add("bg-white", "text-[#505a5f]", "border-[#b1b4b6]");
+          pill.classList.add("bg-white", "text-[#0b0c0c]", "border-[#b1b4b6]");
         }
         const node = editorState.nodes[nodeIdx];
         if (!node.capabilityType) node.capabilityType = [];
@@ -6050,11 +6050,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           return `<td class="text-[#b1b4b6] text-center text-xs p-2 border-b border-[#b1b4b6]">&mdash;</td>`;
         }
         const count = caps.length;
-        const bgClass = count >= 3 ? "bg-[#7fb3d9]" : count === 2 ? "bg-[#a8cce8]" : "bg-[#d4e5f7]";
+        const bgClass = count >= 3 ? "bg-[#1d70b8]" : count === 2 ? "bg-[#2b8cc4]" : "bg-[#5694ca]";
+        const textClass = "text-white";
         const capText = escLabel(caps.join(", "));
-        return `<td class="${bgClass} text-[#0b0c0c] text-xs p-2 border-b border-[#b1b4b6]">
+        return `<td class="${bgClass} ${textClass} text-xs p-2 border-b border-[#b1b4b6]">
         <div>${capText}</div>
-        <a href="#" data-dep-jump="${consumerIdx}" class="text-[#1d70b8] hover:text-[#003078] underline text-xs">Edit</a>
+        <button type="button" data-dep-jump="${consumerIdx}" class="text-white underline text-xs hover:text-[#f3f2f1]">Edit</button>
       </td>`;
       }).join("");
       const label = escLabel(consumer.label || consumer.id);
@@ -6115,7 +6116,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     let html = `<div class="flex flex-col h-screen bg-[#f3f2f1] border-t-4 border-[#1d70b8]" data-unified-editor>`;
     html += `<div class="flex items-center justify-between px-4 py-2 bg-white border-b border-[#b1b4b6] flex-shrink-0">`;
     html += `<div class="flex items-center gap-4">`;
-    html += `<h2 class="text-lg font-bold text-[#0b0c0c]">${escHtml6(title)}</h2>`;
+    html += `<h2 id="ue-editor-title" class="text-lg font-bold text-[#0b0c0c]">${escHtml6(title)}</h2>`;
     html += `<div class="inline-flex border border-[#b1b4b6] overflow-hidden" data-ue-mode-toggle>`;
     html += `<button type="button" data-ue-mode="focus"
                 class="px-3 py-1 text-sm font-bold bg-[#1d70b8] text-white transition-colors">Focus</button>`;
@@ -14426,6 +14427,7 @@ tr:nth-child(even){background:#f3f2f1;}
 
   // src/main.js
   state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
+  var _editorEscHandler = null;
   function openUnifiedEditor(uploadIdx) {
     const upload = state.rawUploads[uploadIdx];
     if (!upload) return;
@@ -14434,9 +14436,12 @@ tr:nth-child(even){background:#f3f2f1;}
       editorOverlay = document.createElement("div");
       editorOverlay.id = "unifiedEditorOverlay";
       editorOverlay.className = "fixed inset-0 z-50 bg-white overflow-auto";
+      editorOverlay.setAttribute("role", "dialog");
+      editorOverlay.setAttribute("aria-modal", "true");
       document.body.appendChild(editorOverlay);
     }
     editorOverlay.classList.remove("hidden");
+    editorOverlay.setAttribute("aria-labelledby", "ue-editor-title");
     const title = upload.data.councilName || upload.filename || "Architecture Editor";
     editorOverlay.innerHTML = renderUnifiedEditor(upload.data, { source: "edit", title });
     wireUnifiedEditor(editorOverlay, upload.data, {
@@ -14450,12 +14455,22 @@ tr:nth-child(even){background:#f3f2f1;}
         closeUnifiedEditor();
       }
     });
+    const firstFocusable = editorOverlay.querySelector("button, input, select, [tabindex]");
+    if (firstFocusable) firstFocusable.focus();
+    _editorEscHandler = (e) => {
+      if (e.key === "Escape") closeUnifiedEditor();
+    };
+    document.addEventListener("keydown", _editorEscHandler);
   }
   function closeUnifiedEditor() {
     const editorOverlay = document.getElementById("unifiedEditorOverlay");
     if (editorOverlay) {
       editorOverlay.classList.add("hidden");
       editorOverlay.innerHTML = "";
+    }
+    if (_editorEscHandler) {
+      document.removeEventListener("keydown", _editorEscHandler);
+      _editorEscHandler = null;
     }
   }
   function wireEditArchBtn2(btn) {
