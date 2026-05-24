@@ -6,7 +6,7 @@ import { LGAM_CAPABILITIES } from './constants/capabilities.js';
 import { DOMAIN_TERMS } from './constants/domain-terms.js';
 import { DOCUMENTATION } from './constants/documentation.js';
 import { getLgaFunction, getLgaBreadcrumb, getRootCategoryId, getDescendantIds } from './taxonomy.js';
-import { wrapWithTooltip, helpIcon, escHtml } from './ui-helpers.js';
+import { wrapWithTooltip, helpIcon, escHtml, tagToSignalDotClass } from './ui-helpers.js';
 import {
     buildSuccessorAllocation, classifyVestingZone,
     detectSharedServiceBoundary, detectCrossTierCollision,
@@ -3098,17 +3098,6 @@ function renderSignalRow(sig) {
 }
 
 // Maps a signal tag class to a signal-dot CSS class
-function tagToSignalDotClass(tag) {
-    const map = {
-        'tag-red':    'signal-dot-red',
-        'tag-orange': 'signal-dot-amber',
-        'tag-blue':   'signal-dot-blue',
-        'tag-purple': 'signal-dot-purple',
-        'tag-black':  'signal-dot-black',
-        'tag-green':  'signal-dot-green',
-    };
-    return map[tag] || 'signal-dot-blue';
-}
 
 // Renders a horizontal row of signal indicator pills
 function renderSignalStrip(signals) {

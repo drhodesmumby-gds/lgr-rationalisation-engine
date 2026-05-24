@@ -1048,3 +1048,6 @@ function escHtml(str) {
 function escAttr(str) {
     return escHtml(str);
 }
+
+// --- Exported for testing ---
+export { compareField as _compareField, countMissing as _countMissing };

@@ -1330,6 +1330,16 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (str == null) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  var TAG_TO_DOT_MAP = /* @__PURE__ */ Object.create(null);
+  TAG_TO_DOT_MAP["tag-red"] = "signal-dot-red";
+  TAG_TO_DOT_MAP["tag-orange"] = "signal-dot-amber";
+  TAG_TO_DOT_MAP["tag-blue"] = "signal-dot-blue";
+  TAG_TO_DOT_MAP["tag-purple"] = "signal-dot-purple";
+  TAG_TO_DOT_MAP["tag-black"] = "signal-dot-black";
+  TAG_TO_DOT_MAP["tag-green"] = "signal-dot-green";
+  function tagToSignalDotClass(tag) {
+    return TAG_TO_DOT_MAP[tag] || "signal-dot-blue";
+  }
 
   // src/analysis/allocation.js
   function buildSuccessorAllocation(nodes, edges, transitionStructure) {
@@ -17186,17 +17196,6 @@ tr:nth-child(even){background:#f3f2f1;}
     const guidance = isExec ? config.execGuidance : config.guidance;
     const tooltip = wrapWithTooltip(label, guidance);
     return `<span class="gds-tag ${config.colour}">${tooltip}</span>${helpIcon("patterns")}`;
-  }
-  function tagToSignalDotClass(tag) {
-    const map = {
-      "tag-red": "signal-dot-red",
-      "tag-orange": "signal-dot-amber",
-      "tag-blue": "signal-dot-blue",
-      "tag-purple": "signal-dot-purple",
-      "tag-black": "signal-dot-black",
-      "tag-green": "signal-dot-green"
-    };
-    return map[tag] || "signal-dot-blue";
   }
   function renderSignalStrip(signals) {
     if (!signals || signals.length === 0) return "";

@@ -11,3 +11,15 @@ export function escHtml(str) {
     if (str == null) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+const TAG_TO_DOT_MAP = Object.create(null);
+TAG_TO_DOT_MAP['tag-red'] = 'signal-dot-red';
+TAG_TO_DOT_MAP['tag-orange'] = 'signal-dot-amber';
+TAG_TO_DOT_MAP['tag-blue'] = 'signal-dot-blue';
+TAG_TO_DOT_MAP['tag-purple'] = 'signal-dot-purple';
+TAG_TO_DOT_MAP['tag-black'] = 'signal-dot-black';
+TAG_TO_DOT_MAP['tag-green'] = 'signal-dot-green';
+
+export function tagToSignalDotClass(tag) {
+    return TAG_TO_DOT_MAP[tag] || 'signal-dot-blue';
+}
