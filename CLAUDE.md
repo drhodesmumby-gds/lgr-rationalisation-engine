@@ -192,7 +192,9 @@ Six modal types, all using the same pattern (`fixed inset-0 bg-black bg-opacity-
       "sharedWith": ["Other Council"],
       "targetAuthorities": ["Successor Name"],
       "capabilityType": ["payments"],
-      "supportModel": "vendor-supported" | "community-supported" | "unsupported"
+      "supportModel": "vendor-supported" | "community-supported" | "unsupported",
+      "version": "v4.2.1",
+      "notes": "Vendor being acquired — future uncertain"
     }
   ],
   "edges": [

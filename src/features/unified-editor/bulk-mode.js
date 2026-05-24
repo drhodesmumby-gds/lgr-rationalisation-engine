@@ -376,7 +376,8 @@ function getColumnDefs(activeTab) {
                         { value: 'vendor-supported', label: 'vendor-supported' },
                         { value: 'community-supported', label: 'community-supported' },
                         { value: 'unsupported', label: 'unsupported' }
-                    ] }
+                    ] },
+                { field: 'version', label: 'Version', type: 'text', width: 100 }
             ];
         case 'relationships':
             return [

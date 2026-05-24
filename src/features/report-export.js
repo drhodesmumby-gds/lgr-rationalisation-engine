@@ -726,11 +726,12 @@ function buildDecisionsWithContractDetail(decisions) {
                 const sys = ra.system;
                 html += `<p style="margin:2px 0;"><strong>Decision:</strong> Choose — ${escHtml(sys.label || sys.id)}</p>`;
                 html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-                if (sys.vendor) html += `Vendor: ${escHtml(sys.vendor)}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+                if (sys.vendor || sys.version) html += `Vendor: ${escHtml([sys.vendor, sys.version].filter(Boolean).join(' · '))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Annual cost: ${escHtml(formatCost(sys.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Contract ends: ${escHtml(formatContractEnd(sys.endYear, sys.endMonth))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Notice: ${sys.noticePeriod ? sys.noticePeriod + ' months' : '—'}`;
                 html += `</p>`;
+                if (sys.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml(sys.notes)}</p>`;
                 // Notice trigger date
                 {
                     const trigger = computeNoticeTrigger(sys);
@@ -750,10 +751,11 @@ function buildDecisionsWithContractDetail(decisions) {
             const ps = decision.procuredSystem;
             html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new — ${escHtml(ps.label)}</p>`;
             html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-            if (ps.vendor) html += `Vendor: ${escHtml(ps.vendor)}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+            if (ps.vendor || ps.version) html += `Vendor: ${escHtml([ps.vendor, ps.version].filter(Boolean).join(' · '))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
             html += `Annual cost: ${escHtml(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
             html += `Hosting: ${ps.isCloud ? 'Cloud' : 'On-premise'}`;
             html += `</p>`;
+            if (ps.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml(ps.notes)}</p>`;
         } else if (decision.systemChoice === 'defer') {
             html += `<p style="margin:2px 0;"><strong>Decision:</strong> Defer — no consolidation decision made</p>`;
             // Show deferred systems with notice trigger intelligence
@@ -764,7 +766,7 @@ function buildDecisionsWithContractDetail(decisions) {
                     const sys = a.system;
                     if (!sys) continue;
                     const parts = [];
-                    if (sys.vendor) parts.push(`vendor: ${sys.vendor}`);
+                    if (sys.vendor || sys.version) parts.push(`vendor: ${[sys.vendor, sys.version].filter(Boolean).join(' · ')}`);
                     if (sys.annualCost) parts.push(`${formatCost(sys.annualCost)}/yr`);
                     const contractEnd = formatContractEnd(sys.endYear, sys.endMonth);
                     if (contractEnd !== '—') parts.push(`contract ends: ${contractEnd}`);
@@ -781,6 +783,7 @@ function buildDecisionsWithContractDetail(decisions) {
                         if (trigger.isOverdue) html += ` — OVERDUE`;
                         html += `</span>`;
                     }
+                    if (sys.notes) html += `<br/><span style="font-style:italic;color:#6b7280;">${escHtml(sys.notes)}</span>`;
                     html += `</li>`;
                 }
                 html += `</ul>`;

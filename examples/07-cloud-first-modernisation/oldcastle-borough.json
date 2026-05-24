@@ -5,16 +5,66 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "ocbc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "ocbc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "ocbc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "ocbc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "ocbc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "ocbc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "ocbc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "ocbc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "ocbc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "ocbc-fn-parks", "label": "Parks and Open Spaces", "type": "Function", "lgaFunctionId": "36" },
+    {
+      "id": "ocbc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "ocbc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "ocbc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "ocbc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "ocbc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "ocbc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "ocbc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "ocbc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "ocbc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "ocbc-fn-parks",
+      "label": "Parks and Open Spaces",
+      "type": "Function",
+      "lgaFunctionId": "36"
+    },
     {
       "id": "ocbc-sys-capita-waste",
       "label": "Capita Waste Collection System",
@@ -23,7 +73,7 @@
       "users": 70,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£125k/yr",
+      "cost": "\u00a3125k/yr",
       "annualCost": 125000,
       "endYear": 2031,
       "endMonth": 3,
@@ -31,7 +81,9 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "version": "v11.2 (legacy)",
+      "notes": "On-prem system targeted for cloud replacement. Business case approved pre-LGR."
     },
     {
       "id": "ocbc-sys-nec-benefits",
@@ -41,7 +93,7 @@
       "users": 95,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£195k/yr",
+      "cost": "\u00a3195k/yr",
       "annualCost": 195000,
       "endYear": 2030,
       "endMonth": 9,
@@ -49,7 +101,9 @@
       "portability": "Low",
       "dataPartitioning": "Monolithic",
       "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "version": "NEC iWorld 2021",
+      "notes": "Stable but on-prem. Cloud migration aligns with both LGR and TCoP objectives."
     },
     {
       "id": "ocbc-sys-idox-planning",
@@ -59,7 +113,7 @@
       "users": 55,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£118k/yr",
+      "cost": "\u00a3118k/yr",
       "annualCost": 118000,
       "endYear": 2031,
       "endMonth": 6,
@@ -77,7 +131,7 @@
       "users": 42,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£82k/yr",
+      "cost": "\u00a382k/yr",
       "annualCost": 82000,
       "endYear": 2030,
       "endMonth": 3,
@@ -95,7 +149,7 @@
       "users": 135,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£280k/yr",
+      "cost": "\u00a3280k/yr",
       "annualCost": 280000,
       "endYear": 2031,
       "endMonth": 9,
@@ -113,7 +167,7 @@
       "users": 240,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£320k/yr",
+      "cost": "\u00a3320k/yr",
       "annualCost": 320000,
       "endYear": 2030,
       "endMonth": 6,
@@ -122,7 +176,10 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ]
     },
     {
       "id": "ocbc-sys-nec-hr",
@@ -132,7 +189,7 @@
       "users": 400,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£215k/yr",
+      "cost": "\u00a3215k/yr",
       "annualCost": 215000,
       "endYear": 2032,
       "endMonth": 3,
@@ -150,7 +207,7 @@
       "users": 290,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£175k/yr",
+      "cost": "\u00a3175k/yr",
       "annualCost": 175000,
       "endYear": 2030,
       "endMonth": 9,
@@ -168,7 +225,7 @@
       "users": 20,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£48k/yr",
+      "cost": "\u00a348k/yr",
       "annualCost": 48000,
       "endYear": 2030,
       "endMonth": 3,
@@ -186,7 +243,7 @@
       "users": 35,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£18k/yr",
+      "cost": "\u00a318k/yr",
       "annualCost": 18000,
       "endYear": 2027,
       "endMonth": 3,
@@ -204,7 +261,7 @@
       "users": 180,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£65k/yr",
+      "cost": "\u00a365k/yr",
       "annualCost": 65000,
       "endYear": 2030,
       "endMonth": 6,
@@ -213,28 +270,138 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ]
     }
   ],
   "edges": [
-    { "source": "ocbc-sys-capita-waste", "target": "ocbc-fn-waste", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-nec-benefits", "target": "ocbc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-idox-planning", "target": "ocbc-fn-planning", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-idox-eh", "target": "ocbc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-capita-housing", "target": "ocbc-fn-housing", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-capita-finance", "target": "ocbc-fn-finance", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-nec-hr", "target": "ocbc-fn-hr", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-civica-crm", "target": "ocbc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-civica-elections", "target": "ocbc-fn-elections", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-inhouse-parks", "target": "ocbc-fn-parks", "relationship": "REALIZES" },
-    { "source": "ocbc-sys-nec-benefits", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ocbc-sys-idox-planning", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ocbc-sys-capita-housing", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
-    { "source": "ocbc-sys-civica-crm", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ocbc-sys-nec-hr", "target": "ocbc-sys-capita-finance", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
-    { "source": "ocbc-sys-nec-benefits", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "ocbc-sys-capita-housing", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ocbc-sys-civica-crm", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ocbc-sys-capita-waste", "target": "ocbc-sys-capita-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "ocbc-sys-capita-waste",
+      "target": "ocbc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-nec-benefits",
+      "target": "ocbc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-idox-planning",
+      "target": "ocbc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-idox-eh",
+      "target": "ocbc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-capita-housing",
+      "target": "ocbc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-capita-finance",
+      "target": "ocbc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-nec-hr",
+      "target": "ocbc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-civica-crm",
+      "target": "ocbc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-civica-elections",
+      "target": "ocbc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-inhouse-parks",
+      "target": "ocbc-fn-parks",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ocbc-sys-nec-benefits",
+      "target": "ocbc-sys-capita-finance",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ocbc-sys-idox-planning",
+      "target": "ocbc-sys-capita-finance",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ocbc-sys-capita-housing",
+      "target": "ocbc-sys-capita-finance",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments",
+        "workflow"
+      ]
+    },
+    {
+      "source": "ocbc-sys-civica-crm",
+      "target": "ocbc-sys-capita-finance",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ocbc-sys-nec-hr",
+      "target": "ocbc-sys-capita-finance",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments",
+        "workflow"
+      ]
+    },
+    {
+      "source": "ocbc-sys-nec-benefits",
+      "target": "ocbc-sys-capita-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "ocbc-sys-capita-housing",
+      "target": "ocbc-sys-capita-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ocbc-sys-civica-crm",
+      "target": "ocbc-sys-capita-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ocbc-sys-capita-waste",
+      "target": "ocbc-sys-capita-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

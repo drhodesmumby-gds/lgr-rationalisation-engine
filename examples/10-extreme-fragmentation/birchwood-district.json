@@ -5,14 +5,54 @@
     "financialDistress": true
   },
   "nodes": [
-    { "id": "bwdc-fn-waste", "label": "Waste", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "bwdc-fn-benefits", "label": "Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "bwdc-fn-planning", "label": "Planning", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "bwdc-fn-housing", "label": "Housing", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "bwdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "bwdc-fn-finance", "label": "Finance", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "bwdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "bwdc-fn-crm", "label": "Customer Services", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "bwdc-fn-waste",
+      "label": "Waste",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "bwdc-fn-benefits",
+      "label": "Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "bwdc-fn-planning",
+      "label": "Planning",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "bwdc-fn-housing",
+      "label": "Housing",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "bwdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "bwdc-fn-finance",
+      "label": "Finance",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "bwdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "bwdc-fn-crm",
+      "label": "Customer Services",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "bwdc-sys-capita-waste",
       "label": "Capita Waste Operations",
@@ -21,7 +61,7 @@
       "users": 25,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£35k/yr",
+      "cost": "\u00a335k/yr",
       "annualCost": 35000,
       "endYear": 2025,
       "endMonth": 6,
@@ -39,7 +79,7 @@
       "users": 45,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2025,
       "endMonth": 9,
@@ -48,7 +88,11 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Ashford Borough Council"]
+      "sharedWith": [
+        "Ashford Borough Council"
+      ],
+      "version": "NEC iWorld 2019",
+      "notes": "Shared with Ferndale. Neither council holds the contract \u2014 managed by legacy shared services company being wound down."
     },
     {
       "id": "bwdc-sys-capita-plan",
@@ -58,7 +102,7 @@
       "users": 18,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2025,
       "endMonth": 4,
@@ -76,7 +120,7 @@
       "users": 35,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£60k/yr",
+      "cost": "\u00a360k/yr",
       "annualCost": 60000,
       "endYear": 2025,
       "endMonth": 8,
@@ -94,7 +138,7 @@
       "users": 15,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£25k/yr",
+      "cost": "\u00a325k/yr",
       "annualCost": 25000,
       "endYear": 2025,
       "endMonth": 11,
@@ -112,7 +156,7 @@
       "users": 40,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£75k/yr",
+      "cost": "\u00a375k/yr",
       "annualCost": 75000,
       "endYear": 2025,
       "endMonth": 7,
@@ -130,7 +174,7 @@
       "users": 55,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2025,
       "endMonth": 10,
@@ -148,7 +192,7 @@
       "users": 30,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£15k/yr",
+      "cost": "\u00a315k/yr",
       "annualCost": 15000,
       "endYear": 2025,
       "endMonth": 5,
@@ -157,7 +201,9 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ]
     },
     {
       "id": "bwdc-sys-govuk-notify",
@@ -167,7 +213,7 @@
       "users": 100,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£5k/yr",
+      "cost": "\u00a35k/yr",
       "annualCost": 5000,
       "endYear": 2030,
       "endMonth": 12,
@@ -176,19 +222,68 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ]
     }
   ],
   "edges": [
-    { "source": "bwdc-sys-capita-waste", "target": "bwdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-nec-revs", "target": "bwdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-capita-plan", "target": "bwdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-capita-housing", "target": "bwdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-nec-eh", "target": "bwdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-capita-fin", "target": "bwdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-nec-hr", "target": "bwdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-inhouse-crm", "target": "bwdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "bwdc-sys-inhouse-crm", "target": "bwdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "bwdc-sys-nec-revs", "target": "bwdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
+    {
+      "source": "bwdc-sys-capita-waste",
+      "target": "bwdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-nec-revs",
+      "target": "bwdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-capita-plan",
+      "target": "bwdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-capita-housing",
+      "target": "bwdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-nec-eh",
+      "target": "bwdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-capita-fin",
+      "target": "bwdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-nec-hr",
+      "target": "bwdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-inhouse-crm",
+      "target": "bwdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "bwdc-sys-inhouse-crm",
+      "target": "bwdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "bwdc-sys-nec-revs",
+      "target": "bwdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    }
   ]
 }

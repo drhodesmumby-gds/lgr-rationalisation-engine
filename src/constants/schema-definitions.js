@@ -237,6 +237,18 @@ export const SCHEMA_DEFINITIONS = {
                             'community-supported': 'Maintained collaboratively (multi-council, open source, shared digital team).',
                             'unsupported': 'No active maintenance agreement. Developer left, product EOL, or no SLA.'
                         }
+                    },
+                    {
+                        name: 'version',
+                        type: 'string',
+                        required: false,
+                        description: 'System version or release identifier (e.g. "SAP S/4HANA 2023", "v4.2.1")'
+                    },
+                    {
+                        name: 'notes',
+                        type: 'string',
+                        required: false,
+                        description: 'Free-text notes for context not captured by other fields'
                     }
                 ]
             }

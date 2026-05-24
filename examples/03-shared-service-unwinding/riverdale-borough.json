@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "rbc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "rbc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "rbc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "rbc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "rbc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "rbc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "rbc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "rbc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "rbc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "rbc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "rbc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "rbc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "rbc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "rbc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "rbc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "rbc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "rbc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "rbc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "rbc-sys-nec-revenues",
       "label": "NEC Revenues and Benefits (Shared)",
@@ -22,7 +67,7 @@
       "users": 120,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£300k/yr",
+      "cost": "\u00a3300k/yr",
       "annualCost": 300000,
       "endYear": 2028,
       "endMonth": 9,
@@ -31,7 +76,11 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Kingsway District Council"]
+      "sharedWith": [
+        "Kingsway District Council"
+      ],
+      "version": "NEC iWorld 2020",
+      "notes": "Shared across all 3 boroughs. Single database instance \u2014 disaggregation requires NEC consultancy engagement."
     },
     {
       "id": "rbc-sys-mhr-itrent",
@@ -41,7 +90,7 @@
       "users": 85,
       "vendor": "MHR",
       "supportModel": "vendor-supported",
-      "cost": "£180k/yr",
+      "cost": "\u00a3180k/yr",
       "annualCost": 180000,
       "endYear": 2029,
       "endMonth": 3,
@@ -50,7 +99,11 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Kingsway District Council"]
+      "sharedWith": [
+        "Kingsway District Council"
+      ],
+      "version": "iTrent SaaS",
+      "notes": "Shared HR/payroll. TUPE implications for payroll staff if service model changes."
     },
     {
       "id": "rbc-sys-civica-elections",
@@ -60,7 +113,7 @@
       "users": 22,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£70k/yr",
+      "cost": "\u00a370k/yr",
       "annualCost": 70000,
       "endYear": 2027,
       "endMonth": 6,
@@ -69,7 +122,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Kingsway District Council"]
+      "sharedWith": [
+        "Kingsway District Council"
+      ]
     },
     {
       "id": "rbc-sys-whitespace",
@@ -79,7 +134,7 @@
       "users": 55,
       "vendor": "Whitespace",
       "supportModel": "vendor-supported",
-      "cost": "£100k/yr",
+      "cost": "\u00a3100k/yr",
       "annualCost": 100000,
       "endYear": 2028,
       "endMonth": 3,
@@ -97,7 +152,7 @@
       "users": 60,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£110k/yr",
+      "cost": "\u00a3110k/yr",
       "annualCost": 110000,
       "endYear": 2027,
       "endMonth": 9,
@@ -115,7 +170,7 @@
       "users": 130,
       "vendor": "MRI",
       "supportModel": "vendor-supported",
-      "cost": "£230k/yr",
+      "cost": "\u00a3230k/yr",
       "annualCost": 230000,
       "endYear": 2029,
       "endMonth": 6,
@@ -133,7 +188,7 @@
       "users": 42,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2028,
       "endMonth": 6,
@@ -151,7 +206,7 @@
       "users": 95,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£120k/yr",
+      "cost": "\u00a3120k/yr",
       "annualCost": 120000,
       "endYear": 2028,
       "endMonth": 9,
@@ -160,7 +215,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ]
     },
     {
       "id": "rbc-sys-civica-eh",
@@ -170,7 +227,7 @@
       "users": 32,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£65k/yr",
+      "cost": "\u00a365k/yr",
       "annualCost": 65000,
       "endYear": 2027,
       "endMonth": 3,
@@ -188,7 +245,7 @@
       "users": 180,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£6k/yr",
+      "cost": "\u00a36k/yr",
       "annualCost": 6000,
       "endYear": 2030,
       "endMonth": 12,
@@ -197,7 +254,10 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ]
     },
     {
       "id": "rbc-sys-capita-pay360",
@@ -207,7 +267,7 @@
       "users": 75,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 9,
@@ -216,25 +276,108 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "sharedWith": ["Kingsway District Council"],
-      "capabilityType": ["payments"]
+      "sharedWith": [
+        "Kingsway District Council"
+      ],
+      "capabilityType": [
+        "payments"
+      ]
     }
   ],
   "edges": [
-    { "source": "rbc-sys-nec-revenues", "target": "rbc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "rbc-sys-whitespace", "target": "rbc-fn-waste", "relationship": "REALIZES" },
-    { "source": "rbc-sys-idox-planning", "target": "rbc-fn-planning", "relationship": "REALIZES" },
-    { "source": "rbc-sys-mri-housing", "target": "rbc-fn-housing", "relationship": "REALIZES" },
-    { "source": "rbc-sys-access-finance", "target": "rbc-fn-finance", "relationship": "REALIZES" },
-    { "source": "rbc-sys-mhr-itrent", "target": "rbc-fn-hr", "relationship": "REALIZES" },
-    { "source": "rbc-sys-civica-elections", "target": "rbc-fn-elections", "relationship": "REALIZES" },
-    { "source": "rbc-sys-civica-eh", "target": "rbc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "rbc-sys-jadu-crm", "target": "rbc-fn-crm", "relationship": "REALIZES" },
-    { "source": "rbc-sys-nec-revenues", "target": "rbc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "rbc-sys-mri-housing", "target": "rbc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "rbc-sys-jadu-crm", "target": "rbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "rbc-sys-whitespace", "target": "rbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "rbc-sys-mri-housing", "target": "rbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "rbc-sys-idox-planning", "target": "rbc-sys-jadu-crm", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
+    {
+      "source": "rbc-sys-nec-revenues",
+      "target": "rbc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-whitespace",
+      "target": "rbc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-idox-planning",
+      "target": "rbc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-mri-housing",
+      "target": "rbc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-access-finance",
+      "target": "rbc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-mhr-itrent",
+      "target": "rbc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-civica-elections",
+      "target": "rbc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-civica-eh",
+      "target": "rbc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-jadu-crm",
+      "target": "rbc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "rbc-sys-nec-revenues",
+      "target": "rbc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "rbc-sys-mri-housing",
+      "target": "rbc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "rbc-sys-jadu-crm",
+      "target": "rbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "rbc-sys-whitespace",
+      "target": "rbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "rbc-sys-mri-housing",
+      "target": "rbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "rbc-sys-idox-planning",
+      "target": "rbc-sys-jadu-crm",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    }
   ]
 }

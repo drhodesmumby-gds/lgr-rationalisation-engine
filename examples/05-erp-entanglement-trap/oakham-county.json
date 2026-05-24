@@ -5,14 +5,54 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "occ-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "occ-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "occ-fn-procurement", "label": "Procurement", "type": "Function", "lgaFunctionId": "145" },
-    { "id": "occ-fn-legal", "label": "Legal Services", "type": "Function", "lgaFunctionId": "117" },
-    { "id": "occ-fn-socialcare", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
-    { "id": "occ-fn-highways", "label": "Highways Management", "type": "Function", "lgaFunctionId": "109" },
-    { "id": "occ-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "occ-fn-parking", "label": "Parking Services", "type": "Function", "lgaFunctionId": "110" },
+    {
+      "id": "occ-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "occ-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "occ-fn-procurement",
+      "label": "Procurement",
+      "type": "Function",
+      "lgaFunctionId": "145"
+    },
+    {
+      "id": "occ-fn-legal",
+      "label": "Legal Services",
+      "type": "Function",
+      "lgaFunctionId": "117"
+    },
+    {
+      "id": "occ-fn-socialcare",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "occ-fn-highways",
+      "label": "Highways Management",
+      "type": "Function",
+      "lgaFunctionId": "109"
+    },
+    {
+      "id": "occ-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "occ-fn-parking",
+      "label": "Parking Services",
+      "type": "Function",
+      "lgaFunctionId": "110"
+    },
     {
       "id": "occ-sys-sap",
       "label": "SAP S/4HANA",
@@ -21,7 +61,7 @@
       "users": 6000,
       "vendor": "SAP",
       "supportModel": "vendor-supported",
-      "cost": "£2.1m/yr",
+      "cost": "\u00a32.1m/yr",
       "annualCost": 2100000,
       "endYear": 2030,
       "endMonth": 3,
@@ -30,7 +70,12 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "version": "S/4HANA 2023",
+      "notes": "Monolithic ERP spanning finance, HR, procurement, asset mgmt. 14 custom ABAP integrations with downstream systems. Disaggregation quoted at \u00a32.4M."
     },
     {
       "id": "occ-sys-liquidlogic",
@@ -40,7 +85,7 @@
       "users": 3200,
       "vendor": "System C",
       "supportModel": "vendor-supported",
-      "cost": "£900k/yr",
+      "cost": "\u00a3900k/yr",
       "annualCost": 900000,
       "endYear": 2029,
       "endMonth": 6,
@@ -48,7 +93,9 @@
       "portability": "Medium",
       "dataPartitioning": "Segmented",
       "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "version": "v14.3",
+      "notes": "Consumes payments from SAP. Migration to standalone payments would require 6-month project."
     },
     {
       "id": "occ-sys-confirm",
@@ -58,7 +105,7 @@
       "users": 350,
       "vendor": "Brightly",
       "supportModel": "vendor-supported",
-      "cost": "£220k/yr",
+      "cost": "\u00a3220k/yr",
       "annualCost": 220000,
       "endYear": 2028,
       "endMonth": 9,
@@ -76,7 +123,7 @@
       "users": 900,
       "vendor": "Microsoft",
       "supportModel": "vendor-supported",
-      "cost": "£380k/yr",
+      "cost": "\u00a3380k/yr",
       "annualCost": 380000,
       "endYear": 2027,
       "endMonth": 12,
@@ -85,7 +132,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ]
     },
     {
       "id": "occ-sys-civica-parking",
@@ -95,7 +144,7 @@
       "users": 200,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£120k/yr",
+      "cost": "\u00a3120k/yr",
       "annualCost": 120000,
       "endYear": 2027,
       "endMonth": 6,
@@ -113,7 +162,7 @@
       "users": 500,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£10k/yr",
+      "cost": "\u00a310k/yr",
       "annualCost": 10000,
       "endYear": 2030,
       "endMonth": 3,
@@ -122,23 +171,103 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ]
     }
   ],
   "edges": [
-    { "source": "occ-sys-sap", "target": "occ-fn-finance", "relationship": "REALIZES" },
-    { "source": "occ-sys-sap", "target": "occ-fn-hr", "relationship": "REALIZES" },
-    { "source": "occ-sys-sap", "target": "occ-fn-procurement", "relationship": "REALIZES" },
-    { "source": "occ-sys-sap", "target": "occ-fn-legal", "relationship": "REALIZES" },
-    { "source": "occ-sys-liquidlogic", "target": "occ-fn-socialcare", "relationship": "REALIZES" },
-    { "source": "occ-sys-confirm", "target": "occ-fn-highways", "relationship": "REALIZES" },
-    { "source": "occ-sys-dynamics", "target": "occ-fn-crm", "relationship": "REALIZES" },
-    { "source": "occ-sys-civica-parking", "target": "occ-fn-parking", "relationship": "REALIZES" },
-    { "source": "occ-sys-liquidlogic", "target": "occ-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "occ-sys-confirm", "target": "occ-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] },
-    { "source": "occ-sys-civica-parking", "target": "occ-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "occ-sys-liquidlogic", "target": "occ-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "occ-sys-confirm", "target": "occ-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "occ-sys-dynamics", "target": "occ-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
+    {
+      "source": "occ-sys-sap",
+      "target": "occ-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-sap",
+      "target": "occ-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-sap",
+      "target": "occ-fn-procurement",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-sap",
+      "target": "occ-fn-legal",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-liquidlogic",
+      "target": "occ-fn-socialcare",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-confirm",
+      "target": "occ-fn-highways",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-dynamics",
+      "target": "occ-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-civica-parking",
+      "target": "occ-fn-parking",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "occ-sys-liquidlogic",
+      "target": "occ-sys-sap",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "occ-sys-confirm",
+      "target": "occ-sys-sap",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "workflow"
+      ]
+    },
+    {
+      "source": "occ-sys-civica-parking",
+      "target": "occ-sys-sap",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "occ-sys-liquidlogic",
+      "target": "occ-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "occ-sys-confirm",
+      "target": "occ-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "occ-sys-dynamics",
+      "target": "occ-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    }
   ]
 }

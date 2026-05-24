@@ -5,20 +5,90 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "wcc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "wcc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "wcc-fn-procurement", "label": "Procurement", "type": "Function", "lgaFunctionId": "145" },
-    { "id": "wcc-fn-adults", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
-    { "id": "wcc-fn-childrens", "label": "Children's Services", "type": "Function", "lgaFunctionId": "152" },
-    { "id": "wcc-fn-highways", "label": "Highways Management", "type": "Function", "lgaFunctionId": "109" },
-    { "id": "wcc-fn-libraries", "label": "Libraries", "type": "Function", "lgaFunctionId": "76" },
-    { "id": "wcc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "wcc-fn-publichealth", "label": "Public Health", "type": "Function", "lgaFunctionId": "65" },
-    { "id": "wcc-fn-streetcare", "label": "Street Care and Cleansing", "type": "Function", "lgaFunctionId": "40" },
-    { "id": "wcc-fn-parking", "label": "Parking Services", "type": "Function", "lgaFunctionId": "110" },
-    { "id": "wcc-fn-registration", "label": "Registration Services", "type": "Function", "lgaFunctionId": "54" },
-    { "id": "wcc-fn-sports", "label": "Sports and Leisure", "type": "Function", "lgaFunctionId": "80" },
-    { "id": "wcc-fn-trading", "label": "Trading Standards", "type": "Function", "lgaFunctionId": "15" },
+    {
+      "id": "wcc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "wcc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "wcc-fn-procurement",
+      "label": "Procurement",
+      "type": "Function",
+      "lgaFunctionId": "145"
+    },
+    {
+      "id": "wcc-fn-adults",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "wcc-fn-childrens",
+      "label": "Children's Services",
+      "type": "Function",
+      "lgaFunctionId": "152"
+    },
+    {
+      "id": "wcc-fn-highways",
+      "label": "Highways Management",
+      "type": "Function",
+      "lgaFunctionId": "109"
+    },
+    {
+      "id": "wcc-fn-libraries",
+      "label": "Libraries",
+      "type": "Function",
+      "lgaFunctionId": "76"
+    },
+    {
+      "id": "wcc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "wcc-fn-publichealth",
+      "label": "Public Health",
+      "type": "Function",
+      "lgaFunctionId": "65"
+    },
+    {
+      "id": "wcc-fn-streetcare",
+      "label": "Street Care and Cleansing",
+      "type": "Function",
+      "lgaFunctionId": "40"
+    },
+    {
+      "id": "wcc-fn-parking",
+      "label": "Parking Services",
+      "type": "Function",
+      "lgaFunctionId": "110"
+    },
+    {
+      "id": "wcc-fn-registration",
+      "label": "Registration Services",
+      "type": "Function",
+      "lgaFunctionId": "54"
+    },
+    {
+      "id": "wcc-fn-sports",
+      "label": "Sports and Leisure",
+      "type": "Function",
+      "lgaFunctionId": "80"
+    },
+    {
+      "id": "wcc-fn-trading",
+      "label": "Trading Standards",
+      "type": "Function",
+      "lgaFunctionId": "15"
+    },
     {
       "id": "wcc-sys-sap",
       "label": "SAP S/4HANA ERP",
@@ -26,7 +96,7 @@
       "owner": "Westshire County Council",
       "users": 7000,
       "vendor": "SAP",
-      "cost": "£2.3m/yr",
+      "cost": "\u00a32.3m/yr",
       "annualCost": 2300000,
       "endYear": 2030,
       "endMonth": 3,
@@ -35,7 +105,12 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "version": "S/4HANA 2023 FPS02",
+      "notes": "Largest system by cost (\u00a32.1M/yr). County CEO relationship with SAP UK managing director. Political sensitivity around any decommission discussion."
     },
     {
       "id": "wcc-sys-liquidlogic-las",
@@ -44,7 +119,7 @@
       "owner": "Westshire County Council",
       "users": 3800,
       "vendor": "System C",
-      "cost": "£1m/yr",
+      "cost": "\u00a31m/yr",
       "annualCost": 1000000,
       "endYear": 2028,
       "endMonth": 3,
@@ -61,7 +136,7 @@
       "owner": "Westshire County Council",
       "users": 3000,
       "vendor": "System C",
-      "cost": "£820k/yr",
+      "cost": "\u00a3820k/yr",
       "annualCost": 820000,
       "endYear": 2028,
       "endMonth": 9,
@@ -78,7 +153,7 @@
       "owner": "Westshire County Council",
       "users": 450,
       "vendor": "Brightly",
-      "cost": "£260k/yr",
+      "cost": "\u00a3260k/yr",
       "annualCost": 260000,
       "endYear": 2029,
       "endMonth": 6,
@@ -95,7 +170,7 @@
       "owner": "Westshire County Council",
       "users": 160,
       "vendor": "SirsiDynix",
-      "cost": "£175k/yr",
+      "cost": "\u00a3175k/yr",
       "annualCost": 175000,
       "endYear": 2027,
       "endMonth": 3,
@@ -112,7 +187,7 @@
       "owner": "Westshire County Council",
       "users": 1100,
       "vendor": "Microsoft",
-      "cost": "£420k/yr",
+      "cost": "\u00a3420k/yr",
       "annualCost": 420000,
       "endYear": 2030,
       "endMonth": 3,
@@ -121,7 +196,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ]
     },
     {
       "id": "wcc-sys-publichealth",
@@ -131,7 +208,7 @@
       "users": 130,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£45k/yr",
+      "cost": "\u00a345k/yr",
       "annualCost": 45000,
       "endYear": 2026,
       "endMonth": 3,
@@ -148,7 +225,7 @@
       "owner": "Westshire County Council",
       "users": 280,
       "vendor": "Access Group",
-      "cost": "£165k/yr",
+      "cost": "\u00a3165k/yr",
       "annualCost": 165000,
       "endYear": 2028,
       "endMonth": 6,
@@ -165,7 +242,7 @@
       "owner": "Westshire County Council",
       "users": 180,
       "vendor": "Civica",
-      "cost": "£110k/yr",
+      "cost": "\u00a3110k/yr",
       "annualCost": 110000,
       "endYear": 2027,
       "endMonth": 9,
@@ -182,7 +259,7 @@
       "owner": "Westshire County Council",
       "users": 90,
       "vendor": "Capita",
-      "cost": "£80k/yr",
+      "cost": "\u00a380k/yr",
       "annualCost": 80000,
       "endYear": 2028,
       "endMonth": 3,
@@ -200,7 +277,7 @@
       "users": 60,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£25k/yr",
+      "cost": "\u00a325k/yr",
       "annualCost": 25000,
       "endYear": 2026,
       "endMonth": 9,
@@ -217,7 +294,7 @@
       "owner": "Westshire County Council",
       "users": 75,
       "vendor": "Idox",
-      "cost": "£55k/yr",
+      "cost": "\u00a355k/yr",
       "annualCost": 55000,
       "endYear": 2027,
       "endMonth": 6,
@@ -234,7 +311,7 @@
       "owner": "Westshire County Council",
       "users": 450,
       "vendor": "Capita",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 9,
@@ -243,7 +320,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ]
     },
     {
       "id": "wcc-sys-govuk-notify",
@@ -252,7 +331,7 @@
       "owner": "Westshire County Council",
       "users": 800,
       "vendor": "GDS",
-      "cost": "£12k/yr",
+      "cost": "\u00a312k/yr",
       "annualCost": 12000,
       "endYear": 2030,
       "endMonth": 12,
@@ -261,34 +340,172 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ]
     }
   ],
   "edges": [
-    { "source": "wcc-sys-sap", "target": "wcc-fn-finance", "relationship": "REALIZES" },
-    { "source": "wcc-sys-sap", "target": "wcc-fn-hr", "relationship": "REALIZES" },
-    { "source": "wcc-sys-sap", "target": "wcc-fn-procurement", "relationship": "REALIZES" },
-    { "source": "wcc-sys-liquidlogic-las", "target": "wcc-fn-adults", "relationship": "REALIZES" },
-    { "source": "wcc-sys-liquidlogic-ehm", "target": "wcc-fn-childrens", "relationship": "REALIZES" },
-    { "source": "wcc-sys-confirm", "target": "wcc-fn-highways", "relationship": "REALIZES" },
-    { "source": "wcc-sys-symphony", "target": "wcc-fn-libraries", "relationship": "REALIZES" },
-    { "source": "wcc-sys-dynamics365", "target": "wcc-fn-crm", "relationship": "REALIZES" },
-    { "source": "wcc-sys-publichealth", "target": "wcc-fn-publichealth", "relationship": "REALIZES" },
-    { "source": "wcc-sys-streetcare", "target": "wcc-fn-streetcare", "relationship": "REALIZES" },
-    { "source": "wcc-sys-parking", "target": "wcc-fn-parking", "relationship": "REALIZES" },
-    { "source": "wcc-sys-registration", "target": "wcc-fn-registration", "relationship": "REALIZES" },
-    { "source": "wcc-sys-sports", "target": "wcc-fn-sports", "relationship": "REALIZES" },
-    { "source": "wcc-sys-trading", "target": "wcc-fn-trading", "relationship": "REALIZES" },
-    { "source": "wcc-sys-parking", "target": "wcc-sys-capita-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wcc-sys-registration", "target": "wcc-sys-capita-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wcc-sys-sports", "target": "wcc-sys-capita-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wcc-sys-symphony", "target": "wcc-sys-capita-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wcc-sys-dynamics365", "target": "wcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "wcc-sys-confirm", "target": "wcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "wcc-sys-liquidlogic-las", "target": "wcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "wcc-sys-parking", "target": "wcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "wcc-sys-liquidlogic-las", "target": "wcc-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wcc-sys-liquidlogic-ehm", "target": "wcc-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wcc-sys-confirm", "target": "wcc-sys-sap", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] }
+    {
+      "source": "wcc-sys-sap",
+      "target": "wcc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-sap",
+      "target": "wcc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-sap",
+      "target": "wcc-fn-procurement",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-liquidlogic-las",
+      "target": "wcc-fn-adults",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-liquidlogic-ehm",
+      "target": "wcc-fn-childrens",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-confirm",
+      "target": "wcc-fn-highways",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-symphony",
+      "target": "wcc-fn-libraries",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-dynamics365",
+      "target": "wcc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-publichealth",
+      "target": "wcc-fn-publichealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-streetcare",
+      "target": "wcc-fn-streetcare",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-parking",
+      "target": "wcc-fn-parking",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-registration",
+      "target": "wcc-fn-registration",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-sports",
+      "target": "wcc-fn-sports",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-trading",
+      "target": "wcc-fn-trading",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wcc-sys-parking",
+      "target": "wcc-sys-capita-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wcc-sys-registration",
+      "target": "wcc-sys-capita-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wcc-sys-sports",
+      "target": "wcc-sys-capita-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wcc-sys-symphony",
+      "target": "wcc-sys-capita-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wcc-sys-dynamics365",
+      "target": "wcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "wcc-sys-confirm",
+      "target": "wcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "wcc-sys-liquidlogic-las",
+      "target": "wcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "wcc-sys-parking",
+      "target": "wcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "wcc-sys-liquidlogic-las",
+      "target": "wcc-sys-sap",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wcc-sys-liquidlogic-ehm",
+      "target": "wcc-sys-sap",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wcc-sys-confirm",
+      "target": "wcc-sys-sap",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "workflow"
+      ]
+    }
   ]
 }

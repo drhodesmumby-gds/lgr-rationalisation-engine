@@ -159,6 +159,24 @@ export function renderPropsPanel(system, editorState) {
 
     html += `</div>`;
 
+    // === Section 4: Additional Info ===
+    html += sectionHeading('Additional Info');
+    html += `<div class="flex flex-col gap-2 mb-5">`;
+
+    html += fieldRow('Version',
+        `<input type="text" data-prop-field="version" value="${escAttr(system.version || '')}"
+                class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0"
+                placeholder="e.g. v4.2.1, SAP S/4HANA 2023" />`
+    );
+
+    html += fieldRow('Notes',
+        `<textarea data-prop-field="notes" rows="3"
+                class="w-full text-sm border-2 border-[#0b0c0c] p-2 focus:outline-3 focus:outline-[#ffdd00] focus:outline-offset-0 resize-y"
+                placeholder="Context, risks, dependencies, political considerations...">${escHtml(system.notes || '')}</textarea>`
+    );
+
+    html += `</div>`;
+
     // === Delete system ===
     html += `<div class="mt-6 pt-4 border-t border-[#b1b4b6]">`;
     html += `<button type="button" data-prop-action="delete"

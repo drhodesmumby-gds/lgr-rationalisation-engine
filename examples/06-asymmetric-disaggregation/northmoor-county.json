@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "ncc-fn-socialcare", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
-    { "id": "ncc-fn-childrens", "label": "Children's Services", "type": "Function", "lgaFunctionId": "152" },
-    { "id": "ncc-fn-highways", "label": "Highways Management", "type": "Function", "lgaFunctionId": "109" },
-    { "id": "ncc-fn-libraries", "label": "Libraries", "type": "Function", "lgaFunctionId": "76" },
-    { "id": "ncc-fn-publicheath", "label": "Public Health", "type": "Function", "lgaFunctionId": "65" },
-    { "id": "ncc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "ncc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "ncc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "ncc-fn-streetcare", "label": "Street Cleansing", "type": "Function", "lgaFunctionId": "40" },
+    {
+      "id": "ncc-fn-socialcare",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "ncc-fn-childrens",
+      "label": "Children's Services",
+      "type": "Function",
+      "lgaFunctionId": "152"
+    },
+    {
+      "id": "ncc-fn-highways",
+      "label": "Highways Management",
+      "type": "Function",
+      "lgaFunctionId": "109"
+    },
+    {
+      "id": "ncc-fn-libraries",
+      "label": "Libraries",
+      "type": "Function",
+      "lgaFunctionId": "76"
+    },
+    {
+      "id": "ncc-fn-publicheath",
+      "label": "Public Health",
+      "type": "Function",
+      "lgaFunctionId": "65"
+    },
+    {
+      "id": "ncc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "ncc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "ncc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "ncc-fn-streetcare",
+      "label": "Street Cleansing",
+      "type": "Function",
+      "lgaFunctionId": "40"
+    },
     {
       "id": "ncc-sys-liquidlogic-las",
       "label": "Liquidlogic LAS Adult Social Care",
@@ -22,7 +67,7 @@
       "users": 4000,
       "vendor": "System C",
       "supportModel": "vendor-supported",
-      "cost": "£1.1m/yr",
+      "cost": "\u00a31.1m/yr",
       "annualCost": 1100000,
       "endYear": 2030,
       "endMonth": 3,
@@ -31,7 +76,12 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ],
+      "version": "v14.1",
+      "notes": "County licence \u2014 must be split across 3 unitaries. System C offer multi-authority hosting."
     },
     {
       "id": "ncc-sys-liquidlogic-ehm",
@@ -41,7 +91,7 @@
       "users": 3200,
       "vendor": "System C",
       "supportModel": "vendor-supported",
-      "cost": "£850k/yr",
+      "cost": "\u00a3850k/yr",
       "annualCost": 850000,
       "endYear": 2029,
       "endMonth": 9,
@@ -50,7 +100,10 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ]
     },
     {
       "id": "ncc-sys-confirm",
@@ -60,7 +113,7 @@
       "users": 500,
       "vendor": "Brightly",
       "supportModel": "vendor-supported",
-      "cost": "£280k/yr",
+      "cost": "\u00a3280k/yr",
       "annualCost": 280000,
       "endYear": 2028,
       "endMonth": 6,
@@ -69,7 +122,12 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ],
+      "version": "v22.10",
+      "notes": "Asset database contains 45 years of survey data. Migration complexity is data volume, not application."
     },
     {
       "id": "ncc-sys-koha",
@@ -79,7 +137,7 @@
       "users": 180,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£60k/yr",
+      "cost": "\u00a360k/yr",
       "annualCost": 60000,
       "endYear": 2028,
       "endMonth": 3,
@@ -88,7 +146,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["North Alderton Council"]
+      "targetAuthorities": [
+        "North Alderton Council"
+      ]
     },
     {
       "id": "ncc-sys-publicheath",
@@ -98,7 +158,7 @@
       "users": 120,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2027,
       "endMonth": 9,
@@ -107,7 +167,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["South Chelworth Council"]
+      "targetAuthorities": [
+        "South Chelworth Council"
+      ]
     },
     {
       "id": "ncc-sys-oracle-erp",
@@ -117,7 +179,7 @@
       "users": 5500,
       "vendor": "Oracle",
       "supportModel": "vendor-supported",
-      "cost": "£1.8m/yr",
+      "cost": "\u00a31.8m/yr",
       "annualCost": 1800000,
       "endYear": 2031,
       "endMonth": 3,
@@ -126,8 +188,14 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"],
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ]
     },
     {
       "id": "ncc-sys-dynamics",
@@ -137,7 +205,7 @@
       "users": 1400,
       "vendor": "Microsoft",
       "supportModel": "vendor-supported",
-      "cost": "£500k/yr",
+      "cost": "\u00a3500k/yr",
       "annualCost": 500000,
       "endYear": 2028,
       "endMonth": 12,
@@ -146,8 +214,13 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"],
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "capabilityType": [
+        "forms"
+      ],
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ]
     },
     {
       "id": "ncc-sys-access-street",
@@ -157,7 +230,7 @@
       "users": 250,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£150k/yr",
+      "cost": "\u00a3150k/yr",
       "annualCost": 150000,
       "endYear": 2028,
       "endMonth": 3,
@@ -166,7 +239,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "targetAuthorities": ["North Alderton Council"]
+      "targetAuthorities": [
+        "North Alderton Council"
+      ]
     },
     {
       "id": "ncc-sys-capita-pay360",
@@ -176,7 +251,7 @@
       "users": 600,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2029,
       "endMonth": 6,
@@ -185,8 +260,13 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"],
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "capabilityType": [
+        "payments"
+      ],
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ]
     },
     {
       "id": "ncc-sys-govuk-notify",
@@ -196,7 +276,7 @@
       "users": 700,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£12k/yr",
+      "cost": "\u00a312k/yr",
       "annualCost": 12000,
       "endYear": 2030,
       "endMonth": 12,
@@ -205,28 +285,136 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"],
-      "targetAuthorities": ["North Alderton Council", "South Chelworth Council"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "targetAuthorities": [
+        "North Alderton Council",
+        "South Chelworth Council"
+      ]
     }
   ],
   "edges": [
-    { "source": "ncc-sys-liquidlogic-las", "target": "ncc-fn-socialcare", "relationship": "REALIZES" },
-    { "source": "ncc-sys-liquidlogic-ehm", "target": "ncc-fn-childrens", "relationship": "REALIZES" },
-    { "source": "ncc-sys-confirm", "target": "ncc-fn-highways", "relationship": "REALIZES" },
-    { "source": "ncc-sys-koha", "target": "ncc-fn-libraries", "relationship": "REALIZES" },
-    { "source": "ncc-sys-publicheath", "target": "ncc-fn-publicheath", "relationship": "REALIZES" },
-    { "source": "ncc-sys-oracle-erp", "target": "ncc-fn-finance", "relationship": "REALIZES" },
-    { "source": "ncc-sys-oracle-erp", "target": "ncc-fn-hr", "relationship": "REALIZES" },
-    { "source": "ncc-sys-dynamics", "target": "ncc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ncc-sys-access-street", "target": "ncc-fn-streetcare", "relationship": "REALIZES" },
-    { "source": "ncc-sys-liquidlogic-las", "target": "ncc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ncc-sys-liquidlogic-ehm", "target": "ncc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ncc-sys-confirm", "target": "ncc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] },
-    { "source": "ncc-sys-koha", "target": "ncc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ncc-sys-access-street", "target": "ncc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "ncc-sys-liquidlogic-las", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ncc-sys-liquidlogic-ehm", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ncc-sys-dynamics", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ncc-sys-confirm", "target": "ncc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "ncc-sys-liquidlogic-las",
+      "target": "ncc-fn-socialcare",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-liquidlogic-ehm",
+      "target": "ncc-fn-childrens",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-confirm",
+      "target": "ncc-fn-highways",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-koha",
+      "target": "ncc-fn-libraries",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-publicheath",
+      "target": "ncc-fn-publicheath",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-oracle-erp",
+      "target": "ncc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-oracle-erp",
+      "target": "ncc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-dynamics",
+      "target": "ncc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-access-street",
+      "target": "ncc-fn-streetcare",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ncc-sys-liquidlogic-las",
+      "target": "ncc-sys-oracle-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ncc-sys-liquidlogic-ehm",
+      "target": "ncc-sys-oracle-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ncc-sys-confirm",
+      "target": "ncc-sys-oracle-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "workflow"
+      ]
+    },
+    {
+      "source": "ncc-sys-koha",
+      "target": "ncc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ncc-sys-access-street",
+      "target": "ncc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "ncc-sys-liquidlogic-las",
+      "target": "ncc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ncc-sys-liquidlogic-ehm",
+      "target": "ncc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ncc-sys-dynamics",
+      "target": "ncc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ncc-sys-confirm",
+      "target": "ncc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

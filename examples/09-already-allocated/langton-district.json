@@ -5,14 +5,54 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "ldc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "ldc-fn-benefits", "label": "Housing Benefits and Council Tax", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "ldc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "ldc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "ldc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "ldc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "ldc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "ldc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "ldc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "ldc-fn-benefits",
+      "label": "Housing Benefits and Council Tax",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "ldc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "ldc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "ldc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "ldc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "ldc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "ldc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "ldc-sys-bartec",
       "label": "Bartec Waste Management",
@@ -21,7 +61,7 @@
       "users": 72,
       "vendor": "Bartec",
       "supportModel": "vendor-supported",
-      "cost": "£110k/yr",
+      "cost": "\u00a3110k/yr",
       "annualCost": 110000,
       "endYear": 2028,
       "endMonth": 6,
@@ -30,7 +70,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council"]
+      "targetAuthorities": [
+        "Penworth North Council"
+      ]
     },
     {
       "id": "ldc-sys-nec",
@@ -40,7 +82,7 @@
       "users": 88,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£175k/yr",
+      "cost": "\u00a3175k/yr",
       "annualCost": 175000,
       "endYear": 2029,
       "endMonth": 3,
@@ -49,7 +91,11 @@
       "dataPartitioning": "Monolithic",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council"]
+      "targetAuthorities": [
+        "Penworth North Council"
+      ],
+      "version": "NEC iWorld 2022",
+      "notes": "Already allocated to North Langton successor by programme board decision (March 2026)."
     },
     {
       "id": "ldc-sys-idox-planning",
@@ -59,7 +105,7 @@
       "users": 42,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2027,
       "endMonth": 9,
@@ -77,7 +123,7 @@
       "users": 95,
       "vendor": "MRI Software",
       "supportModel": "vendor-supported",
-      "cost": "£160k/yr",
+      "cost": "\u00a3160k/yr",
       "annualCost": 160000,
       "endYear": 2028,
       "endMonth": 3,
@@ -95,7 +141,7 @@
       "users": 38,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£65k/yr",
+      "cost": "\u00a365k/yr",
       "annualCost": 65000,
       "endYear": 2027,
       "endMonth": 3,
@@ -113,7 +159,7 @@
       "users": 12,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£36k/yr",
+      "cost": "\u00a336k/yr",
       "annualCost": 36000,
       "endYear": 2028,
       "endMonth": 3,
@@ -131,7 +177,7 @@
       "users": 80,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£115k/yr",
+      "cost": "\u00a3115k/yr",
       "annualCost": 115000,
       "endYear": 2029,
       "endMonth": 6,
@@ -140,7 +186,9 @@
       "dataPartitioning": "Segmented",
       "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council"]
+      "targetAuthorities": [
+        "Penworth North Council"
+      ]
     },
     {
       "id": "ldc-sys-jadu",
@@ -150,7 +198,7 @@
       "users": 145,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£80k/yr",
+      "cost": "\u00a380k/yr",
       "annualCost": 80000,
       "endYear": 2029,
       "endMonth": 9,
@@ -159,8 +207,12 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"],
-      "targetAuthorities": ["Penworth North Council"]
+      "capabilityType": [
+        "forms"
+      ],
+      "targetAuthorities": [
+        "Penworth North Council"
+      ]
     },
     {
       "id": "ldc-sys-govuk-notify",
@@ -170,7 +222,7 @@
       "users": 150,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£8k/yr",
+      "cost": "\u00a38k/yr",
       "annualCost": 8000,
       "endYear": 2030,
       "endMonth": 12,
@@ -179,20 +231,77 @@
       "dataPartitioning": "Segmented",
       "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ]
     }
   ],
   "edges": [
-    { "source": "ldc-sys-bartec", "target": "ldc-fn-waste", "relationship": "REALIZES" },
-    { "source": "ldc-sys-nec", "target": "ldc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "ldc-sys-idox-planning", "target": "ldc-fn-planning", "relationship": "REALIZES" },
-    { "source": "ldc-sys-mri-housing", "target": "ldc-fn-housing", "relationship": "REALIZES" },
-    { "source": "ldc-sys-idox-eh", "target": "ldc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "ldc-sys-civica-elections", "target": "ldc-fn-elections", "relationship": "REALIZES" },
-    { "source": "ldc-sys-civica-fin", "target": "ldc-fn-finance", "relationship": "REALIZES" },
-    { "source": "ldc-sys-jadu", "target": "ldc-fn-crm", "relationship": "REALIZES" },
-    { "source": "ldc-sys-jadu", "target": "ldc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "ldc-sys-nec", "target": "ldc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "ldc-sys-civica-fin", "target": "ldc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
+    {
+      "source": "ldc-sys-bartec",
+      "target": "ldc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-nec",
+      "target": "ldc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-idox-planning",
+      "target": "ldc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-mri-housing",
+      "target": "ldc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-idox-eh",
+      "target": "ldc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-civica-elections",
+      "target": "ldc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-civica-fin",
+      "target": "ldc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-jadu",
+      "target": "ldc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "ldc-sys-jadu",
+      "target": "ldc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "ldc-sys-nec",
+      "target": "ldc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "ldc-sys-civica-fin",
+      "target": "ldc-sys-jadu",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    }
   ]
 }

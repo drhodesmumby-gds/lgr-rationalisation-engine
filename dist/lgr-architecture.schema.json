@@ -170,6 +170,14 @@
                   "community-supported",
                   "unsupported"
                 ]
+              },
+              "version": {
+                "description": "System version or release identifier (e.g. \"SAP S/4HANA 2023\", \"v4.2.1\")",
+                "type": "string"
+              },
+              "notes": {
+                "description": "Free-text notes for context not captured by other fields",
+                "type": "string"
               }
             }
           }

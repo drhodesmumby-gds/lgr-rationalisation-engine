@@ -526,12 +526,13 @@ function renderSystemCard(sys, vestingDate, isHorizontal) {
                 ${dataBadge}
                 ${erpBadge}
             </div>
-            ${sys.vendor ? `<div class="text-xs text-gray-600">Vendor: <strong>${escHtml(sys.vendor)}</strong></div>` : ''}
+            ${sys.vendor || sys.version ? `<div class="text-xs text-gray-600">Vendor: <strong>${escHtml([sys.vendor, sys.version].filter(Boolean).join(' · '))}</strong></div>` : ''}
             ${sys.users != null ? `<div class="text-xs text-gray-600">Users: <strong>${Number(sys.users).toLocaleString()}</strong></div>` : ''}
             ${costDisplay}
             ${contractHtml}
             ${disaggNote}
             ${costSplitHtml}
+            ${sys.notes ? `<p class="text-xs text-[#505a5f] italic mt-1 border-l-2 border-[#b1b4b6] pl-2">${escHtml(sys.notes)}</p>` : ''}
         </div>
     `;
 }
