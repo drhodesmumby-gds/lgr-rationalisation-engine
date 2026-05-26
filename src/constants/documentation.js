@@ -31,14 +31,14 @@ export const DOCUMENTATION = {
                         </div>
                         <div class="border-l-4 border-[#f47738] pl-3">
                             <p class="font-bold text-sm">Tech Debt (On-premise)</p>
-                            <p class="text-sm text-gray-700">Identifies systems where <code>isCloud=false</code>. On-premise hosting may complicate licencing, hosting handover, and continuity planning.</p>
+                            <p class="text-sm text-gray-700">Identifies systems where the <code>hosting</code> field is <code>on-premise</code> or <code>partner-hosted</code>. Non-cloud hosting may complicate licencing, hosting handover, and continuity planning.</p>
                         </div>
                         <div class="border-l-4 border-[#1d70b8] pl-3">
                             <p class="font-bold text-sm">TCoP Alignment</p>
                             <p class="text-sm text-gray-700">Evaluates each system against 5 Technology Code of Practice points:<br>
                             Point 3 (spend): vendor lock-in via low portability.<br>
                             Point 4 (open standards): portability field.<br>
-                            Point 5 (cloud first): isCloud field.<br>
+                            Point 5 (cloud first): hosting field.<br>
                             Point 9 (modularity): ERP + Monolithic combination.<br>
                             Point 11 (commercial): vendor lock-in via low portability.
                             </p>

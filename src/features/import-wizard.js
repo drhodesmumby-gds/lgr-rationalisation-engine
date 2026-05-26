@@ -22,7 +22,7 @@ const IMPORT_TARGET_FIELDS = [
     { section: 'Technical', fields: [
         { id: 'portability',    label: 'Portability',           required: false },
         { id: 'dataPartitioning',label: 'Data Partitioning',    required: false },
-        { id: 'isCloud',        label: 'Is Cloud / Hosted',     required: false },
+        { id: 'hosting',        label: 'Hosting',               required: false },
         { id: 'isERP',          label: 'Is ERP',                required: false },
         { id: 'users',          label: 'User Count',            required: false }
     ]},
@@ -48,7 +48,7 @@ const IMPORT_AUTODETECT_RULES = [
     { field: 'endYear',          test: h => /contract/i.test(h) && /end|expir/i.test(h) },
     { field: 'endMonth',         test: h => /end\s*month|contract\s*month/i.test(h) && !/year/i.test(h) },
     { field: 'noticePeriod',     test: h => /notice/i.test(h) },
-    { field: 'isCloud',          test: h => /cloud|hosted|hosting/i.test(h) },
+    { field: 'hosting',          test: h => /cloud|hosted|hosting/i.test(h) },
     { field: 'isERP',            test: h => /\berp\b/i.test(h) },
     { field: '_rawDepartment',   test: h => /department|service area|function|directorate/i.test(h) },
     { field: 'sharedWith',       test: h => /shared/i.test(h) },
@@ -106,8 +106,13 @@ function coerceImportedRow(raw, columnMap) {
         if (falsey.some(f => s.includes(f))) return false;
         return undefined;
     };
-    const cloudVal = parseBool(get('isCloud'), ['on-premise','on premise','onpremise']);
-    if (cloudVal !== undefined) sys.isCloud = cloudVal;
+    const hostingVal = get('hosting') || get('isCloud');
+    if (hostingVal) {
+        const h = String(hostingVal).toLowerCase().trim();
+        if (['cloud','saas','yes','true','hosted','1'].includes(h)) sys.hosting = 'cloud';
+        else if (['on-premise','on-prem','onprem','on premise','no','false','local','0'].includes(h)) sys.hosting = 'on-premise';
+        else if (['partner','partner-hosted','shared','shared service'].includes(h)) sys.hosting = 'partner-hosted';
+    }
     const erpVal = parseBool(get('isERP'));
     if (erpVal !== undefined) sys.isERP = erpVal;
 
@@ -479,7 +484,6 @@ function buildManualSystemCardHTML(idx, sys) {
     const noticePeriod = sys.noticePeriod !== undefined ? sys.noticePeriod : '';
     const portability = sys.portability || 'High';
     const dataPartitioning = sys.dataPartitioning || 'Segmented';
-    const isCloud = sys.isCloud !== false;  // default true
     const isERP = !!sys.isERP;
     const sharedWith = escHtml((sys.sharedWith || []).join(', '));
 
@@ -551,16 +555,11 @@ function buildManualSystemCardHTML(idx, sys) {
                 </div>
                 <div>
                     <label class="block font-bold mb-1 text-xs">Hosting</label>
-                    <div class="flex gap-4 mt-1">
-                        <label class="flex items-center gap-1 text-xs cursor-pointer">
-                            <input type="radio" class="manual-field" name="manual-isCloud-${idx}" data-field="isCloud" data-idx="${idx}" value="true" ${isCloud ? 'checked' : ''}>
-                            Cloud
-                        </label>
-                        <label class="flex items-center gap-1 text-xs cursor-pointer">
-                            <input type="radio" class="manual-field" name="manual-isCloud-${idx}" data-field="isCloud" data-idx="${idx}" value="false" ${!isCloud ? 'checked' : ''}>
-                            On-premise
-                        </label>
-                    </div>
+                    <select class="manual-field border border-[#b1b4b6] p-1 text-xs" data-field="hosting" data-idx="${idx}">
+                        <option value="cloud" ${sys.hosting === 'cloud' || sys.isCloud !== false ? 'selected' : ''}>Cloud</option>
+                        <option value="on-premise" ${sys.hosting === 'on-premise' || sys.isCloud === false ? 'selected' : ''}>On-Premise</option>
+                        <option value="partner-hosted" ${sys.hosting === 'partner-hosted' ? 'selected' : ''}>Partner-Hosted</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block font-bold mb-1 text-xs">Portability</label>
@@ -632,8 +631,7 @@ function readManualSystemsFromDOM() {
             if (!field) return;
             if (el.type === 'radio') {
                 if (!el.checked) return;
-                if (field === 'isCloud') sys.isCloud = el.value === 'true';
-                else sys[field] = el.value;
+                sys[field] = el.value;
             } else if (el.type === 'checkbox') {
                 sys[field] = el.checked;
             } else if (el.type === 'number') {
@@ -975,7 +973,7 @@ function assembleArchitecture() {
         const sysNodeId = generateId();
         const sysNode = { id: sysNodeId, type: 'ITSystem', label: sys.label };
         ['vendor','owner','users','cost','annualCost','endYear','endMonth',
-         'noticePeriod','portability','dataPartitioning','isCloud','isERP','sharedWith',
+         'noticePeriod','portability','dataPartitioning','hosting','isCloud','isERP','sharedWith',
          'capabilityType'
         ].forEach(f => { if (sys[f] !== undefined) sysNode[f] = sys[f]; });
         nodes.push(sysNode);

@@ -5,14 +5,54 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "mdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "mdc-fn-benefits", "label": "Housing Benefits and Council Tax", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "mdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "mdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "mdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "mdc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "mdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "mdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
+    {
+      "id": "mdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "mdc-fn-benefits",
+      "label": "Housing Benefits and Council Tax",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "mdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "mdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "mdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "mdc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "mdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "mdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
     {
       "id": "mdc-sys-whitespace",
       "label": "Whitespace Waste Management",
@@ -21,15 +61,15 @@
       "users": 65,
       "vendor": "Whitespace",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "mdc-sys-capita-rev",
@@ -39,15 +79,15 @@
       "users": 82,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£185k/yr",
+      "cost": "\u00a3185k/yr",
       "annualCost": 185000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-arcus-planning",
@@ -57,15 +97,15 @@
       "users": 38,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£70k/yr",
+      "cost": "\u00a370k/yr",
       "annualCost": 70000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "mdc-sys-aareon-housing",
@@ -75,15 +115,15 @@
       "users": 105,
       "vendor": "Aareon",
       "supportModel": "vendor-supported",
-      "cost": "£145k/yr",
+      "cost": "\u00a3145k/yr",
       "annualCost": 145000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-tascomi",
@@ -93,15 +133,15 @@
       "users": 32,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£58k/yr",
+      "cost": "\u00a358k/yr",
       "annualCost": 58000,
       "endYear": 2027,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "mdc-sys-democracy-counts",
@@ -111,15 +151,15 @@
       "users": 10,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£34k/yr",
+      "cost": "\u00a334k/yr",
       "annualCost": 34000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-unit4",
@@ -129,15 +169,15 @@
       "users": 90,
       "vendor": "Unit4",
       "supportModel": "vendor-supported",
-      "cost": "£125k/yr",
+      "cost": "\u00a3125k/yr",
       "annualCost": 125000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-access-peoplehr",
@@ -147,15 +187,15 @@
       "users": 175,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£90k/yr",
+      "cost": "\u00a390k/yr",
       "annualCost": 90000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "mdc-sys-govuk-notify",
@@ -165,29 +205,86 @@
       "users": 120,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£6k/yr",
+      "cost": "\u00a36k/yr",
       "annualCost": 6000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "mdc-sys-whitespace", "target": "mdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "mdc-sys-capita-rev", "target": "mdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "mdc-sys-arcus-planning", "target": "mdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "mdc-sys-aareon-housing", "target": "mdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "mdc-sys-tascomi", "target": "mdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "mdc-sys-democracy-counts", "target": "mdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "mdc-sys-unit4", "target": "mdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "mdc-sys-access-peoplehr", "target": "mdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "mdc-sys-capita-rev", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "mdc-sys-aareon-housing", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "mdc-sys-unit4", "target": "mdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
+    {
+      "source": "mdc-sys-whitespace",
+      "target": "mdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-capita-rev",
+      "target": "mdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-arcus-planning",
+      "target": "mdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-aareon-housing",
+      "target": "mdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-tascomi",
+      "target": "mdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-democracy-counts",
+      "target": "mdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-unit4",
+      "target": "mdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-access-peoplehr",
+      "target": "mdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "mdc-sys-capita-rev",
+      "target": "mdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "mdc-sys-aareon-housing",
+      "target": "mdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "mdc-sys-unit4",
+      "target": "mdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    }
   ]
 }

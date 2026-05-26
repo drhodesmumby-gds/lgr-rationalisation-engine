@@ -203,7 +203,7 @@ export function wireUnifiedEditor(container, json, options = {}) {
             noticePeriod: null,
             portability: '',
             dataPartitioning: '',
-            isCloud: null,
+            hosting: '',
             isERP: false,
             supportModel: '',
             sharedWith: [],

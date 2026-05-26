@@ -79,9 +79,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-nec-rev",
@@ -97,9 +97,9 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-nec-assure",
@@ -115,9 +115,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-nec-housing",
@@ -133,9 +133,9 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-nec-env",
@@ -151,9 +151,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-democracy-counts",
@@ -169,9 +169,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-unit4",
@@ -187,9 +187,9 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "hdc-sys-mhr-itrent",
@@ -205,9 +205,9 @@
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "hdc-sys-nec-firmstep",
@@ -223,9 +223,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "hdc-sys-conduent",
@@ -241,9 +241,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     }
   ],
   "edges": [

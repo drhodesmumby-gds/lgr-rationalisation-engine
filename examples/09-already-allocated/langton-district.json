@@ -68,11 +68,11 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "Penworth North Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-nec",
@@ -89,13 +89,13 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "Penworth North Council"
       ],
       "version": "NEC iWorld 2022",
-      "notes": "Already allocated to North Langton successor by programme board decision (March 2026)."
+      "notes": "Already allocated to North Langton successor by programme board decision (March 2026).",
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-idox-planning",
@@ -112,8 +112,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-mri-housing",
@@ -130,8 +130,8 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-idox-eh",
@@ -148,8 +148,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-civica-elections",
@@ -166,8 +166,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-civica-fin",
@@ -184,11 +184,11 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "Penworth North Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ldc-sys-jadu",
@@ -205,14 +205,14 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms"
       ],
       "targetAuthorities": [
         "Penworth North Council"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "ldc-sys-govuk-notify",
@@ -229,12 +229,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

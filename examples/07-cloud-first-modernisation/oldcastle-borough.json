@@ -80,10 +80,10 @@
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "version": "v11.2 (legacy)",
-      "notes": "On-prem system targeted for cloud replacement. Business case approved pre-LGR."
+      "notes": "On-prem system targeted for cloud replacement. Business case approved pre-LGR.",
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-nec-benefits",
@@ -100,10 +100,10 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "version": "NEC iWorld 2021",
-      "notes": "Stable but on-prem. Cloud migration aligns with both LGR and TCoP objectives."
+      "notes": "Stable but on-prem. Cloud migration aligns with both LGR and TCoP objectives.",
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-idox-planning",
@@ -120,8 +120,8 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-idox-eh",
@@ -138,8 +138,8 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-capita-housing",
@@ -156,8 +156,8 @@
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-capita-finance",
@@ -174,12 +174,12 @@
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "capabilityType": [
         "payments",
         "workflow"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-nec-hr",
@@ -196,8 +196,8 @@
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-civica-crm",
@@ -214,8 +214,8 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-civica-elections",
@@ -232,8 +232,8 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-inhouse-parks",
@@ -250,8 +250,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "ocbc-sys-capita-notify",
@@ -268,12 +268,12 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "on-premise"
     }
   ],
   "edges": [

@@ -28,6 +28,7 @@
 
 import { generateDeferralObligations } from './obligations.js';
 import { isCapabilitySystem } from '../analysis/allocation.js';
+import { getHostingType } from '../analysis/hosting.js';
 
 /**
  * Projects a set of FunctionDecisions into an ordered array of legacy action objects
@@ -349,7 +350,7 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         label: procuredSystem.label,
         vendor: procuredSystem.vendor || null,
         annualCost: procuredSystem.annualCost || 0,
-        isCloud: procuredSystem.isCloud !== undefined ? procuredSystem.isCloud : true,
+        hosting: procuredSystem.hosting || 'cloud',
         targetAuthorities: [successorName],
         type: 'ITSystem'
     };

@@ -25,7 +25,7 @@ const arbSystem = fc.record({
     annualCost: fc.integer({ min: 1000, max: 500000 }),
     endYear: fc.option(fc.integer({ min: 2025, max: 2035 }), { nil: undefined }),
     endMonth: fc.option(fc.integer({ min: 1, max: 12 }), { nil: undefined }),
-    isCloud: fc.boolean(),
+    hosting: fc.constantFrom('cloud', 'on-premise', 'partner-hosted'),
     isERP: fc.constant(false),
     dataPartitioning: fc.constantFrom('Segmented', 'Monolithic'),
     portability: fc.constantFrom('High', 'Medium', 'Low'),
@@ -435,13 +435,13 @@ describe('Decision Obligations — Property Tests', () => {
         const sysA = {
             id: 'sys-a', label: 'System Alpha', type: 'ITSystem',
             vendor: 'Vendor X', users: 500, annualCost: 120000,
-            isCloud: true, isERP: false, dataPartitioning: 'Segmented', portability: 'Medium',
+            hosting: 'cloud', isERP: false, dataPartitioning: 'Segmented', portability: 'Medium',
             _sourceCouncil: 'Council A'
         };
         const sysB = {
             id: 'sys-b', label: 'System Beta', type: 'ITSystem',
             vendor: 'Vendor Y', users: 300, annualCost: 80000,
-            isCloud: false, isERP: false, dataPartitioning: 'Segmented', portability: 'High',
+            hosting: 'on-premise', isERP: false, dataPartitioning: 'Segmented', portability: 'High',
             _sourceCouncil: 'Council B'
         };
 

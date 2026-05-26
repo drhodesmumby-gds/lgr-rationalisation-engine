@@ -16,7 +16,7 @@ const TABS = [
     { id: 'relationships', label: 'Relationships' }
 ];
 
-const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'isCloud', 'supportModel'];
+const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'hosting', 'supportModel'];
 
 const ROOT_LABELS = { '42': 'Administration & Government', '1': 'Advice & Benefits', '6': 'Business & Employment', '16': 'Community Safety', '30': 'Environmental Protection', '58': 'Health & Social Care', '66': 'Housing', '72': 'Leisure & Culture', '82': 'Licences & Permits', '99': 'Planning & Building', '23': 'Schools & Education', '105': 'Transport & Highways' };
 
@@ -365,8 +365,8 @@ function getColumnDefs(activeTab) {
             ];
         case 'technical':
             return [
-                { field: 'isCloud', label: 'Hosting', type: 'select', width: 90,
-                    options: [{ value: 'true', label: 'Cloud' }, { value: 'false', label: 'On-Premise' }] },
+                { field: 'hosting', label: 'Hosting', type: 'select', width: 120,
+                    options: [{ value: 'cloud', label: 'Cloud' }, { value: 'on-premise', label: 'On-Premise' }, { value: 'partner-hosted', label: 'Partner-Hosted' }] },
                 { field: 'dataPartitioning', label: 'Partitioning', type: 'select', width: 100,
                     options: [{ value: 'Segmented', label: 'Segmented' }, { value: 'Monolithic', label: 'Monolithic' }] },
                 { field: 'portability', label: 'Portability', type: 'select', width: 80,
@@ -404,11 +404,6 @@ function getFieldValue(node, field, editorState) {
 }
 
 function getSelectValue(node, field) {
-    if (field === 'isCloud') {
-        if (node.isCloud === true) return 'true';
-        if (node.isCloud === false) return 'false';
-        return '';
-    }
     return node[field] || '';
 }
 
@@ -484,7 +479,7 @@ const KEY_FIELD_LABELS = {
     endYear: 'Contract End Year',
     portability: 'Data Portability',
     dataPartitioning: 'Data Partitioning',
-    isCloud: 'Hosting (Cloud/On-Prem)',
+    hosting: 'Hosting',
     supportModel: 'Support Model'
 };
 
@@ -893,13 +888,6 @@ function parseFieldValue(field, rawValue) {
         return isNaN(n) ? null : n;
     }
 
-    // Boolean fields (isCloud)
-    if (field === 'isCloud') {
-        if (rawValue === 'true') return true;
-        if (rawValue === 'false') return false;
-        return null;
-    }
-
     // Function: resolve label to LGA function data
     if (field === 'function') {
         const lgaFn = LGA_FUNCTIONS.find(f => f.label.toLowerCase() === rawValue.trim().toLowerCase());
@@ -962,9 +950,9 @@ function compareField(nodeA, nodeB, field, editorState, functionLookup) {
             return diff !== 0 ? diff : (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
         }
 
-        case 'isCloud': {
-            a = nodeA.isCloud === true ? 'true' : (nodeA.isCloud === false ? 'false' : '');
-            b = nodeB.isCloud === true ? 'true' : (nodeB.isCloud === false ? 'false' : '');
+        case 'hosting': {
+            a = (nodeA.hosting || '').toLowerCase();
+            b = (nodeB.hosting || '').toLowerCase();
             const cmp = a.localeCompare(b);
             return cmp !== 0 ? cmp : (nodeA.label || '').toLowerCase().localeCompare((nodeB.label || '').toLowerCase());
         }

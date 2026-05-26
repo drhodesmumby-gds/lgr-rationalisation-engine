@@ -62,8 +62,8 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-academy",
@@ -80,8 +80,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-idox",
@@ -98,8 +98,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-ehconnect",
@@ -116,8 +116,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-electoraliq",
@@ -134,8 +134,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-xero",
@@ -152,8 +152,8 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-mhr",
@@ -170,8 +170,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "tdc-sys-govuk-notify",
@@ -188,13 +188,13 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
       ],
-      "version": "Current (SaaS)"
+      "version": "Current (SaaS)",
+      "hosting": "cloud"
     }
   ],
   "edges": [

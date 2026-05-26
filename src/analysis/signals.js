@@ -1,19 +1,20 @@
 import { state } from '../state.js';
 import { classifyVestingZone, detectSharedServiceBoundary } from './allocation.js';
+import { isNonCloud, isCloud as isCloudHosted, getHostingType, detectHostingRisk } from './hosting.js';
 
 // --- TCoP alignment assessment (pure function) ---
 // Accepts an ITSystem node and returns an object with `alignments` and
 // `concerns` arrays, each containing { point, description }.
 // Assesses the system against Technology Code of Practice criteria using
-// existing schema fields: isCloud, portability, isERP, dataPartitioning.
+// existing schema fields: hosting, portability, isERP, dataPartitioning.
 export function computeTcopAssessment(system) {
     var alignments = [];
     var concerns = [];
 
     // Point 5: Cloud first
-    if (system.isCloud === true) {
+    if (isCloudHosted(system)) {
         alignments.push({ point: 5, description: 'Cloud first — aligns with TCoP Point 5' });
-    } else if (system.isCloud === false) {
+    } else if (isNonCloud(system)) {
         concerns.push({ point: 5, description: 'On-premise hosting — TCoP Point 5 recommends cloud first' });
     }
 
@@ -284,11 +285,28 @@ export function computeSignals(systems, weightsOverride) {
 
     // On-premise tech debt
     if (weights.techDebt > 0) {
-        const onPrem = systems.filter(s => !s.isCloud);
+        const onPrem = systems.filter(s => isNonCloud(s));
         if (onPrem.length > 0) {
             signals.push({ id: 'techDebt', weight: weights.techDebt, label: 'On-premise',
                 value: `${onPrem.map(s => s.label).join(', ')}`,
                 tag: 'tag-orange', border: 'border-[#f47738]', strong: false });
+        }
+    }
+
+    // Partner-hosted risk (transition mode only)
+    if (weights.techDebt > 0 && state.operatingMode === 'transition' && state.transitionStructure) {
+        const partnerHosted = systems.filter(s => getHostingType(s) === 'partner-hosted' && s.hostingPartner);
+        if (partnerHosted.length > 0) {
+            const councilToSuccessorMap = new Map();
+            state.transitionStructure.successors.forEach(succ => {
+                (succ.fullPredecessors || []).forEach(c => { if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []); councilToSuccessorMap.get(c).push(succ.name); });
+                (succ.partialPredecessors || []).forEach(c => { if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []); councilToSuccessorMap.get(c).push(succ.name); });
+            });
+            const risks = partnerHosted.map(s => detectHostingRisk(s, councilToSuccessorMap)).filter(r => r && r.risk !== 'none');
+            if (risks.length > 0) {
+                const hasContinuity = risks.some(r => r.risk === 'continuity');
+                signals.push({ id: 'techDebt', weight: weights.techDebt, label: 'Partner-hosted risk', value: risks.map(r => r.detail).join('; '), tag: hasContinuity ? 'tag-red' : 'tag-orange', border: hasContinuity ? 'border-[#d4351c]' : 'border-[#f47738]', strong: hasContinuity });
+            }
         }
     }
 

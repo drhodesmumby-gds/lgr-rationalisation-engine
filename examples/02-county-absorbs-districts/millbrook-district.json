@@ -74,9 +74,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "notes": "Contract due for renewal. Consider alignment with county's existing waste system."
+      "notes": "Contract due for renewal. Consider alignment with county's existing waste system.",
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-civica-revenues",
@@ -92,8 +92,8 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-civica-planning",
@@ -109,8 +109,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-civica-housing",
@@ -126,8 +126,8 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-civica-eh",
@@ -143,8 +143,8 @@
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-civica-elections",
@@ -160,8 +160,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-unit4",
@@ -178,12 +178,12 @@
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "capabilityType": [
         "payments",
         "workflow"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "mdc-sys-ms-crm",
@@ -200,11 +200,11 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "mdc-sys-govuk-notify",
@@ -221,12 +221,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

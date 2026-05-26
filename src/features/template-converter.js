@@ -369,8 +369,12 @@ export function convertXlsxToArchitecture(workbook) {
             const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING]);
             if (dataPartitioning !== undefined) sysNode.dataPartitioning = dataPartitioning;
 
-            const isCloud = parseBool(row[COL.CLOUD_HOSTED]);
-            if (isCloud !== undefined) sysNode.isCloud = isCloud;
+            const hostingRaw = safeStr(row[COL.CLOUD_HOSTED]).toLowerCase().trim();
+            if (hostingRaw) {
+                if (['yes','true','cloud','saas','hosted'].includes(hostingRaw)) sysNode.hosting = 'cloud';
+                else if (['no','false','on-prem','on-premise','local'].includes(hostingRaw)) sysNode.hosting = 'on-premise';
+                else if (['partner','shared','shared service'].includes(hostingRaw)) sysNode.hosting = 'partner-hosted';
+            }
 
             const isERP = parseBool(row[COL.ERP]);
             if (isERP !== undefined) sysNode.isERP = isERP;

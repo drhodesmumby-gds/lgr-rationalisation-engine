@@ -5,23 +5,108 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "gbcc-fn-asc", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
-    { "id": "gbcc-fn-child", "label": "Children's Services", "type": "Function", "lgaFunctionId": "152" },
-    { "id": "gbcc-fn-highways", "label": "Highway Maintenance", "type": "Function", "lgaFunctionId": "109" },
-    { "id": "gbcc-fn-libraries", "label": "Libraries", "type": "Function", "lgaFunctionId": "76" },
-    { "id": "gbcc-fn-pubhealth", "label": "Public Health", "type": "Function", "lgaFunctionId": "65" },
-    { "id": "gbcc-fn-sen", "label": "Special Education Needs", "type": "Function", "lgaFunctionId": "29" },
-    { "id": "gbcc-fn-earlyyears", "label": "Early Years", "type": "Function", "lgaFunctionId": "25" },
-    { "id": "gbcc-fn-crm", "label": "Customer Services", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "gbcc-fn-streetcare", "label": "Street Care", "type": "Function", "lgaFunctionId": "40" },
-    { "id": "gbcc-fn-parking", "label": "Parking", "type": "Function", "lgaFunctionId": "110" },
-    { "id": "gbcc-fn-ict", "label": "ICT Service Management", "type": "Function", "lgaFunctionId": "120" },
-    { "id": "gbcc-fn-registration", "label": "Registration Services", "type": "Function", "lgaFunctionId": "54" },
-    { "id": "gbcc-fn-emergencies", "label": "Emergency Planning", "type": "Function", "lgaFunctionId": "18" },
-    { "id": "gbcc-fn-sports", "label": "Sports Facilities", "type": "Function", "lgaFunctionId": "80" },
-    { "id": "gbcc-fn-finance", "label": "Finance", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "gbcc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "gbcc-fn-procurement", "label": "Procurement", "type": "Function", "lgaFunctionId": "145" },
+    {
+      "id": "gbcc-fn-asc",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "gbcc-fn-child",
+      "label": "Children's Services",
+      "type": "Function",
+      "lgaFunctionId": "152"
+    },
+    {
+      "id": "gbcc-fn-highways",
+      "label": "Highway Maintenance",
+      "type": "Function",
+      "lgaFunctionId": "109"
+    },
+    {
+      "id": "gbcc-fn-libraries",
+      "label": "Libraries",
+      "type": "Function",
+      "lgaFunctionId": "76"
+    },
+    {
+      "id": "gbcc-fn-pubhealth",
+      "label": "Public Health",
+      "type": "Function",
+      "lgaFunctionId": "65"
+    },
+    {
+      "id": "gbcc-fn-sen",
+      "label": "Special Education Needs",
+      "type": "Function",
+      "lgaFunctionId": "29"
+    },
+    {
+      "id": "gbcc-fn-earlyyears",
+      "label": "Early Years",
+      "type": "Function",
+      "lgaFunctionId": "25"
+    },
+    {
+      "id": "gbcc-fn-crm",
+      "label": "Customer Services",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "gbcc-fn-streetcare",
+      "label": "Street Care",
+      "type": "Function",
+      "lgaFunctionId": "40"
+    },
+    {
+      "id": "gbcc-fn-parking",
+      "label": "Parking",
+      "type": "Function",
+      "lgaFunctionId": "110"
+    },
+    {
+      "id": "gbcc-fn-ict",
+      "label": "ICT Service Management",
+      "type": "Function",
+      "lgaFunctionId": "120"
+    },
+    {
+      "id": "gbcc-fn-registration",
+      "label": "Registration Services",
+      "type": "Function",
+      "lgaFunctionId": "54"
+    },
+    {
+      "id": "gbcc-fn-emergencies",
+      "label": "Emergency Planning",
+      "type": "Function",
+      "lgaFunctionId": "18"
+    },
+    {
+      "id": "gbcc-fn-sports",
+      "label": "Sports Facilities",
+      "type": "Function",
+      "lgaFunctionId": "80"
+    },
+    {
+      "id": "gbcc-fn-finance",
+      "label": "Finance",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "gbcc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "gbcc-fn-procurement",
+      "label": "Procurement",
+      "type": "Function",
+      "lgaFunctionId": "145"
+    },
     {
       "id": "gbcc-sys-erp",
       "label": "Unit4 Business World ERP",
@@ -30,16 +115,19 @@
       "users": 8500,
       "vendor": "Unit4",
       "supportModel": "vendor-supported",
-      "cost": "£2.6m/yr",
+      "cost": "\u00a32.6m/yr",
       "annualCost": 2600000,
       "endYear": 2031,
       "endMonth": 3,
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-asc",
@@ -49,15 +137,15 @@
       "users": 4500,
       "vendor": "System C",
       "supportModel": "vendor-supported",
-      "cost": "£1.2m/yr",
+      "cost": "\u00a31.2m/yr",
       "annualCost": 1200000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-child",
@@ -66,15 +154,15 @@
       "owner": "Greater Blackwood County Council",
       "users": 3500,
       "vendor": "System C",
-      "cost": "£900k/yr",
+      "cost": "\u00a3900k/yr",
       "annualCost": 900000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-highways",
@@ -84,15 +172,15 @@
       "users": 600,
       "vendor": "Brightly",
       "supportModel": "vendor-supported",
-      "cost": "£320k/yr",
+      "cost": "\u00a3320k/yr",
       "annualCost": 320000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-libraries",
@@ -102,15 +190,15 @@
       "users": 200,
       "vendor": "SirsiDynix",
       "supportModel": "vendor-supported",
-      "cost": "£195k/yr",
+      "cost": "\u00a3195k/yr",
       "annualCost": 195000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-pubhealth",
@@ -120,15 +208,15 @@
       "users": 150,
       "vendor": "Servelec",
       "supportModel": "vendor-supported",
-      "cost": "£130k/yr",
+      "cost": "\u00a3130k/yr",
       "annualCost": 130000,
       "endYear": 2027,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-sen",
@@ -138,15 +226,15 @@
       "users": 400,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£280k/yr",
+      "cost": "\u00a3280k/yr",
       "annualCost": 280000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-earlyyears",
@@ -156,15 +244,15 @@
       "users": 180,
       "vendor": "Abavus",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-crm",
@@ -174,16 +262,18 @@
       "users": 1500,
       "vendor": "Microsoft",
       "supportModel": "vendor-supported",
-      "cost": "£520k/yr",
+      "cost": "\u00a3520k/yr",
       "annualCost": 520000,
       "endYear": 2029,
       "endMonth": 12,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-streetcare",
@@ -193,15 +283,15 @@
       "users": 300,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£170k/yr",
+      "cost": "\u00a3170k/yr",
       "annualCost": 170000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-parking",
@@ -211,15 +301,15 @@
       "users": 220,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£125k/yr",
+      "cost": "\u00a3125k/yr",
       "annualCost": 125000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-ict",
@@ -229,15 +319,15 @@
       "users": 800,
       "vendor": "ServiceNow",
       "supportModel": "vendor-supported",
-      "cost": "£350k/yr",
+      "cost": "\u00a3350k/yr",
       "annualCost": 350000,
       "endYear": 2030,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-registration",
@@ -247,15 +337,15 @@
       "users": 100,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-emergencies",
@@ -265,15 +355,15 @@
       "users": 50,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£30k/yr",
+      "cost": "\u00a330k/yr",
       "annualCost": 30000,
       "endYear": 2027,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-sports",
@@ -283,15 +373,15 @@
       "users": 70,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£28k/yr",
+      "cost": "\u00a328k/yr",
       "annualCost": 28000,
       "endYear": 2027,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbcc-sys-capita-pay360",
@@ -301,16 +391,18 @@
       "users": 750,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "gbcc-sys-govuk-notify",
@@ -320,45 +412,190 @@
       "users": 800,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£18k/yr",
+      "cost": "\u00a318k/yr",
       "annualCost": 18000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "gbcc-sys-erp", "target": "gbcc-fn-finance", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-erp", "target": "gbcc-fn-hr", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-erp", "target": "gbcc-fn-procurement", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-asc", "target": "gbcc-fn-asc", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-child", "target": "gbcc-fn-child", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-highways", "target": "gbcc-fn-highways", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-libraries", "target": "gbcc-fn-libraries", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-pubhealth", "target": "gbcc-fn-pubhealth", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-sen", "target": "gbcc-fn-sen", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-earlyyears", "target": "gbcc-fn-earlyyears", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-crm", "target": "gbcc-fn-crm", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-streetcare", "target": "gbcc-fn-streetcare", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-parking", "target": "gbcc-fn-parking", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-ict", "target": "gbcc-fn-ict", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-registration", "target": "gbcc-fn-registration", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-emergencies", "target": "gbcc-fn-emergencies", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-sports", "target": "gbcc-fn-sports", "relationship": "REALIZES" },
-    { "source": "gbcc-sys-parking", "target": "gbcc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "gbcc-sys-sports", "target": "gbcc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "gbcc-sys-libraries", "target": "gbcc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "gbcc-sys-asc", "target": "gbcc-sys-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
-    { "source": "gbcc-sys-child", "target": "gbcc-sys-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments", "workflow"] },
-    { "source": "gbcc-sys-highways", "target": "gbcc-sys-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "gbcc-sys-crm", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "gbcc-sys-asc", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "gbcc-sys-streetcare", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "gbcc-sys-parking", "target": "gbcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "gbcc-sys-erp",
+      "target": "gbcc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-erp",
+      "target": "gbcc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-erp",
+      "target": "gbcc-fn-procurement",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-asc",
+      "target": "gbcc-fn-asc",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-child",
+      "target": "gbcc-fn-child",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-highways",
+      "target": "gbcc-fn-highways",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-libraries",
+      "target": "gbcc-fn-libraries",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-pubhealth",
+      "target": "gbcc-fn-pubhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-sen",
+      "target": "gbcc-fn-sen",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-earlyyears",
+      "target": "gbcc-fn-earlyyears",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-crm",
+      "target": "gbcc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-streetcare",
+      "target": "gbcc-fn-streetcare",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-parking",
+      "target": "gbcc-fn-parking",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-ict",
+      "target": "gbcc-fn-ict",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-registration",
+      "target": "gbcc-fn-registration",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-emergencies",
+      "target": "gbcc-fn-emergencies",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-sports",
+      "target": "gbcc-fn-sports",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gbcc-sys-parking",
+      "target": "gbcc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "gbcc-sys-sports",
+      "target": "gbcc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "gbcc-sys-libraries",
+      "target": "gbcc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "gbcc-sys-asc",
+      "target": "gbcc-sys-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments",
+        "workflow"
+      ]
+    },
+    {
+      "source": "gbcc-sys-child",
+      "target": "gbcc-sys-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments",
+        "workflow"
+      ]
+    },
+    {
+      "source": "gbcc-sys-highways",
+      "target": "gbcc-sys-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "gbcc-sys-crm",
+      "target": "gbcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "gbcc-sys-asc",
+      "target": "gbcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "gbcc-sys-streetcare",
+      "target": "gbcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "gbcc-sys-parking",
+      "target": "gbcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

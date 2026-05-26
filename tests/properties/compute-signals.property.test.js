@@ -273,11 +273,11 @@ describe('computeSignals', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 8. techDebt signal fires when a system is on-premise (!isCloud)
+  // 8. techDebt signal fires when a system is on-premise
   // -------------------------------------------------------------------------
-  it('techDebt signal appears when at least one system has isCloud absent (on-premise)', () => {
+  it('techDebt signal appears when at least one system has hosting=on-premise', () => {
     const arbOnPremSystem = arbSystem.map(sys => {
-      const cleaned = { ...sys };
+      const cleaned = { ...sys, hosting: 'on-premise' };
       delete cleaned.isCloud;
       return cleaned;
     });
@@ -295,7 +295,7 @@ describe('computeSignals', () => {
   });
 
   it('techDebt signal is absent when ALL systems have isCloud=true and weight > 0', () => {
-    const arbCloudSystem = arbSystem.map(sys => ({ ...sys, isCloud: true }));
+    const arbCloudSystem = arbSystem.map(sys => ({ ...sys, hosting: 'cloud' }));
     const arbCloudArray = fc.array(arbCloudSystem, { minLength: 1, maxLength: 4 });
 
     fc.assert(

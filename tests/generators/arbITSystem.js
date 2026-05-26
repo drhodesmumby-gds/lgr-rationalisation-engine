@@ -27,7 +27,8 @@ export function arbITSystem({ councilNames, successorNames = [], prefix = 'sys' 
     noticePeriod: fc.option(fc.integer({ min: 0, max: 24 }), { nil: undefined }),
     portability: fc.option(fc.constantFrom('High', 'Medium', 'Low'), { nil: undefined }),
     dataPartitioning: fc.option(fc.constantFrom('Segmented', 'Monolithic'), { nil: undefined }),
-    isCloud: fc.option(fc.boolean(), { nil: undefined }),
+    hosting: fc.option(fc.constantFrom('cloud', 'on-premise', 'partner-hosted'), { nil: undefined }),
+    hostingPartner: fc.option(fc.string({ minLength: 3, maxLength: 20 }), { nil: undefined }),
     isERP: fc.option(fc.boolean(), { nil: undefined }),
     owner: fc.option(fc.constantFrom(...councilNames), { nil: undefined }),
     sharedWith: fc.option(

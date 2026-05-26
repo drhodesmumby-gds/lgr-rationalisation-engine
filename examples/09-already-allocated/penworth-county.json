@@ -5,14 +5,54 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "pcc-fn-adults", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
-    { "id": "pcc-fn-childrens", "label": "Children's Services", "type": "Function", "lgaFunctionId": "152" },
-    { "id": "pcc-fn-highways", "label": "Highways Management", "type": "Function", "lgaFunctionId": "109" },
-    { "id": "pcc-fn-libraries", "label": "Libraries", "type": "Function", "lgaFunctionId": "76" },
-    { "id": "pcc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "pcc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "pcc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "pcc-fn-publichealth", "label": "Public Health", "type": "Function", "lgaFunctionId": "65" },
+    {
+      "id": "pcc-fn-adults",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "pcc-fn-childrens",
+      "label": "Children's Services",
+      "type": "Function",
+      "lgaFunctionId": "152"
+    },
+    {
+      "id": "pcc-fn-highways",
+      "label": "Highways Management",
+      "type": "Function",
+      "lgaFunctionId": "109"
+    },
+    {
+      "id": "pcc-fn-libraries",
+      "label": "Libraries",
+      "type": "Function",
+      "lgaFunctionId": "76"
+    },
+    {
+      "id": "pcc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "pcc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "pcc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "pcc-fn-publichealth",
+      "label": "Public Health",
+      "type": "Function",
+      "lgaFunctionId": "65"
+    },
     {
       "id": "pcc-sys-liquidlogic-las",
       "label": "Liquidlogic LAS Adult Social Care",
@@ -21,16 +61,19 @@
       "users": 3500,
       "vendor": "System C",
       "supportModel": "vendor-supported",
-      "cost": "£980k/yr",
+      "cost": "\u00a3980k/yr",
       "annualCost": 980000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
+      "targetAuthorities": [
+        "Penworth North Council",
+        "Penworth South Council"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "pcc-sys-liquidlogic-ehm",
@@ -40,16 +83,19 @@
       "users": 2700,
       "vendor": "System C",
       "supportModel": "vendor-supported",
-      "cost": "£780k/yr",
+      "cost": "\u00a3780k/yr",
       "annualCost": 780000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
+      "targetAuthorities": [
+        "Penworth North Council",
+        "Penworth South Council"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "pcc-sys-confirm",
@@ -59,16 +105,19 @@
       "users": 400,
       "vendor": "Brightly",
       "supportModel": "vendor-supported",
-      "cost": "£235k/yr",
+      "cost": "\u00a3235k/yr",
       "annualCost": 235000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
+      "targetAuthorities": [
+        "Penworth North Council",
+        "Penworth South Council"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "pcc-sys-koha",
@@ -78,16 +127,18 @@
       "users": 150,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£55k/yr",
+      "cost": "\u00a355k/yr",
       "annualCost": 55000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council"]
+      "targetAuthorities": [
+        "Penworth North Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "pcc-sys-oracle-erp",
@@ -97,17 +148,23 @@
       "users": 5000,
       "vendor": "Oracle",
       "supportModel": "vendor-supported",
-      "cost": "£1.8m/yr",
+      "cost": "\u00a31.8m/yr",
       "annualCost": 1800000,
       "endYear": 2031,
       "endMonth": 3,
       "noticePeriod": 18,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"],
-      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "targetAuthorities": [
+        "Penworth North Council",
+        "Penworth South Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "pcc-sys-salesforce",
@@ -117,16 +174,19 @@
       "users": 900,
       "vendor": "Salesforce",
       "supportModel": "vendor-supported",
-      "cost": "£380k/yr",
+      "cost": "\u00a3380k/yr",
       "annualCost": 380000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
+      "targetAuthorities": [
+        "Penworth North Council",
+        "Penworth South Council"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "pcc-sys-publichealth",
@@ -136,16 +196,18 @@
       "users": 100,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2026,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "targetAuthorities": ["Penworth South Council"]
+      "targetAuthorities": [
+        "Penworth South Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "pcc-sys-govuk-notify",
@@ -155,32 +217,106 @@
       "users": 600,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£15k/yr",
+      "cost": "\u00a315k/yr",
       "annualCost": 15000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"],
-      "targetAuthorities": ["Penworth North Council", "Penworth South Council"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "targetAuthorities": [
+        "Penworth North Council",
+        "Penworth South Council"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "pcc-sys-liquidlogic-las", "target": "pcc-fn-adults", "relationship": "REALIZES" },
-    { "source": "pcc-sys-liquidlogic-ehm", "target": "pcc-fn-childrens", "relationship": "REALIZES" },
-    { "source": "pcc-sys-confirm", "target": "pcc-fn-highways", "relationship": "REALIZES" },
-    { "source": "pcc-sys-koha", "target": "pcc-fn-libraries", "relationship": "REALIZES" },
-    { "source": "pcc-sys-oracle-erp", "target": "pcc-fn-finance", "relationship": "REALIZES" },
-    { "source": "pcc-sys-oracle-erp", "target": "pcc-fn-hr", "relationship": "REALIZES" },
-    { "source": "pcc-sys-salesforce", "target": "pcc-fn-crm", "relationship": "REALIZES" },
-    { "source": "pcc-sys-publichealth", "target": "pcc-fn-publichealth", "relationship": "REALIZES" },
-    { "source": "pcc-sys-liquidlogic-las", "target": "pcc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "pcc-sys-liquidlogic-ehm", "target": "pcc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "pcc-sys-confirm", "target": "pcc-sys-oracle-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "pcc-sys-salesforce", "target": "pcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "pcc-sys-liquidlogic-las", "target": "pcc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "pcc-sys-liquidlogic-las",
+      "target": "pcc-fn-adults",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-liquidlogic-ehm",
+      "target": "pcc-fn-childrens",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-confirm",
+      "target": "pcc-fn-highways",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-koha",
+      "target": "pcc-fn-libraries",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-oracle-erp",
+      "target": "pcc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-oracle-erp",
+      "target": "pcc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-salesforce",
+      "target": "pcc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-publichealth",
+      "target": "pcc-fn-publichealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "pcc-sys-liquidlogic-las",
+      "target": "pcc-sys-oracle-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "pcc-sys-liquidlogic-ehm",
+      "target": "pcc-sys-oracle-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "pcc-sys-confirm",
+      "target": "pcc-sys-oracle-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "pcc-sys-salesforce",
+      "target": "pcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "pcc-sys-liquidlogic-las",
+      "target": "pcc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

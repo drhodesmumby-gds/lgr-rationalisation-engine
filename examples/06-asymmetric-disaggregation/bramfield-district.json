@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "brdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "brdc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "brdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "brdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "brdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "brdc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "brdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "brdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "brdc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "brdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "brdc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "brdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "brdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "brdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "brdc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "brdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "brdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "brdc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "brdc-sys-whitespace",
       "label": "Whitespace Waste Management",
@@ -22,15 +67,15 @@
       "users": 65,
       "vendor": "Whitespace",
       "supportModel": "vendor-supported",
-      "cost": "£98k/yr",
+      "cost": "\u00a398k/yr",
       "annualCost": 98000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "brdc-sys-capita-benefits",
@@ -40,15 +85,15 @@
       "users": 78,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£165k/yr",
+      "cost": "\u00a3165k/yr",
       "annualCost": 165000,
       "endYear": 2027,
       "endMonth": 12,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "brdc-sys-arcus",
@@ -58,15 +103,15 @@
       "users": 48,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£115k/yr",
+      "cost": "\u00a3115k/yr",
       "annualCost": 115000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "brdc-sys-aareon",
@@ -76,15 +121,15 @@
       "users": 105,
       "vendor": "Aareon",
       "supportModel": "vendor-supported",
-      "cost": "£155k/yr",
+      "cost": "\u00a3155k/yr",
       "annualCost": 155000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "brdc-sys-access-eh",
@@ -94,15 +139,15 @@
       "users": 38,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£62k/yr",
+      "cost": "\u00a362k/yr",
       "annualCost": 62000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "brdc-sys-democracy-club",
@@ -112,15 +157,15 @@
       "users": 14,
       "vendor": "Electoral Reform Services",
       "supportModel": "vendor-supported",
-      "cost": "£38k/yr",
+      "cost": "\u00a338k/yr",
       "annualCost": 38000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "brdc-sys-sage",
@@ -130,15 +175,15 @@
       "users": 280,
       "vendor": "Sage",
       "supportModel": "vendor-supported",
-      "cost": "£145k/yr",
+      "cost": "\u00a3145k/yr",
       "annualCost": 145000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "brdc-sys-jadu",
@@ -148,16 +193,18 @@
       "users": 175,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£108k/yr",
+      "cost": "\u00a3108k/yr",
       "annualCost": 108000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "brdc-sys-govuk-pay",
@@ -167,16 +214,18 @@
       "users": 60,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£8k/yr",
+      "cost": "\u00a38k/yr",
       "annualCost": 8000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "brdc-sys-govuk-notify",
@@ -186,33 +235,115 @@
       "users": 180,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£5k/yr",
+      "cost": "\u00a35k/yr",
       "annualCost": 5000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "brdc-sys-whitespace", "target": "brdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "brdc-sys-capita-benefits", "target": "brdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "brdc-sys-arcus", "target": "brdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "brdc-sys-aareon", "target": "brdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "brdc-sys-access-eh", "target": "brdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "brdc-sys-democracy-club", "target": "brdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "brdc-sys-sage", "target": "brdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "brdc-sys-sage", "target": "brdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "brdc-sys-jadu", "target": "brdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "brdc-sys-arcus", "target": "brdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "brdc-sys-jadu", "target": "brdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "brdc-sys-capita-benefits", "target": "brdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "brdc-sys-jadu", "target": "brdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "brdc-sys-capita-benefits", "target": "brdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "brdc-sys-aareon", "target": "brdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "brdc-sys-whitespace",
+      "target": "brdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-capita-benefits",
+      "target": "brdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-arcus",
+      "target": "brdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-aareon",
+      "target": "brdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-access-eh",
+      "target": "brdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-democracy-club",
+      "target": "brdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-sage",
+      "target": "brdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-sage",
+      "target": "brdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-jadu",
+      "target": "brdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "brdc-sys-arcus",
+      "target": "brdc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "brdc-sys-jadu",
+      "target": "brdc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "brdc-sys-capita-benefits",
+      "target": "brdc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "brdc-sys-jadu",
+      "target": "brdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "brdc-sys-capita-benefits",
+      "target": "brdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "brdc-sys-aareon",
+      "target": "brdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

@@ -74,13 +74,13 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "sharedWith": [
         "Kingsway District Council"
       ],
       "version": "NEC iWorld 2020",
-      "notes": "Shared across all 3 boroughs. Single database instance \u2014 disaggregation requires NEC consultancy engagement."
+      "notes": "Shared across all 3 boroughs. Single database instance \u2014 disaggregation requires NEC consultancy engagement.",
+      "hosting": "on-premise"
     },
     {
       "id": "rbc-sys-mhr-itrent",
@@ -97,13 +97,13 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "sharedWith": [
         "Kingsway District Council"
       ],
       "version": "iTrent SaaS",
-      "notes": "Shared HR/payroll. TUPE implications for payroll staff if service model changes."
+      "notes": "Shared HR/payroll. TUPE implications for payroll staff if service model changes.",
+      "hosting": "on-premise"
     },
     {
       "id": "rbc-sys-civica-elections",
@@ -120,11 +120,11 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "sharedWith": [
         "Kingsway District Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "rbc-sys-whitespace",
@@ -141,8 +141,8 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "rbc-sys-idox-planning",
@@ -159,8 +159,8 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "rbc-sys-mri-housing",
@@ -177,8 +177,8 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "rbc-sys-access-finance",
@@ -195,8 +195,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "rbc-sys-jadu-crm",
@@ -213,11 +213,11 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "rbc-sys-civica-eh",
@@ -234,8 +234,8 @@
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "rbc-sys-govuk-notify",
@@ -252,12 +252,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "rbc-sys-capita-pay360",
@@ -274,14 +274,14 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "sharedWith": [
         "Kingsway District Council"
       ],
       "capabilityType": [
         "payments"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

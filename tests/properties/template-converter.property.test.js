@@ -342,11 +342,11 @@ describe('convertXlsxToArchitecture — nodes and edges from domain sheets', () 
         expect(sysNode.annualCost).toBeUndefined();
         expect(sysNode.portability).toBeUndefined();
         expect(sysNode.dataPartitioning).toBeUndefined();
-        expect(sysNode.isCloud).toBeUndefined();
+        expect(sysNode.hosting).toBeUndefined();
         expect(sysNode.isERP).toBeUndefined();
     });
 
-    it('sets isCloud and isERP from Yes/No values', () => {
+    it('sets hosting and isERP from Yes/No values', () => {
         const wb = mockWorkbook({
             'Health & Social Care': domainSheetRows([
                 makeRow({ cloud: 'Yes', erp: 'Yes' }),
@@ -354,7 +354,7 @@ describe('convertXlsxToArchitecture — nodes and edges from domain sheets', () 
         });
         const { architecture } = convertXlsxToArchitecture(wb);
         const sysNode = architecture.nodes.find(n => n.type === 'ITSystem');
-        expect(sysNode.isCloud).toBe(true);
+        expect(sysNode.hosting).toBe('cloud');
         expect(sysNode.isERP).toBe(true);
     });
 

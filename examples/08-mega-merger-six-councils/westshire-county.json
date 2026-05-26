@@ -103,14 +103,14 @@
       "noticePeriod": 18,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "capabilityType": [
         "payments",
         "workflow"
       ],
       "version": "S/4HANA 2023 FPS02",
-      "notes": "Largest system by cost (\u00a32.1M/yr). County CEO relationship with SAP UK managing director. Political sensitivity around any decommission discussion."
+      "notes": "Largest system by cost (\u00a32.1M/yr). County CEO relationship with SAP UK managing director. Political sensitivity around any decommission discussion.",
+      "hosting": "on-premise"
     },
     {
       "id": "wcc-sys-liquidlogic-las",
@@ -126,8 +126,8 @@
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-liquidlogic-ehm",
@@ -143,8 +143,8 @@
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-confirm",
@@ -160,8 +160,8 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-symphony",
@@ -177,8 +177,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-dynamics365",
@@ -194,11 +194,11 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-publichealth",
@@ -215,8 +215,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wcc-sys-streetcare",
@@ -232,8 +232,8 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-parking",
@@ -249,8 +249,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-registration",
@@ -266,8 +266,8 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wcc-sys-sports",
@@ -284,8 +284,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wcc-sys-trading",
@@ -301,8 +301,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wcc-sys-capita-pay",
@@ -318,11 +318,11 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "payments"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "wcc-sys-govuk-notify",
@@ -338,12 +338,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

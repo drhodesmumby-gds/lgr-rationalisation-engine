@@ -5,14 +5,54 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "wdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "wdc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "wdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "wdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "wdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "wdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "wdc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "wdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
+    {
+      "id": "wdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "wdc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "wdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "wdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "wdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "wdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "wdc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "wdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
     {
       "id": "wdc-sys-arcus-waste",
       "label": "Arcus Global Waste Portal",
@@ -21,15 +61,15 @@
       "users": 95,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£115k/yr",
+      "cost": "\u00a3115k/yr",
       "annualCost": 115000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-access-revenues",
@@ -39,15 +79,15 @@
       "users": 180,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£185k/yr",
+      "cost": "\u00a3185k/yr",
       "annualCost": 185000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-arcus-planning",
@@ -57,15 +97,15 @@
       "users": 120,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£135k/yr",
+      "cost": "\u00a3135k/yr",
       "annualCost": 135000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-mri-housing",
@@ -75,15 +115,15 @@
       "users": 260,
       "vendor": "MRI",
       "supportModel": "vendor-supported",
-      "cost": "£280k/yr",
+      "cost": "\u00a3280k/yr",
       "annualCost": 280000,
       "endYear": 2030,
       "endMonth": 6,
       "noticePeriod": 9,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-xero",
@@ -93,15 +133,15 @@
       "users": 80,
       "vendor": "Xero",
       "supportModel": "vendor-supported",
-      "cost": "£80k/yr",
+      "cost": "\u00a380k/yr",
       "annualCost": 80000,
       "endYear": 2028,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-workday",
@@ -111,15 +151,15 @@
       "users": 320,
       "vendor": "Workday",
       "supportModel": "vendor-supported",
-      "cost": "£300k/yr",
+      "cost": "\u00a3300k/yr",
       "annualCost": 300000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-jadu-crm",
@@ -129,16 +169,18 @@
       "users": 400,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£210k/yr",
+      "cost": "\u00a3210k/yr",
       "annualCost": 210000,
       "endYear": 2030,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-access-eh",
@@ -148,15 +190,15 @@
       "users": 85,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-govuk-notify",
@@ -166,16 +208,19 @@
       "users": 300,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£8k/yr",
+      "cost": "\u00a38k/yr",
       "annualCost": 8000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-govuk-pay",
@@ -185,33 +230,117 @@
       "users": 120,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£4k/yr",
+      "cost": "\u00a34k/yr",
       "annualCost": 4000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "wdc-sys-arcus-waste", "target": "wdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "wdc-sys-access-revenues", "target": "wdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "wdc-sys-arcus-planning", "target": "wdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "wdc-sys-mri-housing", "target": "wdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "wdc-sys-xero", "target": "wdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "wdc-sys-workday", "target": "wdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "wdc-sys-jadu-crm", "target": "wdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "wdc-sys-access-eh", "target": "wdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "wdc-sys-access-revenues", "target": "wdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wdc-sys-mri-housing", "target": "wdc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wdc-sys-arcus-planning", "target": "wdc-sys-jadu-crm", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
-    { "source": "wdc-sys-arcus-waste", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "wdc-sys-mri-housing", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "wdc-sys-jadu-crm", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "wdc-sys-access-eh", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "wdc-sys-arcus-waste",
+      "target": "wdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-access-revenues",
+      "target": "wdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-arcus-planning",
+      "target": "wdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-mri-housing",
+      "target": "wdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-xero",
+      "target": "wdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-workday",
+      "target": "wdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-jadu-crm",
+      "target": "wdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-access-eh",
+      "target": "wdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-access-revenues",
+      "target": "wdc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wdc-sys-mri-housing",
+      "target": "wdc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wdc-sys-arcus-planning",
+      "target": "wdc-sys-jadu-crm",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    },
+    {
+      "source": "wdc-sys-arcus-waste",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "wdc-sys-mri-housing",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "wdc-sys-jadu-crm",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "wdc-sys-access-eh",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

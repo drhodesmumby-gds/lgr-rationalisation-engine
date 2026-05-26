@@ -5,16 +5,66 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "abc-fn-waste", "label": "Waste", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "abc-fn-benefits", "label": "Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "abc-fn-planning", "label": "Planning", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "abc-fn-housing", "label": "Housing", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "abc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "abc-fn-elections", "label": "Elections", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "abc-fn-finance", "label": "Finance", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "abc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "abc-fn-crm", "label": "Customer Services", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "abc-fn-bizrates", "label": "Business Rates", "type": "Function", "lgaFunctionId": "9" },
+    {
+      "id": "abc-fn-waste",
+      "label": "Waste",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "abc-fn-benefits",
+      "label": "Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "abc-fn-planning",
+      "label": "Planning",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "abc-fn-housing",
+      "label": "Housing",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "abc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "abc-fn-elections",
+      "label": "Elections",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "abc-fn-finance",
+      "label": "Finance",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "abc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "abc-fn-crm",
+      "label": "Customer Services",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "abc-fn-bizrates",
+      "label": "Business Rates",
+      "type": "Function",
+      "lgaFunctionId": "9"
+    },
     {
       "id": "abc-sys-bartec",
       "label": "Bartec Waste Management",
@@ -23,15 +73,15 @@
       "users": 85,
       "vendor": "Bartec",
       "supportModel": "vendor-supported",
-      "cost": "£120k/yr",
+      "cost": "\u00a3120k/yr",
       "annualCost": 120000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "abc-sys-nec-revs",
@@ -41,16 +91,18 @@
       "users": 90,
       "vendor": "NEC",
       "supportModel": "vendor-supported",
-      "cost": "£185k/yr",
+      "cost": "\u00a3185k/yr",
       "annualCost": 185000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Birchwood District Council"]
+      "sharedWith": [
+        "Birchwood District Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "abc-sys-idox",
@@ -60,15 +112,15 @@
       "users": 50,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "abc-sys-mri",
@@ -78,15 +130,15 @@
       "users": 110,
       "vendor": "MRI Software",
       "supportModel": "vendor-supported",
-      "cost": "£170k/yr",
+      "cost": "\u00a3170k/yr",
       "annualCost": 170000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "abc-sys-civica-eh",
@@ -96,15 +148,15 @@
       "users": 40,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£65k/yr",
+      "cost": "\u00a365k/yr",
       "annualCost": 65000,
       "endYear": 2027,
       "endMonth": 12,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "abc-sys-xpress",
@@ -114,15 +166,15 @@
       "users": 16,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "abc-sys-sage",
@@ -132,15 +184,15 @@
       "users": 95,
       "vendor": "Sage",
       "supportModel": "vendor-supported",
-      "cost": "£135k/yr",
+      "cost": "\u00a3135k/yr",
       "annualCost": 135000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "abc-sys-itrent",
@@ -150,15 +202,15 @@
       "users": 220,
       "vendor": "MHR",
       "supportModel": "vendor-supported",
-      "cost": "£190k/yr",
+      "cost": "\u00a3190k/yr",
       "annualCost": 190000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "abc-sys-goss",
@@ -168,15 +220,15 @@
       "users": 180,
       "vendor": "GOSS Interactive",
       "supportModel": "vendor-supported",
-      "cost": "£110k/yr",
+      "cost": "\u00a3110k/yr",
       "annualCost": 110000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "abc-sys-civica-br",
@@ -186,15 +238,15 @@
       "users": 35,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£55k/yr",
+      "cost": "\u00a355k/yr",
       "annualCost": 55000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "abc-sys-govuk-notify",
@@ -204,31 +256,96 @@
       "users": 180,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£8k/yr",
+      "cost": "\u00a38k/yr",
       "annualCost": 8000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "abc-sys-bartec", "target": "abc-fn-waste", "relationship": "REALIZES" },
-    { "source": "abc-sys-nec-revs", "target": "abc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "abc-sys-idox", "target": "abc-fn-planning", "relationship": "REALIZES" },
-    { "source": "abc-sys-mri", "target": "abc-fn-housing", "relationship": "REALIZES" },
-    { "source": "abc-sys-civica-eh", "target": "abc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "abc-sys-xpress", "target": "abc-fn-elections", "relationship": "REALIZES" },
-    { "source": "abc-sys-sage", "target": "abc-fn-finance", "relationship": "REALIZES" },
-    { "source": "abc-sys-itrent", "target": "abc-fn-hr", "relationship": "REALIZES" },
-    { "source": "abc-sys-goss", "target": "abc-fn-crm", "relationship": "REALIZES" },
-    { "source": "abc-sys-civica-br", "target": "abc-fn-bizrates", "relationship": "REALIZES" },
-    { "source": "abc-sys-goss", "target": "abc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "abc-sys-nec-revs", "target": "abc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "abc-sys-mri", "target": "abc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] }
+    {
+      "source": "abc-sys-bartec",
+      "target": "abc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-nec-revs",
+      "target": "abc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-idox",
+      "target": "abc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-mri",
+      "target": "abc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-civica-eh",
+      "target": "abc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-xpress",
+      "target": "abc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-sage",
+      "target": "abc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-itrent",
+      "target": "abc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-goss",
+      "target": "abc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-civica-br",
+      "target": "abc-fn-bizrates",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "abc-sys-goss",
+      "target": "abc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "abc-sys-nec-revs",
+      "target": "abc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "abc-sys-mri",
+      "target": "abc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    }
   ]
 }

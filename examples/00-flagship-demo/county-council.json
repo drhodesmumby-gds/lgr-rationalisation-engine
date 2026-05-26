@@ -59,17 +59,20 @@
       "type": "ITSystem",
       "vendor": "SAP",
       "users": 5000,
-      "cost": "£2,100,000/yr",
+      "cost": "\u00a32,100,000/yr",
       "annualCost": 2100000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 18,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "supportModel": "vendor-supported",
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "sys-liquidlogic",
@@ -77,16 +80,16 @@
       "type": "ITSystem",
       "vendor": "System C",
       "users": 1200,
-      "cost": "£480,000/yr",
+      "cost": "\u00a3480,000/yr",
       "annualCost": 480000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "sys-confirm-highways",
@@ -94,17 +97,19 @@
       "type": "ITSystem",
       "vendor": "Confirm",
       "users": 400,
-      "cost": "£320,000/yr",
+      "cost": "\u00a3320,000/yr",
       "annualCost": 320000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "supportModel": "vendor-supported",
-      "sharedWith": ["District Council 1"]
+      "sharedWith": [
+        "District Council 1"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "sys-public-health-intel",
@@ -112,17 +117,20 @@
       "type": "ITSystem",
       "vendor": "In-House",
       "users": 80,
-      "cost": "£35,000/yr",
+      "cost": "\u00a335,000/yr",
       "annualCost": 35000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "supportModel": "community-supported",
-      "sharedWith": ["Other County Programme Council A", "Other County Programme Council B"]
+      "sharedWith": [
+        "Other County Programme Council A",
+        "Other County Programme Council B"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "sys-nec-revenues",
@@ -130,16 +138,16 @@
       "type": "ITSystem",
       "vendor": "NEC",
       "users": 300,
-      "cost": "£190,000/yr",
+      "cost": "\u00a3190,000/yr",
       "annualCost": 190000,
       "endYear": 2026,
       "endMonth": 6,
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-capita-one",
@@ -147,16 +155,16 @@
       "type": "ITSystem",
       "vendor": "Capita",
       "users": 800,
-      "cost": "£350,000/yr",
+      "cost": "\u00a3350,000/yr",
       "annualCost": 350000,
       "endYear": 2028,
       "endMonth": 12,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     }
   ],
   "edges": [
@@ -184,7 +192,9 @@
       "source": "sys-liquidlogic",
       "target": "sys-sap-erp",
       "relationship": "CONSUMES_CAPABILITY",
-      "capabilities": ["payments"]
+      "capabilities": [
+        "payments"
+      ]
     },
     {
       "source": "sys-confirm-highways",

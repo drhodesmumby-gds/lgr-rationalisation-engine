@@ -12,6 +12,7 @@
 import { state } from '../state.js';
 import { getDecisionKey } from '../simulation/decisions.js';
 import { computeObligationSeverity, generateMigrationScopeBullets } from '../simulation/obligations.js';
+import { isNonCloud, isCloud as isCloudHosted, getHostingType } from '../analysis/hosting.js';
 
 // ===================================================================
 // HELPER FUNCTIONS (pure, module-scoped for testability)
@@ -753,7 +754,7 @@ function buildDecisionsWithContractDetail(decisions) {
             html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
             if (ps.vendor || ps.version) html += `Vendor: ${escHtml([ps.vendor, ps.version].filter(Boolean).join(' · '))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
             html += `Annual cost: ${escHtml(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-            html += `Hosting: ${ps.isCloud ? 'Cloud' : 'On-premise'}`;
+            html += `Hosting: ${ps.hosting === 'on-premise' ? 'On-premise' : ps.hosting === 'partner-hosted' ? 'Partner-hosted' : 'Cloud'}`;
             html += `</p>`;
             if (ps.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml(ps.notes)}</p>`;
         } else if (decision.systemChoice === 'defer') {
@@ -1162,7 +1163,7 @@ function buildTechnicalSummary() {
                     if (sys.dataPartitioning === 'Monolithic') monolithic++;
                     if (sys.portability === 'Low') lowPortability++;
                     if (sys.isERP) erp++;
-                    if (!sys.isCloud) onPrem++;
+                    if (isNonCloud(sys)) onPrem++;
                 }
             });
         });
@@ -1246,13 +1247,13 @@ function buildDecisionsWithDataComplexity(decisions) {
                 html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
                 html += `Data partitioning: ${escHtml(sys.dataPartitioning || '—')}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Portability: ${escHtml(sys.portability || '—')}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-                html += `Hosting: ${sys.isCloud ? 'Cloud' : 'On-premise'}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+                html += `Hosting: ${isCloudHosted(sys) ? 'Cloud' : getHostingType(sys) === 'partner-hosted' ? 'Partner-hosted' : 'On-premise'}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `ERP: ${sys.isERP ? 'Yes' : 'No'}`;
                 html += `</p>`;
 
                 // TCoP considerations
                 const tcop = [];
-                if (!sys.isCloud) tcop.push('Point 3 — System is on-premise; cloud migration should be assessed');
+                if (isNonCloud(sys)) tcop.push('Point 3 — System is on-premise; cloud migration should be assessed');
                 if (sys.portability === 'Low') tcop.push('Point 4 — Low portability; vendor lock-in risk, exit plan required');
                 if (sys.dataPartitioning === 'Monolithic') tcop.push('Point 5 — Monolithic data store; data extraction strategy needed');
                 if (sys.isERP) tcop.push('Point 9 — ERP system; assess multi-authority integration complexity');
@@ -1267,7 +1268,7 @@ function buildDecisionsWithDataComplexity(decisions) {
             const ps = decision.procuredSystem;
             html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new — ${escHtml(ps.label)}</p>`;
             html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-            html += `Hosting: ${ps.isCloud ? 'Cloud' : 'On-premise or unspecified'}`;
+            html += `Hosting: ${ps.hosting === 'on-premise' ? 'On-premise' : ps.hosting === 'partner-hosted' ? 'Partner-hosted' : 'Cloud'}`;
             html += `</p>`;
         } else if (decision.systemChoice === 'defer') {
             html += `<p style="margin:2px 0;"><strong>Decision:</strong> Deferred</p>`;
@@ -1282,7 +1283,7 @@ function buildDecisionsWithDataComplexity(decisions) {
                     const flags = [];
                     if (sys.dataPartitioning === 'Monolithic') flags.push('Monolithic');
                     if (sys.portability === 'Low') flags.push('Low portability');
-                    if (!sys.isCloud) flags.push('On-premise');
+                    if (isNonCloud(sys)) flags.push('On-premise');
                     if (sys.isERP) flags.push('ERP');
                     html += flags.length > 0 ? escHtml(flags.join(', ')) : 'No flags';
                     html += `</li>`;

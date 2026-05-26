@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { classifyVestingZone, detectSharedServiceBoundary } from './allocation.js';
 import { classifySupportModel } from './signals.js';
 import { DEFAULT_TIER_MAP } from '../constants/tier-map.js';
+import { isNonCloud } from './hosting.js';
 
 // Computes the effective playbook tier for a function node.
 // Pure function: accepts inputs, returns { tier, promoted, originalTier }.
@@ -305,7 +306,7 @@ export function computeMigrationComplexity(system) {
     if (system.dataPartitioning === 'Monolithic') { score += 2; factors.push('Monolithic'); }
 
     // Hosting
-    if (system.isCloud === false) { score += 1; factors.push('On-prem'); }
+    if (isNonCloud(system)) { score += 1; factors.push('On-prem'); }
 
     // ERP
     if (system.isERP) { score += 2; factors.push('ERP'); }

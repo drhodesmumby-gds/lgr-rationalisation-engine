@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "sbc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "sbc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "sbc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "sbc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "sbc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "sbc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "sbc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "sbc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "sbc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "sbc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "sbc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "sbc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "sbc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "sbc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "sbc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "sbc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "sbc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "sbc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "sbc-sys-arcus-revenues",
       "label": "Arcus Global Revenues",
@@ -22,15 +67,15 @@
       "users": 68,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£140k/yr",
+      "cost": "\u00a3140k/yr",
       "annualCost": 140000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-whitespace",
@@ -40,15 +85,15 @@
       "users": 50,
       "vendor": "Whitespace",
       "supportModel": "vendor-supported",
-      "cost": "£88k/yr",
+      "cost": "\u00a388k/yr",
       "annualCost": 88000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-idox-planning",
@@ -58,15 +103,15 @@
       "users": 58,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£98k/yr",
+      "cost": "\u00a398k/yr",
       "annualCost": 98000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-mri-housing",
@@ -76,15 +121,15 @@
       "users": 115,
       "vendor": "MRI",
       "supportModel": "vendor-supported",
-      "cost": "£220k/yr",
+      "cost": "\u00a3220k/yr",
       "annualCost": 220000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-access-finance",
@@ -94,15 +139,15 @@
       "users": 35,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£70k/yr",
+      "cost": "\u00a370k/yr",
       "annualCost": 70000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-workday",
@@ -112,15 +157,15 @@
       "users": 22,
       "vendor": "Workday",
       "supportModel": "vendor-supported",
-      "cost": "£72k/yr",
+      "cost": "\u00a372k/yr",
       "annualCost": 72000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-access-elections",
@@ -130,15 +175,15 @@
       "users": 12,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£32k/yr",
+      "cost": "\u00a332k/yr",
       "annualCost": 32000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-jadu-eh",
@@ -148,15 +193,15 @@
       "users": 28,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£47k/yr",
+      "cost": "\u00a347k/yr",
       "annualCost": 47000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-salesforce",
@@ -166,16 +211,19 @@
       "users": 88,
       "vendor": "Salesforce",
       "supportModel": "vendor-supported",
-      "cost": "£130k/yr",
+      "cost": "\u00a3130k/yr",
       "annualCost": 130000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms", "workflow"]
+      "capabilityType": [
+        "forms",
+        "workflow"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-govuk-notify",
@@ -185,16 +233,19 @@
       "users": 160,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£5k/yr",
+      "cost": "\u00a35k/yr",
       "annualCost": 5000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "sbc-sys-govuk-pay",
@@ -204,34 +255,122 @@
       "users": 45,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£3k/yr",
+      "cost": "\u00a33k/yr",
       "annualCost": 3000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["payments"]
+      "capabilityType": [
+        "payments"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "sbc-sys-arcus-revenues", "target": "sbc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "sbc-sys-whitespace", "target": "sbc-fn-waste", "relationship": "REALIZES" },
-    { "source": "sbc-sys-idox-planning", "target": "sbc-fn-planning", "relationship": "REALIZES" },
-    { "source": "sbc-sys-mri-housing", "target": "sbc-fn-housing", "relationship": "REALIZES" },
-    { "source": "sbc-sys-access-finance", "target": "sbc-fn-finance", "relationship": "REALIZES" },
-    { "source": "sbc-sys-workday", "target": "sbc-fn-hr", "relationship": "REALIZES" },
-    { "source": "sbc-sys-access-elections", "target": "sbc-fn-elections", "relationship": "REALIZES" },
-    { "source": "sbc-sys-jadu-eh", "target": "sbc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "sbc-sys-salesforce", "target": "sbc-fn-crm", "relationship": "REALIZES" },
-    { "source": "sbc-sys-arcus-revenues", "target": "sbc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "sbc-sys-mri-housing", "target": "sbc-sys-govuk-pay", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "sbc-sys-salesforce", "target": "sbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "sbc-sys-whitespace", "target": "sbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "sbc-sys-mri-housing", "target": "sbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "sbc-sys-idox-planning", "target": "sbc-sys-salesforce", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
-    { "source": "sbc-sys-jadu-eh", "target": "sbc-sys-salesforce", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["workflow"] }
+    {
+      "source": "sbc-sys-arcus-revenues",
+      "target": "sbc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-whitespace",
+      "target": "sbc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-idox-planning",
+      "target": "sbc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-mri-housing",
+      "target": "sbc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-access-finance",
+      "target": "sbc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-workday",
+      "target": "sbc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-access-elections",
+      "target": "sbc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-jadu-eh",
+      "target": "sbc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-salesforce",
+      "target": "sbc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "sbc-sys-arcus-revenues",
+      "target": "sbc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "sbc-sys-mri-housing",
+      "target": "sbc-sys-govuk-pay",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "sbc-sys-salesforce",
+      "target": "sbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "sbc-sys-whitespace",
+      "target": "sbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "sbc-sys-mri-housing",
+      "target": "sbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "sbc-sys-idox-planning",
+      "target": "sbc-sys-salesforce",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    },
+    {
+      "source": "sbc-sys-jadu-eh",
+      "target": "sbc-sys-salesforce",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "workflow"
+      ]
+    }
   ]
 }

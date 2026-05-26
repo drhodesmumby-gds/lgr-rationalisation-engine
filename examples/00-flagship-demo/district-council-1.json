@@ -47,16 +47,16 @@
       "type": "ITSystem",
       "vendor": "Civica",
       "users": 120,
-      "cost": "£95,000/yr",
+      "cost": "\u00a395,000/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "sys-nec-revben",
@@ -64,17 +64,19 @@
       "type": "ITSystem",
       "vendor": "NEC",
       "users": 200,
-      "cost": "£180,000/yr",
+      "cost": "\u00a3180,000/yr",
       "annualCost": 180000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "supportModel": "vendor-supported",
-      "sharedWith": ["District Council 2"]
+      "sharedWith": [
+        "District Council 2"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "sys-idox-uniform",
@@ -82,16 +84,16 @@
       "type": "ITSystem",
       "vendor": "Idox",
       "users": 35,
-      "cost": "£55,000/yr",
+      "cost": "\u00a355,000/yr",
       "annualCost": 55000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "sys-bartec-waste",
@@ -99,16 +101,16 @@
       "type": "ITSystem",
       "vendor": "Bartec",
       "users": 90,
-      "cost": "£130,000/yr",
+      "cost": "\u00a3130,000/yr",
       "annualCost": 130000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-dynamics-crm",
@@ -116,17 +118,19 @@
       "type": "ITSystem",
       "vendor": "Microsoft",
       "users": 350,
-      "cost": "£110,000/yr",
+      "cost": "\u00a3110,000/yr",
       "annualCost": 110000,
       "endYear": 2030,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "supportModel": "vendor-supported",
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "sys-confirm-highways-d1",
@@ -134,17 +138,19 @@
       "type": "ITSystem",
       "vendor": "Confirm",
       "users": 45,
-      "cost": "£95,000/yr",
+      "cost": "\u00a395,000/yr",
       "annualCost": 95000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "supportModel": "vendor-supported",
-      "sharedWith": ["County Council"]
+      "sharedWith": [
+        "County Council"
+      ],
+      "hosting": "on-premise"
     }
   ],
   "edges": [

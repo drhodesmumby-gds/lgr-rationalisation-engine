@@ -73,9 +73,9 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-access-benefits",
@@ -91,9 +91,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-arcus-planning",
@@ -109,9 +109,9 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-arcus-housing",
@@ -127,9 +127,9 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-arcus-env",
@@ -145,9 +145,9 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-civica-xpress",
@@ -163,9 +163,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "ibc-sys-xero",
@@ -181,9 +181,9 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-workday",
@@ -199,12 +199,12 @@
       "noticePeriod": 9,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "payments"
       ],
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-jadu",
@@ -220,13 +220,13 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms",
         "identity"
       ],
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-govuk-notify",
@@ -242,13 +242,13 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
       ],
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "ibc-sys-stripe",
@@ -264,12 +264,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "payments"
       ],
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     }
   ],
   "edges": [

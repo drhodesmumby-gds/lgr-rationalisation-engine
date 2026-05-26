@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { _compareField as compareField, _countMissing as countMissing } from '../../src/features/unified-editor/bulk-mode.js';
 
-const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'isCloud', 'supportModel'];
+const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'hosting', 'supportModel'];
 
 const arbSystemNode = fc.record({
     id: fc.string({ minLength: 1, maxLength: 10 }),
@@ -15,7 +15,7 @@ const arbSystemNode = fc.record({
     noticePeriod: fc.option(fc.integer({ min: 0, max: 36 }), { nil: undefined }),
     portability: fc.option(fc.constantFrom('High', 'Medium', 'Low'), { nil: undefined }),
     dataPartitioning: fc.option(fc.constantFrom('Segmented', 'Monolithic'), { nil: undefined }),
-    isCloud: fc.option(fc.boolean(), { nil: undefined }),
+    hosting: fc.option(fc.constantFrom('cloud', 'on-premise', 'partner-hosted'), { nil: undefined }),
     supportModel: fc.option(fc.constantFrom('vendor-supported', 'community-supported', 'unsupported'), { nil: undefined }),
 });
 
@@ -109,15 +109,15 @@ describe('compareField — sort comparator', () => {
         });
     });
 
-    describe('isCloud (boolean as string)', () => {
-        it('groups true, false, and undefined separately', () => {
-            const nodeTrue = { id: 'a', label: 'A', type: 'ITSystem', isCloud: true };
-            const nodeFalse = { id: 'b', label: 'B', type: 'ITSystem', isCloud: false };
-            const nodeNull = { id: 'c', label: 'C', type: 'ITSystem', isCloud: undefined };
-            const tf = compareField(nodeTrue, nodeFalse, 'isCloud', editorState, emptyLookup);
-            const tn = compareField(nodeTrue, nodeNull, 'isCloud', editorState, emptyLookup);
-            expect(tf).toBeGreaterThan(0); // "true" > "false" alphabetically
-            expect(tn).toBeGreaterThan(0); // "true" > "" alphabetically
+    describe('hosting (string enum)', () => {
+        it('sorts cloud, on-premise, partner-hosted alphabetically', () => {
+            const nodeCloud = { id: 'a', label: 'A', type: 'ITSystem', hosting: 'cloud' };
+            const nodeOnPrem = { id: 'b', label: 'B', type: 'ITSystem', hosting: 'on-premise' };
+            const nodePartner = { id: 'c', label: 'C', type: 'ITSystem', hosting: 'partner-hosted' };
+            const co = compareField(nodeCloud, nodeOnPrem, 'hosting', editorState, emptyLookup);
+            const cp = compareField(nodeCloud, nodePartner, 'hosting', editorState, emptyLookup);
+            expect(co).toBeLessThan(0); // "cloud" < "on-premise"
+            expect(cp).toBeLessThan(0); // "cloud" < "partner-hosted"
         });
     });
 
@@ -157,7 +157,7 @@ describe('countMissing — completeness calculation', () => {
         const node = {
             vendor: 'Test', annualCost: 50000, endYear: 2027,
             portability: 'High', dataPartitioning: 'Segmented',
-            isCloud: true, supportModel: 'vendor-supported'
+            hosting: 'cloud', supportModel: 'vendor-supported'
         };
         expect(countMissing(node)).toBe(0);
     });

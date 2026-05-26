@@ -73,9 +73,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "fbc-sys-civica-rev",
@@ -91,9 +91,9 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "fbc-sys-idox-cloud",
@@ -109,9 +109,9 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "fbc-sys-civica-housing",
@@ -127,9 +127,9 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "fbc-sys-tascomi",
@@ -145,9 +145,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "fbc-sys-civica-xpress",
@@ -163,9 +163,9 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "fbc-sys-civica-fin",
@@ -181,9 +181,9 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "fbc-sys-civica-hr",
@@ -199,9 +199,9 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "fbc-sys-granicus",
@@ -217,9 +217,9 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     }
   ],
   "edges": [

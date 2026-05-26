@@ -5,16 +5,66 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "wdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "wdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "wdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "wdc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "wdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "wdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "wdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "wdc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "wdc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "wdc-fn-ict", "label": "ICT Service Management", "type": "Function", "lgaFunctionId": "120" },
+    {
+      "id": "wdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "wdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "wdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "wdc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "wdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "wdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "wdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "wdc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "wdc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "wdc-fn-ict",
+      "label": "ICT Service Management",
+      "type": "Function",
+      "lgaFunctionId": "120"
+    },
     {
       "id": "wdc-sys-unit4",
       "label": "Unit4 Business World",
@@ -23,16 +73,19 @@
       "users": 900,
       "vendor": "Unit4",
       "supportModel": "vendor-supported",
-      "cost": "£450k/yr",
+      "cost": "\u00a3450k/yr",
       "annualCost": 450000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "wdc-sys-whitespace",
@@ -42,15 +95,15 @@
       "users": 60,
       "vendor": "Whitespace",
       "supportModel": "vendor-supported",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-civica-benefits",
@@ -60,15 +113,15 @@
       "users": 75,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£160k/yr",
+      "cost": "\u00a3160k/yr",
       "annualCost": 160000,
       "endYear": 2027,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wdc-sys-arcus",
@@ -78,15 +131,15 @@
       "users": 50,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£110k/yr",
+      "cost": "\u00a3110k/yr",
       "annualCost": 110000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-capita-housing",
@@ -96,15 +149,15 @@
       "users": 95,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£145k/yr",
+      "cost": "\u00a3145k/yr",
       "annualCost": 145000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wdc-sys-access-envhealth",
@@ -114,15 +167,15 @@
       "users": 40,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£55k/yr",
+      "cost": "\u00a355k/yr",
       "annualCost": 55000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "wdc-sys-civica-xpress",
@@ -132,15 +185,15 @@
       "users": 12,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£35k/yr",
+      "cost": "\u00a335k/yr",
       "annualCost": 35000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-jadu",
@@ -150,16 +203,18 @@
       "users": 200,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£105k/yr",
+      "cost": "\u00a3105k/yr",
       "annualCost": 105000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-servicenow",
@@ -169,15 +224,15 @@
       "users": 150,
       "vendor": "ServiceNow",
       "supportModel": "vendor-supported",
-      "cost": "£180k/yr",
+      "cost": "\u00a3180k/yr",
       "annualCost": 180000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "wdc-sys-govuk-notify",
@@ -187,35 +242,128 @@
       "users": 180,
       "vendor": "GDS",
       "supportModel": "community-supported",
-      "cost": "£6k/yr",
+      "cost": "\u00a36k/yr",
       "annualCost": 6000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "wdc-sys-unit4", "target": "wdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "wdc-sys-unit4", "target": "wdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "wdc-sys-whitespace", "target": "wdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "wdc-sys-civica-benefits", "target": "wdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "wdc-sys-arcus", "target": "wdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "wdc-sys-capita-housing", "target": "wdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "wdc-sys-access-envhealth", "target": "wdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "wdc-sys-civica-xpress", "target": "wdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "wdc-sys-jadu", "target": "wdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "wdc-sys-servicenow", "target": "wdc-fn-ict", "relationship": "REALIZES" },
-    { "source": "wdc-sys-civica-benefits", "target": "wdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wdc-sys-capita-housing", "target": "wdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wdc-sys-whitespace", "target": "wdc-sys-unit4", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "wdc-sys-arcus", "target": "wdc-sys-jadu", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] },
-    { "source": "wdc-sys-jadu", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "wdc-sys-whitespace", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "wdc-sys-capita-housing", "target": "wdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
+    {
+      "source": "wdc-sys-unit4",
+      "target": "wdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-unit4",
+      "target": "wdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-whitespace",
+      "target": "wdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-civica-benefits",
+      "target": "wdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-arcus",
+      "target": "wdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-capita-housing",
+      "target": "wdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-access-envhealth",
+      "target": "wdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-civica-xpress",
+      "target": "wdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-jadu",
+      "target": "wdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-servicenow",
+      "target": "wdc-fn-ict",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "wdc-sys-civica-benefits",
+      "target": "wdc-sys-unit4",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wdc-sys-capita-housing",
+      "target": "wdc-sys-unit4",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wdc-sys-whitespace",
+      "target": "wdc-sys-unit4",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "wdc-sys-arcus",
+      "target": "wdc-sys-jadu",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    },
+    {
+      "source": "wdc-sys-jadu",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "wdc-sys-whitespace",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "wdc-sys-capita-housing",
+      "target": "wdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    }
   ]
 }

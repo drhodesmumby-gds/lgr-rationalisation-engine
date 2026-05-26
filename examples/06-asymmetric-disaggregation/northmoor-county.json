@@ -74,14 +74,14 @@
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
       ],
       "version": "v14.1",
-      "notes": "County licence \u2014 must be split across 3 unitaries. System C offer multi-authority hosting."
+      "notes": "County licence \u2014 must be split across 3 unitaries. System C offer multi-authority hosting.",
+      "hosting": "on-premise"
     },
     {
       "id": "ncc-sys-liquidlogic-ehm",
@@ -98,12 +98,12 @@
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ncc-sys-confirm",
@@ -120,14 +120,14 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
       ],
       "version": "v22.10",
-      "notes": "Asset database contains 45 years of survey data. Migration complexity is data volume, not application."
+      "notes": "Asset database contains 45 years of survey data. Migration complexity is data volume, not application.",
+      "hosting": "cloud"
     },
     {
       "id": "ncc-sys-koha",
@@ -144,11 +144,11 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "North Alderton Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ncc-sys-publicheath",
@@ -165,11 +165,11 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "targetAuthorities": [
         "South Chelworth Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ncc-sys-oracle-erp",
@@ -186,7 +186,6 @@
       "noticePeriod": 18,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "capabilityType": [
         "payments",
@@ -195,7 +194,8 @@
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "ncc-sys-dynamics",
@@ -212,7 +212,6 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms"
@@ -220,7 +219,8 @@
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "ncc-sys-access-street",
@@ -237,11 +237,11 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "targetAuthorities": [
         "North Alderton Council"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "ncc-sys-capita-pay360",
@@ -258,7 +258,6 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "payments"
@@ -266,7 +265,8 @@
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "ncc-sys-govuk-notify",
@@ -283,7 +283,6 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
@@ -292,7 +291,8 @@
       "targetAuthorities": [
         "North Alderton Council",
         "South Chelworth Council"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

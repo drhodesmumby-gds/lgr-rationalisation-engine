@@ -5,16 +5,66 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "cfdc-fn-waste", "label": "Waste", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "cfdc-fn-benefits", "label": "Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "cfdc-fn-planning", "label": "Planning", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "cfdc-fn-housing", "label": "Housing", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "cfdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "cfdc-fn-elections", "label": "Elections", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "cfdc-fn-finance", "label": "Finance", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "cfdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "cfdc-fn-crm", "label": "Customer Services", "type": "Function", "lgaFunctionId": "43" },
-    { "id": "cfdc-fn-parks", "label": "Parks", "type": "Function", "lgaFunctionId": "36" },
+    {
+      "id": "cfdc-fn-waste",
+      "label": "Waste",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "cfdc-fn-benefits",
+      "label": "Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "cfdc-fn-planning",
+      "label": "Planning",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "cfdc-fn-housing",
+      "label": "Housing",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "cfdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "cfdc-fn-elections",
+      "label": "Elections",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "cfdc-fn-finance",
+      "label": "Finance",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "cfdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "cfdc-fn-crm",
+      "label": "Customer Services",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
+    {
+      "id": "cfdc-fn-parks",
+      "label": "Parks",
+      "type": "Function",
+      "lgaFunctionId": "36"
+    },
     {
       "id": "cfdc-sys-arcus-waste",
       "label": "Arcus Global Waste",
@@ -23,15 +73,15 @@
       "users": 65,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-access-benefits",
@@ -41,15 +91,15 @@
       "users": 75,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£155k/yr",
+      "cost": "\u00a3155k/yr",
       "annualCost": 155000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-arcus-plan",
@@ -58,15 +108,15 @@
       "owner": "Copperfield District Council",
       "users": 40,
       "vendor": "Arcus Global",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-access-housing",
@@ -75,15 +125,15 @@
       "owner": "Copperfield District Council",
       "users": 90,
       "vendor": "Access Group",
-      "cost": "£145k/yr",
+      "cost": "\u00a3145k/yr",
       "annualCost": 145000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-arcus-eh",
@@ -92,15 +142,15 @@
       "owner": "Copperfield District Council",
       "users": 30,
       "vendor": "Arcus Global",
-      "cost": "£55k/yr",
+      "cost": "\u00a355k/yr",
       "annualCost": 55000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-granicus-elec",
@@ -110,15 +160,15 @@
       "users": 12,
       "vendor": "Granicus",
       "supportModel": "vendor-supported",
-      "cost": "£35k/yr",
+      "cost": "\u00a335k/yr",
       "annualCost": 35000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-xero",
@@ -128,15 +178,15 @@
       "users": 70,
       "vendor": "Xero",
       "supportModel": "vendor-supported",
-      "cost": "£50k/yr",
+      "cost": "\u00a350k/yr",
       "annualCost": 50000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-workday",
@@ -146,15 +196,15 @@
       "users": 200,
       "vendor": "Workday",
       "supportModel": "vendor-supported",
-      "cost": "£220k/yr",
+      "cost": "\u00a3220k/yr",
       "annualCost": 220000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-jadu",
@@ -164,16 +214,18 @@
       "users": 250,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£130k/yr",
+      "cost": "\u00a3130k/yr",
       "annualCost": 130000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-openobjects",
@@ -183,15 +235,15 @@
       "users": 45,
       "vendor": "Open Objects",
       "supportModel": "vendor-supported",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2028,
       "endMonth": 12,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cfdc-sys-govuk-notify",
@@ -201,31 +253,97 @@
       "users": 200,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£9k/yr",
+      "cost": "\u00a39k/yr",
       "annualCost": 9000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "cfdc-sys-arcus-waste", "target": "cfdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-access-benefits", "target": "cfdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-arcus-plan", "target": "cfdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-access-housing", "target": "cfdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-arcus-eh", "target": "cfdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-granicus-elec", "target": "cfdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-xero", "target": "cfdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-workday", "target": "cfdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-jadu", "target": "cfdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-openobjects", "target": "cfdc-fn-parks", "relationship": "REALIZES" },
-    { "source": "cfdc-sys-jadu", "target": "cfdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "cfdc-sys-access-benefits", "target": "cfdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "cfdc-sys-access-housing", "target": "cfdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
+    {
+      "source": "cfdc-sys-arcus-waste",
+      "target": "cfdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-access-benefits",
+      "target": "cfdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-arcus-plan",
+      "target": "cfdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-access-housing",
+      "target": "cfdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-arcus-eh",
+      "target": "cfdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-granicus-elec",
+      "target": "cfdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-xero",
+      "target": "cfdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-workday",
+      "target": "cfdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-jadu",
+      "target": "cfdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-openobjects",
+      "target": "cfdc-fn-parks",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "cfdc-sys-jadu",
+      "target": "cfdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "cfdc-sys-access-benefits",
+      "target": "cfdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "cfdc-sys-access-housing",
+      "target": "cfdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    }
   ]
 }

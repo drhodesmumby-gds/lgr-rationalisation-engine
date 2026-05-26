@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "adc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "adc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "adc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "adc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "adc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "adc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "adc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "adc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "adc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "adc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "adc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "adc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "adc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "adc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "adc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "adc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "adc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "adc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "adc-sys-bartec",
       "label": "Bartec Collective",
@@ -22,15 +67,15 @@
       "users": 42,
       "vendor": "Bartec",
       "supportModel": "vendor-supported",
-      "cost": "£80k/yr",
+      "cost": "\u00a380k/yr",
       "annualCost": 80000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-arcus-revenues",
@@ -40,15 +85,15 @@
       "users": 65,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£150k/yr",
+      "cost": "\u00a3150k/yr",
       "annualCost": 150000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-arcus-planning",
@@ -57,15 +102,15 @@
       "owner": "Ashbury District Council",
       "users": 50,
       "vendor": "Arcus Global",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-mri-housing",
@@ -75,15 +120,15 @@
       "users": 82,
       "vendor": "MRI",
       "supportModel": "vendor-supported",
-      "cost": "£190k/yr",
+      "cost": "\u00a3190k/yr",
       "annualCost": 190000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-jadu-eh",
@@ -93,15 +138,15 @@
       "users": 28,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£45k/yr",
+      "cost": "\u00a345k/yr",
       "annualCost": 45000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-elections",
@@ -111,15 +156,15 @@
       "users": 10,
       "vendor": "Access Group",
       "supportModel": "vendor-supported",
-      "cost": "£32k/yr",
+      "cost": "\u00a332k/yr",
       "annualCost": 32000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-xero",
@@ -129,15 +174,15 @@
       "users": 25,
       "vendor": "Xero",
       "supportModel": "vendor-supported",
-      "cost": "£42k/yr",
+      "cost": "\u00a342k/yr",
       "annualCost": 42000,
       "endYear": 2027,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-workday",
@@ -147,15 +192,15 @@
       "users": 20,
       "vendor": "Workday",
       "supportModel": "vendor-supported",
-      "cost": "£75k/yr",
+      "cost": "\u00a375k/yr",
       "annualCost": 75000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-salesforce",
@@ -165,15 +210,15 @@
       "users": 70,
       "vendor": "Salesforce",
       "supportModel": "vendor-supported",
-      "cost": "£120k/yr",
+      "cost": "\u00a3120k/yr",
       "annualCost": 120000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "adc-sys-govuk-notify",
@@ -183,30 +228,91 @@
       "users": 150,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£5k/yr",
+      "cost": "\u00a35k/yr",
       "annualCost": 5000,
       "endYear": 2030,
       "endMonth": 3,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "adc-sys-bartec", "target": "adc-fn-waste", "relationship": "REALIZES" },
-    { "source": "adc-sys-arcus-revenues", "target": "adc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "adc-sys-arcus-planning", "target": "adc-fn-planning", "relationship": "REALIZES" },
-    { "source": "adc-sys-mri-housing", "target": "adc-fn-housing", "relationship": "REALIZES" },
-    { "source": "adc-sys-jadu-eh", "target": "adc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "adc-sys-elections", "target": "adc-fn-elections", "relationship": "REALIZES" },
-    { "source": "adc-sys-xero", "target": "adc-fn-finance", "relationship": "REALIZES" },
-    { "source": "adc-sys-workday", "target": "adc-fn-hr", "relationship": "REALIZES" },
-    { "source": "adc-sys-salesforce", "target": "adc-fn-crm", "relationship": "REALIZES" },
-    { "source": "adc-sys-bartec", "target": "adc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "adc-sys-arcus-planning", "target": "adc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "adc-sys-salesforce", "target": "adc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] }
+    {
+      "source": "adc-sys-bartec",
+      "target": "adc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-arcus-revenues",
+      "target": "adc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-arcus-planning",
+      "target": "adc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-mri-housing",
+      "target": "adc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-jadu-eh",
+      "target": "adc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-elections",
+      "target": "adc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-xero",
+      "target": "adc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-workday",
+      "target": "adc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-salesforce",
+      "target": "adc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "adc-sys-bartec",
+      "target": "adc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "adc-sys-arcus-planning",
+      "target": "adc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "adc-sys-salesforce",
+      "target": "adc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    }
   ]
 }

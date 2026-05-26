@@ -1,6 +1,7 @@
 // ===================================================================
 // SANKEY DATA EXTRACTION — Pure functions, no DOM, no D3
 // ===================================================================
+import { getHostingType } from '../analysis/hosting.js';
 // Data shapes:
 //   allocMap: Map<successorName, Map<lgaFunctionId, SystemAllocation[]>>
 //   SystemAllocation: { system: { id, label, vendor, users, annualCost, _sourceCouncil, ... },
@@ -163,7 +164,7 @@ export function buildFunctionSankeyData(allocMap, successorName, lgaFunctionMap,
                     dataPartitioning: sys.dataPartitioning || null,
                     portability: sys.portability || null,
                     isERP: !!sys.isERP,
-                    isCloud: !!sys.isCloud
+                    hosting: getHostingType(sys) || 'cloud'
                 });
             }
 

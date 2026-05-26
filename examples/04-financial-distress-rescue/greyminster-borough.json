@@ -68,8 +68,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-nec-revenues",
@@ -86,10 +86,10 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "version": "NEC iWorld 2017",
-      "notes": "Very old version \u2014 vendor has flagged upgrade requirement regardless of LGR. Budget constrained."
+      "notes": "Very old version \u2014 vendor has flagged upgrade requirement regardless of LGR. Budget constrained.",
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-idox-planning",
@@ -106,10 +106,10 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "version": "Uniform 10.2",
-      "notes": "On-prem server reaching end of life. Hosting infrastructure not budgeted for replacement."
+      "notes": "On-prem server reaching end of life. Hosting infrastructure not budgeted for replacement.",
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-capita-housing",
@@ -126,8 +126,8 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-oracle-finance",
@@ -144,12 +144,12 @@
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "capabilityType": [
         "payments",
         "workflow"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-capita-hr",
@@ -166,8 +166,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-capita-crm",
@@ -184,8 +184,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-nec-eh",
@@ -202,8 +202,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gbc-sys-govuk-notify",
@@ -220,12 +220,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

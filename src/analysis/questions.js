@@ -1,4 +1,5 @@
 import { computeTcopAssessment, classifySupportModel, detectSameVendorConsolidation } from './signals.js';
+import { isNonCloud, isCloud as isCloudHosted, getHostingType } from './hosting.js';
 
 export function generatePersonaQuestions(persona, pattern, signals, systems, anchorSystem, allocations, tierInfo) {
     const questions = [];
@@ -9,7 +10,7 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
     // Helper: total users with null guard
     const totalUsers = systems.reduce((sum, s) => sum + (s.users || 0), 0);
     const totalCost = systems.reduce((sum, s) => sum + (s.annualCost || 0), 0);
-    const onPremCount = systems.filter(s => !s.isCloud).length;
+    const onPremCount = systems.filter(s => isNonCloud(s)).length;
     const monoSystems = systems.filter(s => s.dataPartitioning === 'Monolithic' || s.isERP);
     const lowPortability = systems.filter(s => s.portability === 'Low');
     const medPortability = systems.filter(s => s.portability === 'Medium');
@@ -256,7 +257,7 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
         const sameVendor = detectSameVendorConsolidation(systems);
         let anchorAnswer;
         if (anchor) {
-            anchorAnswer = `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || 'unknown'}. ${anchor.isCloud ? 'Cloud-hosted.' : 'On-premise — cloud migration should be assessed.'} ${anchor.isERP ? 'ERP system — data extraction complexity is high.' : ''} Validate this with TCoP alignment and contract position before committing.`;
+            anchorAnswer = `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || 'unknown'}. ${isCloudHosted(anchor) ? 'Cloud-hosted.' : getHostingType(anchor) === 'partner-hosted' ? 'Partner-hosted.' : 'On-premise — cloud migration should be assessed.'} ${anchor.isERP ? 'ERP system — data extraction complexity is high.' : ''} Validate this with TCoP alignment and contract position before committing.`;
         } else if (sameVendor && sameVendor.isUnanimous) {
             anchorAnswer = `No clear anchor from user volume, but all systems are from ${sameVendor.vendor}. ${sameVendor.insight} Select the anchor based on: (1) contract renewal alignment, (2) TCoP assessment, (3) data maturity within the ${sameVendor.vendor} product family.`;
         } else {
@@ -326,7 +327,7 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
 
         // Q4: On-premise exposure
         if (onPremCount > 0) {
-            const onPremList = systems.filter(s => !s.isCloud).map(s =>
+            const onPremList = systems.filter(s => isNonCloud(s)).map(s =>
                 `<li><strong>${s.label}</strong>${s.vendor ? ` <span class="text-gray-400">(${s.vendor})</span>` : ''}</li>`
             ).join('');
             questions.push({
@@ -377,7 +378,7 @@ export function generatePersonaQuestions(persona, pattern, signals, systems, anc
         // Q6 (consolidate): API and integration implications
         if (isConsolidate) {
             const portList = systems.map(s =>
-                `<li><strong>${s.label}</strong> — ${s.portability || 'Unknown'} portability, ${s.isCloud ? 'cloud' : 'on-premise'}${s.vendor ? ` <span class="text-gray-400">(${s.vendor})</span>` : ''}</li>`
+                `<li><strong>${s.label}</strong> — ${s.portability || 'Unknown'} portability, ${getHostingType(s) || 'unknown'}${s.vendor ? ` <span class="text-gray-400">(${s.vendor})</span>` : ''}</li>`
             ).join('');
             const lowPort = systems.filter(s => s.portability === 'Low');
             questions.push({

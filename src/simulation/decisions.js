@@ -19,7 +19,7 @@
  * @property {string} [procuredSystem.label]
  * @property {string} [procuredSystem.vendor]
  * @property {number} [procuredSystem.annualCost]
- * @property {boolean} [procuredSystem.isCloud]
+ * @property {string} [procuredSystem.hosting]
  *
  * // Axis 2: Operating Model Boundary
  * @property {'none'|'disaggregate'|'maintain-shared'|'establish-shared'} boundaryChoice

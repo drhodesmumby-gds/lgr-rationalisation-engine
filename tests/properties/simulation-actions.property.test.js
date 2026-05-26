@@ -23,7 +23,7 @@ const arbSystem = fc.record({
     endYear: fc.option(fc.integer({ min: 2025, max: 2035 }), { nil: undefined }),
     endMonth: fc.option(fc.integer({ min: 1, max: 12 }), { nil: undefined }),
     noticePeriod: fc.option(fc.integer({ min: 0, max: 24 }), { nil: undefined }),
-    isCloud: fc.boolean(),
+    hosting: fc.constantFrom('cloud', 'on-premise', 'partner-hosted'),
     _sourceCouncil: fc.constantFrom('Council-A', 'Council-B', 'Council-C'),
 }).map(fields => {
     const sys = { ...fields, type: 'ITSystem' };

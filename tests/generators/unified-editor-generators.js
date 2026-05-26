@@ -37,7 +37,7 @@ export function arbITSystemNode() {
         noticePeriod: fc.option(fc.integer({ min: 0, max: 24 }), { nil: undefined }),
         portability: fc.option(fc.constantFrom('High', 'Medium', 'Low'), { nil: undefined }),
         dataPartitioning: fc.option(fc.constantFrom('Segmented', 'Monolithic'), { nil: undefined }),
-        isCloud: fc.option(fc.boolean(), { nil: undefined }),
+        hosting: fc.option(fc.constantFrom('cloud', 'on-premise', 'partner-hosted'), { nil: undefined }),
         isERP: fc.option(fc.boolean(), { nil: undefined }),
         supportModel: fc.option(
             fc.constantFrom('vendor-supported', 'community-supported', 'unsupported'),
@@ -150,7 +150,7 @@ export function arbCompleteITSystemNode() {
         endYear: fc.integer({ min: 2024, max: 2035 }),
         portability: fc.constantFrom('High', 'Medium', 'Low'),
         dataPartitioning: fc.constantFrom('Segmented', 'Monolithic'),
-        isCloud: fc.boolean(),
+        hosting: fc.constantFrom('cloud', 'on-premise', 'partner-hosted'),
         supportModel: fc.constantFrom('vendor-supported', 'community-supported', 'unsupported'),
     });
 }

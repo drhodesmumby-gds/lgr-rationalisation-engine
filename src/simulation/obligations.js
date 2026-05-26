@@ -12,6 +12,8 @@
 // persona's signal weights, so the same obligation can appear as
 // high-severity for an architect but low-severity for an executive.
 
+import { isNonCloud, isCloud as isCloudHosted, getHostingType } from '../analysis/hosting.js';
+
 /**
  * @typedef {Object} SimulationObligation
  * @property {string} id
@@ -87,7 +89,7 @@ export function generateObligations(baselineAllocation, action, actionIndex, rem
                     dataPartitioning: sys.dataPartitioning || null,
                     portability: sys.portability || null,
                     isERP: !!sys.isERP,
-                    isCloud: !!sys.isCloud,
+                    hosting: getHostingType(sys) || 'cloud',
                     endYear: sys.endYear || null,
                     endMonth: sys.endMonth || null,
                     noticePeriod: sys.noticePeriod || null
@@ -118,7 +120,7 @@ export function generateObligations(baselineAllocation, action, actionIndex, rem
                     isMonolithic: sys.dataPartitioning === 'Monolithic',
                     isLowPortability: sys.portability === 'Low',
                     isERP: !!sys.isERP,
-                    isOnPrem: !sys.isCloud,
+                    isOnPrem: isNonCloud(sys),
                     userCount: typeof sys.users === 'number' ? sys.users : 0,
                     annualCost: typeof sys.annualCost === 'number' ? sys.annualCost : 0,
                     contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}` : null,
@@ -181,7 +183,7 @@ export function generateDisaggregationObligations(originalSystem, action, action
                 dataPartitioning: sys.dataPartitioning || null,
                 portability: sys.portability || null,
                 isERP: !!sys.isERP,
-                isCloud: !!sys.isCloud,
+                hosting: getHostingType(sys) || 'cloud',
                 endYear: sys.endYear || null,
                 endMonth: sys.endMonth || null,
                 noticePeriod: sys.noticePeriod || null
@@ -197,7 +199,7 @@ export function generateDisaggregationObligations(originalSystem, action, action
             isMonolithic: sys.dataPartitioning === 'Monolithic',
             isLowPortability: sys.portability === 'Low',
             isERP: !!sys.isERP,
-            isOnPrem: !sys.isCloud,
+            isOnPrem: isNonCloud(sys),
             userCount,
             annualCost,
             contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}` : null,
@@ -273,7 +275,7 @@ export function generateDeferralObligations(decision, baselineAllocation, lgaFun
         if (sys.dataPartitioning === 'Monolithic') hasMonolithic = true;
         if (sys.portability === 'Low') hasLowPortability = true;
         if (sys.isERP) hasERP = true;
-        if (!sys.isCloud) hasOnPrem = true;
+        if (isNonCloud(sys)) hasOnPrem = true;
 
         // Check if contract extension is needed (expires within deferral horizon)
         if (sys.endYear && sys.endYear <= horizonYear) {
@@ -308,7 +310,7 @@ export function generateDeferralObligations(decision, baselineAllocation, lgaFun
             dataPartitioning: hasMonolithic ? 'Monolithic' : 'Segmented',
             portability: hasLowPortability ? 'Low' : 'Medium',
             isERP: hasERP,
-            isCloud: !hasOnPrem,
+            hosting: hasOnPrem ? 'on-premise' : 'cloud',
             endYear: null,
             endMonth: null,
             noticePeriod: null
@@ -366,7 +368,7 @@ export function generateSharedServiceGovernanceObligation(action, actionIndex, s
             dataPartitioning: sys.dataPartitioning || null,
             portability: sys.portability || null,
             isERP: !!sys.isERP,
-            isCloud: !!sys.isCloud,
+            hosting: getHostingType(sys) || 'cloud',
             endYear: sys.endYear || null,
             endMonth: sys.endMonth || null,
             noticePeriod: sys.noticePeriod || null
@@ -378,7 +380,7 @@ export function generateSharedServiceGovernanceObligation(action, actionIndex, s
         isMonolithic: sys.dataPartitioning === 'Monolithic',
         isLowPortability: sys.portability === 'Low',
         isERP: !!sys.isERP,
-        isOnPrem: !sys.isCloud,
+        isOnPrem: isNonCloud(sys),
         userCount: typeof sys.users === 'number' ? sys.users : 0,
         annualCost: typeof sys.annualCost === 'number' ? sys.annualCost : 0,
         contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}` : null,
@@ -443,7 +445,7 @@ export function generateCapabilityGapObligations(removedSystem, decisionFunction
                 dataPartitioning: null,
                 portability: null,
                 isERP: false,
-                isCloud: !!removedSystem.isCloud,
+                hosting: getHostingType(removedSystem) || 'cloud',
                 endYear: null,
                 endMonth: null,
                 noticePeriod: null
@@ -455,7 +457,7 @@ export function generateCapabilityGapObligations(removedSystem, decisionFunction
             isMonolithic: false,
             isLowPortability: false,
             isERP: false,
-            isOnPrem: !removedSystem.isCloud,
+            isOnPrem: isNonCloud(removedSystem),
             userCount: 0,
             annualCost: 0,
             contractEndDate: null,

@@ -22,6 +22,7 @@ import { computeMigrationComplexity } from '../analysis/metrics.js';
 import { LGAM_CAPABILITIES } from '../constants/capabilities.js';
 import { recomputeSimulation } from './simulation-panel.js';
 import { showConfirm } from '../ui-notifications.js';
+import { getHostingType } from '../analysis/hosting.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -425,9 +426,12 @@ function renderSystemCard(sys, vestingDate, isHorizontal) {
     const cardBorder = isErp ? 'border-[#d4351c] border-2' : 'border border-gray-300';
     const cardWidth = isHorizontal ? 'min-w-[180px] flex-1' : 'w-full';
 
-    // Cloud / on-prem badge
-    const cloudBadge = sys.isCloud
+    // Cloud / on-prem / partner-hosted badge
+    const hostingType = getHostingType(sys);
+    const cloudBadge = hostingType === 'cloud'
         ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#cce2d8] text-[#00703c] font-bold border border-[#00703c]">Cloud</span>`
+        : hostingType === 'partner-hosted'
+        ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#fde68a] text-[#f47738] font-bold border border-[#f47738]">Partner</span>`
         : `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#f3d9c9] text-[#f47738] font-bold border border-[#f47738]">On-prem</span>`;
 
     // Portability badge
@@ -752,11 +756,13 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
                                 <label for="procureCost" class="block text-xs font-bold mb-1">Annual cost (£)</label>
                                 <input type="number" id="procureCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 150000" min="0">
                             </div>
-                            <div class="flex items-end pb-1.5">
-                                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
-                                    <input type="checkbox" id="procureCloud" checked>
-                                    Cloud-hosted
-                                </label>
+                            <div>
+                                <label for="procureHosting" class="block text-xs font-bold mb-1">Hosting</label>
+                                <select id="procureHosting" class="border border-[#b1b4b6] p-1.5 text-sm w-full">
+                                    <option value="cloud" selected>Cloud</option>
+                                    <option value="on-premise">On-premise</option>
+                                    <option value="partner-hosted">Partner-hosted</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -1467,11 +1473,11 @@ function prefillDecision(decision, systems, successorName) {
         const labelEl = content.querySelector('#procureLabel');
         const vendorEl = content.querySelector('#procureVendor');
         const costEl = content.querySelector('#procureCost');
-        const cloudEl = content.querySelector('#procureCloud');
+        const hostingEl = content.querySelector('#procureHosting');
         if (labelEl) labelEl.value = ps.label || '';
         if (vendorEl) vendorEl.value = ps.vendor || '';
         if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : '';
-        if (cloudEl) cloudEl.checked = ps.isCloud !== false;
+        if (hostingEl) hostingEl.value = ps.hosting || (ps.isCloud === false ? 'on-premise' : 'cloud');
     }
 
     // Axis 2
@@ -1541,12 +1547,12 @@ export async function applyDecisionFromPanel() {
         }
         const vendorEl = content.querySelector('#procureVendor');
         const costEl = content.querySelector('#procureCost');
-        const cloudEl = content.querySelector('#procureCloud');
+        const hostingEl = content.querySelector('#procureHosting');
         procuredSystem = {
             label,
             vendor: vendorEl ? vendorEl.value.trim() : '',
             annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
-            isCloud: cloudEl ? cloudEl.checked : true
+            hosting: hostingEl ? hostingEl.value : 'cloud'
         };
     }
 
@@ -1939,12 +1945,12 @@ window._simBulkApplyErp = function(erpSystemId, successorName) {
         }
         const vendorEl = content.querySelector('#procureVendor');
         const costEl = content.querySelector('#procureCost');
-        const cloudEl = content.querySelector('#procureCloud');
+        const hostingEl = content.querySelector('#procureHosting');
         procuredSystem = {
             label,
             vendor: vendorEl ? vendorEl.value.trim() : '',
             annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
-            isCloud: cloudEl ? cloudEl.checked : true
+            hosting: hostingEl ? hostingEl.value : 'cloud'
         };
     }
 

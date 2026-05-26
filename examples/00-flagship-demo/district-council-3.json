@@ -47,16 +47,16 @@
       "type": "ITSystem",
       "vendor": "Sage",
       "users": 25,
-      "cost": "£15,000/yr",
+      "cost": "\u00a315,000/yr",
       "annualCost": 15000,
       "endYear": 2026,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "unsupported"
+      "supportModel": "unsupported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-inhouse-planning",
@@ -64,16 +64,16 @@
       "type": "ITSystem",
       "vendor": "In-House",
       "users": 15,
-      "cost": "£12,000/yr",
+      "cost": "\u00a312,000/yr",
       "annualCost": 12000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "unsupported"
+      "supportModel": "unsupported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-inhouse-waste",
@@ -81,16 +81,16 @@
       "type": "ITSystem",
       "vendor": "In-House",
       "users": 20,
-      "cost": "£8,000/yr",
+      "cost": "\u00a38,000/yr",
       "annualCost": 8000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "unsupported"
+      "supportModel": "unsupported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-nec-housing-d3",
@@ -98,16 +98,16 @@
       "type": "ITSystem",
       "vendor": "NEC",
       "users": 60,
-      "cost": "£90,000/yr",
+      "cost": "\u00a390,000/yr",
       "annualCost": 90000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-goss-icm",
@@ -115,16 +115,16 @@
       "type": "ITSystem",
       "vendor": "GOSS",
       "users": 100,
-      "cost": "£40,000/yr",
+      "cost": "\u00a340,000/yr",
       "annualCost": 40000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "sys-koha-library",
@@ -132,17 +132,20 @@
       "type": "ITSystem",
       "vendor": "In-House",
       "users": 30,
-      "cost": "£18,000/yr",
+      "cost": "\u00a318,000/yr",
       "annualCost": 18000,
       "endYear": 2030,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "supportModel": "community-supported",
-      "sharedWith": ["Neighbouring Council A", "Neighbouring Council B"]
+      "sharedWith": [
+        "Neighbouring Council A",
+        "Neighbouring Council B"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

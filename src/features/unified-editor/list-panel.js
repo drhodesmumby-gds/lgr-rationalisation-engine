@@ -29,7 +29,7 @@ const GROUP_COLOURS = [
 ];
 
 // Key fields for completeness assessment
-const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'isCloud', 'supportModel'];
+const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'hosting', 'supportModel'];
 
 /**
  * Count how many key fields are filled on a system node.

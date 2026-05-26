@@ -68,14 +68,14 @@
       "noticePeriod": 18,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
       "capabilityType": [
         "payments",
         "workflow"
       ],
       "version": "S/4HANA 2023",
-      "notes": "Monolithic ERP spanning finance, HR, procurement, asset mgmt. 14 custom ABAP integrations with downstream systems. Disaggregation quoted at \u00a32.4M."
+      "notes": "Monolithic ERP spanning finance, HR, procurement, asset mgmt. 14 custom ABAP integrations with downstream systems. Disaggregation quoted at \u00a32.4M.",
+      "hosting": "on-premise"
     },
     {
       "id": "occ-sys-liquidlogic",
@@ -92,10 +92,10 @@
       "noticePeriod": 12,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "version": "v14.3",
-      "notes": "Consumes payments from SAP. Migration to standalone payments would require 6-month project."
+      "notes": "Consumes payments from SAP. Migration to standalone payments would require 6-month project.",
+      "hosting": "cloud"
     },
     {
       "id": "occ-sys-confirm",
@@ -112,8 +112,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "occ-sys-dynamics",
@@ -130,11 +130,11 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "forms"
-      ]
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "occ-sys-civica-parking",
@@ -151,8 +151,8 @@
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "occ-sys-govuk-notify",
@@ -169,12 +169,12 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

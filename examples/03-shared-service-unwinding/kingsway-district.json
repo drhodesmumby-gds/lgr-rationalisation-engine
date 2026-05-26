@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "kdc-fn-benefits", "label": "Housing Benefits", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "kdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "kdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "kdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "kdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "kdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "kdc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "kdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "kdc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "kdc-fn-benefits",
+      "label": "Housing Benefits",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "kdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "kdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "kdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "kdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "kdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "kdc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "kdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "kdc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "kdc-sys-nec-revenues",
       "label": "NEC Revenues and Benefits (Shared)",
@@ -22,16 +67,18 @@
       "users": 95,
       "vendor": "NEC",
       "supportModel": "community-supported",
-      "cost": "£240k/yr",
+      "cost": "\u00a3240k/yr",
       "annualCost": 240000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Riverdale Borough Council"]
+      "sharedWith": [
+        "Riverdale Borough Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "kdc-sys-mhr-itrent",
@@ -41,16 +88,18 @@
       "users": 72,
       "vendor": "MHR",
       "supportModel": "vendor-supported",
-      "cost": "£150k/yr",
+      "cost": "\u00a3150k/yr",
       "annualCost": 150000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Riverdale Borough Council"]
+      "sharedWith": [
+        "Riverdale Borough Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "kdc-sys-civica-elections",
@@ -60,16 +109,18 @@
       "users": 18,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£55k/yr",
+      "cost": "\u00a355k/yr",
       "annualCost": 55000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "sharedWith": ["Riverdale Borough Council"]
+      "sharedWith": [
+        "Riverdale Borough Council"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "kdc-sys-bartec",
@@ -79,15 +130,15 @@
       "users": 48,
       "vendor": "Bartec",
       "supportModel": "vendor-supported",
-      "cost": "£90k/yr",
+      "cost": "\u00a390k/yr",
       "annualCost": 90000,
       "endYear": 2027,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "kdc-sys-arcus-planning",
@@ -97,15 +148,15 @@
       "users": 55,
       "vendor": "Arcus Global",
       "supportModel": "vendor-supported",
-      "cost": "£90k/yr",
+      "cost": "\u00a390k/yr",
       "annualCost": 90000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "kdc-sys-civica-housing",
@@ -115,15 +166,15 @@
       "users": 110,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£195k/yr",
+      "cost": "\u00a3195k/yr",
       "annualCost": 195000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "kdc-sys-xero",
@@ -133,15 +184,15 @@
       "users": 30,
       "vendor": "Xero",
       "supportModel": "vendor-supported",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2027,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "kdc-sys-granicus",
@@ -150,16 +201,18 @@
       "owner": "Kingsway District Council",
       "users": 80,
       "vendor": "Granicus",
-      "cost": "£95k/yr",
+      "cost": "\u00a395k/yr",
       "annualCost": 95000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["forms"]
+      "capabilityType": [
+        "forms"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "kdc-sys-jadu-eh",
@@ -169,15 +222,15 @@
       "users": 26,
       "vendor": "Jadu",
       "supportModel": "vendor-supported",
-      "cost": "£48k/yr",
+      "cost": "\u00a348k/yr",
       "annualCost": 48000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "kdc-sys-govuk-notify",
@@ -187,16 +240,19 @@
       "users": 150,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£5k/yr",
+      "cost": "\u00a35k/yr",
       "annualCost": 5000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     },
     {
       "id": "kdc-sys-capita-pay360",
@@ -206,34 +262,117 @@
       "users": 60,
       "vendor": "Capita",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "sharedWith": ["Riverdale Borough Council"],
-      "capabilityType": ["payments"]
+      "sharedWith": [
+        "Riverdale Borough Council"
+      ],
+      "capabilityType": [
+        "payments"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "kdc-sys-nec-revenues", "target": "kdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "kdc-sys-bartec", "target": "kdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "kdc-sys-arcus-planning", "target": "kdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "kdc-sys-civica-housing", "target": "kdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "kdc-sys-xero", "target": "kdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "kdc-sys-mhr-itrent", "target": "kdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "kdc-sys-civica-elections", "target": "kdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "kdc-sys-jadu-eh", "target": "kdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "kdc-sys-granicus", "target": "kdc-fn-crm", "relationship": "REALIZES" },
-    { "source": "kdc-sys-nec-revenues", "target": "kdc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "kdc-sys-civica-housing", "target": "kdc-sys-capita-pay360", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "kdc-sys-granicus", "target": "kdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] },
-    { "source": "kdc-sys-bartec", "target": "kdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms"] },
-    { "source": "kdc-sys-civica-housing", "target": "kdc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "kdc-sys-arcus-planning", "target": "kdc-sys-granicus", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["forms"] }
+    {
+      "source": "kdc-sys-nec-revenues",
+      "target": "kdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-bartec",
+      "target": "kdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-arcus-planning",
+      "target": "kdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-civica-housing",
+      "target": "kdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-xero",
+      "target": "kdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-mhr-itrent",
+      "target": "kdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-civica-elections",
+      "target": "kdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-jadu-eh",
+      "target": "kdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-granicus",
+      "target": "kdc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "kdc-sys-nec-revenues",
+      "target": "kdc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "kdc-sys-civica-housing",
+      "target": "kdc-sys-capita-pay360",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "kdc-sys-granicus",
+      "target": "kdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    },
+    {
+      "source": "kdc-sys-bartec",
+      "target": "kdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms"
+      ]
+    },
+    {
+      "source": "kdc-sys-civica-housing",
+      "target": "kdc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "kdc-sys-arcus-planning",
+      "target": "kdc-sys-granicus",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "forms"
+      ]
+    }
   ]
 }

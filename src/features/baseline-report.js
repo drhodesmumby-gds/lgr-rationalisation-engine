@@ -12,6 +12,7 @@ import { DEFAULT_TIER_MAP } from '../constants/tier-map.js';
 import { computeSignals } from '../analysis/signals.js';
 import { computeEstateSummaryMetrics } from '../analysis/metrics.js';
 import { formatCost, escHtml, tierLabel, tierColour, personaLabel, personaColour, computeNoticeTrigger } from './report-export.js';
+import { isNonCloud, isCloud as isCloudHosted } from '../analysis/hosting.js';
 
 // ===================================================================
 // HTML SCAFFOLDING
@@ -161,7 +162,7 @@ function buildExecutiveReport() {
     const allSystems = getAllSystems();
     const monolithCount = allSystems.filter(s => s.dataPartitioning === 'Monolithic' || s.isERP).length;
     const sharedCount = allSystems.filter(s => s.sharedWith && s.sharedWith.length > 0).length;
-    const onPremCount = allSystems.filter(s => s.isCloud === false).length;
+    const onPremCount = allSystems.filter(s => isNonCloud(s)).length;
 
     let s2 = `<table class="kv-table">`;
     if (state.operatingMode === 'transition' && state.transitionStructure) {
@@ -363,8 +364,8 @@ function buildArchitectReport() {
 
     // Section 2: Technical Posture
     const allSystems = getAllSystems();
-    const cloudCount = allSystems.filter(s => s.isCloud === true).length;
-    const onPremCount = allSystems.filter(s => s.isCloud === false).length;
+    const cloudCount = allSystems.filter(s => isCloudHosted(s)).length;
+    const onPremCount = allSystems.filter(s => isNonCloud(s)).length;
     const unknownCount = allSystems.length - cloudCount - onPremCount;
     const highPort = allSystems.filter(s => s.portability === 'High').length;
     const medPort = allSystems.filter(s => s.portability === 'Medium').length;
@@ -418,7 +419,7 @@ function buildArchitectReport() {
 function computeTcopAssessmentLocal(system) {
     const concerns = [];
     const alignments = [];
-    if (system.isCloud === false) concerns.push({ point: 5, description: 'On-premise — TCoP Point 5 recommends cloud first' });
+    if (isNonCloud(system)) concerns.push({ point: 5, description: 'On-premise — TCoP Point 5 recommends cloud first' });
     if (system.portability === 'Low') {
         concerns.push({ point: 3, description: 'Vendor lock-in — TCoP Point 3' });
         concerns.push({ point: 4, description: 'Low portability — TCoP Point 4' });
@@ -427,7 +428,7 @@ function computeTcopAssessmentLocal(system) {
     if (system.isERP || system.dataPartitioning === 'Monolithic') {
         concerns.push({ point: 9, description: 'Monolithic architecture — TCoP Point 9' });
     }
-    if (system.isCloud === true) alignments.push({ point: 5, description: 'Cloud first' });
+    if (isCloudHosted(system)) alignments.push({ point: 5, description: 'Cloud first' });
     if (system.portability === 'High') alignments.push({ point: 4, description: 'Open standards' });
     return { concerns, alignments };
 }

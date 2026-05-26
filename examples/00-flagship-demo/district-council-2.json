@@ -41,17 +41,19 @@
       "type": "ITSystem",
       "vendor": "NEC",
       "users": 150,
-      "cost": "£160,000/yr",
+      "cost": "\u00a3160,000/yr",
       "annualCost": 160000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "supportModel": "vendor-supported",
-      "sharedWith": ["District Council 1"]
+      "sharedWith": [
+        "District Council 1"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "sys-nec-housing",
@@ -59,16 +61,16 @@
       "type": "ITSystem",
       "vendor": "NEC",
       "users": 100,
-      "cost": "£140,000/yr",
+      "cost": "\u00a3140,000/yr",
       "annualCost": 140000,
       "endYear": 2028,
       "endMonth": 12,
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-nec-planning",
@@ -76,16 +78,16 @@
       "type": "ITSystem",
       "vendor": "NEC",
       "users": 28,
-      "cost": "£60,000/yr",
+      "cost": "\u00a360,000/yr",
       "annualCost": 60000,
       "endYear": 2029,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "on-premise"
     },
     {
       "id": "sys-whitespace-waste",
@@ -93,16 +95,16 @@
       "type": "ITSystem",
       "vendor": "Whitespace",
       "users": 60,
-      "cost": "£85,000/yr",
+      "cost": "\u00a385,000/yr",
       "annualCost": 85000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     },
     {
       "id": "sys-firmstep-crm",
@@ -110,16 +112,16 @@
       "type": "ITSystem",
       "vendor": "Firmstep",
       "users": 200,
-      "cost": "£75,000/yr",
+      "cost": "\u00a375,000/yr",
       "annualCost": 75000,
       "endYear": 2030,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "supportModel": "vendor-supported"
+      "supportModel": "vendor-supported",
+      "hosting": "cloud"
     }
   ],
   "edges": [

@@ -133,9 +133,18 @@
                   "Monolithic"
                 ]
               },
-              "isCloud": {
-                "description": "Whether hosted in cloud (true) or on-premise (false)",
-                "type": "boolean"
+              "hosting": {
+                "description": "System hosting model",
+                "type": "string",
+                "enum": [
+                  "cloud",
+                  "on-premise",
+                  "partner-hosted"
+                ]
+              },
+              "hostingPartner": {
+                "description": "Name of the council or organisation that hosts this system (only when hosting is partner-hosted)",
+                "type": "string"
               },
               "isERP": {
                 "description": "Whether this is an Enterprise Resource Planning system spanning multiple functions",

@@ -208,10 +208,22 @@
               }
             },
             {
-              name: "isCloud",
-              type: "boolean",
+              name: "hosting",
+              type: "string",
               required: false,
-              description: "Whether hosted in cloud (true) or on-premise (false)"
+              description: "System hosting model",
+              enum: ["cloud", "on-premise", "partner-hosted"],
+              enumDescriptions: {
+                "cloud": "Vendor-hosted SaaS or cloud platform. Council has no infrastructure responsibility.",
+                "on-premise": "Hosted on council-owned infrastructure (data centre, servers).",
+                "partner-hosted": "Hosted by another council or shared service body. Specify partner in hostingPartner field."
+              }
+            },
+            {
+              name: "hostingPartner",
+              type: "string",
+              required: false,
+              description: "Name of the council or organisation that hosts this system (only when hosting is partner-hosted)"
             },
             {
               name: "isERP",

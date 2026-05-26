@@ -294,7 +294,7 @@ describe('renderPropsPanel — field value reflection', () => {
     it('Hosting Cloud radio is selected when isCloud is true', () => {
         fc.assert(
             fc.property(
-                arbITSystemNode().map(s => ({ ...s, isCloud: true })),
+                arbITSystemNode().map(s => ({ ...s, hosting: 'cloud' })),
                 (system) => {
                     const html = renderPropsPanel(system, stateWithSystem(system));
                     // Radio with value="Cloud" should be checked
@@ -308,7 +308,7 @@ describe('renderPropsPanel — field value reflection', () => {
     it('Hosting On-Premise radio is selected when isCloud is false', () => {
         fc.assert(
             fc.property(
-                arbITSystemNode().map(s => ({ ...s, isCloud: false })),
+                arbITSystemNode().map(s => ({ ...s, hosting: 'on-premise' })),
                 (system) => {
                     const html = renderPropsPanel(system, stateWithSystem(system));
                     expect(html).toContain('value="On-Premise" checked');

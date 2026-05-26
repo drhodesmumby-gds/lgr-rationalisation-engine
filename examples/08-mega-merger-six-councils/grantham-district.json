@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "gdc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "gdc-fn-benefits", "label": "Housing Benefits and Council Tax", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "gdc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "gdc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "gdc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "gdc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "gdc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "gdc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "gdc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "gdc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "gdc-fn-benefits",
+      "label": "Housing Benefits and Council Tax",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "gdc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "gdc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "gdc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "gdc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "gdc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "gdc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "gdc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "gdc-sys-waste-inhouse",
       "label": "In-House Waste Scheduling",
@@ -22,15 +67,15 @@
       "users": 40,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£25k/yr",
+      "cost": "\u00a325k/yr",
       "annualCost": 25000,
       "endYear": 2026,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gdc-sys-nec",
@@ -39,15 +84,15 @@
       "owner": "Grantham District Council",
       "users": 65,
       "vendor": "NEC",
-      "cost": "£145k/yr",
+      "cost": "\u00a3145k/yr",
       "annualCost": 145000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gdc-sys-planning-inhouse",
@@ -57,15 +102,15 @@
       "users": 25,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£15k/yr",
+      "cost": "\u00a315k/yr",
       "annualCost": 15000,
       "endYear": 2026,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gdc-sys-housing-inhouse",
@@ -75,15 +120,15 @@
       "users": 50,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£30k/yr",
+      "cost": "\u00a330k/yr",
       "annualCost": 30000,
       "endYear": 2026,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gdc-sys-eh-inhouse",
@@ -93,15 +138,15 @@
       "users": 20,
       "vendor": "In-House",
       "supportModel": "unsupported",
-      "cost": "£10k/yr",
+      "cost": "\u00a310k/yr",
       "annualCost": 10000,
       "endYear": 2026,
       "endMonth": 3,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gdc-sys-civica-elections",
@@ -110,15 +155,15 @@
       "owner": "Grantham District Council",
       "users": 10,
       "vendor": "Civica",
-      "cost": "£32k/yr",
+      "cost": "\u00a332k/yr",
       "annualCost": 32000,
       "endYear": 2027,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "gdc-sys-xero",
@@ -127,15 +172,15 @@
       "owner": "Grantham District Council",
       "users": 60,
       "vendor": "Xero",
-      "cost": "£45k/yr",
+      "cost": "\u00a345k/yr",
       "annualCost": 45000,
       "endYear": 2027,
       "endMonth": 6,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gdc-sys-peoplehr",
@@ -144,15 +189,15 @@
       "owner": "Grantham District Council",
       "users": 120,
       "vendor": "Access Group",
-      "cost": "£80k/yr",
+      "cost": "\u00a380k/yr",
       "annualCost": 80000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "gdc-sys-crm-inhouse",
@@ -162,26 +207,62 @@
       "users": 80,
       "vendor": "In-House",
       "supportModel": "community-supported",
-      "cost": "£35k/yr",
+      "cost": "\u00a335k/yr",
       "annualCost": 35000,
       "endYear": 2026,
       "endMonth": 9,
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     }
   ],
   "edges": [
-    { "source": "gdc-sys-waste-inhouse", "target": "gdc-fn-waste", "relationship": "REALIZES" },
-    { "source": "gdc-sys-nec", "target": "gdc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "gdc-sys-planning-inhouse", "target": "gdc-fn-planning", "relationship": "REALIZES" },
-    { "source": "gdc-sys-housing-inhouse", "target": "gdc-fn-housing", "relationship": "REALIZES" },
-    { "source": "gdc-sys-eh-inhouse", "target": "gdc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "gdc-sys-civica-elections", "target": "gdc-fn-elections", "relationship": "REALIZES" },
-    { "source": "gdc-sys-xero", "target": "gdc-fn-finance", "relationship": "REALIZES" },
-    { "source": "gdc-sys-peoplehr", "target": "gdc-fn-hr", "relationship": "REALIZES" },
-    { "source": "gdc-sys-crm-inhouse", "target": "gdc-fn-crm", "relationship": "REALIZES" }
+    {
+      "source": "gdc-sys-waste-inhouse",
+      "target": "gdc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-nec",
+      "target": "gdc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-planning-inhouse",
+      "target": "gdc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-housing-inhouse",
+      "target": "gdc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-eh-inhouse",
+      "target": "gdc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-civica-elections",
+      "target": "gdc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-xero",
+      "target": "gdc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-peoplehr",
+      "target": "gdc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "gdc-sys-crm-inhouse",
+      "target": "gdc-fn-crm",
+      "relationship": "REALIZES"
+    }
   ]
 }

@@ -23,7 +23,7 @@ const arbSystem = fc.record({
     annualCost: fc.integer({ min: 1000, max: 500000 }),
     endYear: fc.option(fc.integer({ min: 2025, max: 2035 }), { nil: undefined }),
     endMonth: fc.option(fc.integer({ min: 1, max: 12 }), { nil: undefined }),
-    isCloud: fc.boolean(),
+    hosting: fc.constantFrom('cloud', 'on-premise', 'partner-hosted'),
     isERP: fc.constant(false),
     dataPartitioning: fc.constantFrom('Segmented', 'Monolithic'),
     portability: fc.constantFrom('High', 'Medium', 'Low'),
@@ -212,7 +212,7 @@ describe('Decision Projector — Property Tests', () => {
                             label: 'New Procured System',
                             vendor: 'NewVendor',
                             annualCost: 200000,
-                            isCloud: true
+                            hosting: 'cloud'
                         },
                         boundaryChoice: 'none',
                         disaggregationSplits: [],

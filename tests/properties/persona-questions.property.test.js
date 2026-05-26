@@ -669,7 +669,7 @@ describe('generatePersonaQuestions — indicator values for specific questions',
             id: 'sys-onprem',
             label: 'On Premise System',
             type: 'ITSystem',
-            isCloud: false,
+            hosting: 'on-premise',
           };
           const result = generatePersonaQuestions('architect', pattern, signals, [onPremSystem], anchorSystem, allocations, tierInfo);
           const onPremQ = result.find(q => q.question === 'What is the on-premise exposure?');
@@ -690,7 +690,7 @@ describe('generatePersonaQuestions — indicator values for specific questions',
             id: 'sys-cloud',
             label: 'Cloud System',
             type: 'ITSystem',
-            isCloud: true,
+            hosting: 'cloud',
           };
           const result = generatePersonaQuestions('architect', pattern, signals, [cloudSystem], anchorSystem, allocations, tierInfo);
           const onPremQ = result.find(q => q.question === 'What is the on-premise exposure?');

@@ -62,10 +62,10 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "version": "v7.2",
-      "notes": "Contract inherited from previous waste partnership. Good API for data export."
+      "notes": "Contract inherited from previous waste partnership. Good API for data export.",
+      "hosting": "cloud"
     },
     {
       "id": "cdc-sys-nec",
@@ -82,10 +82,10 @@
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
       "isERP": false,
       "version": "NEC Revenue & Benefits 2024.1",
-      "notes": "Shared instance with Thornbury under joint revenues partnership. TUPE staff implications if decommissioned."
+      "notes": "Shared instance with Thornbury under joint revenues partnership. TUPE staff implications if decommissioned.",
+      "hosting": "on-premise"
     },
     {
       "id": "cdc-sys-arcus",
@@ -102,10 +102,10 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "version": "v3.8",
-      "notes": "Recently migrated from legacy Uniform system. Data migration was complex \u2014 retain institutional knowledge."
+      "notes": "Recently migrated from legacy Uniform system. Data migration was complex \u2014 retain institutional knowledge.",
+      "hosting": "cloud"
     },
     {
       "id": "cdc-sys-jadu",
@@ -122,8 +122,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cdc-sys-demo",
@@ -140,8 +140,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cdc-sys-access-finance",
@@ -158,8 +158,8 @@
       "noticePeriod": 3,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cdc-sys-workday",
@@ -176,8 +176,8 @@
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "cdc-sys-govuk-notify",
@@ -194,14 +194,14 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
       ],
       "version": "Current (SaaS)",
-      "notes": "Zero-cost tier sufficient for current volumes. Multiple services depend on this for citizen comms."
+      "notes": "Zero-cost tier sufficient for current volumes. Multiple services depend on this for citizen comms.",
+      "hosting": "cloud"
     }
   ],
   "edges": [

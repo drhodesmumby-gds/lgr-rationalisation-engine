@@ -68,8 +68,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-nec-revs",
@@ -86,13 +86,13 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "sharedWith": [
         "Ashford Borough Council"
       ],
       "version": "NEC iWorld 2019",
-      "notes": "Shared with Ferndale. Neither council holds the contract \u2014 managed by legacy shared services company being wound down."
+      "notes": "Shared with Ferndale. Neither council holds the contract \u2014 managed by legacy shared services company being wound down.",
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-capita-plan",
@@ -109,8 +109,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-capita-housing",
@@ -127,8 +127,8 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-nec-eh",
@@ -145,8 +145,8 @@
       "noticePeriod": 3,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-capita-fin",
@@ -163,8 +163,8 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-nec-hr",
@@ -181,8 +181,8 @@
       "noticePeriod": 6,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-inhouse-crm",
@@ -199,11 +199,11 @@
       "noticePeriod": 1,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": false,
       "capabilityType": [
         "forms"
-      ]
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "bwdc-sys-govuk-notify",
@@ -220,12 +220,12 @@
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
       "capabilityType": [
         "sms",
         "email"
-      ]
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [

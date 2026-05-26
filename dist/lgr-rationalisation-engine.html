@@ -1134,14 +1134,14 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                         </div>
                         <div class="border-l-4 border-[#f47738] pl-3">
                             <p class="font-bold text-sm">Tech Debt (On-premise)</p>
-                            <p class="text-sm text-gray-700">Identifies systems where <code>isCloud=false</code>. On-premise hosting may complicate licencing, hosting handover, and continuity planning.</p>
+                            <p class="text-sm text-gray-700">Identifies systems where the <code>hosting</code> field is <code>on-premise</code> or <code>partner-hosted</code>. Non-cloud hosting may complicate licencing, hosting handover, and continuity planning.</p>
                         </div>
                         <div class="border-l-4 border-[#1d70b8] pl-3">
                             <p class="font-bold text-sm">TCoP Alignment</p>
                             <p class="text-sm text-gray-700">Evaluates each system against 5 Technology Code of Practice points:<br>
                             Point 3 (spend): vendor lock-in via low portability.<br>
                             Point 4 (open standards): portability field.<br>
-                            Point 5 (cloud first): isCloud field.<br>
+                            Point 5 (cloud first): hosting field.<br>
                             Point 9 (modularity): ERP + Monolithic combination.<br>
                             Point 11 (commercial): vendor lock-in via low portability.
                             </p>
@@ -1596,13 +1596,49 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     // key: systemId, value: { [successorName]: proportion (0-1) }
   };
 
+  // src/analysis/hosting.js
+  function getHostingType(system) {
+    if (system.hosting) return system.hosting;
+    if (system.isCloud === true) return "cloud";
+    if (system.isCloud === false) return "on-premise";
+    return null;
+  }
+  function isNonCloud(system) {
+    const type = getHostingType(system);
+    return type === "on-premise" || type === "partner-hosted";
+  }
+  function isCloud(system) {
+    return getHostingType(system) === "cloud";
+  }
+  function detectHostingRisk(system, councilToSuccessorMap) {
+    if (getHostingType(system) !== "partner-hosted") return null;
+    if (!system.hostingPartner) return null;
+    const partnerSuccessors = councilToSuccessorMap.get(system.hostingPartner);
+    if (!partnerSuccessors || partnerSuccessors.length === 0) {
+      return {
+        risk: "governance",
+        detail: `Hosted by ${system.hostingPartner} (external to this merger). Partnership agreement will need novation to successor authority.`
+      };
+    }
+    const sourceCouncil = system._sourceCouncil;
+    const sourceSuccessors = councilToSuccessorMap.get(sourceCouncil) || [];
+    const sameSuccessor = sourceSuccessors.some((s) => partnerSuccessors.includes(s));
+    if (sameSuccessor) {
+      return { risk: "none", detail: `Hosted by ${system.hostingPartner} \u2014 both map to the same successor.` };
+    }
+    return {
+      risk: "continuity",
+      detail: `Hosted by ${system.hostingPartner} which maps to a different successor. Day 1 hosting continuity agreement required.`
+    };
+  }
+
   // src/analysis/signals.js
   function computeTcopAssessment(system) {
     var alignments = [];
     var concerns = [];
-    if (system.isCloud === true) {
+    if (isCloud(system)) {
       alignments.push({ point: 5, description: "Cloud first \u2014 aligns with TCoP Point 5" });
-    } else if (system.isCloud === false) {
+    } else if (isNonCloud(system)) {
       concerns.push({ point: 5, description: "On-premise hosting \u2014 TCoP Point 5 recommends cloud first" });
     }
     if (system.portability === "High") {
@@ -1866,7 +1902,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     }
     if (weights.techDebt > 0) {
-      const onPrem = systems.filter((s) => !s.isCloud);
+      const onPrem = systems.filter((s) => isNonCloud(s));
       if (onPrem.length > 0) {
         signals.push({
           id: "techDebt",
@@ -1877,6 +1913,27 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           border: "border-[#f47738]",
           strong: false
         });
+      }
+    }
+    if (weights.techDebt > 0 && state.operatingMode === "transition" && state.transitionStructure) {
+      const partnerHosted = systems.filter((s) => getHostingType(s) === "partner-hosted" && s.hostingPartner);
+      if (partnerHosted.length > 0) {
+        const councilToSuccessorMap = /* @__PURE__ */ new Map();
+        state.transitionStructure.successors.forEach((succ) => {
+          (succ.fullPredecessors || []).forEach((c) => {
+            if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []);
+            councilToSuccessorMap.get(c).push(succ.name);
+          });
+          (succ.partialPredecessors || []).forEach((c) => {
+            if (!councilToSuccessorMap.has(c)) councilToSuccessorMap.set(c, []);
+            councilToSuccessorMap.get(c).push(succ.name);
+          });
+        });
+        const risks = partnerHosted.map((s) => detectHostingRisk(s, councilToSuccessorMap)).filter((r) => r && r.risk !== "none");
+        if (risks.length > 0) {
+          const hasContinuity = risks.some((r) => r.risk === "continuity");
+          signals.push({ id: "techDebt", weight: weights.techDebt, label: "Partner-hosted risk", value: risks.map((r) => r.detail).join("; "), tag: hasContinuity ? "tag-red" : "tag-orange", border: hasContinuity ? "border-[#d4351c]" : "border-[#f47738]", strong: hasContinuity });
+        }
       }
     }
     if (weights.tcopAlignment > 0) {
@@ -2257,7 +2314,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       score += 2;
       factors.push("Monolithic");
     }
-    if (system.isCloud === false) {
+    if (isNonCloud(system)) {
       score += 1;
       factors.push("On-prem");
     }
@@ -2462,7 +2519,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const sig = (id) => signals.find((s) => s.id === id);
     const totalUsers = systems.reduce((sum, s) => sum + (s.users || 0), 0);
     const totalCost = systems.reduce((sum, s) => sum + (s.annualCost || 0), 0);
-    const onPremCount = systems.filter((s) => !s.isCloud).length;
+    const onPremCount = systems.filter((s) => isNonCloud(s)).length;
     const monoSystems = systems.filter((s) => s.dataPartitioning === "Monolithic" || s.isERP);
     const lowPortability = systems.filter((s) => s.portability === "Low");
     const medPortability = systems.filter((s) => s.portability === "Medium");
@@ -2647,7 +2704,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const sameVendor = detectSameVendorConsolidation(systems);
       let anchorAnswer;
       if (anchor) {
-        anchorAnswer = `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || "unknown"}. ${anchor.isCloud ? "Cloud-hosted." : "On-premise \u2014 cloud migration should be assessed."} ${anchor.isERP ? "ERP system \u2014 data extraction complexity is high." : ""} Validate this with TCoP alignment and contract position before committing.`;
+        anchorAnswer = `${anchor.label} is the strongest anchor candidate: ${(anchor.users || 0).toLocaleString()} users (proportionality threshold met). Portability: ${anchor.portability || "unknown"}. ${isCloud(anchor) ? "Cloud-hosted." : getHostingType(anchor) === "partner-hosted" ? "Partner-hosted." : "On-premise \u2014 cloud migration should be assessed."} ${anchor.isERP ? "ERP system \u2014 data extraction complexity is high." : ""} Validate this with TCoP alignment and contract position before committing.`;
       } else if (sameVendor && sameVendor.isUnanimous) {
         anchorAnswer = `No clear anchor from user volume, but all systems are from ${sameVendor.vendor}. ${sameVendor.insight} Select the anchor based on: (1) contract renewal alignment, (2) TCoP assessment, (3) data maturity within the ${sameVendor.vendor} product family.`;
       } else {
@@ -2710,7 +2767,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         });
       }
       if (onPremCount > 0) {
-        const onPremList = systems.filter((s) => !s.isCloud).map(
+        const onPremList = systems.filter((s) => isNonCloud(s)).map(
           (s) => `<li><strong>${s.label}</strong>${s.vendor ? ` <span class="text-gray-400">(${s.vendor})</span>` : ""}</li>`
         ).join("");
         questions.push({
@@ -2753,7 +2810,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
       if (isConsolidate) {
         const portList = systems.map(
-          (s) => `<li><strong>${s.label}</strong> \u2014 ${s.portability || "Unknown"} portability, ${s.isCloud ? "cloud" : "on-premise"}${s.vendor ? ` <span class="text-gray-400">(${s.vendor})</span>` : ""}</li>`
+          (s) => `<li><strong>${s.label}</strong> \u2014 ${s.portability || "Unknown"} portability, ${getHostingType(s) || "unknown"}${s.vendor ? ` <span class="text-gray-400">(${s.vendor})</span>` : ""}</li>`
         ).join("");
         const lowPort = systems.filter((s) => s.portability === "Low");
         questions.push({
@@ -3003,8 +3060,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         if (portability !== void 0) sysNode.portability = portability;
         const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING]);
         if (dataPartitioning !== void 0) sysNode.dataPartitioning = dataPartitioning;
-        const isCloud = parseBool(row[COL.CLOUD_HOSTED]);
-        if (isCloud !== void 0) sysNode.isCloud = isCloud;
+        const hostingRaw = safeStr(row[COL.CLOUD_HOSTED]).toLowerCase().trim();
+        if (hostingRaw) {
+          if (["yes", "true", "cloud", "saas", "hosted"].includes(hostingRaw)) sysNode.hosting = "cloud";
+          else if (["no", "false", "on-prem", "on-premise", "local"].includes(hostingRaw)) sysNode.hosting = "on-premise";
+          else if (["partner", "shared", "shared service"].includes(hostingRaw)) sysNode.hosting = "partner-hosted";
+        }
         const isERP = parseBool(row[COL.ERP]);
         if (isERP !== void 0) sysNode.isERP = isERP;
         const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH]);
@@ -3205,7 +3266,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     { section: "Technical", fields: [
       { id: "portability", label: "Portability", required: false },
       { id: "dataPartitioning", label: "Data Partitioning", required: false },
-      { id: "isCloud", label: "Is Cloud / Hosted", required: false },
+      { id: "hosting", label: "Hosting", required: false },
       { id: "isERP", label: "Is ERP", required: false },
       { id: "users", label: "User Count", required: false }
     ] },
@@ -3228,7 +3289,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     { field: "endYear", test: (h) => /contract/i.test(h) && /end|expir/i.test(h) },
     { field: "endMonth", test: (h) => /end\s*month|contract\s*month/i.test(h) && !/year/i.test(h) },
     { field: "noticePeriod", test: (h) => /notice/i.test(h) },
-    { field: "isCloud", test: (h) => /cloud|hosted|hosting/i.test(h) },
+    { field: "hosting", test: (h) => /cloud|hosted|hosting/i.test(h) },
     { field: "isERP", test: (h) => /\berp\b/i.test(h) },
     { field: "_rawDepartment", test: (h) => /department|service area|function|directorate/i.test(h) },
     { field: "sharedWith", test: (h) => /shared/i.test(h) },
@@ -3275,8 +3336,13 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (falsey.some((f) => s.includes(f))) return false;
       return void 0;
     };
-    const cloudVal = parseBool2(get("isCloud"), ["on-premise", "on premise", "onpremise"]);
-    if (cloudVal !== void 0) sys.isCloud = cloudVal;
+    const hostingVal = get("hosting") || get("isCloud");
+    if (hostingVal) {
+      const h = String(hostingVal).toLowerCase().trim();
+      if (["cloud", "saas", "yes", "true", "hosted", "1"].includes(h)) sys.hosting = "cloud";
+      else if (["on-premise", "on-prem", "onprem", "on premise", "no", "false", "local", "0"].includes(h)) sys.hosting = "on-premise";
+      else if (["partner", "partner-hosted", "shared", "shared service"].includes(h)) sys.hosting = "partner-hosted";
+    }
     const erpVal = parseBool2(get("isERP"));
     if (erpVal !== void 0) sys.isERP = erpVal;
     const sw = get("sharedWith");
@@ -3600,7 +3666,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const noticePeriod = sys.noticePeriod !== void 0 ? sys.noticePeriod : "";
     const portability = sys.portability || "High";
     const dataPartitioning = sys.dataPartitioning || "Segmented";
-    const isCloud = sys.isCloud !== false;
     const isERP = !!sys.isERP;
     const sharedWith = escHtml((sys.sharedWith || []).join(", "));
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -3667,16 +3732,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 </div>
                 <div>
                     <label class="block font-bold mb-1 text-xs">Hosting</label>
-                    <div class="flex gap-4 mt-1">
-                        <label class="flex items-center gap-1 text-xs cursor-pointer">
-                            <input type="radio" class="manual-field" name="manual-isCloud-${idx}" data-field="isCloud" data-idx="${idx}" value="true" ${isCloud ? "checked" : ""}>
-                            Cloud
-                        </label>
-                        <label class="flex items-center gap-1 text-xs cursor-pointer">
-                            <input type="radio" class="manual-field" name="manual-isCloud-${idx}" data-field="isCloud" data-idx="${idx}" value="false" ${!isCloud ? "checked" : ""}>
-                            On-premise
-                        </label>
-                    </div>
+                    <select class="manual-field border border-[#b1b4b6] p-1 text-xs" data-field="hosting" data-idx="${idx}">
+                        <option value="cloud" ${sys.hosting === "cloud" || sys.isCloud !== false ? "selected" : ""}>Cloud</option>
+                        <option value="on-premise" ${sys.hosting === "on-premise" || sys.isCloud === false ? "selected" : ""}>On-Premise</option>
+                        <option value="partner-hosted" ${sys.hosting === "partner-hosted" ? "selected" : ""}>Partner-Hosted</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block font-bold mb-1 text-xs">Portability</label>
@@ -3742,8 +3802,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         if (!field) return;
         if (el.type === "radio") {
           if (!el.checked) return;
-          if (field === "isCloud") sys.isCloud = el.value === "true";
-          else sys[field] = el.value;
+          sys[field] = el.value;
         } else if (el.type === "checkbox") {
           sys[field] = el.checked;
         } else if (el.type === "number") {
@@ -4041,6 +4100,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         "noticePeriod",
         "portability",
         "dataPartitioning",
+        "hosting",
         "isCloud",
         "isERP",
         "sharedWith",
@@ -4682,7 +4742,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   var GROUP_COLOURS = [
     "bg-[#f3f2f1]"
   ];
-  var KEY_FIELDS = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
+  var KEY_FIELDS = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "hosting", "supportModel"];
   function countFilledFields(system) {
     let filled = 0;
     for (const field of KEY_FIELDS) {
@@ -5220,14 +5280,23 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += `</div>`;
     html += sectionHeading("Technical Profile");
     html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
-    const hostingSelected = system.isCloud === true ? "Cloud" : system.isCloud === false ? "On-Premise" : "";
+    const hostingType = system.hosting || (system.isCloud === true ? "cloud" : system.isCloud === false ? "on-premise" : "");
+    const hostingSelected = hostingType === "cloud" ? "Cloud" : hostingType === "on-premise" ? "On-Premise" : hostingType === "partner-hosted" ? "Partner-Hosted" : "";
     html += renderRadioGroup({
       name: "hosting",
       title: "Hosting",
-      options: ["Cloud", "On-Premise"],
+      options: ["Cloud", "On-Premise", "Partner-Hosted"],
       selected: hostingSelected,
       hint: "Where the system is primarily hosted."
     });
+    html += `<div class="${hostingType !== "partner-hosted" ? "hidden" : ""}" data-hosting-partner-row>`;
+    html += fieldRow(
+      "Hosting Partner",
+      `<input type="text" data-prop-field="hostingPartner" value="${escAttr3(system.hostingPartner || "")}"
+            class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00]"
+            placeholder="Council or organisation name" />`
+    );
+    html += `</div>`;
     html += renderRadioGroup({
       name: "dataPartitioning",
       title: "Data Partitioning",
@@ -5294,7 +5363,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const nodeIdx = getNodeIdx();
         if (nodeIdx == null || !onChange) return;
         if (name === "hosting") {
-          onChange(nodeIdx, "isCloud", value === "Cloud");
+          const val = value === "Cloud" ? "cloud" : value === "On-Premise" ? "on-premise" : "partner-hosted";
+          onChange(nodeIdx, "hosting", val);
+          const partnerRow = panel.querySelector("[data-hosting-partner-row]");
+          if (partnerRow) partnerRow.classList.toggle("hidden", val !== "partner-hosted");
         } else if (name === "dataPartitioning") {
           onChange(nodeIdx, "dataPartitioning", value);
         } else if (name === "portability") {
@@ -5369,14 +5441,14 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     });
   }
-  var KEY_FIELDS2 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
+  var KEY_FIELDS2 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "hosting", "supportModel"];
   var KEY_FIELD_LABELS = {
     vendor: "Vendor",
     annualCost: "Annual Cost",
     endYear: "Contract End Year",
     portability: "Data Portability",
     dataPartitioning: "Data Partitioning",
-    isCloud: "Hosting",
+    hosting: "Hosting",
     supportModel: "Support Model"
   };
   function renderCompletenessBanner(system, editorState) {
@@ -5857,7 +5929,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     { id: "technical", label: "Technical" },
     { id: "relationships", label: "Relationships" }
   ];
-  var KEY_FIELDS3 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "isCloud", "supportModel"];
+  var KEY_FIELDS3 = ["vendor", "annualCost", "endYear", "portability", "dataPartitioning", "hosting", "supportModel"];
   var ROOT_LABELS = { "42": "Administration & Government", "1": "Advice & Benefits", "6": "Business & Employment", "16": "Community Safety", "30": "Environmental Protection", "58": "Health & Social Care", "66": "Housing", "72": "Leisure & Culture", "82": "Licences & Permits", "99": "Planning & Building", "23": "Schools & Education", "105": "Transport & Highways" };
   var UNSORTABLE_TYPES = /* @__PURE__ */ new Set(["cap-pills", "chip-cell", "dep-cell"]);
   function renderBulkMode(editorState) {
@@ -6126,11 +6198,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       case "technical":
         return [
           {
-            field: "isCloud",
+            field: "hosting",
             label: "Hosting",
             type: "select",
-            width: 90,
-            options: [{ value: "true", label: "Cloud" }, { value: "false", label: "On-Premise" }]
+            width: 120,
+            options: [{ value: "cloud", label: "Cloud" }, { value: "on-premise", label: "On-Premise" }, { value: "partner-hosted", label: "Partner-Hosted" }]
           },
           {
             field: "dataPartitioning",
@@ -6180,11 +6252,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     return val != null ? String(val) : "";
   }
   function getSelectValue(node, field) {
-    if (field === "isCloud") {
-      if (node.isCloud === true) return "true";
-      if (node.isCloud === false) return "false";
-      return "";
-    }
     return node[field] || "";
   }
   function getReadonlyValue(node, field, editorState) {
@@ -6254,7 +6321,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     endYear: "Contract End Year",
     portability: "Data Portability",
     dataPartitioning: "Data Partitioning",
-    isCloud: "Hosting (Cloud/On-Prem)",
+    hosting: "Hosting",
     supportModel: "Support Model"
   };
   function computeCompleteness(node) {
@@ -6591,11 +6658,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const n = parseInt(rawValue, 10);
       return isNaN(n) ? null : n;
     }
-    if (field === "isCloud") {
-      if (rawValue === "true") return true;
-      if (rawValue === "false") return false;
-      return null;
-    }
     if (field === "function") {
       const lgaFn = LGA_FUNCTIONS.find((f) => f.label.toLowerCase() === rawValue.trim().toLowerCase());
       return { type: "function", lgaId: lgaFn ? lgaFn.id : null, label: rawValue.trim() };
@@ -6645,9 +6707,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const diff = aVal - bVal;
         return diff !== 0 ? diff : (nodeA.label || "").toLowerCase().localeCompare((nodeB.label || "").toLowerCase());
       }
-      case "isCloud": {
-        a = nodeA.isCloud === true ? "true" : nodeA.isCloud === false ? "false" : "";
-        b = nodeB.isCloud === true ? "true" : nodeB.isCloud === false ? "false" : "";
+      case "hosting": {
+        a = (nodeA.hosting || "").toLowerCase();
+        b = (nodeB.hosting || "").toLowerCase();
         const cmp = a.localeCompare(b);
         return cmp !== 0 ? cmp : (nodeA.label || "").toLowerCase().localeCompare((nodeB.label || "").toLowerCase());
       }
@@ -6956,7 +7018,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         noticePeriod: null,
         portability: "",
         dataPartitioning: "",
-        isCloud: null,
+        hosting: "",
         isERP: false,
         supportModel: "",
         sharedWith: [],
@@ -7340,7 +7402,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
             dataPartitioning: sys.dataPartitioning || null,
             portability: sys.portability || null,
             isERP: !!sys.isERP,
-            isCloud: !!sys.isCloud,
+            hosting: getHostingType(sys) || "cloud",
             endYear: sys.endYear || null,
             endMonth: sys.endMonth || null,
             noticePeriod: sys.noticePeriod || null
@@ -7365,7 +7427,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
             isMonolithic: sys.dataPartitioning === "Monolithic",
             isLowPortability: sys.portability === "Low",
             isERP: !!sys.isERP,
-            isOnPrem: !sys.isCloud,
+            isOnPrem: isNonCloud(sys),
             userCount: typeof sys.users === "number" ? sys.users : 0,
             annualCost: typeof sys.annualCost === "number" ? sys.annualCost : 0,
             contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, "0")}` : null,
@@ -7409,7 +7471,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           dataPartitioning: sys.dataPartitioning || null,
           portability: sys.portability || null,
           isERP: !!sys.isERP,
-          isCloud: !!sys.isCloud,
+          hosting: getHostingType(sys) || "cloud",
           endYear: sys.endYear || null,
           endMonth: sys.endMonth || null,
           noticePeriod: sys.noticePeriod || null
@@ -7426,7 +7488,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         isMonolithic: sys.dataPartitioning === "Monolithic",
         isLowPortability: sys.portability === "Low",
         isERP: !!sys.isERP,
-        isOnPrem: !sys.isCloud,
+        isOnPrem: isNonCloud(sys),
         userCount,
         annualCost,
         contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, "0")}` : null,
@@ -7476,7 +7538,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (sys.dataPartitioning === "Monolithic") hasMonolithic = true;
       if (sys.portability === "Low") hasLowPortability = true;
       if (sys.isERP) hasERP = true;
-      if (!sys.isCloud) hasOnPrem = true;
+      if (isNonCloud(sys)) hasOnPrem = true;
       if (sys.endYear && sys.endYear <= horizonYear) {
         const currentEnd = sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, "0")}` : null;
         const extendedEndYear = horizonYear + 1;
@@ -7506,7 +7568,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         dataPartitioning: hasMonolithic ? "Monolithic" : "Segmented",
         portability: hasLowPortability ? "Low" : "Medium",
         isERP: hasERP,
-        isCloud: !hasOnPrem,
+        hosting: hasOnPrem ? "on-premise" : "cloud",
         endYear: null,
         endMonth: null,
         noticePeriod: null
@@ -7553,7 +7615,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         dataPartitioning: sys.dataPartitioning || null,
         portability: sys.portability || null,
         isERP: !!sys.isERP,
-        isCloud: !!sys.isCloud,
+        hosting: getHostingType(sys) || "cloud",
         endYear: sys.endYear || null,
         endMonth: sys.endMonth || null,
         noticePeriod: sys.noticePeriod || null
@@ -7565,7 +7627,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       isMonolithic: sys.dataPartitioning === "Monolithic",
       isLowPortability: sys.portability === "Low",
       isERP: !!sys.isERP,
-      isOnPrem: !sys.isCloud,
+      isOnPrem: isNonCloud(sys),
       userCount: typeof sys.users === "number" ? sys.users : 0,
       annualCost: typeof sys.annualCost === "number" ? sys.annualCost : 0,
       contractEndDate: sys.endYear ? `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, "0")}` : null,
@@ -7607,7 +7669,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           dataPartitioning: null,
           portability: null,
           isERP: false,
-          isCloud: !!removedSystem.isCloud,
+          hosting: getHostingType(removedSystem) || "cloud",
           endYear: null,
           endMonth: null,
           noticePeriod: null
@@ -7619,7 +7681,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         isMonolithic: false,
         isLowPortability: false,
         isERP: false,
-        isOnPrem: !removedSystem.isCloud,
+        isOnPrem: isNonCloud(removedSystem),
         userCount: 0,
         annualCost: 0,
         contractEndDate: null,
@@ -8501,7 +8563,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       label: procuredSystem.label,
       vendor: procuredSystem.vendor || null,
       annualCost: procuredSystem.annualCost || 0,
-      isCloud: procuredSystem.isCloud !== void 0 ? procuredSystem.isCloud : true,
+      hosting: procuredSystem.hosting || "cloud",
       targetAuthorities: [successorName],
       type: "ITSystem"
     };
@@ -8827,7 +8889,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
             dataPartitioning: sys.dataPartitioning || null,
             portability: sys.portability || null,
             isERP: !!sys.isERP,
-            isCloud: !!sys.isCloud
+            hosting: getHostingType(sys) || "cloud"
           });
         }
         const key = `${sys.id}|||${lgaFunctionId}`;
@@ -10752,7 +10814,8 @@ ${hardErrors.join("\n")}`);
     const isErp = sys.isERP || false;
     const cardBorder = isErp ? "border-[#d4351c] border-2" : "border border-gray-300";
     const cardWidth = isHorizontal ? "min-w-[180px] flex-1" : "w-full";
-    const cloudBadge = sys.isCloud ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#cce2d8] text-[#00703c] font-bold border border-[#00703c]">Cloud</span>` : `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#f3d9c9] text-[#f47738] font-bold border border-[#f47738]">On-prem</span>`;
+    const hostingType = getHostingType(sys);
+    const cloudBadge = hostingType === "cloud" ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#cce2d8] text-[#00703c] font-bold border border-[#00703c]">Cloud</span>` : hostingType === "partner-hosted" ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#fde68a] text-[#f47738] font-bold border border-[#f47738]">Partner</span>` : `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#f3d9c9] text-[#f47738] font-bold border border-[#f47738]">On-prem</span>`;
     const portColors = { High: "#00703c", Medium: "#f47738", Low: "#d4351c" };
     const portBg = { High: "#cce2d8", Medium: "#fde68a", Low: "#fce4e1" };
     const portLabel = sys.portability || "Unknown";
@@ -10999,11 +11062,13 @@ ${hardErrors.join("\n")}`);
                                 <label for="procureCost" class="block text-xs font-bold mb-1">Annual cost (\xA3)</label>
                                 <input type="number" id="procureCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 150000" min="0">
                             </div>
-                            <div class="flex items-end pb-1.5">
-                                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
-                                    <input type="checkbox" id="procureCloud" checked>
-                                    Cloud-hosted
-                                </label>
+                            <div>
+                                <label for="procureHosting" class="block text-xs font-bold mb-1">Hosting</label>
+                                <select id="procureHosting" class="border border-[#b1b4b6] p-1.5 text-sm w-full">
+                                    <option value="cloud" selected>Cloud</option>
+                                    <option value="on-premise">On-premise</option>
+                                    <option value="partner-hosted">Partner-hosted</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -11520,11 +11585,11 @@ ${hardErrors.join("\n")}`);
       const labelEl = content.querySelector("#procureLabel");
       const vendorEl = content.querySelector("#procureVendor");
       const costEl = content.querySelector("#procureCost");
-      const cloudEl = content.querySelector("#procureCloud");
+      const hostingEl = content.querySelector("#procureHosting");
       if (labelEl) labelEl.value = ps.label || "";
       if (vendorEl) vendorEl.value = ps.vendor || "";
       if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : "";
-      if (cloudEl) cloudEl.checked = ps.isCloud !== false;
+      if (hostingEl) hostingEl.value = ps.hosting || (ps.isCloud === false ? "on-premise" : "cloud");
     }
     if (decision.boundaryChoice && decision.boundaryChoice !== "none") {
       const axis2Radio = content.querySelector(`input[name="axis2Choice"][value="${decision.boundaryChoice}"]`);
@@ -11573,12 +11638,12 @@ ${hardErrors.join("\n")}`);
       }
       const vendorEl = content.querySelector("#procureVendor");
       const costEl = content.querySelector("#procureCost");
-      const cloudEl = content.querySelector("#procureCloud");
+      const hostingEl = content.querySelector("#procureHosting");
       procuredSystem = {
         label,
         vendor: vendorEl ? vendorEl.value.trim() : "",
         annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
-        isCloud: cloudEl ? cloudEl.checked : true
+        hosting: hostingEl ? hostingEl.value : "cloud"
       };
     }
     const axis2Radio = content.querySelector('input[name="axis2Choice"]:checked');
@@ -11865,12 +11930,12 @@ ${hardErrors.join("\n")}`);
       }
       const vendorEl = content.querySelector("#procureVendor");
       const costEl = content.querySelector("#procureCost");
-      const cloudEl = content.querySelector("#procureCloud");
+      const hostingEl = content.querySelector("#procureHosting");
       procuredSystem = {
         label,
         vendor: vendorEl ? vendorEl.value.trim() : "",
         annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
-        isCloud: cloudEl ? cloudEl.checked : true
+        hosting: hostingEl ? hostingEl.value : "cloud"
       };
     }
     const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
@@ -12374,7 +12439,7 @@ ${hardErrors.join("\n")}`);
         html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
         if (ps.vendor || ps.version) html += `Vendor: ${escHtml7([ps.vendor, ps.version].filter(Boolean).join(" \xB7 "))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
         html += `Annual cost: ${escHtml7(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-        html += `Hosting: ${ps.isCloud ? "Cloud" : "On-premise"}`;
+        html += `Hosting: ${ps.hosting === "on-premise" ? "On-premise" : ps.hosting === "partner-hosted" ? "Partner-hosted" : "Cloud"}`;
         html += `</p>`;
         if (ps.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml7(ps.notes)}</p>`;
       } else if (decision.systemChoice === "defer") {
@@ -12696,7 +12761,7 @@ ${hardErrors.join("\n")}`);
             if (sys.dataPartitioning === "Monolithic") monolithic++;
             if (sys.portability === "Low") lowPortability++;
             if (sys.isERP) erp++;
-            if (!sys.isCloud) onPrem++;
+            if (isNonCloud(sys)) onPrem++;
           }
         });
       });
@@ -12764,11 +12829,11 @@ ${hardErrors.join("\n")}`);
           html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
           html += `Data partitioning: ${escHtml7(sys.dataPartitioning || "\u2014")}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `Portability: ${escHtml7(sys.portability || "\u2014")}&nbsp;&nbsp;|&nbsp;&nbsp;`;
-          html += `Hosting: ${sys.isCloud ? "Cloud" : "On-premise"}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+          html += `Hosting: ${isCloud(sys) ? "Cloud" : getHostingType(sys) === "partner-hosted" ? "Partner-hosted" : "On-premise"}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `ERP: ${sys.isERP ? "Yes" : "No"}`;
           html += `</p>`;
           const tcop = [];
-          if (!sys.isCloud) tcop.push("Point 3 \u2014 System is on-premise; cloud migration should be assessed");
+          if (isNonCloud(sys)) tcop.push("Point 3 \u2014 System is on-premise; cloud migration should be assessed");
           if (sys.portability === "Low") tcop.push("Point 4 \u2014 Low portability; vendor lock-in risk, exit plan required");
           if (sys.dataPartitioning === "Monolithic") tcop.push("Point 5 \u2014 Monolithic data store; data extraction strategy needed");
           if (sys.isERP) tcop.push("Point 9 \u2014 ERP system; assess multi-authority integration complexity");
@@ -12785,7 +12850,7 @@ ${hardErrors.join("\n")}`);
         const ps = decision.procuredSystem;
         html += `<p style="margin:2px 0;"><strong>Decision:</strong> Procure new \u2014 ${escHtml7(ps.label)}</p>`;
         html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
-        html += `Hosting: ${ps.isCloud ? "Cloud" : "On-premise or unspecified"}`;
+        html += `Hosting: ${ps.hosting === "on-premise" ? "On-premise" : ps.hosting === "partner-hosted" ? "Partner-hosted" : "Cloud"}`;
         html += `</p>`;
       } else if (decision.systemChoice === "defer") {
         html += `<p style="margin:2px 0;"><strong>Decision:</strong> Deferred</p>`;
@@ -12799,7 +12864,7 @@ ${hardErrors.join("\n")}`);
             const flags = [];
             if (sys.dataPartitioning === "Monolithic") flags.push("Monolithic");
             if (sys.portability === "Low") flags.push("Low portability");
-            if (!sys.isCloud) flags.push("On-premise");
+            if (isNonCloud(sys)) flags.push("On-premise");
             if (sys.isERP) flags.push("ERP");
             html += flags.length > 0 ? escHtml7(flags.join(", ")) : "No flags";
             html += `</li>`;
@@ -13021,7 +13086,7 @@ tr:nth-child(even){background:#f3f2f1;}
     const allSystems = getAllSystems();
     const monolithCount = allSystems.filter((s) => s.dataPartitioning === "Monolithic" || s.isERP).length;
     const sharedCount = allSystems.filter((s) => s.sharedWith && s.sharedWith.length > 0).length;
-    const onPremCount = allSystems.filter((s) => s.isCloud === false).length;
+    const onPremCount = allSystems.filter((s) => isNonCloud(s)).length;
     let s2 = `<table class="kv-table">`;
     if (state.operatingMode === "transition" && state.transitionStructure) {
       const vDate = new Date(state.transitionStructure.vestingDate);
@@ -13192,8 +13257,8 @@ tr:nth-child(even){background:#f3f2f1;}
   function buildArchitectReport2() {
     let html = buildEstateProfile();
     const allSystems = getAllSystems();
-    const cloudCount = allSystems.filter((s) => s.isCloud === true).length;
-    const onPremCount = allSystems.filter((s) => s.isCloud === false).length;
+    const cloudCount = allSystems.filter((s) => isCloud(s)).length;
+    const onPremCount = allSystems.filter((s) => isNonCloud(s)).length;
     const unknownCount = allSystems.length - cloudCount - onPremCount;
     const highPort = allSystems.filter((s) => s.portability === "High").length;
     const medPort = allSystems.filter((s) => s.portability === "Medium").length;
@@ -13237,7 +13302,7 @@ tr:nth-child(even){background:#f3f2f1;}
   function computeTcopAssessmentLocal(system) {
     const concerns = [];
     const alignments = [];
-    if (system.isCloud === false) concerns.push({ point: 5, description: "On-premise \u2014 TCoP Point 5 recommends cloud first" });
+    if (isNonCloud(system)) concerns.push({ point: 5, description: "On-premise \u2014 TCoP Point 5 recommends cloud first" });
     if (system.portability === "Low") {
       concerns.push({ point: 3, description: "Vendor lock-in \u2014 TCoP Point 3" });
       concerns.push({ point: 4, description: "Low portability \u2014 TCoP Point 4" });
@@ -13246,7 +13311,7 @@ tr:nth-child(even){background:#f3f2f1;}
     if (system.isERP || system.dataPartitioning === "Monolithic") {
       concerns.push({ point: 9, description: "Monolithic architecture \u2014 TCoP Point 9" });
     }
-    if (system.isCloud === true) alignments.push({ point: 5, description: "Cloud first" });
+    if (isCloud(system)) alignments.push({ point: 5, description: "Cloud first" });
     if (system.portability === "High") alignments.push({ point: 4, description: "Open standards" });
     return { concerns, alignments };
   }
@@ -14042,10 +14107,22 @@ tr:nth-child(even){background:#f3f2f1;}
               }
             },
             {
-              name: "isCloud",
-              type: "boolean",
+              name: "hosting",
+              type: "string",
               required: false,
-              description: "Whether hosted in cloud (true) or on-premise (false)"
+              description: "System hosting model",
+              enum: ["cloud", "on-premise", "partner-hosted"],
+              enumDescriptions: {
+                "cloud": "Vendor-hosted SaaS or cloud platform. Council has no infrastructure responsibility.",
+                "on-premise": "Hosted on council-owned infrastructure (data centre, servers).",
+                "partner-hosted": "Hosted by another council or shared service body. Specify partner in hostingPartner field."
+              }
+            },
+            {
+              name: "hostingPartner",
+              type: "string",
+              required: false,
+              description: "Name of the council or organisation that hosts this system (only when hosting is partner-hosted)"
             },
             {
               name: "isERP",
@@ -17155,9 +17232,10 @@ tr:nth-child(even){background:#f3f2f1;}
                 </div>`;
       }
       if (persona === "architect" || persona === "executive") {
-        const cloudLabel = sys.isCloud ? "Cloud" : "On-Prem";
-        const cloudTooltip = sys.isCloud ? "Externally hosted SaaS or Cloud architecture." : "Locally hosted on physical council servers.";
-        const cloudTagColor = sys.isCloud ? "tag-green" : "tag-outline";
+        const hostingType = getHostingType(sys);
+        const cloudLabel = hostingType === "cloud" ? "Cloud" : hostingType === "partner-hosted" ? "Partner" : "On-Prem";
+        const cloudTooltip = hostingType === "cloud" ? "Cloud-hosted SaaS or platform." : hostingType === "partner-hosted" ? `Partner-hosted${sys.hostingPartner ? " by " + sys.hostingPartner : ""}.` : "On-premise council infrastructure.";
+        const cloudTagColor = hostingType === "cloud" ? "tag-green" : hostingType === "partner-hosted" ? "tag-orange" : "tag-outline";
         const cloudTag = `<span class="gds-tag ${cloudTagColor}">${wrapWithTooltip(cloudLabel, cloudTooltip)}</span>`;
         const portColor = sys.portability?.includes("Low") ? "text-red-700 font-medium" : "text-green-700 font-medium";
         html += `
@@ -17325,7 +17403,7 @@ tr:nth-child(even){background:#f3f2f1;}
   function renderKeyMetrics(systems, signals) {
     const totalUsers = systems.reduce((sum, s) => sum + (s.users || 0), 0);
     const totalCost = systems.reduce((sum, s) => sum + (s.annualCost || 0), 0);
-    const onPremCount = systems.filter((s) => !s.isCloud).length;
+    const onPremCount = systems.filter((s) => isNonCloud(s)).length;
     const monoCount = systems.filter((s) => s.dataPartitioning === "Monolithic" || s.isERP).length;
     const fmt = (n) => n >= 1e6 ? `\xA3${(n / 1e6).toFixed(1)}m` : n >= 1e3 ? `\xA3${(n / 1e3).toFixed(0)}k` : `\xA3${n}`;
     return `
@@ -17490,12 +17568,12 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-65", label: "Public Health", type: "Function", lgaFunctionId: "65" },
         { id: "fn-54", label: "Registration", type: "Function", lgaFunctionId: "54" },
         { id: "fn-152", label: "Children's Social Care", type: "Function", lgaFunctionId: "152" },
-        { id: "sys-sap-erp", label: "SAP S/4HANA ERP", type: "ITSystem", vendor: "SAP", users: 5e3, cost: "\xA32,100,000/yr", annualCost: 21e5, endYear: 2030, endMonth: 3, noticePeriod: 18, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: true, supportModel: "vendor-supported", capabilityType: ["payments", "workflow"], version: "S/4HANA 2023", notes: "Monolithic ERP \u2014 underpins finance, HR, and procurement. 18-month notice period means decision needed early. On-prem hosting at County Hall DC." },
-        { id: "sys-liquidlogic", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 1200, cost: "\xA3480,000/yr", annualCost: 48e4, endYear: 2028, endMonth: 9, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported", version: "v14.2", notes: "Good data portability via SSDA903 exports. Consider early engagement with System C about multi-authority licensing." },
-        { id: "sys-confirm-highways", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 400, cost: "\xA3320,000/yr", annualCost: 32e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"], version: "v22.10", notes: "Shared instance with District 1 \u2014 both councils contribute asset data. GIS integration with ESRI." },
-        { id: "sys-public-health-intel", label: "Public Health Intelligence", type: "ITSystem", vendor: "In-House", users: 80, cost: "\xA335,000/yr", annualCost: 35e3, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "community-supported", sharedWith: ["Other County Programme Council A", "Other County Programme Council B"], version: "v2.1", notes: "Developed in-house by county digital team. Python/Django stack. Two other programme councils contribute data and co-fund development." },
-        { id: "sys-nec-revenues", label: "NEC Revenues", type: "ITSystem", vendor: "NEC", users: 300, cost: "\xA3190,000/yr", annualCost: 19e4, endYear: 2026, endMonth: 6, noticePeriod: 12, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported", version: "NEC iWorld 2019", notes: "Contract expires before vesting date \u2014 must either extend or migrate. Notice period means decision needed imminently." },
-        { id: "sys-capita-one", label: "Capita ONE", type: "ITSystem", vendor: "Capita", users: 800, cost: "\xA3350,000/yr", annualCost: 35e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported", version: "v22.3", notes: "Critical for children's services statutory returns. ADCS data standards compliance." }
+        { id: "sys-sap-erp", label: "SAP S/4HANA ERP", type: "ITSystem", vendor: "SAP", users: 5e3, cost: "\xA32,100,000/yr", annualCost: 21e5, endYear: 2030, endMonth: 3, noticePeriod: 18, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: true, supportModel: "vendor-supported", capabilityType: ["payments", "workflow"], version: "S/4HANA 2023", notes: "Monolithic ERP \u2014 underpins finance, HR, and procurement. 18-month notice period means decision needed early. On-prem hosting at County Hall DC." },
+        { id: "sys-liquidlogic", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 1200, cost: "\xA3480,000/yr", annualCost: 48e4, endYear: 2028, endMonth: 9, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "v14.2", notes: "Good data portability via SSDA903 exports. Consider early engagement with System C about multi-authority licensing." },
+        { id: "sys-confirm-highways", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 400, cost: "\xA3320,000/yr", annualCost: 32e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"], version: "v22.10", notes: "Shared instance with District 1 \u2014 both councils contribute asset data. GIS integration with ESRI." },
+        { id: "sys-public-health-intel", label: "Public Health Intelligence", type: "ITSystem", vendor: "In-House", users: 80, cost: "\xA335,000/yr", annualCost: 35e3, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "community-supported", sharedWith: ["Other County Programme Council A", "Other County Programme Council B"], version: "v2.1", notes: "Developed in-house by county digital team. Python/Django stack. Two other programme councils contribute data and co-fund development." },
+        { id: "sys-nec-revenues", label: "NEC Revenues", type: "ITSystem", vendor: "NEC", users: 300, cost: "\xA3190,000/yr", annualCost: 19e4, endYear: 2026, endMonth: 6, noticePeriod: 12, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", version: "NEC iWorld 2019", notes: "Contract expires before vesting date \u2014 must either extend or migrate. Notice period means decision needed imminently." },
+        { id: "sys-capita-one", label: "Capita ONE", type: "ITSystem", vendor: "Capita", users: 800, cost: "\xA3350,000/yr", annualCost: 35e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "v22.3", notes: "Critical for children's services statutory returns. ADCS data standards compliance." }
       ],
       edges: [
         { source: "sys-sap-erp", target: "fn-116", relationship: "REALIZES" },
@@ -17519,12 +17597,12 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
         { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
         { id: "fn-109", label: "Highway Maintenance", type: "Function", lgaFunctionId: "109" },
-        { id: "sys-civica-fin", label: "Civica Financials", type: "ITSystem", vendor: "Civica", users: 120, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2028, endMonth: 6, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported", version: "Civica Cx 2024", notes: "Recently upgraded from legacy Authority system. Clean data model." },
-        { id: "sys-nec-revben", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 200, cost: "\xA3180,000/yr", annualCost: 18e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 2"], version: "NEC iWorld 2019", notes: "Shared instance with District 2. Contract held by District 1. Monolithic data \u2014 disaggregation would require NEC professional services." },
-        { id: "sys-idox-uniform", label: "Idox Uniform", type: "ITSystem", vendor: "Idox", users: 35, cost: "\xA355,000/yr", annualCost: 55e3, endYear: 2029, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-bartec-waste", label: "Bartec Waste Management", type: "ITSystem", vendor: "Bartec", users: 90, cost: "\xA3130,000/yr", annualCost: 13e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-dynamics-crm", label: "Microsoft Dynamics 365", type: "ITSystem", vendor: "Microsoft", users: 350, cost: "\xA3110,000/yr", annualCost: 11e4, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported", capabilityType: ["forms"] },
-        { id: "sys-confirm-highways-d1", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 45, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["County Council"] }
+        { id: "sys-civica-fin", label: "Civica Financials", type: "ITSystem", vendor: "Civica", users: 120, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2028, endMonth: 6, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "Civica Cx 2024", notes: "Recently upgraded from legacy Authority system. Clean data model." },
+        { id: "sys-nec-revben", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 200, cost: "\xA3180,000/yr", annualCost: 18e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 2"], version: "NEC iWorld 2019", notes: "Shared instance with District 2. Contract held by District 1. Monolithic data \u2014 disaggregation would require NEC professional services." },
+        { id: "sys-idox-uniform", label: "Idox Uniform", type: "ITSystem", vendor: "Idox", users: 35, cost: "\xA355,000/yr", annualCost: 55e3, endYear: 2029, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-bartec-waste", label: "Bartec Waste Management", type: "ITSystem", vendor: "Bartec", users: 90, cost: "\xA3130,000/yr", annualCost: 13e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-dynamics-crm", label: "Microsoft Dynamics 365", type: "ITSystem", vendor: "Microsoft", users: 350, cost: "\xA3110,000/yr", annualCost: 11e4, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", capabilityType: ["forms"] },
+        { id: "sys-confirm-highways-d1", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 45, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "partner-hosted", hostingPartner: "County Council", isERP: false, supportModel: "vendor-supported", sharedWith: ["County Council"] }
       ],
       edges: [
         { source: "sys-civica-fin", target: "fn-116", relationship: "REALIZES" },
@@ -17544,11 +17622,11 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-101", label: "Development Control", type: "Function", lgaFunctionId: "101" },
         { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
         { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
-        { id: "sys-nec-revben-d2", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 150, cost: "\xA3160,000/yr", annualCost: 16e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"] },
-        { id: "sys-nec-housing", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 100, cost: "\xA3140,000/yr", annualCost: 14e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-nec-planning", label: "NEC Planning", type: "ITSystem", vendor: "NEC", users: 28, cost: "\xA360,000/yr", annualCost: 6e4, endYear: 2029, endMonth: 9, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", isCloud: false, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-whitespace-waste", label: "Whitespace Waste", type: "ITSystem", vendor: "Whitespace", users: 60, cost: "\xA385,000/yr", annualCost: 85e3, endYear: 2028, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-firmstep-crm", label: "Firmstep Digital", type: "ITSystem", vendor: "Firmstep", users: 200, cost: "\xA375,000/yr", annualCost: 75e3, endYear: 2030, endMonth: 6, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" }
+        { id: "sys-nec-revben-d2", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 150, cost: "\xA3160,000/yr", annualCost: 16e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"] },
+        { id: "sys-nec-housing", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 100, cost: "\xA3140,000/yr", annualCost: 14e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-nec-planning", label: "NEC Planning", type: "ITSystem", vendor: "NEC", users: 28, cost: "\xA360,000/yr", annualCost: 6e4, endYear: 2029, endMonth: 9, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-whitespace-waste", label: "Whitespace Waste", type: "ITSystem", vendor: "Whitespace", users: 60, cost: "\xA385,000/yr", annualCost: 85e3, endYear: 2028, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-firmstep-crm", label: "Firmstep Digital", type: "ITSystem", vendor: "Firmstep", users: 200, cost: "\xA375,000/yr", annualCost: 75e3, endYear: 2030, endMonth: 6, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" }
       ],
       edges: [
         { source: "sys-nec-revben-d2", target: "fn-3", relationship: "REALIZES" },
@@ -17568,12 +17646,12 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-66", label: "Housing", type: "Function", lgaFunctionId: "66" },
         { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
         { id: "fn-76", label: "Libraries", type: "Function", lgaFunctionId: "76" },
-        { id: "sys-sage-finance", label: "Sage 50 Finance", type: "ITSystem", vendor: "Sage", users: 25, cost: "\xA315,000/yr", annualCost: 15e3, endYear: 2026, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "unsupported" },
-        { id: "sys-inhouse-planning", label: "In-House Planning Register", type: "ITSystem", vendor: "In-House", users: 15, cost: "\xA312,000/yr", annualCost: 12e3, endYear: 2027, endMonth: 6, noticePeriod: 3, portability: "Medium", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "unsupported" },
-        { id: "sys-inhouse-waste", label: "In-House Waste Scheduling", type: "ITSystem", vendor: "In-House", users: 20, cost: "\xA38,000/yr", annualCost: 8e3, endYear: 2028, endMonth: 9, noticePeriod: 3, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "unsupported" },
-        { id: "sys-nec-housing-d3", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 60, cost: "\xA390,000/yr", annualCost: 9e4, endYear: 2029, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", isCloud: false, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-goss-icm", label: "GOSS iCM", type: "ITSystem", vendor: "GOSS", users: 100, cost: "\xA340,000/yr", annualCost: 4e4, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-koha-library", label: "Koha Library System", type: "ITSystem", vendor: "In-House", users: 30, cost: "\xA318,000/yr", annualCost: 18e3, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", isCloud: true, isERP: false, supportModel: "community-supported", sharedWith: ["Neighbouring Council A", "Neighbouring Council B"] }
+        { id: "sys-sage-finance", label: "Sage 50 Finance", type: "ITSystem", vendor: "Sage", users: 25, cost: "\xA315,000/yr", annualCost: 15e3, endYear: 2026, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
+        { id: "sys-inhouse-planning", label: "In-House Planning Register", type: "ITSystem", vendor: "In-House", users: 15, cost: "\xA312,000/yr", annualCost: 12e3, endYear: 2027, endMonth: 6, noticePeriod: 3, portability: "Medium", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
+        { id: "sys-inhouse-waste", label: "In-House Waste Scheduling", type: "ITSystem", vendor: "In-House", users: 20, cost: "\xA38,000/yr", annualCost: 8e3, endYear: 2028, endMonth: 9, noticePeriod: 3, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
+        { id: "sys-nec-housing-d3", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 60, cost: "\xA390,000/yr", annualCost: 9e4, endYear: 2029, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-goss-icm", label: "GOSS iCM", type: "ITSystem", vendor: "GOSS", users: 100, cost: "\xA340,000/yr", annualCost: 4e4, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-koha-library", label: "Koha Library System", type: "ITSystem", vendor: "In-House", users: 30, cost: "\xA318,000/yr", annualCost: 18e3, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "community-supported", sharedWith: ["Neighbouring Council A", "Neighbouring Council B"] }
       ],
       edges: [
         { source: "sys-sage-finance", target: "fn-116", relationship: "REALIZES" },

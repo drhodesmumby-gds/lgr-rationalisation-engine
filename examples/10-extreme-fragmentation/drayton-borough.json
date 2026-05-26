@@ -5,15 +5,60 @@
     "financialDistress": false
   },
   "nodes": [
-    { "id": "drbc-fn-finance", "label": "Finance and Accounting", "type": "Function", "lgaFunctionId": "116" },
-    { "id": "drbc-fn-hr", "label": "Human Resources", "type": "Function", "lgaFunctionId": "119" },
-    { "id": "drbc-fn-waste", "label": "Household Waste Collection", "type": "Function", "lgaFunctionId": "142" },
-    { "id": "drbc-fn-benefits", "label": "Housing Benefits and Council Tax", "type": "Function", "lgaFunctionId": "3" },
-    { "id": "drbc-fn-planning", "label": "Planning Applications", "type": "Function", "lgaFunctionId": "101" },
-    { "id": "drbc-fn-housing", "label": "Housing Management", "type": "Function", "lgaFunctionId": "159" },
-    { "id": "drbc-fn-envhealth", "label": "Environmental Health", "type": "Function", "lgaFunctionId": "34" },
-    { "id": "drbc-fn-elections", "label": "Electoral Registration", "type": "Function", "lgaFunctionId": "146" },
-    { "id": "drbc-fn-crm", "label": "Customer Relationship Management", "type": "Function", "lgaFunctionId": "43" },
+    {
+      "id": "drbc-fn-finance",
+      "label": "Finance and Accounting",
+      "type": "Function",
+      "lgaFunctionId": "116"
+    },
+    {
+      "id": "drbc-fn-hr",
+      "label": "Human Resources",
+      "type": "Function",
+      "lgaFunctionId": "119"
+    },
+    {
+      "id": "drbc-fn-waste",
+      "label": "Household Waste Collection",
+      "type": "Function",
+      "lgaFunctionId": "142"
+    },
+    {
+      "id": "drbc-fn-benefits",
+      "label": "Housing Benefits and Council Tax",
+      "type": "Function",
+      "lgaFunctionId": "3"
+    },
+    {
+      "id": "drbc-fn-planning",
+      "label": "Planning Applications",
+      "type": "Function",
+      "lgaFunctionId": "101"
+    },
+    {
+      "id": "drbc-fn-housing",
+      "label": "Housing Management",
+      "type": "Function",
+      "lgaFunctionId": "159"
+    },
+    {
+      "id": "drbc-fn-envhealth",
+      "label": "Environmental Health",
+      "type": "Function",
+      "lgaFunctionId": "34"
+    },
+    {
+      "id": "drbc-fn-elections",
+      "label": "Electoral Registration",
+      "type": "Function",
+      "lgaFunctionId": "146"
+    },
+    {
+      "id": "drbc-fn-crm",
+      "label": "Customer Relationship Management",
+      "type": "Function",
+      "lgaFunctionId": "43"
+    },
     {
       "id": "drbc-sys-sap-erp",
       "label": "SAP S/4HANA ERP",
@@ -22,16 +67,19 @@
       "users": 1500,
       "vendor": "SAP",
       "supportModel": "vendor-supported",
-      "cost": "£700k/yr",
+      "cost": "\u00a3700k/yr",
       "annualCost": 700000,
       "endYear": 2030,
       "endMonth": 9,
       "noticePeriod": 12,
       "portability": "Low",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
       "isERP": true,
-      "capabilityType": ["payments", "workflow"]
+      "capabilityType": [
+        "payments",
+        "workflow"
+      ],
+      "hosting": "on-premise"
     },
     {
       "id": "drbc-sys-whitespace",
@@ -41,15 +89,15 @@
       "users": 55,
       "vendor": "Whitespace",
       "supportModel": "vendor-supported",
-      "cost": "£90k/yr",
+      "cost": "\u00a390k/yr",
       "annualCost": 90000,
       "endYear": 2028,
       "endMonth": 6,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "drbc-sys-civica-rev",
@@ -59,15 +107,15 @@
       "users": 110,
       "vendor": "Civica",
       "supportModel": "vendor-supported",
-      "cost": "£195k/yr",
+      "cost": "\u00a3195k/yr",
       "annualCost": 195000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "drbc-sys-idox-planning",
@@ -77,15 +125,15 @@
       "users": 45,
       "vendor": "Idox",
       "supportModel": "vendor-supported",
-      "cost": "£85k/yr",
+      "cost": "\u00a385k/yr",
       "annualCost": 85000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Monolithic",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "drbc-sys-mri-housing",
@@ -95,15 +143,15 @@
       "users": 160,
       "vendor": "MRI Software",
       "supportModel": "vendor-supported",
-      "cost": "£200k/yr",
+      "cost": "\u00a3200k/yr",
       "annualCost": 200000,
       "endYear": 2029,
       "endMonth": 6,
       "noticePeriod": 9,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "drbc-sys-civica-eh",
@@ -112,15 +160,15 @@
       "owner": "Drayton Borough Council",
       "users": 40,
       "vendor": "Civica",
-      "cost": "£65k/yr",
+      "cost": "\u00a365k/yr",
       "annualCost": 65000,
       "endYear": 2028,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "drbc-sys-civica-elections",
@@ -129,15 +177,15 @@
       "owner": "Drayton Borough Council",
       "users": 12,
       "vendor": "Civica",
-      "cost": "£40k/yr",
+      "cost": "\u00a340k/yr",
       "annualCost": 40000,
       "endYear": 2028,
       "endMonth": 9,
       "noticePeriod": 6,
       "portability": "Medium",
       "dataPartitioning": "Segmented",
-      "isCloud": false,
-      "isERP": false
+      "isERP": false,
+      "hosting": "on-premise"
     },
     {
       "id": "drbc-sys-salesforce",
@@ -147,15 +195,15 @@
       "users": 250,
       "vendor": "Salesforce",
       "supportModel": "vendor-supported",
-      "cost": "£180k/yr",
+      "cost": "\u00a3180k/yr",
       "annualCost": 180000,
       "endYear": 2029,
       "endMonth": 3,
       "noticePeriod": 6,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
-      "isERP": false
+      "isERP": false,
+      "hosting": "cloud"
     },
     {
       "id": "drbc-sys-govuk-notify",
@@ -165,30 +213,91 @@
       "users": 180,
       "vendor": "GDS",
       "supportModel": "vendor-supported",
-      "cost": "£8k/yr",
+      "cost": "\u00a38k/yr",
       "annualCost": 8000,
       "endYear": 2030,
       "endMonth": 12,
       "noticePeriod": 1,
       "portability": "High",
       "dataPartitioning": "Segmented",
-      "isCloud": true,
       "isERP": false,
-      "capabilityType": ["sms", "email"]
+      "capabilityType": [
+        "sms",
+        "email"
+      ],
+      "hosting": "cloud"
     }
   ],
   "edges": [
-    { "source": "drbc-sys-sap-erp", "target": "drbc-fn-finance", "relationship": "REALIZES" },
-    { "source": "drbc-sys-sap-erp", "target": "drbc-fn-hr", "relationship": "REALIZES" },
-    { "source": "drbc-sys-whitespace", "target": "drbc-fn-waste", "relationship": "REALIZES" },
-    { "source": "drbc-sys-civica-rev", "target": "drbc-fn-benefits", "relationship": "REALIZES" },
-    { "source": "drbc-sys-idox-planning", "target": "drbc-fn-planning", "relationship": "REALIZES" },
-    { "source": "drbc-sys-mri-housing", "target": "drbc-fn-housing", "relationship": "REALIZES" },
-    { "source": "drbc-sys-civica-eh", "target": "drbc-fn-envhealth", "relationship": "REALIZES" },
-    { "source": "drbc-sys-civica-elections", "target": "drbc-fn-elections", "relationship": "REALIZES" },
-    { "source": "drbc-sys-salesforce", "target": "drbc-fn-crm", "relationship": "REALIZES" },
-    { "source": "drbc-sys-mri-housing", "target": "drbc-sys-sap-erp", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["payments"] },
-    { "source": "drbc-sys-salesforce", "target": "drbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["sms", "email"] },
-    { "source": "drbc-sys-civica-rev", "target": "drbc-sys-govuk-notify", "relationship": "CONSUMES_CAPABILITY", "capabilities": ["email"] }
+    {
+      "source": "drbc-sys-sap-erp",
+      "target": "drbc-fn-finance",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-sap-erp",
+      "target": "drbc-fn-hr",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-whitespace",
+      "target": "drbc-fn-waste",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-civica-rev",
+      "target": "drbc-fn-benefits",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-idox-planning",
+      "target": "drbc-fn-planning",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-mri-housing",
+      "target": "drbc-fn-housing",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-civica-eh",
+      "target": "drbc-fn-envhealth",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-civica-elections",
+      "target": "drbc-fn-elections",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-salesforce",
+      "target": "drbc-fn-crm",
+      "relationship": "REALIZES"
+    },
+    {
+      "source": "drbc-sys-mri-housing",
+      "target": "drbc-sys-sap-erp",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "payments"
+      ]
+    },
+    {
+      "source": "drbc-sys-salesforce",
+      "target": "drbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "sms",
+        "email"
+      ]
+    },
+    {
+      "source": "drbc-sys-civica-rev",
+      "target": "drbc-sys-govuk-notify",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": [
+        "email"
+      ]
+    }
   ]
 }

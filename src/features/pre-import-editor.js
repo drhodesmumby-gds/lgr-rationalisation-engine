@@ -261,7 +261,7 @@ function buildSystemsTabHtml(nodes, edges) {
     <td class="px-2 py-1.5"><input type="number" class="editor-sys-field border border-gray-300 p-1 text-xs w-20" value="${sys.users != null ? sys.users : ''}" data-node-idx="${globalIdx}" data-field="users" min="0"></td>
     <td class="px-2 py-1.5"><input type="number" class="editor-sys-field border border-gray-300 p-1 text-xs w-24" value="${sys.annualCost != null ? sys.annualCost : ''}" data-node-idx="${globalIdx}" data-field="annualCost" min="0"></td>
     <td class="px-2 py-1.5"><select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="portability"><option value="">--</option>${portSel}</select></td>
-    <td class="px-2 py-1.5"><select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="isCloud"><option value="">--</option><option value="true"${sys.isCloud === true ? ' selected' : ''}>Yes</option><option value="false"${sys.isCloud === false ? ' selected' : ''}>No</option></select></td>
+    <td class="px-2 py-1.5"><select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="hosting"><option value="">--</option><option value="cloud"${(sys.hosting === 'cloud' || (!sys.hosting && sys.isCloud === true)) ? ' selected' : ''}>Cloud</option><option value="on-premise"${(sys.hosting === 'on-premise' || (!sys.hosting && sys.isCloud === false)) ? ' selected' : ''}>On-premise</option><option value="partner-hosted"${sys.hosting === 'partner-hosted' ? ' selected' : ''}>Partner-hosted</option></select></td>
     <td class="px-2 py-1.5"><select class="editor-sys-field border border-gray-300 p-1 text-xs" data-node-idx="${globalIdx}" data-field="supportModel"><option value="">--</option>${supportSel}</select></td>
     <td class="px-2 py-1.5"><select class="editor-sys-realizes border border-gray-300 p-1 text-xs w-36" data-node-idx="${globalIdx}" data-sys-id="${sys.id}"><option value="">-- none --</option>${fnOptions}</select></td>
     <td class="px-2 py-1.5 text-center" data-status-idx="${globalIdx}">${systemStatusIcon(sys)}</td>
@@ -499,8 +499,8 @@ export function wirePreImportEditor(json, onImport, onBack) {
             const raw = target.value;
             if (field === 'users' || field === 'annualCost') {
                 editorState.nodes[idx][field] = raw === '' ? undefined : Number(raw);
-            } else if (field === 'isCloud') {
-                editorState.nodes[idx][field] = raw === '' ? undefined : (raw === 'true');
+            } else if (field === 'hosting') {
+                editorState.nodes[idx][field] = raw || undefined;
             } else {
                 editorState.nodes[idx][field] = raw;
             }
@@ -518,8 +518,8 @@ export function wirePreImportEditor(json, onImport, onBack) {
             const idx = parseInt(target.dataset.nodeIdx, 10);
             const field = target.dataset.field;
             const raw = target.value;
-            if (field === 'isCloud') {
-                editorState.nodes[idx][field] = raw === '' ? undefined : (raw === 'true');
+            if (field === 'hosting') {
+                editorState.nodes[idx][field] = raw || undefined;
             } else {
                 editorState.nodes[idx][field] = raw || undefined;
             }

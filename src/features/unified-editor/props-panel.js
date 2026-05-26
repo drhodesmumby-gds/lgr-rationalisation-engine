@@ -118,14 +118,23 @@ export function renderPropsPanel(system, editorState) {
     html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
 
     // Hosting
-    const hostingSelected = system.isCloud === true ? 'Cloud' : (system.isCloud === false ? 'On-Premise' : '');
+    const hostingType = system.hosting || (system.isCloud === true ? 'cloud' : system.isCloud === false ? 'on-premise' : '');
+    const hostingSelected = hostingType === 'cloud' ? 'Cloud' : hostingType === 'on-premise' ? 'On-Premise' : hostingType === 'partner-hosted' ? 'Partner-Hosted' : '';
     html += renderRadioGroup({
         name: 'hosting',
         title: 'Hosting',
-        options: ['Cloud', 'On-Premise'],
+        options: ['Cloud', 'On-Premise', 'Partner-Hosted'],
         selected: hostingSelected,
         hint: 'Where the system is primarily hosted.'
     });
+
+    html += `<div class="${hostingType !== 'partner-hosted' ? 'hidden' : ''}" data-hosting-partner-row>`;
+    html += fieldRow('Hosting Partner',
+        `<input type="text" data-prop-field="hostingPartner" value="${escAttr(system.hostingPartner || '')}"
+            class="w-full text-sm border-2 border-[#0b0c0c] p-1 focus:outline-3 focus:outline-[#ffdd00]"
+            placeholder="Council or organisation name" />`
+    );
+    html += `</div>`;
 
     // Data Partitioning
     html += renderRadioGroup({
@@ -223,7 +232,10 @@ export function wirePropsPanel(container, options = {}) {
             if (nodeIdx == null || !onChange) return;
 
             if (name === 'hosting') {
-                onChange(nodeIdx, 'isCloud', value === 'Cloud');
+                const val = value === 'Cloud' ? 'cloud' : value === 'On-Premise' ? 'on-premise' : 'partner-hosted';
+                onChange(nodeIdx, 'hosting', val);
+                const partnerRow = panel.querySelector('[data-hosting-partner-row]');
+                if (partnerRow) partnerRow.classList.toggle('hidden', val !== 'partner-hosted');
             } else if (name === 'dataPartitioning') {
                 onChange(nodeIdx, 'dataPartitioning', value);
             } else if (name === 'portability') {
@@ -320,14 +332,14 @@ export function wirePropsPanel(container, options = {}) {
 
 // --- Internal helpers ---
 
-const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'isCloud', 'supportModel'];
+const KEY_FIELDS = ['vendor', 'annualCost', 'endYear', 'portability', 'dataPartitioning', 'hosting', 'supportModel'];
 const KEY_FIELD_LABELS = {
     vendor: 'Vendor',
     annualCost: 'Annual Cost',
     endYear: 'Contract End Year',
     portability: 'Data Portability',
     dataPartitioning: 'Data Partitioning',
-    isCloud: 'Hosting',
+    hosting: 'Hosting',
     supportModel: 'Support Model'
 };
 

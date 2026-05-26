@@ -81,7 +81,7 @@ function renderStep2() {
     const hostingRadio = renderRadioGroup({
         name: 'wizard-hosting',
         title: 'Hosting',
-        options: ['Cloud', 'On-Premise'],
+        options: ['Cloud', 'On-Premise', 'Partner-Hosted'],
         selected: 'Cloud',
         hint: 'Where the system runs'
     });
@@ -236,7 +236,7 @@ export function wireWizard(container, options = {}) {
 
             const vendor = vendorInput ? vendorInput.value.trim() : '';
             const costRaw = costInput ? parseThousands(costInput.value) : NaN;
-            const isCloud = hostingRadio ? hostingRadio.value === 'Cloud' : true;
+            const hosting = hostingRadio ? (hostingRadio.value === 'Cloud' ? 'cloud' : hostingRadio.value === 'On-Premise' ? 'on-premise' : 'partner-hosted') : 'cloud';
 
             const systemNode = {
                 id: 'sys-1',
@@ -244,7 +244,7 @@ export function wireWizard(container, options = {}) {
                 type: 'ITSystem',
                 vendor: vendor,
                 annualCost: isNaN(costRaw) ? 0 : costRaw,
-                isCloud: isCloud
+                hosting: hosting
             };
 
             const data = {
