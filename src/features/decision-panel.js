@@ -43,25 +43,30 @@ let _allSystems = [];
  */
 function buildHostingPartnerOptions() {
     const names = new Set();
-    // Council names from uploads
-    for (const upload of state.rawUploads) {
-        if (upload.data && upload.data.councilName) names.add(upload.data.councilName);
-    }
-    // Successor names from transition structure
+    const predecessors = new Set();
+
+    // Collect predecessor names (councils being abolished)
     if (state.transitionStructure && state.transitionStructure.successors) {
         for (const s of state.transitionStructure.successors) {
+            for (const p of (s.fullPredecessors || [])) predecessors.add(p);
+            for (const p of (s.partialPredecessors || [])) predecessors.add(p);
+            // Successors ARE valid partners (they'll exist post-vesting)
             if (s.name) names.add(s.name);
-            for (const p of (s.fullPredecessors || [])) names.add(p);
-            for (const p of (s.partialPredecessors || [])) names.add(p);
         }
     }
-    // Existing sharedWith values and hostingPartner values from nodes
+
+    // External partners from sharedWith (only those NOT being abolished)
     if (state.mergedArchitecture && state.mergedArchitecture.nodes) {
         for (const node of state.mergedArchitecture.nodes) {
-            if (node.sharedWith) node.sharedWith.forEach(c => names.add(c));
-            if (node.hostingPartner) names.add(node.hostingPartner);
+            if (node.sharedWith) {
+                node.sharedWith.forEach(c => { if (!predecessors.has(c)) names.add(c); });
+            }
+            if (node.hostingPartner && !predecessors.has(node.hostingPartner)) {
+                names.add(node.hostingPartner);
+            }
         }
     }
+
     return [...names].sort().map(n => `<option value="${escHtml(n)}">`).join('');
 }
 
