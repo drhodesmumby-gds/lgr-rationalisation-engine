@@ -13,7 +13,6 @@ const IMPORT_TARGET_FIELDS = [
         { id: 'owner',          label: 'Owner',                 required: false }
     ]},
     { section: 'Commercial', fields: [
-        { id: 'cost',           label: 'Cost (string)',         required: false },
         { id: 'annualCost',     label: 'Annual Cost (number)',  required: false },
         { id: 'endYear',        label: 'Contract End Year',     required: false },
         { id: 'endMonth',       label: 'Contract End Month',    required: false },
@@ -43,8 +42,7 @@ const IMPORT_AUTODETECT_RULES = [
     { field: 'label',            test: h => /system|application|app\b|^name$/i.test(h) },
     { field: 'vendor',           test: h => /vendor|supplier/i.test(h) },
     { field: 'users',            test: h => /\buser/i.test(h) },
-    { field: 'annualCost',       test: h => /annual|yearly/i.test(h) },
-    { field: 'cost',             test: h => /cost/i.test(h) && !/annual|yearly/i.test(h) },
+    { field: 'annualCost',       test: h => /annual|yearly|cost/i.test(h) },
     { field: 'endYear',          test: h => /contract/i.test(h) && /end|expir/i.test(h) },
     { field: 'endMonth',         test: h => /end\s*month|contract\s*month/i.test(h) && !/year/i.test(h) },
     { field: 'noticePeriod',     test: h => /notice/i.test(h) },
@@ -86,7 +84,6 @@ function coerceImportedRow(raw, columnMap) {
     if (get('label'))  sys.label  = String(get('label')).trim();
     if (get('vendor')) sys.vendor = String(get('vendor')).trim();
     if (get('owner'))  sys.owner  = String(get('owner')).trim();
-    if (get('cost'))   sys.cost   = String(get('cost')).trim();
 
     // Numeric fields
     ['annualCost','endYear','endMonth','noticePeriod','users'].forEach(f => {
@@ -106,7 +103,7 @@ function coerceImportedRow(raw, columnMap) {
         if (falsey.some(f => s.includes(f))) return false;
         return undefined;
     };
-    const hostingVal = get('hosting') || get('isCloud');
+    const hostingVal = get('hosting');
     if (hostingVal) {
         const h = String(hostingVal).toLowerCase().trim();
         if (['cloud','saas','yes','true','hosted','1'].includes(h)) sys.hosting = 'cloud';
@@ -556,8 +553,8 @@ function buildManualSystemCardHTML(idx, sys) {
                 <div>
                     <label class="block font-bold mb-1 text-xs">Hosting</label>
                     <select class="manual-field border border-[#b1b4b6] p-1 text-xs" data-field="hosting" data-idx="${idx}">
-                        <option value="cloud" ${sys.hosting === 'cloud' || sys.isCloud !== false ? 'selected' : ''}>Cloud</option>
-                        <option value="on-premise" ${sys.hosting === 'on-premise' || sys.isCloud === false ? 'selected' : ''}>On-Premise</option>
+                        <option value="cloud" ${sys.hosting === 'cloud' ? 'selected' : ''}>Cloud</option>
+                        <option value="on-premise" ${sys.hosting === 'on-premise' ? 'selected' : ''}>On-Premise</option>
                         <option value="partner-hosted" ${sys.hosting === 'partner-hosted' ? 'selected' : ''}>Partner-Hosted</option>
                     </select>
                 </div>
@@ -972,8 +969,8 @@ function assembleArchitecture() {
     s.mappedSystems.forEach((sys, idx) => {
         const sysNodeId = generateId();
         const sysNode = { id: sysNodeId, type: 'ITSystem', label: sys.label };
-        ['vendor','owner','users','cost','annualCost','endYear','endMonth',
-         'noticePeriod','portability','dataPartitioning','hosting','isCloud','isERP','sharedWith',
+        ['vendor','owner','users','annualCost','endYear','endMonth',
+         'noticePeriod','portability','dataPartitioning','hosting','isERP','sharedWith',
          'capabilityType'
         ].forEach(f => { if (sys[f] !== undefined) sysNode[f] = sys[f]; });
         nodes.push(sysNode);

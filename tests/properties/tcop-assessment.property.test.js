@@ -23,7 +23,7 @@ const arbTcopSystem = fc.record({
   id: fc.uuid().map(u => `sys-${u}`),
   label: fc.constant('Test System'),
   type: fc.constant('ITSystem'),
-  isCloud: fc.constantFrom(true, false, undefined),
+  hosting: fc.constantFrom('cloud', 'on-premise', undefined),
   portability: fc.constantFrom('High', 'Medium', 'Low', undefined),
   isERP: fc.constantFrom(true, false, undefined),
   dataPartitioning: fc.constantFrom('Segmented', 'Monolithic', undefined),
@@ -67,14 +67,14 @@ describe('Property 7: TCoP assessment correctness', {
         const result = computeTcopAssessment(system);
 
         // --- isCloud rules ---
-        if (system.isCloud === true) {
+        if (system.hosting === 'cloud') {
           expect(hasPoint(result.alignments, 5)).toBe(true);
           expect(hasPoint(result.concerns, 5)).toBe(false);
-        } else if (system.isCloud === false) {
+        } else if (system.hosting === 'on-premise') {
           expect(hasPoint(result.concerns, 5)).toBe(true);
           expect(hasPoint(result.alignments, 5)).toBe(false);
         } else {
-          // isCloud undefined → no Point 5 in either
+          // hosting undefined → no Point 5 in either
           expect(hasPoint(result.alignments, 5)).toBe(false);
           expect(hasPoint(result.concerns, 5)).toBe(false);
         }
@@ -96,7 +96,7 @@ describe('Property 7: TCoP assessment correctness', {
           expect(hasPoint(result.concerns, 3)).toBe(false);
           expect(hasPoint(result.concerns, 11)).toBe(false);
           // Point 4 concern only from Low portability (not from isCloud)
-          if (system.isCloud !== false || system.portability !== 'Low') {
+          if (system.hosting !== 'on-premise' || system.portability !== 'Low') {
             // Point 4 concern only comes from portability === 'Low'
             expect(countPoint(result.concerns, 4)).toBe(0);
           }
@@ -120,12 +120,12 @@ describe('Property 7: TCoP assessment correctness', {
 
         // Compute the exact expected set of alignment points
         const expectedAlignmentPoints = new Set();
-        if (system.isCloud === true) expectedAlignmentPoints.add(5);
+        if (system.hosting === 'cloud') expectedAlignmentPoints.add(5);
         if (system.portability === 'High') expectedAlignmentPoints.add(4);
 
         // Compute the exact expected set of concern points (with multiplicity)
         const expectedConcernPoints = [];
-        if (system.isCloud === false) expectedConcernPoints.push(5);
+        if (system.hosting === 'on-premise') expectedConcernPoints.push(5);
         if (system.portability === 'Low') {
           expectedConcernPoints.push(3);
           expectedConcernPoints.push(4);

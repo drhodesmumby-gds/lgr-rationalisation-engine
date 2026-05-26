@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signals System — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">Technical</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Signals System</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="architecture.html">Architecture</a><a class="nav-link active" href="signals-system.html" class="nav-link active">Signals System</a><a class="nav-link" href="simulation-engine.html">Simulation Engine</a><a class="nav-link" href="build-system.html">Build System</a><a class="nav-link" href="editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="../user-guide/getting-started.html">Getting Started</a><a class="nav-link" href="../user-guide/architecture-editor.html">Architecture Editor</a><a class="nav-link" href="../user-guide/transition-planning.html">Transition Planning</a><a class="nav-link" href="../user-guide/signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="../user-guide/simulation.html">Simulation</a><a class="nav-link" href="../user-guide/data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Signals System</h1>
+
+<p>Signals are the core analysis mechanism of the rationalisation engine. They replace hardcoded verdicts with neutral, factual observations about systems in a function row. This page covers how signals are defined, computed, emphasised, and rendered.</p>
+
+<h2>Architecture Overview</h2>
+
+<pre class="mermaid">
+flowchart TD
+    A[SIGNAL_DEFS<br/>constants/signals.js] --> C[computeSignals]
+    B[PERSONA_DEFAULT_WEIGHTS<br/>per-persona defaults] --> C
+    C --> D{Per-signal logic}
+    D --> E[contractUrgency]
+    D --> F[userVolume]
+    D --> G[dataMonolith]
+    D --> H[+ 7 more signals]
+    E --> I[signals array]
+    F --> I
+    G --> I
+    H --> I
+    I --> J[Rendered in dashboard cells]
+</pre>
+
+<p>The signal pipeline:</p>
+
+<ol><li><strong>Definition</strong> - <code>SIGNAL_DEFS</code> array defines the signal vocabulary</li><li><strong>Weighting</strong> - <code>PERSONA_DEFAULT_WEIGHTS</code> provides per-persona defaults; user can override via Signal Options modal</li><li><strong>Computation</strong> - <code>computeSignals()</code> evaluates each signal against the systems in a function row</li><li><strong>Emphasis</strong> - <code>computeSignalEmphasis()</code> adjusts weights based on the rationalisation pattern</li><li><strong>Rendering</strong> - Signals are rendered as coloured tags with weight-based visibility</li></ol>
+<h2>Signal Definitions</h2>
+
+<p>Defined in <code>src/constants/signals.js</code>:</p>
+
+<pre><code class="language-javascript">export const SIGNAL_DEFS = [
+    { id: 'contractUrgency', label: 'Contract urgency',
+      desc: 'Proximity of the earliest notice period trigger across systems in this function' },
+    { id: 'userVolume',      label: 'User volume',
+      desc: 'Relative scale of systems by reported user count' },
+    { id: 'dataMonolith',    label: 'Monolithic data',
+      desc: 'Systems with entangled data structures that would require ETL disaggregation' },
+    { id: 'dataPortability', label: 'Data portability',
+      desc: 'Ease of bulk data extraction - Low portability indicates vendor lock-in risk' },
+    { id: 'vendorDensity',   label: 'Vendor density',
+      desc: 'Same vendor present across multiple councils for this function' },
+    { id: 'techDebt',        label: 'On-premise systems',
+      desc: 'Systems hosted on council servers rather than cloud/SaaS' },
+    { id: 'tcopAlignment',   label: 'TCoP alignment',
+      desc: 'Assessment against Technology Code of Practice criteria' },
+    { id: 'sharedService',   label: 'Shared service',
+      desc: 'Systems jointly operated by multiple predecessor councils' },
+    { id: 'supportModel',    label: 'Support model',
+      desc: 'Sustainability of system maintenance - vendor SLA, community, or unsupported' },
+    { id: 'sameVendorConsolidation', label: 'Same-vendor consolidation',
+      desc: 'All or most systems from the same vendor - consolidation may be simpler' }
+];</code></pre>
+
+<h2>Persona Default Weights</h2>
+
+<p>Weight levels: 0 = Off, 1 = Low, 2 = Medium, 3 = High. A signal at weight 0 is not computed or displayed.</p>
+
+<pre><code class="language-javascript">export const PERSONA_DEFAULT_WEIGHTS = {
+    executive:  { contractUrgency: 3, userVolume: 2, dataMonolith: 3, dataPortability: 1,
+                  vendorDensity: 2, techDebt: 1, tcopAlignment: 1, sharedService: 2,
+                  supportModel: 1, sameVendorConsolidation: 2 },
+    commercial: { contractUrgency: 3, userVolume: 1, dataMonolith: 1, dataPortability: 0,
+                  vendorDensity: 3, techDebt: 0, tcopAlignment: 0, sharedService: 3,
+                  supportModel: 1, sameVendorConsolidation: 3 },
+    architect:  { contractUrgency: 1, userVolume: 2, dataMonolith: 3, dataPortability: 3,
+                  vendorDensity: 1, techDebt: 3, tcopAlignment: 3, sharedService: 1,
+                  supportModel: 2, sameVendorConsolidation: 2 }
+};</code></pre>
+
+<p>Changing persona resets <code>state.signalWeights</code> to that persona's defaults. Users can manually override individual weights in the Signal Options modal without changing persona.</p>
+
+<h2>Signal Computation: <code>computeSignals()</code></h2>
+
+<p>Location: <code>src/analysis/signals.js</code></p>
+
+<pre><code class="language-javascript">export function computeSignals(systems, weightsOverride) {
+    const weights = weightsOverride || state.signalWeights;
+    const signals = [];
+    // ... per-signal logic, guarded by weight &gt; 0
+    return signals;
+}</code></pre>
+
+<p>Each signal block follows the same pattern:</p>
+<ol><li>Check if <code>weights[signalId] &gt; 0</code> (skip if Off)</li><li>Filter/sort the input <code>systems</code> array for relevant data</li><li>Compute the signal value and classify severity</li><li>Push a signal object to the <code>signals</code> array</li></ol>
+<h3>Signal Object Shape</h3>
+
+<pre><code class="language-javascript">{
+    id: 'contractUrgency',       // Signal ID (matches SIGNAL_DEFS)
+    weight: 3,                   // Active weight level
+    label: 'Contract urgency',   // Display label
+    value: '...',                // Descriptive text (the factual observation)
+    tag: 'tag-red',              // CSS class for colour (tag-red|tag-orange|tag-blue|tag-purple|tag-black)
+    border: 'border-[#d4351c]', // Optional border class for emphasis
+    strong: true                 // Whether this signal is "strong" (drives emphasis rendering)
+}</code></pre>
+
+<h2>Per-Signal Computation Logic</h2>
+
+<h3>contractUrgency</h3>
+
+<p>Identifies the system with the most urgent contract notice trigger.</p>
+
+<p><strong>With vesting date (transition mode):</strong></p>
+<ul><li>Classifies each system into a vesting zone via <code>classifyVestingZone(endYear, endMonth, noticePeriod, vestingDate)</code></li><li>Zones: <code>pre-vesting</code> | <code>year-1</code> | <code>natural-expiry</code> | <code>long-tail</code></li><li>Sorts by zone priority, then by trigger month within zone</li><li>Reports months before/after vesting and the zone label</li></ul>
+<table><thead><tr><th>Zone</th><th>Tag Colour</th><th>Strong?</th></tr></thead><tbody><tr><td>pre-vesting</td><td><code>tag-red</code></td><td>Yes</td></tr><tr><td>year-1</td><td><code>tag-orange</code></td><td>Yes</td></tr><tr><td>natural-expiry</td><td><code>tag-blue</code></td><td>No</td></tr><tr><td>long-tail</td><td><code>tag-black</code></td><td>No</td></tr></tbody></table><strong>Without vesting date (discovery mode):</strong>
+<ul><li>Sorts by absolute notice trigger date relative to today</li><li>Classifies by months away: <12 = red, <24 = orange, else blue</li></ul>
+<h3>userVolume</h3>
+
+<p>Detects the "anchor" system - the dominant system by user count.</p>
+
+<pre><code>Anchor ratio = top.users / second.users
+If ratio &gt;= 1.5 and top.users &gt; 0: anchor detected (strong signal)</code></pre>
+
+<ul><li>Requires at least 2 systems with <code>users &gt; 0</code></li><li>Reports the largest system's label, user count, and ratio to next largest</li><li>Single-system rows get a neutral "sole system" observation</li></ul>
+<h3>dataMonolith</h3>
+
+<p>Flags systems where data disaggregation would be complex:</p>
+
+<pre><code class="language-javascript">const mono = systems.filter(s =&gt; s.dataPartitioning === 'Monolithic' || s.isERP);</code></pre>
+
+<ul><li>Always a strong signal (when present)</li><li>Uses <code>tag-purple</code> colour</li><li>Lists all matching system labels</li></ul>
+<h3>dataPortability</h3>
+
+<p>Identifies the worst portability tier present in the function row:</p>
+
+<pre><code class="language-javascript">const low = systems.filter(s =&gt; s.portability === 'Low');
+const med = systems.filter(s =&gt; s.portability === 'Medium');
+const worst = low.length &gt; 0 ? low : med;</code></pre>
+
+<ul><li>Low portability = <code>tag-red</code> + strong</li><li>Medium portability = <code>tag-orange</code></li><li>Only fires if at least one system has non-High portability</li></ul>
+<h3>vendorDensity</h3>
+
+<p>Detects the same vendor across multiple councils:</p>
+
+<pre><code class="language-javascript">// Groups systems by vendor, checks if any vendor appears from 2+ source councils</code></pre>
+
+<ul><li>Uses <code>computeVendorDensityMetrics()</code> for detailed breakdown</li><li>Flags when a vendor serves the same function in multiple predecessor councils</li><li>Relevant for consolidation decisions (familiar vendor = lower migration risk)</li></ul>
+<h3>techDebt (On-premise systems)</h3>
+
+<p>Uses the hosting helper module (<code>src/analysis/hosting.js</code>):</p>
+
+<pre><code class="language-javascript">import { isNonCloud, getHostingType, detectHostingRisk } from './hosting.js';
+
+// isNonCloud(system) returns true for 'on-premise' or 'partner-hosted'
+// getHostingType(system) returns system.hosting or null</code></pre>
+
+<ul><li>Fires when <code>isNonCloud(system)</code> is true for any system</li><li>Also detects partner-hosted governance risk via <code>detectHostingRisk()</code></li><li>Partner-hosted systems where the hosting council maps to a different successor get a continuity risk flag</li></ul>
+<h3>tcopAlignment</h3>
+
+<p>Evaluates systems against Technology Code of Practice points:</p>
+
+<pre><code class="language-javascript">export function computeTcopAssessment(system) {
+    // Returns { alignments: [{point, description}], concerns: [{point, description}] }
+}</code></pre>
+
+<table><thead><tr><th>TCoP Point</th><th>Check</th><th>Alignment</th><th>Concern</th></tr></thead><tbody><tr><td>Point 5 - Cloud first</td><td><code>hosting === 'cloud'</code></td><td>Cloud-hosted</td><td>On-premise or partner-hosted</td></tr><tr><td>Point 4 - Open standards</td><td><code>portability === 'High'</code></td><td>High portability</td><td>-</td></tr><tr><td>Points 3, 4, 11 - Vendor lock-in</td><td><code>portability === 'Low'</code></td><td>-</td><td>Triple concern</td></tr><tr><td>Point 9 - Modularity</td><td><code>isERP &amp;&amp; Monolithic</code></td><td>-</td><td>Monolithic ERP</td></tr></tbody></table>The signal aggregates all concerns across systems in the row, reporting the worst assessment.
+
+<h3>sharedService</h3>
+
+<p>Detects shared services and boundary crossings:</p>
+
+<pre><code class="language-javascript">// Checks system.sharedWith array
+// In transition mode: also checks if shared councils map to DIFFERENT successors
+// via detectSharedServiceBoundary(system, councilToSuccessorMap)</code></pre>
+
+<ul><li>Cross-boundary shared services (spanning successor boundaries) get <code>tag-red</code> + strong</li><li>Same-boundary shared services get a neutral informational tag</li></ul>
+<h3>supportModel</h3>
+
+<p>Classifies system maintenance sustainability:</p>
+
+<pre><code class="language-javascript">export function classifySupportModel(system) {
+    // Returns { model, isExplicit, summary }
+    // model: 'vendor-supported' | 'community-supported' | 'unsupported' | 'unknown'
+}</code></pre>
+
+<ul><li><code>unsupported</code> systems get <code>tag-red</code> + strong</li><li><code>community-supported</code> gets <code>tag-orange</code></li><li><code>vendor-supported</code> and <code>unknown</code> are neutral</li></ul>
+<h3>sameVendorConsolidation</h3>
+
+<p>Detects when all or most systems are from the same vendor:</p>
+
+<pre><code class="language-javascript">export function detectSameVendorConsolidation(systems) {
+    // Returns null if no pattern, or:
+    // { vendor, count, total, isUnanimous, insight }
+}</code></pre>
+
+<ul><li><strong>Unanimous:</strong> All commercial systems from same vendor</li><li><strong>Supermajority:</strong> 75%+ of commercial systems from same vendor (minimum 4 systems)</li><li>Provides an insight string explaining consolidation implications</li></ul>
+<h2>How to Add a New Signal</h2>
+
+<p>Step-by-step guide for adding signal #11:</p>
+
+<h3>1. Define the signal</h3>
+
+<p>In <code>src/constants/signals.js</code>, add to <code>SIGNAL_DEFS</code>:</p>
+
+<pre><code class="language-javascript">{ id: 'myNewSignal', label: 'My Signal Label', desc: 'What this signal measures' }</code></pre>
+
+<h3>2. Add persona weights</h3>
+
+<p>In the same file, add your signal ID to each persona's defaults:</p>
+
+<pre><code class="language-javascript">executive:  { ..., myNewSignal: 2 },
+commercial: { ..., myNewSignal: 1 },
+architect:  { ..., myNewSignal: 3 }</code></pre>
+
+<h3>3. Implement the computation</h3>
+
+<p>In <code>src/analysis/signals.js</code>, add a block in <code>computeSignals()</code>:</p>
+
+<pre><code class="language-javascript">// My new signal
+if (weights.myNewSignal &gt; 0) {
+    // Filter/analyse the systems array
+    const relevant = systems.filter(s =&gt; /* your condition */);
+    if (relevant.length &gt; 0) {
+        signals.push({
+            id: 'myNewSignal',
+            weight: weights.myNewSignal,
+            label: 'My Signal Label',
+            value: `${relevant[0].label} - descriptive observation`,
+            tag: 'tag-blue',          // Choose: tag-red, tag-orange, tag-blue, tag-purple, tag-black
+            border: 'border-[#1d70b8]',
+            strong: false             // Set true for critical signals
+        });
+    }
+}</code></pre>
+
+<h3>4. Consider emphasis rules</h3>
+
+<p>If your signal should be boosted for certain rationalisation patterns, update <code>computeSignalEmphasis()</code>:</p>
+
+<pre><code class="language-javascript">if (pattern === 'extract-and-partition' || pattern === 'extract-partition-and-consolidate') {
+    result.myNewSignal = Math.min((result.myNewSignal || 0) + 1, 3);
+}</code></pre>
+
+<h3>5. Write property tests</h3>
+
+<p>Create <code>tests/properties/my-new-signal.property.test.js</code> using the <code>arbITSystem</code> generator.</p>
+
+<h3>6. Build and verify</h3>
+
+<pre><code class="language-bash">node build.js  # Must pass
+npm test       # Existing signal tests must still pass</code></pre>
+
+<h2>Signal Emphasis</h2>
+
+<p><code>computeSignalEmphasis(pattern, weights)</code> adjusts weights at display time based on the rationalisation pattern:</p>
+
+<table><thead><tr><th>Pattern</th><th>Boosted Signals (+1, capped at 3)</th></tr></thead><tbody><tr><td><code>extract-and-partition</code></td><td>dataMonolith, dataPortability</td></tr><tr><td><code>extract-partition-and-consolidate</code></td><td>dataMonolith, dataPortability</td></tr><tr><td><code>choose-and-consolidate</code></td><td>userVolume, vendorDensity, tcopAlignment, sameVendorConsolidation</td></tr><tr><td><code>inherit-as-is</code></td><td>No changes</td></tr></tbody></table>This means the same system data can produce different signal visibility depending on the classified pattern for that function row.
+
+<h2>Strong Flags</h2>
+
+<p>A signal with <code>strong: true</code> gets prominent rendering:</p>
+<ul><li>Larger/bolder tag in the signal strip</li><li>May trigger emphasis borders on the function row</li><li>Drives "critical" classification in the estate summary metrics</li></ul>
+<p>Strong conditions:</p>
+<ul><li>contractUrgency: pre-vesting or year-1 zone</li><li>userVolume: anchor ratio >= 1.5</li><li>dataMonolith: always strong when present</li><li>dataPortability: Low portability</li><li>sharedService: cross-boundary detection</li><li>supportModel: unsupported system</li></ul>
+<h2>Persona-Specific Rendering</h2>
+
+<p>Signals with weight 0 (Off) are not computed and never appear in the UI. Higher weights make signals more visually prominent in the matrix cell's signal strip. The combination of persona weights + pattern emphasis creates a focused view:</p>
+
+<ul><li><strong>Executive</strong> sees contract urgency, monolithic data, and shared services prominently</li><li><strong>Commercial</strong> sees vendor density and shared services, with contract urgency</li><li><strong>Architect</strong> sees technical debt, portability, and TCoP alignment prominently</li></ul>
+<p>The rendering logic in <code>main.js</code> filters and sorts signals by weight before display, ensuring the most relevant signals for the active persona appear first.</p>
+
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="architecture.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Architecture</a><a href="simulation-engine.html" class="text-[#1d70b8] hover:underline font-bold">Simulation Engine &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

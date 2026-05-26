@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transition Planning — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">User Guide</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Transition Planning</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="../technical/architecture.html">Architecture</a><a class="nav-link" href="../technical/signals-system.html">Signals System</a><a class="nav-link" href="../technical/simulation-engine.html">Simulation Engine</a><a class="nav-link" href="../technical/build-system.html">Build System</a><a class="nav-link" href="../technical/editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="getting-started.html">Getting Started</a><a class="nav-link" href="architecture-editor.html">Architecture Editor</a><a class="nav-link active" href="transition-planning.html" class="nav-link active">Transition Planning</a><a class="nav-link" href="signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="simulation.html">Simulation</a><a class="nav-link" href="data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Transition Planning</h1>
+
+<p>Transition planning defines <em>how</em> predecessor councils will reorganise into successor authorities. This configuration determines what the analysis shows you: which systems are allocated to which new authority, where disaggregation is needed, and what the rationalisation patterns look like.</p>
+
+<h2>What transition structure means</h2>
+
+<p>A transition structure captures three things:</p>
+
+<ol><li><strong>Successor authorities</strong> - the new unitary authorities that will come into existence on vesting day</li><li><strong>Predecessor assignments</strong> - which existing councils feed into which successor</li><li><strong>Vesting date</strong> - the legal date the new authorities come into being</li></ol>
+<p>Without a transition structure, the engine operates in Discovery mode (a flat comparison across councils). With one, it operates in Transition mode (successor-oriented analysis with rationalisation patterns).</p>
+
+<h2>Full vs partial predecessors</h2>
+
+<p>Each predecessor council is assigned to a successor as either <strong>full</strong> or <strong>partial</strong>:</p>
+
+<h3>Full predecessor</h3>
+
+<p>The council's entire IT estate transfers to one successor authority. All systems, contracts, and data from that council are allocated to that single successor.</p>
+
+<p><strong>Example:</strong> Braintree District Council is a full predecessor of North Essex Unitary - every Braintree system goes to North Essex.</p>
+
+<h3>Partial predecessor</h3>
+
+<p>The council's estate must be split across multiple successor authorities. This triggers <strong>disaggregation</strong> analysis - the engine identifies which systems must be partitioned and flags the data extraction complexity.</p>
+
+<p><strong>Example:</strong> Essex County Council is a partial predecessor of both North Essex Unitary and South Essex Unitary. County-wide systems (like the social care platform) need data to be split between the two new authorities.</p>
+
+<blockquote><p><strong>Note:</strong> Partial predecessors create the most complex rationalisation scenarios. A system from a partial predecessor that serves a function also served by systems from full predecessors results in the "Extract, partition and consolidate" pattern - requiring both data disaggregation and system consolidation.</p></blockquote>
+
+<h2>Discovery mode vs Transition mode</h2>
+
+<table><thead><tr><th>Aspect</th><th>Discovery mode</th><th>Transition mode</th></tr></thead><tbody><tr><td><strong>Purpose</strong></td><td>Cross-council estate comparison</td><td>Successor-oriented rationalisation planning</td></tr><tr><td><strong>Matrix columns</strong></td><td>One per predecessor council</td><td>One per successor authority</td></tr><tr><td><strong>Rationalisation patterns</strong></td><td>Not shown</td><td>Shown (inherit, consolidate, extract, etc.)</td></tr><tr><td><strong>Contract timeline</strong></td><td>Fixed date range</td><td>Centred on vesting date with notice zones</td></tr><tr><td><strong>Perspective filtering</strong></td><td>By predecessor council</td><td>By successor authority</td></tr><tr><td><strong>Simulation</strong></td><td>Not available</td><td>Full decision modelling</td></tr></tbody></table><strong>Discovery mode</strong> is useful for:
+<ul><li>Early-stage exploration before successor boundaries are decided</li><li>Cross-council comparison to understand the combined estate</li><li>Identifying potential shared service overlaps</li></ul>
+<p><strong>Transition mode</strong> is useful for:</p>
+<ul><li>Active transition planning with defined successor authorities</li><li>Rationalisation decision-making per function per successor</li><li>Contract urgency assessment relative to vesting day</li><li>Simulation of consolidation and decommissioning decisions</li></ul>
+<h2>How to configure the transition structure</h2>
+
+<h3>Manual entry</h3>
+
+<p>At Stage 1.5, the Transition Structure panel lets you:</p>
+
+<ol><li><strong>Set the vesting date</strong> using the date picker</li><li><strong>Add successor authorities</strong> by clicking "Add Successor" and entering a name</li><li><strong>Assign predecessors</strong> - for each successor, select which uploaded councils are full predecessors and which are partial</li><li><strong>Validate</strong> - the engine checks that every council is assigned to at least one successor and that partial predecessors appear in multiple successors</li></ol>
+<h3>Upload a transition configuration file</h3>
+
+<p>If you have a transition configuration JSON file, you can:</p>
+
+<ul><li><strong>Upload it alongside architecture files at Stage 1</strong> - the engine auto-detects it (files with a <code>successors</code> array but no <code>nodes</code> array are classified as transition configs)</li><li><strong>Import it at Stage 1.5</strong> using the "Import Configuration" button</li></ul>
+<h3>Auto-detect from architecture data</h3>
+
+<p>Click <strong>"Detect from architecture"</strong> to have the engine scan your uploaded files for <code>targetAuthorities</code> fields on systems. If systems have been pre-allocated to named successor authorities, the engine infers the full transition structure automatically.</p>
+
+<h3>Export for sharing</h3>
+
+<p>Click <strong>"Export Configuration"</strong> to download your transition structure as a JSON file. Share this with colleagues so they can load the same structure without re-entering it.</p>
+
+<h2>Estate Discovery mode</h2>
+
+<p>If you skip Stage 1.5 (by clicking "Skip to baselining"), the engine enters <strong>Estate Discovery mode</strong>. This is not a lesser mode - it serves a different purpose:</p>
+
+<ul><li>See which functions overlap across councils</li><li>Identify where the same vendor appears in multiple councils</li><li>Spot shared services and potential consolidation candidates</li><li>Review contract timelines across the combined estate</li></ul>
+<p>Discovery mode gives you the analytical foundation to <em>inform</em> transition structure decisions before committing to specific successor boundaries.</p>
+
+<h2>Tips for transition configuration</h2>
+
+<ul><li><strong>Start with the official structural proposal</strong> - use the successor names and predecessor assignments from your LGR implementation plan</li><li><strong>Full vs partial is a modelling choice</strong> - consider which councils' estates transfer entirely to one successor (full) versus those whose services split across multiple successors (partial)</li><li><strong>Review partial predecessors carefully</strong> - every system from a partial predecessor triggers disaggregation analysis, even if some systems are clearly single-successor in practice (use <code>targetAuthorities</code> to override)</li></ul>
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="architecture-editor.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Architecture Editor</a><a href="signals-analysis.html" class="text-[#1d70b8] hover:underline font-bold">Signals and Analysis &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

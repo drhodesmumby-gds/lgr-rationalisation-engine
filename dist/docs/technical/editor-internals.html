@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Internals — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">Technical</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Editor Internals</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="architecture.html">Architecture</a><a class="nav-link" href="signals-system.html">Signals System</a><a class="nav-link" href="simulation-engine.html">Simulation Engine</a><a class="nav-link" href="build-system.html">Build System</a><a class="nav-link active" href="editor-internals.html" class="nav-link active">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="../user-guide/getting-started.html">Getting Started</a><a class="nav-link" href="../user-guide/architecture-editor.html">Architecture Editor</a><a class="nav-link" href="../user-guide/transition-planning.html">Transition Planning</a><a class="nav-link" href="../user-guide/signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="../user-guide/simulation.html">Simulation</a><a class="nav-link" href="../user-guide/data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Editor Internals</h1>
+
+<p>The Unified Architecture Editor is the tool's data entry interface - a full-screen modal with two editing modes (Focus and Bulk), a dependency matrix view, and an onboarding wizard. This page covers its internal architecture.</p>
+
+<h2>Module Structure</h2>
+
+<pre><code>src/features/unified-editor/
+├── editor.js         # Orchestrator: renderUnifiedEditor + wireUnifiedEditor
+├── list-panel.js     # Left pane: domain-grouped system list with search
+├── props-panel.js    # Centre pane: property editor for the selected node
+├── rel-panel.js      # Right pane: relationships, capabilities, dependencies
+├── bulk-mode.js      # Full-width tabular editing with column-group tabs
+├── dep-matrix.js     # Read-only heatmap of CONSUMES_CAPABILITY edges
+├── smart-inputs.js   # Shared input utilities (formatting, chips, pills, radios)
+└── wizard.js         # Step-by-step onboarding for building from scratch</code></pre>
+
+<h2>Three-Pane Layout (Focus Mode)</h2>
+
+<p>The editor uses a CSS Grid layout with fixed column widths:</p>
+
+<pre><code class="language-html">&lt;div style="grid-template-columns: 230px 1fr 280px;"&gt;
+    &lt;div id="ue-list-panel"&gt;...&lt;/div&gt;    &lt;!-- Left: system list --&gt;
+    &lt;div id="ue-props-panel"&gt;...&lt;/div&gt;   &lt;!-- Centre: property editor --&gt;
+    &lt;div id="ue-rel-panel"&gt;...&lt;/div&gt;     &lt;!-- Right: relationships --&gt;
+&lt;/div&gt;</code></pre>
+
+<h3>List Panel (<code>list-panel.js</code>)</h3>
+
+<p>Renders a domain-grouped list of ITSystem nodes:</p>
+
+<pre><code class="language-javascript">export function renderListPanel(editorState, { selectedIdx, searchQuery }) {
+    // Groups systems by ESD root category (via getRootCategoryId)
+    // Shows per-system completeness progress (key fields filled / total)
+    // Highlights the selected system
+    // Supports text search filtering
+}</code></pre>
+
+<p>Key fields tracked for completeness: <code>vendor</code>, <code>annualCost</code>, <code>endYear</code>, <code>portability</code>, <code>dataPartitioning</code>, <code>hosting</code>, <code>supportModel</code>.</p>
+
+<h3>Properties Panel (<code>props-panel.js</code>)</h3>
+
+<p>Renders field editors for the currently selected system node. Field types include text inputs, dropdowns, number inputs with formatting, boolean toggles, and chip selectors.</p>
+
+<h3>Relationships Panel (<code>rel-panel.js</code>)</h3>
+
+<p>Manages three categories of relationships for the selected system:</p>
+<ol><li><strong>REALIZES edges</strong> - which Functions this system serves</li><li><strong>Capability provider</strong> - what capabilities this system offers (<code>capabilityType</code>)</li><li><strong>CONSUMES_CAPABILITY edges</strong> - which systems this one depends on for capabilities</li></ol>
+<h2>State Management</h2>
+
+<h3>editorState Deep Clone</h3>
+
+<p>On editor open, the architecture JSON is deep-cloned via <code>structuredClone()</code>:</p>
+
+<pre><code class="language-javascript">export function wireUnifiedEditor(container, json, options = {}) {
+    const editorState = structuredClone(json || {});
+    if (!editorState.nodes) editorState.nodes = [];
+    if (!editorState.edges) editorState.edges = [];
+    if (!editorState.councilMetadata) editorState.councilMetadata = {};
+    // ...
+}</code></pre>
+
+<p>This means edits are non-destructive until the user clicks "Save". The original data is never mutated. If the user clicks "Back", all changes are discarded.</p>
+
+<h3>Local Closure State</h3>
+
+<p>The editor maintains additional state within the <code>wireUnifiedEditor</code> closure:</p>
+
+<pre><code class="language-javascript">let selectedIdx = null;    // Index into editorState.nodes for the selected system
+let mode = 'focus';        // 'focus' | 'bulk'
+let searchQuery = '';      // Current search filter text</code></pre>
+
+<h3>Bulk Mode State</h3>
+
+<p>Bulk mode adds transient state properties to <code>editorState</code>:</p>
+
+<pre><code class="language-javascript">editorState._bulkActiveTab = 'contract';   // 'contract' | 'technical' | 'relationships'
+editorState._bulkFilters = {};              // Column filters
+editorState._bulkSort = null;              // { field, direction } or null</code></pre>
+
+<p>These underscore-prefixed properties are ephemeral (not saved with the architecture data).</p>
+
+<h2>Re-render Strategy</h2>
+
+<p>The editor uses selective panel re-rendering to avoid full-page reflows. Each panel has its own render + wire cycle:</p>
+
+<pre><code class="language-javascript">function rerenderList() {
+    const html = renderListPanel(editorState, { selectedIdx, searchQuery });
+    renderPanel(listPanelEl, html);
+    wireListPanel(listPanelEl, { onSelect, onAdd, onSearch });
+}
+
+function rerenderProps() {
+    const system = selectedIdx != null ? editorState.nodes[selectedIdx] : null;
+    const html = renderPropsPanel(system, editorState);
+    renderPanel(propsPanelEl, html);
+    wirePropsPanel(propsPanelEl, { onChange, onFunctionAdd, onFunctionRemove, onDelete });
+}
+
+function rerenderRel() {
+    const system = selectedIdx != null ? editorState.nodes[selectedIdx] : null;
+    const html = renderRelPanel(system, editorState);
+    renderPanel(relPanelEl, html);
+    wireRelPanel(relPanelEl, { onCapabilityToggle, onConsumerAdd, ... });
+}</code></pre>
+
+<h3>When Each Panel Re-renders</h3>
+
+<table><thead><tr><th>Event</th><th>List</th><th>Props</th><th>Rel</th></tr></thead><tbody><tr><td>Select a system</td><td>Yes (highlight)</td><td>Yes (new data)</td><td>Yes (new data)</td></tr><tr><td>Edit a field value</td><td>No</td><td>No (in-place)</td><td>No</td></tr><tr><td>Add/remove function</td><td>No</td><td>Yes</td><td>Yes</td></tr><tr><td>Add a new system</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>Delete a system</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>Search query change</td><td>Yes</td><td>No</td><td>No</td></tr><tr><td>Mode switch (Focus/Bulk)</td><td>N/A (containers toggled)</td><td>N/A</td><td>N/A</td></tr></tbody></table>The <code>renderPanel(el, html)</code> helper is simple <code>innerHTML</code> assignment:
+
+<pre><code class="language-javascript">function renderPanel(panelEl, html) {
+    if (!panelEl) return;
+    panelEl.innerHTML = html;
+}</code></pre>
+
+<p>After setting innerHTML, the corresponding <code>wire*()</code> function attaches event listeners to the new DOM elements.</p>
+
+<h2>Bulk Mode (<code>bulk-mode.js</code>)</h2>
+
+<p>A full-width tabular editing view for modifying multiple systems simultaneously.</p>
+
+<h3>Tab Structure</h3>
+
+<pre><code class="language-javascript">const TABS = [
+    { id: 'contract', label: 'Contract &amp; Cost' },
+    { id: 'technical', label: 'Technical' },
+    { id: 'relationships', label: 'Relationships' }
+];</code></pre>
+
+<p>Each tab shows different columns. The leftmost columns (system name, vendor) are pinned and always visible.</p>
+
+<h3>Cell Types</h3>
+
+<p>The bulk table supports multiple cell rendering types:</p>
+<ul><li><strong>Text input</strong> - plain text editing</li><li><strong>Number input</strong> - with formatThousands display</li><li><strong>Select dropdown</strong> - enum fields (portability, hosting, etc.)</li><li><strong>Chip cell</strong> - multi-value fields (sharedWith, targetAuthorities)</li><li><strong>Cap-pills</strong> - capability type toggles</li><li><strong>Dep-cell</strong> - dependency relationship indicators</li></ul>
+<h3>Sorting and Filtering</h3>
+
+<pre><code class="language-javascript">// Sorting: click column header to sort
+editorState._bulkSort = { field: 'annualCost', direction: 'desc' };
+
+// Filtering: per-column filters
+editorState._bulkFilters = { portability: 'Low', hosting: 'cloud' };</code></pre>
+
+<p>Fields in <code>UNSORTABLE_TYPES</code> (cap-pills, chip-cell, dep-cell) cannot be sorted.</p>
+
+<h2>Smart Inputs Module (<code>smart-inputs.js</code>)</h2>
+
+<p>Shared input behaviour utilities used across both Focus and Bulk modes.</p>
+
+<h3>Key Exports</h3>
+
+<pre><code class="language-javascript">// Formatting
+export function formatThousands(value, opts = {})  // 1234567 -&gt; "1,234,567"
+export function parseThousands(displayStr)          // "£1,234,567" -&gt; 1234567
+
+// Rendering
+export function renderChipSelector(options)         // Multi-value tag input
+export function renderRadioGroup(options)           // Radio button set
+
+// Event wiring
+export function wireSmartInputs(container, callbacks)  // Delegation-based listener setup</code></pre>
+
+<h3>Delegation Pattern</h3>
+
+<p>Smart inputs use event delegation - a single listener on the container handles all child input events:</p>
+
+<pre><code class="language-javascript">export function wireSmartInputs(container, callbacks) {
+    container.addEventListener('input', (e) =&gt; {
+        const field = e.target.dataset.field;
+        if (!field) return;
+        callbacks.onChange(field, e.target.value);
+    });
+    container.addEventListener('click', (e) =&gt; {
+        const chipRemove = e.target.closest('[data-chip-remove]');
+        if (chipRemove) { /* handle chip removal */ }
+    });
+}</code></pre>
+
+<p>This avoids attaching individual listeners to every input element, which would be expensive when re-rendering the props panel.</p>
+
+<h2>Event Wiring Pattern</h2>
+
+<p>All editor sub-modules follow the same render/wire pattern:</p>
+
+<pre><code class="language-javascript">// 1. Pure render function (returns HTML string)
+export function renderXxxPanel(data, options) {
+    return `&lt;div&gt;...&lt;/div&gt;`;
+}
+
+// 2. Imperative wire function (attaches event handlers)
+export function wireXxxPanel(container, callbacks) {
+    container.addEventListener('click', (e) =&gt; {
+        const action = e.target.closest('[data-ue-action]');
+        if (action) {
+            const type = action.dataset.ueAction;
+            if (type === 'select') callbacks.onSelect(/* ... */);
+        }
+    });
+}</code></pre>
+
+<p>Callbacks flow <strong>up</strong> to the orchestrator (<code>editor.js</code>), which holds the authoritative <code>editorState</code> and decides which panels to re-render.</p>
+
+<h2>Dependency Matrix (<code>dep-matrix.js</code>)</h2>
+
+<p>A read-only heatmap showing capability dependency relationships:</p>
+
+<pre><code class="language-javascript">export function renderDepMatrix(editorState) {
+    // Rows: consumer systems (source of CONSUMES_CAPABILITY edges)
+    // Columns: provider systems (target of CONSUMES_CAPABILITY edges)
+    // Cells: capabilities consumed (from edge.capabilities array)
+}</code></pre>
+
+<p>Activated via the "Dependencies" button in the editor header. Shows nothing if no CONSUMES_CAPABILITY edges exist.</p>
+
+<h2>Wizard (<code>wizard.js</code>)</h2>
+
+<p>A 2-step onboarding flow for creating architecture from scratch:</p>
+
+<table><thead><tr><th>Step</th><th>Content</th></tr></thead><tbody><tr><td>Step 1</td><td>Council name, tier, financial distress flag</td></tr><tr><td>Step 2</td><td>First IT system (optional): label, vendor, hosting, cost</td></tr></tbody></table><pre><code class="language-javascript">export function renderWizard(step) {
+    if (step === 1) return renderStep1();
+    if (step === 2) return renderStep2();
+    return '';
+}
+
+export function wireWizard(container, { onComplete, onBack }) {
+    // Validates inputs, advances steps, calls onComplete with constructed JSON
+}</code></pre>
+
+<p>The wizard produces a minimal but valid architecture JSON that the editor can then enrich.</p>
+
+<h2>Integration with main.js</h2>
+
+<p>The editor is opened as a full-screen overlay from <code>main.js</code>:</p>
+
+<pre><code class="language-javascript">import { renderUnifiedEditor, wireUnifiedEditor } from './features/unified-editor/editor.js';
+
+function openUnifiedEditor(uploadEntry, options = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 bg-white';
+    overlay.innerHTML = renderUnifiedEditor(uploadEntry.data, {
+        title: uploadEntry.data.councilName,
+        source: 'edit',
+        allUploads: state.rawUploads,
+        currentUploadIdx: idx
+    });
+    document.body.appendChild(overlay);
+
+    const api = wireUnifiedEditor(overlay, uploadEntry.data, {
+        onSave: (updatedData) =&gt; {
+            // Apply changes back to state.rawUploads[idx]
+            uploadEntry.data = updatedData;
+            overlay.remove();
+            renderStage1();
+        },
+        onBack: () =&gt; {
+            overlay.remove();  // Discard changes
+        }
+    });
+}</code></pre>
+
+<h3>Multi-Council Switching</h3>
+
+<p>When multiple uploads exist, the editor header shows a <code>&lt;select&gt;</code> dropdown to switch between councils:</p>
+
+<pre><code class="language-javascript">if (allUploads.length &gt; 1) {
+    // Renders a dropdown with all uploaded council names
+    // data-ue-action="switch-council" triggers save of current + load of new
+}</code></pre>
+
+<h3>Return Value</h3>
+
+<p><code>wireUnifiedEditor()</code> returns an API object:</p>
+
+<pre><code class="language-javascript">return {
+    getState() { return editorState; },  // Current editor state (for testing)
+    destroy() { /* cleanup listeners */ }
+};</code></pre>
+
+<h2>How to Add a New Editor Field</h2>
+
+<ol><li>Add the field to the ITSystem schema in <code>src/constants/schema-definitions.js</code></li><li>Add rendering in <code>props-panel.js</code>:</li></ol>   <pre><code class="language-javascript">   // In the appropriate field group section
+   html += renderField({ label: 'My Field', name: 'myField', type: 'text', value: system.myField });</code></pre>
+<ol><li>Add bulk mode column in <code>bulk-mode.js</code> (in the appropriate tab's columns array)</li><li>Ensure <code>wirePropsPanel</code> handles the field change via <code>onChange</code> callback</li><li>If the field affects signals, update <code>src/analysis/signals.js</code></li><li>Update the <code>arbITSystem</code> test generator to include the new field</li></ol>
+<h2>How to Add a New Editor Panel Tab</h2>
+
+<p>For a new section in Bulk Mode:</p>
+
+<ol><li>Add to the <code>TABS</code> array in <code>bulk-mode.js</code>:</li></ol>   <pre><code class="language-javascript">   { id: 'myTab', label: 'My Tab' }</code></pre>
+<ol><li>Define the columns for your tab in the column-rendering logic</li><li>Add cell type renderers if needed</li></ol>
+<p>For an entirely new pane in Focus Mode:</p>
+
+<ol><li>Add the pane container in <code>renderUnifiedEditor()</code> (editor.js)</li><li>Create <code>my-panel.js</code> with <code>renderMyPanel()</code> and <code>wireMyPanel()</code></li><li>Add the rerender function in <code>wireUnifiedEditor()</code></li><li>Wire the panel's callbacks back to the orchestrator</li></ol>
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="build-system.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Build System</a><a href="../user-guide/getting-started.html" class="text-[#1d70b8] hover:underline font-bold">Getting Started &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

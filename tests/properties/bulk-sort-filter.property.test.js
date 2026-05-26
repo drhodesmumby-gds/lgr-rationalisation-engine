@@ -143,7 +143,7 @@ describe('compareField — sort comparator', () => {
         it('returns 0 for unrecognised field names', () => {
             fc.assert(fc.property(
                 arbSystemNode, arbSystemNode,
-                fc.string({ minLength: 1, maxLength: 10 }).filter(s => !['label','vendor','supportModel','dataPartitioning','portability','annualCost','noticePeriod','users','contractEnd','isCloud','function'].includes(s)),
+                fc.string({ minLength: 1, maxLength: 10 }).filter(s => !['label','vendor','supportModel','dataPartitioning','portability','annualCost','noticePeriod','users','contractEnd','hosting','function'].includes(s)),
                 (a, b, field) => {
                     expect(compareField(a, b, field, editorState, emptyLookup)).toBe(0);
                 }

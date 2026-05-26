@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Editor — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">User Guide</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Architecture Editor</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="../technical/architecture.html">Architecture</a><a class="nav-link" href="../technical/signals-system.html">Signals System</a><a class="nav-link" href="../technical/simulation-engine.html">Simulation Engine</a><a class="nav-link" href="../technical/build-system.html">Build System</a><a class="nav-link" href="../technical/editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="getting-started.html">Getting Started</a><a class="nav-link active" href="architecture-editor.html" class="nav-link active">Architecture Editor</a><a class="nav-link" href="transition-planning.html">Transition Planning</a><a class="nav-link" href="signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="simulation.html">Simulation</a><a class="nav-link" href="data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Architecture Editor</h1>
+
+<p>The built-in Architecture Editor lets you inspect, modify, and extend your council's IT estate data without leaving the tool. You can fix errors, add missing systems, assign ESD function identifiers, and model capability dependencies - all before running the analysis.</p>
+
+<h2>Opening the editor</h2>
+
+<p>After uploading a council file at Stage 1, click the <strong>Edit Architecture</strong> button on the uploaded file card. This opens the full-screen editor modal for that council.</p>
+
+<h2>Focus mode (three-pane view)</h2>
+
+<p>Focus mode provides a detailed editing experience with three connected panes:</p>
+
+<table><thead><tr><th>Pane</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Left: Item list</strong></td><td>Browse all functions, systems, or edges with search and filtering</td></tr><tr><td><strong>Centre: Properties</strong></td><td>Edit all fields for the selected item</td></tr><tr><td><strong>Right: Relationships</strong></td><td>View and manage connections (which systems realize which functions, capability dependencies)</td></tr></tbody></table>This mode is ideal for detailed work on individual items - correcting vendor names, assigning ESD function IDs, or setting up capability relationships.
+
+<h2>Bulk mode (spreadsheet table)</h2>
+
+<p>Bulk mode presents your data as an editable spreadsheet table. Each row is a system or function, with columns for every field. You can:</p>
+
+<ul><li><strong>Sort</strong> by any column header (click to toggle ascending/descending)</li><li><strong>Filter</strong> using the search bar at the top</li><li><strong>Edit cells inline</strong> by clicking on them</li><li><strong>Add rows</strong> using the "Add" button at the bottom of the table</li><li><strong>Delete rows</strong> by selecting them and clicking "Remove"</li></ul>
+<p>Bulk mode is efficient for rapid data entry or correcting many records at once - for example, updating vendor names across 20 systems.</p>
+
+<h2>Tabs</h2>
+
+<p>The editor organises data across four tabs:</p>
+
+<h3>Council Info</h3>
+
+<p>Set the council's name, tier (county/district/borough/unitary), and financial distress status. These metadata fields affect how the system classifies cross-tier collisions and applies risk warnings throughout the analysis.</p>
+
+<h3>Functions</h3>
+
+<p>Manage the council's service functions. Each function needs:</p>
+
+<ul><li><strong>Label</strong> - the local name (e.g., "Waste Collection")</li><li><strong>ESD Function ID</strong> - the national taxonomy identifier that enables cross-council matching</li></ul>
+<blockquote><p><strong>Note:</strong> Functions without an ESD Function ID are excluded from the analysis matrix and flagged during baselining. Use the auto-suggest feature to find the correct identifier.</p></blockquote>
+
+<h3>IT Systems</h3>
+
+<p>Add, edit, and remove IT systems. Key fields include:</p>
+
+<ul><li><strong>System name and vendor</strong> - how the system is known locally</li><li><strong>Contract details</strong> - expiry year/month and notice period</li><li><strong>Users and annual cost</strong> - for volume and spend analysis</li><li><strong>Portability</strong> - High, Medium, or Low (determines data extraction risk)</li><li><strong>Data partitioning</strong> - Segmented or Monolithic (determines disaggregation complexity)</li><li><strong>Hosting</strong> - cloud, on-premise, or partner-hosted</li><li><strong>Support model</strong> - vendor-supported, community-supported, or unsupported</li><li><strong>Capabilities provided</strong> - tags like payments, forms, SMS (for dependency modelling)</li></ul>
+<h3>Edges (Relationships)</h3>
+
+<p>Define how systems relate to functions and to each other:</p>
+
+<ul><li><strong>REALIZES</strong> - a system delivers a business function (e.g., Liquidlogic realizes Adult Social Care)</li><li><strong>CONSUMES_CAPABILITY</strong> - a system depends on capabilities provided by another system (e.g., a case management system consumes payments from the ERP)</li></ul>
+<h2>Function assignment via ESD taxonomy</h2>
+
+<p>When assigning an ESD function ID, the editor provides:</p>
+
+<ul><li><strong>Search</strong> - type part of a function name to filter the 176-entry taxonomy</li><li><strong>Auto-suggest</strong> - token matching against your function's label suggests likely matches</li><li><strong>Breadcrumb display</strong> - shows where the function sits in the hierarchy (e.g., "Adult Services > Adult Social Care")</li></ul>
+<p>Getting the ESD function ID right is the single most important step for data quality. It determines whether your council's Adult Social Care systems appear alongside another council's "ASC" systems in the same matrix row.</p>
+
+<h2>Capability modelling</h2>
+
+<p>The capability model tracks dependencies between systems:</p>
+
+<h3>Providing capabilities</h3>
+
+<p>On the IT Systems tab, use the <strong>Capabilities</strong> field to tag what a system provides to others. Common capabilities include:</p>
+
+<ul><li><code>payments</code> - payment processing</li><li><code>forms</code> - online forms and submissions</li><li><code>sms</code> - text messaging</li><li><code>email</code> - email delivery</li><li><code>workflow</code> - process automation</li><li><code>identity</code> - authentication and user management</li></ul>
+<h3>Consuming capabilities</h3>
+
+<p>On the Edges tab, create a <strong>CONSUMES_CAPABILITY</strong> relationship to declare that one system depends on another's capabilities. For example:</p>
+
+<ul><li>Source: "Housing Benefits System" (consumer)</li><li>Target: "Oracle ERP" (provider)</li><li>Capabilities: ["payments"]</li></ul>
+<p>This tells the engine that decommissioning the Oracle ERP would impact the Housing Benefits System - a "blast radius" dependency that surfaces during simulation.</p>
+
+<h2>Council switcher</h2>
+
+<p>When multiple council files are uploaded, use the council switcher dropdown at the top of the editor to move between councils without closing and re-opening the modal. This is useful when checking consistency across councils - for example, verifying that both councils use the same vendor name spelling.</p>
+
+<h2>Completeness indicators</h2>
+
+<p>The editor displays completeness indicators showing how many fields are populated across your systems:</p>
+
+<ul><li><strong>Green</strong> - all recommended fields populated</li><li><strong>Amber</strong> - missing some optional but useful fields (e.g., users, cost, portability)</li><li><strong>Red</strong> - missing required fields (e.g., no ESD function ID on a function, no vendor on a system)</li></ul>
+<h2>Error banners</h2>
+
+<p>If your data has issues that would prevent analysis (such as a REALIZES edge pointing to a non-existent node, or a system with no vendor), an error banner appears at the top of the editor explaining what needs fixing.</p>
+
+<h2>Exporting edited data</h2>
+
+<p>After making changes, click <strong>Save</strong> to update the in-memory architecture. You can also <strong>Export JSON</strong> to download the modified council file for reuse in future sessions or sharing with colleagues.</p>
+
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="getting-started.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Getting Started</a><a href="transition-planning.html" class="text-[#1d70b8] hover:underline font-bold">Transition Planning &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

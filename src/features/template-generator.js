@@ -21,7 +21,7 @@ import { DOMAIN_SHEET_NAMES } from './template-converter.js';
 // Example system rows per domain (col order matches domain sheet headers)
 // ESD ID | Function | System Name | Vendor | Users | Annual Cost (£) |
 // Contract End | Notice Period (months) | Portability | Data Partitioning |
-// Cloud Hosted? | ERP? | Shared With | Support Model | Capabilities Provided
+// Hosting | ERP? | Shared With | Support Model | Capabilities Provided
 // -----------------------------------------------------------------------
 const EXAMPLE_SYSTEMS = {
     'Health & Social Care':           ['148', 'Adult social care', 'Liquidlogic LAS', 'System C', 3500, 950000, '03/2028', 12, 'High', 'Segmented', 'Yes', 'No', '', 'Vendor-supported', ''],
@@ -62,7 +62,7 @@ const SHEET_DESCRIPTIONS = {
 const DOMAIN_HEADERS = [
     'ESD ID', 'Function', 'System Name', 'Vendor', 'Users',
     'Annual Cost (£)', 'Contract End', 'Notice Period (months)',
-    'Portability', 'Data Partitioning', 'Cloud Hosted?', 'ERP?',
+    'Portability', 'Data Partitioning', 'Hosting', 'ERP?',
     'Shared With', 'Support Model', 'Capabilities Provided',
 ];
 
@@ -267,9 +267,9 @@ function buildDomainSheet(wb, sheetName, rootId) {
             prompt: 'How is data organised within this system?\n\nSegmented — Data is logically separated (e.g., by service area, team, or geography). Can be split without major restructuring.\n\nMonolithic — Data is entangled across all areas the system serves. Splitting it would require ETL (Extract, Transform, Load) work and significant planning.'
         },
         K: {
-            type: 'list', allowBlank: true, formulae: ['"Yes,No"'],
-            showInputMessage: true, promptTitle: 'Cloud Hosted?',
-            prompt: 'Is this system hosted in the cloud (SaaS, IaaS, PaaS) or on your own servers?\n\nYes — Hosted by the vendor or in a cloud platform (Azure, AWS, etc.)\n\nNo — Hosted on council-owned or council-managed servers (on-premise)'
+            type: 'list', allowBlank: true, formulae: ['"Cloud,On-Premise,Partner-Hosted"'],
+            showInputMessage: true, promptTitle: 'Hosting Model',
+            prompt: 'Where is this system hosted?\n\nCloud — Vendor-hosted SaaS or cloud platform (Azure, AWS, etc.). Council has no infrastructure responsibility.\n\nOn-Premise — Hosted on council-owned servers or data centre.\n\nPartner-Hosted — Hosted by another council or shared service body.'
         },
         L: {
             type: 'list', allowBlank: true, formulae: ['"Yes,No"'],
@@ -357,8 +357,9 @@ function buildDefinitionsSheet(wb) {
         ['Data Partitioning', 'Segmented', 'Data is logically separated by service area, team, or geography. If the system needed to be split across two new councils, the data could be divided without major restructuring.'],
         ['', 'Monolithic', 'Data is entangled across all areas the system serves. Users, records, and workflows are interleaved. Splitting would require ETL (Extract, Transform, Load) work — this is complex and time-consuming.'],
         [],
-        ['Cloud Hosted?', 'Yes', 'The system is hosted by the vendor or in a cloud platform (Azure, AWS, Google Cloud). The council does not manage the servers. Includes SaaS, IaaS, and PaaS.'],
-        ['', 'No', 'The system runs on servers owned or managed by the council (on-premise). The council is responsible for infrastructure, patching, backups, and availability.'],
+        ['Hosting', 'Cloud', 'Hosted by the vendor or in a cloud platform (Azure, AWS, Google Cloud). The council does not manage the servers. Includes SaaS, IaaS, and PaaS.'],
+        ['', 'On-Premise', 'The system runs on servers owned or managed by the council. The council is responsible for infrastructure, patching, backups, and availability.'],
+        ['', 'Partner-Hosted', 'Hosted by another council or shared service body. The council does not manage the infrastructure but depends on the partner for hosting continuity.'],
         [],
         ['ERP System?', 'Yes', 'An Enterprise Resource Planning system — a large integrated platform spanning multiple business functions (typically finance, HR, procurement, payroll). Examples: SAP, Oracle, Unit4, Microsoft Dynamics 365 Finance.'],
         ['', 'No', 'A system focused on a single function or service area. Most systems will be "No".'],

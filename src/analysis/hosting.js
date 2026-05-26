@@ -1,8 +1,5 @@
 export function getHostingType(system) {
-    if (system.hosting) return system.hosting;
-    if (system.isCloud === true) return 'cloud';
-    if (system.isCloud === false) return 'on-premise';
-    return null;
+    return system.hosting || null;
 }
 
 export function isNonCloud(system) {

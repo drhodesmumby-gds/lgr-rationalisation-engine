@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Engine — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">Technical</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Simulation Engine</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="architecture.html">Architecture</a><a class="nav-link" href="signals-system.html">Signals System</a><a class="nav-link active" href="simulation-engine.html" class="nav-link active">Simulation Engine</a><a class="nav-link" href="build-system.html">Build System</a><a class="nav-link" href="editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="../user-guide/getting-started.html">Getting Started</a><a class="nav-link" href="../user-guide/architecture-editor.html">Architecture Editor</a><a class="nav-link" href="../user-guide/transition-planning.html">Transition Planning</a><a class="nav-link" href="../user-guide/signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="../user-guide/simulation.html">Simulation</a><a class="nav-link" href="../user-guide/data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Simulation Engine</h1>
+
+<p>The simulation engine lets users make rationalisation decisions and tracks their consequences. It translates function-level decisions into system-level actions, computes resulting obligations (migrations, governance, capability gaps), and supports save/load/export of decision scenarios.</p>
+
+<h2>Architecture Overview</h2>
+
+<pre class="mermaid">
+flowchart TD
+    A[User Decision in UI] --> B[FunctionDecision<br/>decisions.js]
+    B --> C[projectDecisions<br/>projector.js]
+    C --> D[applyAllActions<br/>actions.js]
+    D --> E[generateObligations]
+    D --> F[generateDisaggregationObligations]
+    D --> G[generateCapabilityGapObligations]
+    D --> H[generateDeferralObligations]
+    E --> I[SimulationResult<br/>nodes, edges, warnings, obligations]
+    F --> I
+    G --> I
+    H --> I
+</pre>
+
+<h2>Simulation State</h2>
+
+<p>When simulation mode is active, <code>state.simulationState</code> holds:</p>
+
+<pre><code class="language-javascript">{
+    decisions: Map&lt;string, FunctionDecision&gt;,  // Keyed by getDecisionKey(fnId, successor)
+    actions: [],                               // Projected legacy actions
+    obligations: [],                           // Generated obligations
+    result: { nodes, edges, warnings },        // Post-simulation graph state
+    projectorObligations: [],                  // Obligations from projector (deferral costs)
+    baselineMetrics: { ... },                  // Snapshot of pre-simulation metrics
+}</code></pre>
+
+<p>The simulation state is recomputed (<code>recomputeSimulation()</code>) every time a decision is added, modified, or removed.</p>
+
+<h2>Decision Model</h2>
+
+<p>Location: <code>src/simulation/decisions.js</code></p>
+
+<p>A <code>FunctionDecision</code> represents a team's choice for one function in one successor:</p>
+
+<pre><code class="language-javascript">{
+    id: "dec-148-north-essex-1714000000000",
+    functionId: "148",                    // ESD taxonomy ID
+    successorName: "North Essex Unitary",
+    timestamp: "2026-05-22T10:30:00Z",
+
+    // Axis 1: System Choice
+    systemChoice: 'choose',              // 'choose' | 'procure' | 'defer'
+    retainedSystemIds: ["sys-1"],         // Which systems to keep (choose)
+    procuredSystem: null,                 // New system spec (procure)
+
+    // Axis 2: Operating Model Boundary
+    boundaryChoice: 'none',              // 'none' | 'disaggregate' | 'maintain-shared' | 'establish-shared'
+    disaggregationSplits: [],            // Split definitions (disaggregate)
+    sharedWithSuccessors: [],            // Partners (establish-shared)
+    sharedServiceOrigin: null,           // Source decision key (propagated decisions)
+
+    // Contract handling
+    contractExtensions: []               // Explicit extends for defer
+}</code></pre>
+
+<h3>Decision Key</h3>
+
+<pre><code class="language-javascript">export function getDecisionKey(functionId, successorName) {
+    return `${functionId}::${successorName}`;
+}
+// Example: '148::North Essex Unitary'</code></pre>
+
+<h3>createDecision()</h3>
+
+<p>Factory function that generates a well-formed decision with unique ID and timestamp:</p>
+
+<pre><code class="language-javascript">export function createDecision({
+    functionId, successorName, systemChoice,
+    retainedSystemIds, procuredSystem,
+    boundaryChoice, disaggregationSplits,
+    sharedWithSuccessors, sharedServiceOrigin,
+    contractExtensions
+}) { ... }</code></pre>
+
+<h2>Action Types</h2>
+
+<p>Location: <code>src/simulation/actions.js</code></p>
+
+<p>The legacy action system is a discriminated union on the <code>type</code> field. The projector converts decisions into these actions:</p>
+
+<table><thead><tr><th>Action Type</th><th>Purpose</th><th>Key Fields</th></tr></thead><tbody><tr><td><code>consolidate</code></td><td>Choose a system, decommission others</td><td><code>functionId</code>, <code>successorName</code>, <code>targetSystemId</code>, <code>removeSystemIds</code></td></tr><tr><td><code>consolidate-erp</code></td><td>ERP consolidation across functions</td><td><code>successorName</code>, <code>targetSystemId</code>, <code>affectedFunctionIds</code></td></tr><tr><td><code>decommission</code></td><td>Remove a system entirely</td><td><code>systemId</code></td></tr><tr><td><code>extend-contract</code></td><td>Extend a system's contract end date</td><td><code>systemId</code>, <code>newEndYear</code>, <code>newEndMonth</code></td></tr><tr><td><code>migrate-users</code></td><td>Transfer users between systems</td><td><code>fromSystemId</code>, <code>toSystemId</code>, <code>userCount</code></td></tr><tr><td><code>split-shared-service</code></td><td>Split a shared service into successor-scoped instances</td><td><code>systemId</code>, <code>splits[]</code></td></tr><tr><td><code>disaggregate</code></td><td>Partition a system across successors</td><td><code>systemId</code>, <code>splits[]</code></td></tr><tr><td><code>procure-replacement</code></td><td>Replace a system with a new procurement</td><td><code>functionId</code>, <code>successorName</code>, <code>newSystem</code>, <code>replacesSystemId</code></td></tr><tr><td><code>establish-shared-service</code></td><td>Designate a system as shared across successors</td><td><code>systemId</code>, <code>functionId</code>, <code>sharedSuccessorFunctionNodeIds</code></td></tr></tbody></table><h2>How Actions Modify State</h2>
+
+<p><code>applyAllActions(baselineNodes, baselineEdges, actions, baselineAllocation, lgaFunctionMap)</code>:</p>
+
+<ol><li>Deep-copies the baseline nodes and edges (never mutates the original)</li><li>Applies each action sequentially</li><li>For each action, tracks removed node IDs</li><li>Generates obligations for removed systems</li><li>Checks for capability systems among removed nodes and generates capability-gap obligations</li><li>Returns a <code>SimulationResult</code>:</li></ol>
+<pre><code class="language-javascript">{
+    nodes: [...],          // Modified node array
+    edges: [...],          // Modified edge array
+    warnings: [...],       // Human-readable warning strings
+    obligations: [...],    // Generated obligation records
+    appliedCount: number   // Number of successfully applied actions
+}</code></pre>
+
+<h3>Consolidate action example</h3>
+
+<pre><code class="language-javascript">// When action.type === 'consolidate':
+// 1. Find the target system node (the one to keep)
+// 2. Find systems to remove (removeSystemIds)
+// 3. For ERP systems retained elsewhere: sever REALIZES edge only (severOnly field)
+// 4. Remove non-retained system nodes
+// 5. Remove orphaned REALIZES edges</code></pre>
+
+<h3>Retained-system guard</h3>
+
+<p>The projector builds a global set of all retained system IDs across ALL decisions before projecting any single decision. A system retained by Decision A cannot be decommissioned as a side-effect of Decision B.</p>
+
+<h2>The Projector</h2>
+
+<p>Location: <code>src/simulation/projector.js</code></p>
+
+<p><code>projectDecisions()</code> bridges the decision model to the action engine:</p>
+
+<pre><code class="language-javascript">export function projectDecisions(decisions, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap) {
+    // Returns { actions: Array, obligations: Array }
+}</code></pre>
+
+<h3>Projection Rules</h3>
+
+<table><thead><tr><th>Decision systemChoice</th><th>Resulting Actions</th></tr></thead><tbody><tr><td><code>choose</code></td><td><code>consolidate</code> (with optional <code>disaggregate</code> first if boundaryChoice is 'disaggregate')</td></tr><tr><td><code>procure</code></td><td><code>procure-replacement</code></td></tr><tr><td><code>defer</code></td><td><code>extend-contract</code> for expiring systems + deferral-cost obligations</td></tr></tbody></table><h3>Ordering</h3>
+
+<p>Actions are ordered for deterministic application:</p>
+
+<ol><li><strong>Priority 0:</strong> Disaggregate/boundary decisions (create new node IDs first)</li><li><strong>Priority 1:</strong> Choose/procure decisions (reference existing or newly-created nodes)</li><li><strong>Priority 2:</strong> Defer decisions (extend contracts last)</li></ol>
+<h3>ERP Sever-Only</h3>
+
+<p>When a <code>choose</code> decision removes a system that is retained by another decision (i.e., it serves other functions via other REALIZES edges), the system's edge to the current function is severed but the node is preserved. This prevents ERP systems from being incorrectly deleted when they still serve other function rows.</p>
+
+<h2>Obligation Generation</h2>
+
+<p>Location: <code>src/simulation/obligations.js</code></p>
+
+<p>When actions remove systems, obligations track what must happen for the transition to remain viable.</p>
+
+<h3>Obligation Types</h3>
+
+<table><thead><tr><th>Type</th><th>When Generated</th><th>What It Tracks</th></tr></thead><tbody><tr><td><code>data-migration</code></td><td>System removed, target system exists</td><td>Data must move from old to new system</td></tr><tr><td><code>function-gap</code></td><td>System removed, no target exists</td><td>Function has no serving system</td></tr><tr><td><code>cross-successor-impact</code></td><td>System served another successor too</td><td>Spillover effect to other successors</td></tr><tr><td><code>data-partition</code></td><td>Disaggregate action</td><td>Splitting data across successor instances</td></tr><tr><td><code>deferral-cost</code></td><td>Defer decision</td><td>Cost of running parallel systems</td></tr><tr><td><code>shared-service-governance</code></td><td>Shared service establishment</td><td>Governance framework needed</td></tr><tr><td><code>capability-gap</code></td><td>Capability provider removed</td><td>Consumer systems lose a dependency</td></tr></tbody></table><h3>SimulationObligation Shape</h3>
+
+<pre><code class="language-javascript">{
+    id: "obl-0-sys-1-North Essex-148",
+    type: 'data-migration',
+    actionIndex: 0,
+    actionType: 'consolidate',
+    fromSystem: {
+        id, label, council, vendor, users, annualCost,
+        dataPartitioning, portability, isERP, hosting,
+        endYear, endMonth, noticePeriod
+    },
+    toSystem: { id, label, council } | null,
+    affectedSuccessors: ["North Essex Unitary"],
+    functionId: "148",
+    functionLabel: "Adult Social Care",
+    isMonolithic: false,
+    isLowPortability: false,
+    isERP: false,
+    isOnPrem: false,
+    userCount: 3500,
+    annualCost: 950000,
+    contractEndDate: "2028-03",
+    noticePeriod: 12,
+    resolved: true              // true if target system absorbs the obligation
+}</code></pre>
+
+<h3>Cross-Successor Impact</h3>
+
+<p>When a system serves Function F in Successor A AND Successor B, and Successor A decides to decommission it, an obligation with <code>type: 'cross-successor-impact'</code> is created for Successor B. This surfaces invisible spillover effects.</p>
+
+<h3>Capability Gap Detection</h3>
+
+<p>When a removed system has <code>capabilityType</code> (it's a capability provider), the engine checks for CONSUMES_CAPABILITY edges pointing to it and generates capability-gap obligations for each dependent consumer system.</p>
+
+<h3>Deferral Cost Obligations</h3>
+
+<p>Generated by the projector (not the action engine) when <code>systemChoice === 'defer'</code>:</p>
+
+<pre><code class="language-javascript">{
+    type: 'deferral-cost',
+    parallelSystems: [...],              // Systems running in parallel during deferral
+    combinedAnnualCost: 450000,          // Total cost of parallel running
+    contractExtensionsNeeded: [...]      // Systems needing contract extensions
+}</code></pre>
+
+<h2>Impact Calculation</h2>
+
+<p>Obligation severity is computed at <strong>render time</strong> using the active persona's signal weights. The same obligation can appear as high-severity for an architect (who weights portability highly) but low-severity for an executive (who weights contract urgency).</p>
+
+<p>Severity factors:</p>
+<ul><li><code>isMonolithic</code> - high severity for data-related obligations</li><li><code>isLowPortability</code> - high severity for migration obligations</li><li><code>isERP</code> - always high complexity</li><li><code>isOnPrem</code> - adds infrastructure migration overhead</li><li><code>userCount</code> - scale of user disruption</li><li><code>annualCost</code> - financial impact</li></ul>
+<h2>Scenario Save/Load/Export</h2>
+
+<p>Location: <code>src/features/scenario-manager.js</code></p>
+
+<h3>Export</h3>
+
+<pre><code class="language-javascript">export function exportScenario() {
+    // Serialises state.simulationState.decisions Map to JSON
+    // Obligations are NOT saved - they are reconstructed on import
+}</code></pre>
+
+<p>The export format:</p>
+
+<pre><code class="language-json">{
+    "version": 1,
+    "exported": "2026-05-22T10:30:00Z",
+    "decisions": [
+        { "id": "dec-148-...", "functionId": "148", "successorName": "...", ... }
+    ]
+}</code></pre>
+
+<h3>Import</h3>
+
+<pre><code class="language-javascript">export function importScenario(json) {
+    // Validates the JSON structure
+    // Rebuilds the decisions Map
+    // Triggers recomputeSimulation() to regenerate actions + obligations
+}</code></pre>
+
+<p>Obligations are always regenerated from the current baseline data, not stored. This ensures that if the architecture data has changed since export, obligations reflect the current state.</p>
+
+<h3>Scenario Lifecycle</h3>
+
+<pre class="mermaid">
+flowchart LR
+    A[Make decisions in UI] --> B[decisions Map]
+    B --> C[projectDecisions]
+    C --> D[applyAllActions]
+    D --> E[Display obligations]
+
+    F[Export] --> G[decisions Map → JSON file]
+    H[Import] --> I[JSON → validate → decisions Map → recompute]
+</pre>
+
+<h2>How to Add a New Action Type</h2>
+
+<ol><li>Define the action shape in the JSDoc at the top of <code>src/simulation/actions.js</code></li><li>Add handling in <code>applyAction()</code> (the single-action dispatcher):</li></ol>   <pre><code class="language-javascript">   case 'my-new-action':
+       // Modify nodes/edges as needed
+       break;</code></pre>
+<ol><li>If it removes systems, obligation generation happens automatically via <code>getRemovedSystemIds()</code></li><li>If it needs custom obligations, add a generator in <code>obligations.js</code></li><li>Add projection logic in <code>projector.js</code> if it should be produced from a decision</li><li>Write property tests in <code>tests/properties/simulation-actions.property.test.js</code></li></ol>
+<h2>How to Add a New Obligation Type</h2>
+
+<ol><li>Add the type string to the <code>SimulationObligation</code> type union in <code>obligations.js</code></li><li>Create a generator function:</li></ol>   <pre><code class="language-javascript">   export function generateMyNewObligation(system, action, actionIndex, ...) {
+       return [{
+           id: `obl-${actionIndex}-mynew-${system.id}`,
+           type: 'my-new-type',
+           // ... populate all standard fields
+       }];
+   }</code></pre>
+<ol><li>Call it from <code>applyAllActions()</code> at the appropriate point</li><li>Add rendering support in <code>simulation-panel.js</code> for the new obligation type</li></ol>
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="signals-system.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Signals System</a><a href="build-system.html" class="text-[#1d70b8] hover:underline font-bold">Build System &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

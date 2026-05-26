@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Format Reference — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">User Guide</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Data Format Reference</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="../technical/architecture.html">Architecture</a><a class="nav-link" href="../technical/signals-system.html">Signals System</a><a class="nav-link" href="../technical/simulation-engine.html">Simulation Engine</a><a class="nav-link" href="../technical/build-system.html">Build System</a><a class="nav-link" href="../technical/editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="getting-started.html">Getting Started</a><a class="nav-link" href="architecture-editor.html">Architecture Editor</a><a class="nav-link" href="transition-planning.html">Transition Planning</a><a class="nav-link" href="signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="simulation.html">Simulation</a><a class="nav-link active" href="data-format.html" class="nav-link active">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Data Format Reference</h1>
+
+<p>This page documents the full data schema for council architecture files and transition configuration files used by the LGR Rationalisation Engine.</p>
+
+<h2>Council architecture file</h2>
+
+<p>Each council provides one JSON file describing their IT estate. The file contains four top-level fields:</p>
+
+<pre><code class="language-json">{
+  "councilName": "Example Borough Council",
+  "councilMetadata": {
+    "tier": "borough",
+    "financialDistress": false
+  },
+  "nodes": [ ],
+  "edges": [ ]
+}</code></pre>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>councilName</code></td><td>string</td><td>Yes</td><td>Official council name as it should appear in the tool</td></tr><tr><td><code>councilMetadata</code></td><td>object</td><td>No</td><td>Council classification metadata</td></tr><tr><td><code>councilMetadata.tier</code></td><td>string</td><td>No</td><td>One of: <code>county</code>, <code>district</code>, <code>borough</code>, <code>unitary</code></td></tr><tr><td><code>councilMetadata.financialDistress</code></td><td>boolean</td><td>No</td><td>Set to <code>true</code> if the council is under s114 notice or equivalent financial intervention</td></tr><tr><td><code>nodes</code></td><td>array</td><td>Yes</td><td>All Function and ITSystem nodes</td></tr><tr><td><code>edges</code></td><td>array</td><td>Yes</td><td>All relationships between nodes</td></tr></tbody></table><blockquote><p><strong>Note:</strong> The <code>councilMetadata.tier</code> field is used for cross-tier collision detection. When a county system and a district system both serve the same function, the engine flags this as a potential complementary delivery pattern rather than simple duplication.</p></blockquote>
+
+<h2>Function nodes</h2>
+
+<p>Function nodes represent the service functions a council delivers. They are the anchor points for cross-council reconciliation.</p>
+
+<pre><code class="language-json">{
+  "id": "fn-asc",
+  "label": "Adult Social Care",
+  "type": "Function",
+  "lgaFunctionId": "148"
+}</code></pre>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Unique identifier within this file (any format)</td></tr><tr><td><code>label</code></td><td>string</td><td>Yes</td><td>Human-readable function name as the council knows it</td></tr><tr><td><code>type</code></td><td>string</td><td>Yes</td><td>Must be <code>"Function"</code></td></tr><tr><td><code>lgaFunctionId</code></td><td>string</td><td>Yes</td><td>ESD Standard Function Taxonomy identifier</td></tr></tbody></table><h3>About ESD Function IDs</h3>
+
+<p>The <code>lgaFunctionId</code> is the critical field that enables cross-council comparison. It references the LGA/ESD Standard Function Taxonomy - a nationally agreed list of 176 local government service functions.</p>
+
+<p>Two councils calling the same service different names (e.g., "Refuse Operations" and "Waste Collection") will appear in the same analysis row if they share the same ESD identifier.</p>
+
+<blockquote><p><strong>Note:</strong> Functions without a valid <code>lgaFunctionId</code> are excluded from the analysis matrix and flagged during baselining. The Architecture Editor provides search and auto-suggest to help find the correct identifier.</p></blockquote>
+
+<p>Common ESD function IDs:</p>
+
+<table><thead><tr><th>ID</th><th>Function</th></tr></thead><tbody><tr><td>148</td><td>Adult Social Care</td></tr><tr><td>24</td><td>Children's Social Care</td></tr><tr><td>63</td><td>Council Tax</td></tr><tr><td>116</td><td>Housing Benefits</td></tr><tr><td>66</td><td>Planning Applications</td></tr><tr><td>132</td><td>Highways Maintenance</td></tr><tr><td>53</td><td>Waste Collection</td></tr></tbody></table><h2>ITSystem nodes</h2>
+
+<p>IT system nodes describe each system in the council's estate.</p>
+
+<pre><code class="language-json">{
+  "id": "sys-liq",
+  "label": "Liquidlogic LAS",
+  "type": "ITSystem",
+  "vendor": "System C",
+  "users": 350,
+  "annualCost": 95000,
+  "endYear": 2028,
+  "endMonth": 3,
+  "noticePeriod": 12,
+  "portability": "High",
+  "dataPartitioning": "Segmented",
+  "hosting": "cloud",
+  "isERP": false,
+  "sharedWith": ["Other Borough Council"],
+  "targetAuthorities": ["North Unitary"],
+  "capabilityType": ["workflow"],
+  "supportModel": "vendor-supported",
+  "version": "v14.2",
+  "notes": "Migrated to cloud in 2024"
+}</code></pre>
+
+<h3>All ITSystem fields</h3>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th><th>Guidance</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Unique identifier within this file</td><td>Use a consistent prefix (e.g., <code>sys-</code>)</td></tr><tr><td><code>label</code></td><td>string</td><td>Yes</td><td>System name as the council knows it</td><td>Use the common name, not the product code</td></tr><tr><td><code>type</code></td><td>string</td><td>Yes</td><td>Must be <code>"ITSystem"</code></td><td>-</td></tr><tr><td><code>vendor</code></td><td>string</td><td>Yes</td><td>Software vendor name, or <code>"In-House"</code> for internally developed systems</td><td>Use consistent spelling across councils</td></tr><tr><td><code>users</code></td><td>number</td><td>No</td><td>Approximate staff user count</td><td>Agree on counting method (concurrent, named, or total) across all councils</td></tr><tr><td><code>annualCost</code></td><td>number</td><td>No</td><td>Annual cost in pounds (numeric)</td><td>Used for estate spend calculations and cost delta in simulation</td></tr><tr><td><code>endYear</code></td><td>number</td><td>No</td><td>Contract expiry year (e.g., 2028)</td><td>Needed for contract urgency signal</td></tr><tr><td><code>endMonth</code></td><td>number</td><td>No</td><td>Contract expiry month (1-12)</td><td>Needed for contract urgency signal</td></tr><tr><td><code>noticePeriod</code></td><td>number</td><td>No</td><td>Months of notice required to exit</td><td>The engine subtracts this from the end date to find the notice trigger</td></tr><tr><td><code>portability</code></td><td>string</td><td>No</td><td>Data extraction ease: <code>"High"</code>, <code>"Medium"</code>, or <code>"Low"</code></td><td>See portability ratings below</td></tr><tr><td><code>dataPartitioning</code></td><td>string</td><td>No</td><td>Data organisation: <code>"Segmented"</code> or <code>"Monolithic"</code></td><td>See data partitioning guidance below</td></tr><tr><td><code>hosting</code></td><td>string</td><td>No</td><td>Hosting model: <code>"cloud"</code>, <code>"on-premise"</code>, or <code>"partner-hosted"</code></td><td>See hosting guidance below</td></tr><tr><td><code>hostingPartner</code></td><td>string</td><td>No</td><td>Name of the hosting partner (when hosting is <code>"partner-hosted"</code>)</td><td>Specify which council or body hosts the system</td></tr><tr><td><code>isERP</code></td><td>boolean</td><td>No</td><td>Whether this is an Enterprise Resource Planning system</td><td>ERPs get distinct risk treatment (monolithic data, multi-function span)</td></tr><tr><td><code>sharedWith</code></td><td>string[]</td><td>No</td><td>Names of other councils sharing this system instance</td><td>Use exact council names as they appear in their own files</td></tr><tr><td><code>targetAuthorities</code></td><td>string[]</td><td>No</td><td>Explicit successor authority allocation</td><td>Overrides the default allocation logic</td></tr><tr><td><code>capabilityType</code></td><td>string[]</td><td>No</td><td>Capabilities this system provides</td><td>e.g., <code>["payments", "forms", "sms"]</code></td></tr><tr><td><code>supportModel</code></td><td>string</td><td>No</td><td>Maintenance arrangement: <code>"vendor-supported"</code>, <code>"community-supported"</code>, or <code>"unsupported"</code></td><td>See support model guidance below</td></tr><tr><td><code>version</code></td><td>string</td><td>No</td><td>System version or release identifier</td><td>Helps identify upgrade opportunities</td></tr><tr><td><code>notes</code></td><td>string</td><td>No</td><td>Free-text notes</td><td>For context not captured by other fields</td></tr></tbody></table><h3>Portability ratings</h3>
+
+<table><thead><tr><th>Rating</th><th>Meaning</th><th>Examples</th></tr></thead><tbody><tr><td><strong>High</strong></td><td>Open APIs, standard formats (CSV/XML/JSON), vendor provides export tools. Migration possible without vendor assistance.</td><td>Modern SaaS with REST API, open-source systems</td></tr><tr><td><strong>Medium</strong></td><td>Some export capability exists but may require vendor support or have proprietary elements.</td><td>Systems with batch export but proprietary internal format</td></tr><tr><td><strong>Low</strong></td><td>Proprietary format, no bulk export API. Significant vendor lock-in. Migration requires vendor cooperation.</td><td>Legacy systems with no documented API, vendor-locked databases</td></tr></tbody></table><h3>Data partitioning guidance</h3>
+
+<table><thead><tr><th>Value</th><th>Meaning</th><th>Impact on analysis</th></tr></thead><tbody><tr><td><strong>Segmented</strong></td><td>Data is logically separated by service area, ward, or department. Can be split across successors without major restructuring.</td><td>Lower disaggregation complexity</td></tr><tr><td><strong>Monolithic</strong></td><td>Data is entangled across all areas. Splitting requires ETL (Extract, Transform, Load) work.</td><td>Triggers monolithic data signal; higher disaggregation severity</td></tr></tbody></table><h3>Hosting field</h3>
+
+<table><thead><tr><th>Value</th><th>Meaning</th><th>Considerations</th></tr></thead><tbody><tr><td><strong>cloud</strong></td><td>Vendor-hosted SaaS or cloud platform. Council has no infrastructure responsibility.</td><td>Simplest transition - no physical infrastructure to transfer</td></tr><tr><td><strong>on-premise</strong></td><td>Hosted on council-owned infrastructure (data centre, servers).</td><td>Infrastructure must transfer to successor or system must be migrated to cloud</td></tr><tr><td><strong>partner-hosted</strong></td><td>Hosted by another council or shared service body.</td><td>Hosting arrangement may need renegotiation if partner is assigned to a different successor</td></tr></tbody></table><h3>Support model guidance</h3>
+
+<table><thead><tr><th>Value</th><th>Meaning</th><th>Risk level</th></tr></thead><tbody><tr><td><strong>vendor-supported</strong></td><td>Commercial vendor with SLA, support contract, and product roadmap.</td><td>Lowest risk - vendor responsible for maintenance</td></tr><tr><td><strong>community-supported</strong></td><td>Maintained collaboratively (multi-council consortium, open source, shared digital team).</td><td>Medium risk - sustainability depends on community health</td></tr><tr><td><strong>unsupported</strong></td><td>No active maintenance agreement. Developer left, product EOL, or no SLA.</td><td>Highest risk - no safety net if system fails during transition</td></tr></tbody></table><h2>Edge types</h2>
+
+<p>Edges define relationships between nodes. Two types are supported.</p>
+
+<h3>REALIZES</h3>
+
+<p>Maps an IT system to the business function it delivers.</p>
+
+<pre><code class="language-json">{
+  "source": "sys-liq",
+  "target": "fn-asc",
+  "relationship": "REALIZES"
+}</code></pre>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>source</code></td><td>string</td><td>Yes</td><td>The ITSystem node ID</td></tr><tr><td><code>target</code></td><td>string</td><td>Yes</td><td>The Function node ID</td></tr><tr><td><code>relationship</code></td><td>string</td><td>Yes</td><td>Must be <code>"REALIZES"</code></td></tr></tbody></table>One system can REALIZE multiple functions (e.g., an ERP covering both Finance and HR). One function can be REALIZED by multiple systems within the same council (though this is uncommon).
+
+<h3>CONSUMES_CAPABILITY</h3>
+
+<p>Indicates that one system depends on capabilities provided by another.</p>
+
+<pre><code class="language-json">{
+  "source": "sys-housing",
+  "target": "sys-erp",
+  "relationship": "CONSUMES_CAPABILITY",
+  "capabilities": ["payments"]
+}</code></pre>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>source</code></td><td>string</td><td>Yes</td><td>The consuming system node ID</td></tr><tr><td><code>target</code></td><td>string</td><td>Yes</td><td>The providing system node ID</td></tr><tr><td><code>relationship</code></td><td>string</td><td>Yes</td><td>Must be <code>"CONSUMES_CAPABILITY"</code></td></tr><tr><td><code>capabilities</code></td><td>string[]</td><td>Yes</td><td>Which capabilities are consumed (e.g., <code>["payments", "forms"]</code>)</td></tr></tbody></table>Common capability types: <code>payments</code>, <code>forms</code>, <code>sms</code>, <code>email</code>, <code>workflow</code>, <code>identity</code>, <code>reporting</code>, <code>gis</code>.
+
+<blockquote><p><strong>Note:</strong> CONSUMES_CAPABILITY edges create "blast radius" dependencies. When simulation models the decommissioning of a capability provider, all consuming systems are flagged with capability gap obligations.</p></blockquote>
+
+<h2>Transition configuration file</h2>
+
+<p>A separate JSON file defines the reorganisation structure.</p>
+
+<pre><code class="language-json">{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "North Essex Unitary",
+      "fullPredecessors": ["Braintree District Council", "Colchester Borough Council"],
+      "partialPredecessors": ["Essex County Council"]
+    },
+    {
+      "name": "South Essex Unitary",
+      "fullPredecessors": ["Basildon District Council", "Castle Point Borough Council"],
+      "partialPredecessors": ["Essex County Council"]
+    }
+  ]
+}</code></pre>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>vestingDate</code></td><td>string</td><td>Yes</td><td>ISO date when successor authorities come into existence (e.g., <code>"2027-04-01"</code>)</td></tr><tr><td><code>successors</code></td><td>array</td><td>Yes</td><td>Array of successor authority definitions</td></tr></tbody></table><h3>Successor fields</h3>
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Name of the successor unitary authority</td></tr><tr><td><code>fullPredecessors</code></td><td>string[]</td><td>No</td><td>Councils whose entire estate transfers to this successor</td></tr><tr><td><code>partialPredecessors</code></td><td>string[]</td><td>No</td><td>Councils whose estate is split across multiple successors</td></tr></tbody></table><blockquote><p><strong>Note:</strong> Council names in <code>fullPredecessors</code> and <code>partialPredecessors</code> must match the <code>councilName</code> field in the corresponding architecture files exactly (including capitalisation and spacing).</p></blockquote>
+
+<h3>Auto-detection</h3>
+
+<p>If a transition configuration file is uploaded alongside architecture files at Stage 1, the engine automatically detects it. Detection logic: a file with a <code>successors</code> array and no <code>nodes</code> array is classified as a transition configuration.</p>
+
+<h2>Complete example: architecture file</h2>
+
+<pre><code class="language-json">{
+  "councilName": "Northshire County Council",
+  "councilMetadata": {
+    "tier": "county",
+    "financialDistress": false
+  },
+  "nodes": [
+    {
+      "id": "fn-asc",
+      "label": "Adult Social Care",
+      "type": "Function",
+      "lgaFunctionId": "148"
+    },
+    {
+      "id": "fn-finance",
+      "label": "Financial Management",
+      "type": "Function",
+      "lgaFunctionId": "210"
+    },
+    {
+      "id": "sys-liq",
+      "label": "Liquidlogic LAS",
+      "type": "ITSystem",
+      "vendor": "System C",
+      "users": 3500,
+      "annualCost": 950000,
+      "endYear": 2028,
+      "endMonth": 3,
+      "noticePeriod": 12,
+      "portability": "High",
+      "dataPartitioning": "Segmented",
+      "hosting": "cloud",
+      "isERP": false,
+      "supportModel": "vendor-supported"
+    },
+    {
+      "id": "sys-oracle",
+      "label": "Oracle ERP",
+      "type": "ITSystem",
+      "vendor": "Oracle",
+      "users": 8000,
+      "annualCost": 2400000,
+      "endYear": 2029,
+      "endMonth": 9,
+      "noticePeriod": 18,
+      "portability": "Low",
+      "dataPartitioning": "Monolithic",
+      "hosting": "on-premise",
+      "isERP": true,
+      "capabilityType": ["payments", "reporting"],
+      "supportModel": "vendor-supported"
+    }
+  ],
+  "edges": [
+    { "source": "sys-liq", "target": "fn-asc", "relationship": "REALIZES" },
+    { "source": "sys-oracle", "target": "fn-finance", "relationship": "REALIZES" },
+    {
+      "source": "sys-liq",
+      "target": "sys-oracle",
+      "relationship": "CONSUMES_CAPABILITY",
+      "capabilities": ["payments"]
+    }
+  ]
+}</code></pre>
+
+<h2>Complete example: transition configuration</h2>
+
+<pre><code class="language-json">{
+  "vestingDate": "2027-04-01",
+  "successors": [
+    {
+      "name": "North Unitary",
+      "fullPredecessors": ["Northshire County Council"],
+      "partialPredecessors": []
+    },
+    {
+      "name": "South Unitary",
+      "fullPredecessors": ["Southton District Council"],
+      "partialPredecessors": ["Midshire County Council"]
+    },
+    {
+      "name": "East Unitary",
+      "fullPredecessors": ["Eastbury Borough Council"],
+      "partialPredecessors": ["Midshire County Council"]
+    }
+  ]
+}</code></pre>
+
+<h2>Common validation errors and fixes</h2>
+
+<table><thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td>"Function excluded from analysis"</td><td>Function node missing <code>lgaFunctionId</code></td><td>Add a valid ESD function ID using the Architecture Editor</td></tr><tr><td>"Edge references non-existent node"</td><td>A REALIZES or CONSUMES_CAPABILITY edge has a <code>source</code> or <code>target</code> that does not match any node <code>id</code></td><td>Check for typos in node IDs; ensure the referenced system/function exists</td></tr><tr><td>"Council name mismatch in transition config"</td><td>A name in <code>fullPredecessors</code> or <code>partialPredecessors</code> does not match any uploaded council's <code>councilName</code></td><td>Ensure exact spelling match including spacing and capitalisation</td></tr><tr><td>"No REALIZES edges for system"</td><td>An ITSystem node exists but has no REALIZES edge connecting it to a function</td><td>Add a REALIZES edge mapping the system to its function</td></tr><tr><td>"Duplicate node IDs"</td><td>Two nodes in the same file share the same <code>id</code> value</td><td>Use unique identifiers for every node</td></tr><tr><td>"Invalid portability value"</td><td>Portability field contains something other than High, Medium, or Low</td><td>Use exact capitalisation: <code>"High"</code>, <code>"Medium"</code>, or <code>"Low"</code></td></tr><tr><td>"Invalid endMonth"</td><td><code>endMonth</code> is outside the 1-12 range</td><td>Use a number between 1 (January) and 12 (December)</td></tr><tr><td>"Partial predecessor not in multiple successors"</td><td>A council listed as <code>partialPredecessors</code> appears in only one successor</td><td>Partial predecessors must appear in at least two successors (otherwise use <code>fullPredecessors</code>)</td></tr></tbody></table><h2>Tips for preparing data</h2>
+
+<ul><li><strong>Start simple</strong> - a file with just system names, vendors, and REALIZES edges is enough to begin. Add detail iteratively.</li><li><strong>Get ESD IDs right first</strong> - this is the most impactful field. Without it, cross-council reconciliation does not work.</li><li><strong>Use the Excel template</strong> - download it from Stage 1 for a structured workbook with domain sheets, ESD references, and dropdown validation.</li><li><strong>Be consistent with vendor names</strong> - "System C", "SystemC", and "System C Ltd" are treated as three different vendors.</li><li><strong>Include contract dates</strong> - without <code>endYear</code>, <code>endMonth</code>, and <code>noticePeriod</code>, the contract urgency signal cannot fire.</li><li><strong>Mark shared services</strong> - the <code>sharedWith</code> field enables critical shared service boundary analysis.</li></ul>
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="simulation.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Simulation</a><span></span>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

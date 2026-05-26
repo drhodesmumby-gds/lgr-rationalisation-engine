@@ -118,7 +118,7 @@ export function renderPropsPanel(system, editorState) {
     html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
 
     // Hosting
-    const hostingType = system.hosting || (system.isCloud === true ? 'cloud' : system.isCloud === false ? 'on-premise' : '');
+    const hostingType = system.hosting || '';
     const hostingSelected = hostingType === 'cloud' ? 'Cloud' : hostingType === 'on-premise' ? 'On-Premise' : hostingType === 'partner-hosted' ? 'Partner-Hosted' : '';
     html += renderRadioGroup({
         name: 'hosting',

@@ -399,6 +399,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     <!-- Header -->
     <header class="bg-[#0b0c0c] text-white px-4 py-1.5 border-b-[2px] border-[#1d70b8] flex items-center gap-4 shrink-0 z-20">
         <h1 class="text-sm font-bold shrink-0">LGR Workspace Engine</h1>
+        <a href="docs/index.html" class="text-[11px] text-gray-300 hover:text-white hover:underline shrink-0" target="_blank">Documentation</a>
         <div class="flex-1"></div>
         <div id="controlsArea" class="flex items-center gap-3 hidden">
             <label for="perspectiveSelect" class="text-[11px] text-gray-400 shrink-0">Perspective</label>
@@ -1598,10 +1599,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
 
   // src/analysis/hosting.js
   function getHostingType(system) {
-    if (system.hosting) return system.hosting;
-    if (system.isCloud === true) return "cloud";
-    if (system.isCloud === false) return "on-premise";
-    return null;
+    return system.hosting || null;
   }
   function isNonCloud(system) {
     const type = getHostingType(system);
@@ -3257,7 +3255,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       { id: "owner", label: "Owner", required: false }
     ] },
     { section: "Commercial", fields: [
-      { id: "cost", label: "Cost (string)", required: false },
       { id: "annualCost", label: "Annual Cost (number)", required: false },
       { id: "endYear", label: "Contract End Year", required: false },
       { id: "endMonth", label: "Contract End Month", required: false },
@@ -3284,8 +3281,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     { field: "label", test: (h) => /system|application|app\b|^name$/i.test(h) },
     { field: "vendor", test: (h) => /vendor|supplier/i.test(h) },
     { field: "users", test: (h) => /\buser/i.test(h) },
-    { field: "annualCost", test: (h) => /annual|yearly/i.test(h) },
-    { field: "cost", test: (h) => /cost/i.test(h) && !/annual|yearly/i.test(h) },
+    { field: "annualCost", test: (h) => /annual|yearly|cost/i.test(h) },
     { field: "endYear", test: (h) => /contract/i.test(h) && /end|expir/i.test(h) },
     { field: "endMonth", test: (h) => /end\s*month|contract\s*month/i.test(h) && !/year/i.test(h) },
     { field: "noticePeriod", test: (h) => /notice/i.test(h) },
@@ -3320,7 +3316,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (get("label")) sys.label = String(get("label")).trim();
     if (get("vendor")) sys.vendor = String(get("vendor")).trim();
     if (get("owner")) sys.owner = String(get("owner")).trim();
-    if (get("cost")) sys.cost = String(get("cost")).trim();
     ["annualCost", "endYear", "endMonth", "noticePeriod", "users"].forEach((f) => {
       const v = get(f);
       if (v !== void 0 && v !== null && v !== "") {
@@ -3336,7 +3331,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       if (falsey.some((f) => s.includes(f))) return false;
       return void 0;
     };
-    const hostingVal = get("hosting") || get("isCloud");
+    const hostingVal = get("hosting");
     if (hostingVal) {
       const h = String(hostingVal).toLowerCase().trim();
       if (["cloud", "saas", "yes", "true", "hosted", "1"].includes(h)) sys.hosting = "cloud";
@@ -3733,8 +3728,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 <div>
                     <label class="block font-bold mb-1 text-xs">Hosting</label>
                     <select class="manual-field border border-[#b1b4b6] p-1 text-xs" data-field="hosting" data-idx="${idx}">
-                        <option value="cloud" ${sys.hosting === "cloud" || sys.isCloud !== false ? "selected" : ""}>Cloud</option>
-                        <option value="on-premise" ${sys.hosting === "on-premise" || sys.isCloud === false ? "selected" : ""}>On-Premise</option>
+                        <option value="cloud" ${sys.hosting === "cloud" ? "selected" : ""}>Cloud</option>
+                        <option value="on-premise" ${sys.hosting === "on-premise" ? "selected" : ""}>On-Premise</option>
                         <option value="partner-hosted" ${sys.hosting === "partner-hosted" ? "selected" : ""}>Partner-Hosted</option>
                     </select>
                 </div>
@@ -4093,7 +4088,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         "vendor",
         "owner",
         "users",
-        "cost",
         "annualCost",
         "endYear",
         "endMonth",
@@ -4101,7 +4095,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         "portability",
         "dataPartitioning",
         "hosting",
-        "isCloud",
         "isERP",
         "sharedWith",
         "capabilityType"
@@ -5280,7 +5273,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     html += `</div>`;
     html += sectionHeading("Technical Profile");
     html += `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">`;
-    const hostingType = system.hosting || (system.isCloud === true ? "cloud" : system.isCloud === false ? "on-premise" : "");
+    const hostingType = system.hosting || "";
     const hostingSelected = hostingType === "cloud" ? "Cloud" : hostingType === "on-premise" ? "On-Premise" : hostingType === "partner-hosted" ? "Partner-Hosted" : "";
     html += renderRadioGroup({
       name: "hosting",
@@ -11589,7 +11582,7 @@ ${hardErrors.join("\n")}`);
       if (labelEl) labelEl.value = ps.label || "";
       if (vendorEl) vendorEl.value = ps.vendor || "";
       if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : "";
-      if (hostingEl) hostingEl.value = ps.hosting || (ps.isCloud === false ? "on-premise" : "cloud");
+      if (hostingEl) hostingEl.value = ps.hosting || "cloud";
     }
     if (decision.boundaryChoice && decision.boundaryChoice !== "none") {
       const axis2Radio = content.querySelector(`input[name="axis2Choice"][value="${decision.boundaryChoice}"]`);
@@ -13587,7 +13580,7 @@ tr:nth-child(even){background:#f3f2f1;}
     "Notice Period (months)",
     "Portability",
     "Data Partitioning",
-    "Cloud Hosted?",
+    "Hosting",
     "ERP?",
     "Shared With",
     "Support Model",
@@ -13740,10 +13733,10 @@ tr:nth-child(even){background:#f3f2f1;}
       K: {
         type: "list",
         allowBlank: true,
-        formulae: ['"Yes,No"'],
+        formulae: ['"Cloud,On-Premise,Partner-Hosted"'],
         showInputMessage: true,
-        promptTitle: "Cloud Hosted?",
-        prompt: "Is this system hosted in the cloud (SaaS, IaaS, PaaS) or on your own servers?\n\nYes \u2014 Hosted by the vendor or in a cloud platform (Azure, AWS, etc.)\n\nNo \u2014 Hosted on council-owned or council-managed servers (on-premise)"
+        promptTitle: "Hosting Model",
+        prompt: "Where is this system hosted?\n\nCloud \u2014 Vendor-hosted SaaS or cloud platform (Azure, AWS, etc.). Council has no infrastructure responsibility.\n\nOn-Premise \u2014 Hosted on council-owned servers or data centre.\n\nPartner-Hosted \u2014 Hosted by another council or shared service body."
       },
       L: {
         type: "list",
@@ -13818,8 +13811,9 @@ tr:nth-child(even){background:#f3f2f1;}
       ["Data Partitioning", "Segmented", "Data is logically separated by service area, team, or geography. If the system needed to be split across two new councils, the data could be divided without major restructuring."],
       ["", "Monolithic", "Data is entangled across all areas the system serves. Users, records, and workflows are interleaved. Splitting would require ETL (Extract, Transform, Load) work \u2014 this is complex and time-consuming."],
       [],
-      ["Cloud Hosted?", "Yes", "The system is hosted by the vendor or in a cloud platform (Azure, AWS, Google Cloud). The council does not manage the servers. Includes SaaS, IaaS, and PaaS."],
-      ["", "No", "The system runs on servers owned or managed by the council (on-premise). The council is responsible for infrastructure, patching, backups, and availability."],
+      ["Hosting", "Cloud", "Hosted by the vendor or in a cloud platform (Azure, AWS, Google Cloud). The council does not manage the servers. Includes SaaS, IaaS, and PaaS."],
+      ["", "On-Premise", "The system runs on servers owned or managed by the council. The council is responsible for infrastructure, patching, backups, and availability."],
+      ["", "Partner-Hosted", "Hosted by another council or shared service body. The council does not manage the infrastructure but depends on the partner for hosting continuity."],
       [],
       ["ERP System?", "Yes", "An Enterprise Resource Planning system \u2014 a large integrated platform spanning multiple business functions (typically finance, HR, procurement, payroll). Examples: SAP, Oracle, Unit4, Microsoft Dynamics 365 Finance."],
       ["", "No", 'A system focused on a single function or service area. Most systems will be "No".'],
@@ -14058,12 +14052,6 @@ tr:nth-child(even){background:#f3f2f1;}
               description: "Annual cost in pounds"
             },
             {
-              name: "cost",
-              type: "string",
-              required: false,
-              description: "Human-readable cost (e.g. '\xA3950k/yr')"
-            },
-            {
               name: "endYear",
               type: "number",
               required: false,
@@ -14238,7 +14226,7 @@ tr:nth-child(even){background:#f3f2f1;}
         councilMetadata: { tier: "borough", financialDistress: false },
         nodes: [
           { id: "fn-1", label: "Adult Social Care", type: "Function", lgaFunctionId: "148" },
-          { id: "sys-1", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 350, annualCost: 95e3, portability: "High", isCloud: true }
+          { id: "sys-1", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 350, annualCost: 95e3, portability: "High", hosting: "cloud" }
         ],
         edges: [
           { source: "sys-1", target: "fn-1", relationship: "REALIZES" }
@@ -14830,6 +14818,12 @@ tr:nth-child(even){background:#f3f2f1;}
 
   // src/main.js
   state.signalWeights = { ...PERSONA_DEFAULT_WEIGHTS.executive };
+  window.addEventListener("beforeunload", (e) => {
+    const hasWork = state.rawUploads.length > 0 || state.simulationState;
+    if (hasWork) {
+      e.preventDefault();
+    }
+  });
   var _editorEscHandler = null;
   function openUnifiedEditor(uploadIdx) {
     const upload = state.rawUploads[uploadIdx];
@@ -17218,7 +17212,7 @@ tr:nth-child(even){background:#f3f2f1;}
         const expStr = `${String(sys.endMonth || 1).padStart(2, "0")}/${sys.endYear || 2025}`;
         let riskColor = "text-gray-700";
         if (sys.endYear === 2025 || sys.endYear === 2026 && noticeMonths > 6) riskColor = "text-red-700 font-bold";
-        const expandedCostStr = isDisagg && sys.annualCost && successorName ? formatDisaggCost(sys, successorName) : sys.cost || "N/A";
+        const expandedCostStr = isDisagg && sys.annualCost && successorName ? formatDisaggCost(sys, successorName) : sys.annualCost ? `\xA3${Math.round(sys.annualCost / 1e3)}k/yr` : "N/A";
         html += `
                 <div class="text-xs mt-2 border-t pt-3 space-y-3">
                     <div class="flex justify-between gap-4 items-start w-full">
@@ -17568,12 +17562,12 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-65", label: "Public Health", type: "Function", lgaFunctionId: "65" },
         { id: "fn-54", label: "Registration", type: "Function", lgaFunctionId: "54" },
         { id: "fn-152", label: "Children's Social Care", type: "Function", lgaFunctionId: "152" },
-        { id: "sys-sap-erp", label: "SAP S/4HANA ERP", type: "ITSystem", vendor: "SAP", users: 5e3, cost: "\xA32,100,000/yr", annualCost: 21e5, endYear: 2030, endMonth: 3, noticePeriod: 18, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: true, supportModel: "vendor-supported", capabilityType: ["payments", "workflow"], version: "S/4HANA 2023", notes: "Monolithic ERP \u2014 underpins finance, HR, and procurement. 18-month notice period means decision needed early. On-prem hosting at County Hall DC." },
-        { id: "sys-liquidlogic", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 1200, cost: "\xA3480,000/yr", annualCost: 48e4, endYear: 2028, endMonth: 9, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "v14.2", notes: "Good data portability via SSDA903 exports. Consider early engagement with System C about multi-authority licensing." },
-        { id: "sys-confirm-highways", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 400, cost: "\xA3320,000/yr", annualCost: 32e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"], version: "v22.10", notes: "Shared instance with District 1 \u2014 both councils contribute asset data. GIS integration with ESRI." },
-        { id: "sys-public-health-intel", label: "Public Health Intelligence", type: "ITSystem", vendor: "In-House", users: 80, cost: "\xA335,000/yr", annualCost: 35e3, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "community-supported", sharedWith: ["Other County Programme Council A", "Other County Programme Council B"], version: "v2.1", notes: "Developed in-house by county digital team. Python/Django stack. Two other programme councils contribute data and co-fund development." },
-        { id: "sys-nec-revenues", label: "NEC Revenues", type: "ITSystem", vendor: "NEC", users: 300, cost: "\xA3190,000/yr", annualCost: 19e4, endYear: 2026, endMonth: 6, noticePeriod: 12, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", version: "NEC iWorld 2019", notes: "Contract expires before vesting date \u2014 must either extend or migrate. Notice period means decision needed imminently." },
-        { id: "sys-capita-one", label: "Capita ONE", type: "ITSystem", vendor: "Capita", users: 800, cost: "\xA3350,000/yr", annualCost: 35e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "v22.3", notes: "Critical for children's services statutory returns. ADCS data standards compliance." }
+        { id: "sys-sap-erp", label: "SAP S/4HANA ERP", type: "ITSystem", vendor: "SAP", users: 5e3, annualCost: 21e5, endYear: 2030, endMonth: 3, noticePeriod: 18, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: true, supportModel: "vendor-supported", capabilityType: ["payments", "workflow"], version: "S/4HANA 2023", notes: "Monolithic ERP \u2014 underpins finance, HR, and procurement. 18-month notice period means decision needed early. On-prem hosting at County Hall DC." },
+        { id: "sys-liquidlogic", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 1200, annualCost: 48e4, endYear: 2028, endMonth: 9, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "v14.2", notes: "Good data portability via SSDA903 exports. Consider early engagement with System C about multi-authority licensing." },
+        { id: "sys-confirm-highways", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 400, annualCost: 32e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"], version: "v22.10", notes: "Shared instance with District 1 \u2014 both councils contribute asset data. GIS integration with ESRI." },
+        { id: "sys-public-health-intel", label: "Public Health Intelligence", type: "ITSystem", vendor: "In-House", users: 80, annualCost: 35e3, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "community-supported", sharedWith: ["Other County Programme Council A", "Other County Programme Council B"], version: "v2.1", notes: "Developed in-house by county digital team. Python/Django stack. Two other programme councils contribute data and co-fund development." },
+        { id: "sys-nec-revenues", label: "NEC Revenues", type: "ITSystem", vendor: "NEC", users: 300, annualCost: 19e4, endYear: 2026, endMonth: 6, noticePeriod: 12, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", version: "NEC iWorld 2019", notes: "Contract expires before vesting date \u2014 must either extend or migrate. Notice period means decision needed imminently." },
+        { id: "sys-capita-one", label: "Capita ONE", type: "ITSystem", vendor: "Capita", users: 800, annualCost: 35e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "v22.3", notes: "Critical for children's services statutory returns. ADCS data standards compliance." }
       ],
       edges: [
         { source: "sys-sap-erp", target: "fn-116", relationship: "REALIZES" },
@@ -17597,12 +17591,12 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
         { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
         { id: "fn-109", label: "Highway Maintenance", type: "Function", lgaFunctionId: "109" },
-        { id: "sys-civica-fin", label: "Civica Financials", type: "ITSystem", vendor: "Civica", users: 120, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2028, endMonth: 6, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "Civica Cx 2024", notes: "Recently upgraded from legacy Authority system. Clean data model." },
-        { id: "sys-nec-revben", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 200, cost: "\xA3180,000/yr", annualCost: 18e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 2"], version: "NEC iWorld 2019", notes: "Shared instance with District 2. Contract held by District 1. Monolithic data \u2014 disaggregation would require NEC professional services." },
-        { id: "sys-idox-uniform", label: "Idox Uniform", type: "ITSystem", vendor: "Idox", users: 35, cost: "\xA355,000/yr", annualCost: 55e3, endYear: 2029, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-bartec-waste", label: "Bartec Waste Management", type: "ITSystem", vendor: "Bartec", users: 90, cost: "\xA3130,000/yr", annualCost: 13e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-dynamics-crm", label: "Microsoft Dynamics 365", type: "ITSystem", vendor: "Microsoft", users: 350, cost: "\xA3110,000/yr", annualCost: 11e4, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", capabilityType: ["forms"] },
-        { id: "sys-confirm-highways-d1", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 45, cost: "\xA395,000/yr", annualCost: 95e3, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "partner-hosted", hostingPartner: "County Council", isERP: false, supportModel: "vendor-supported", sharedWith: ["County Council"] }
+        { id: "sys-civica-fin", label: "Civica Financials", type: "ITSystem", vendor: "Civica", users: 120, annualCost: 95e3, endYear: 2028, endMonth: 6, noticePeriod: 6, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", version: "Civica Cx 2024", notes: "Recently upgraded from legacy Authority system. Clean data model." },
+        { id: "sys-nec-revben", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 200, annualCost: 18e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 2"], version: "NEC iWorld 2019", notes: "Shared instance with District 2. Contract held by District 1. Monolithic data \u2014 disaggregation would require NEC professional services." },
+        { id: "sys-idox-uniform", label: "Idox Uniform", type: "ITSystem", vendor: "Idox", users: 35, annualCost: 55e3, endYear: 2029, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-bartec-waste", label: "Bartec Waste Management", type: "ITSystem", vendor: "Bartec", users: 90, annualCost: 13e4, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-dynamics-crm", label: "Microsoft Dynamics 365", type: "ITSystem", vendor: "Microsoft", users: 350, annualCost: 11e4, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported", capabilityType: ["forms"] },
+        { id: "sys-confirm-highways-d1", label: "Confirm Highways", type: "ITSystem", vendor: "Confirm", users: 45, annualCost: 95e3, endYear: 2029, endMonth: 6, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "partner-hosted", hostingPartner: "County Council", isERP: false, supportModel: "vendor-supported", sharedWith: ["County Council"] }
       ],
       edges: [
         { source: "sys-civica-fin", target: "fn-116", relationship: "REALIZES" },
@@ -17622,11 +17616,11 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-101", label: "Development Control", type: "Function", lgaFunctionId: "101" },
         { id: "fn-38", label: "Waste Management", type: "Function", lgaFunctionId: "38" },
         { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
-        { id: "sys-nec-revben-d2", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 150, cost: "\xA3160,000/yr", annualCost: 16e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"] },
-        { id: "sys-nec-housing", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 100, cost: "\xA3140,000/yr", annualCost: 14e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-nec-planning", label: "NEC Planning", type: "ITSystem", vendor: "NEC", users: 28, cost: "\xA360,000/yr", annualCost: 6e4, endYear: 2029, endMonth: 9, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-whitespace-waste", label: "Whitespace Waste", type: "ITSystem", vendor: "Whitespace", users: 60, cost: "\xA385,000/yr", annualCost: 85e3, endYear: 2028, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-firmstep-crm", label: "Firmstep Digital", type: "ITSystem", vendor: "Firmstep", users: 200, cost: "\xA375,000/yr", annualCost: 75e3, endYear: 2030, endMonth: 6, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" }
+        { id: "sys-nec-revben-d2", label: "NEC Revenues & Benefits", type: "ITSystem", vendor: "NEC", users: 150, annualCost: 16e4, endYear: 2027, endMonth: 3, noticePeriod: 9, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported", sharedWith: ["District Council 1"] },
+        { id: "sys-nec-housing", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 100, annualCost: 14e4, endYear: 2028, endMonth: 12, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-nec-planning", label: "NEC Planning", type: "ITSystem", vendor: "NEC", users: 28, annualCost: 6e4, endYear: 2029, endMonth: 9, noticePeriod: 6, portability: "Medium", dataPartitioning: "Segmented", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-whitespace-waste", label: "Whitespace Waste", type: "ITSystem", vendor: "Whitespace", users: 60, annualCost: 85e3, endYear: 2028, endMonth: 3, noticePeriod: 3, portability: "Medium", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-firmstep-crm", label: "Firmstep Digital", type: "ITSystem", vendor: "Firmstep", users: 200, annualCost: 75e3, endYear: 2030, endMonth: 6, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" }
       ],
       edges: [
         { source: "sys-nec-revben-d2", target: "fn-3", relationship: "REALIZES" },
@@ -17646,12 +17640,12 @@ tr:nth-child(even){background:#f3f2f1;}
         { id: "fn-66", label: "Housing", type: "Function", lgaFunctionId: "66" },
         { id: "fn-43", label: "Accessing Information", type: "Function", lgaFunctionId: "43" },
         { id: "fn-76", label: "Libraries", type: "Function", lgaFunctionId: "76" },
-        { id: "sys-sage-finance", label: "Sage 50 Finance", type: "ITSystem", vendor: "Sage", users: 25, cost: "\xA315,000/yr", annualCost: 15e3, endYear: 2026, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
-        { id: "sys-inhouse-planning", label: "In-House Planning Register", type: "ITSystem", vendor: "In-House", users: 15, cost: "\xA312,000/yr", annualCost: 12e3, endYear: 2027, endMonth: 6, noticePeriod: 3, portability: "Medium", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
-        { id: "sys-inhouse-waste", label: "In-House Waste Scheduling", type: "ITSystem", vendor: "In-House", users: 20, cost: "\xA38,000/yr", annualCost: 8e3, endYear: 2028, endMonth: 9, noticePeriod: 3, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
-        { id: "sys-nec-housing-d3", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 60, cost: "\xA390,000/yr", annualCost: 9e4, endYear: 2029, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-goss-icm", label: "GOSS iCM", type: "ITSystem", vendor: "GOSS", users: 100, cost: "\xA340,000/yr", annualCost: 4e4, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
-        { id: "sys-koha-library", label: "Koha Library System", type: "ITSystem", vendor: "In-House", users: 30, cost: "\xA318,000/yr", annualCost: 18e3, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "community-supported", sharedWith: ["Neighbouring Council A", "Neighbouring Council B"] }
+        { id: "sys-sage-finance", label: "Sage 50 Finance", type: "ITSystem", vendor: "Sage", users: 25, annualCost: 15e3, endYear: 2026, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
+        { id: "sys-inhouse-planning", label: "In-House Planning Register", type: "ITSystem", vendor: "In-House", users: 15, annualCost: 12e3, endYear: 2027, endMonth: 6, noticePeriod: 3, portability: "Medium", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
+        { id: "sys-inhouse-waste", label: "In-House Waste Scheduling", type: "ITSystem", vendor: "In-House", users: 20, annualCost: 8e3, endYear: 2028, endMonth: 9, noticePeriod: 3, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "unsupported" },
+        { id: "sys-nec-housing-d3", label: "NEC Housing", type: "ITSystem", vendor: "NEC", users: 60, annualCost: 9e4, endYear: 2029, endMonth: 3, noticePeriod: 6, portability: "Low", dataPartitioning: "Monolithic", hosting: "on-premise", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-goss-icm", label: "GOSS iCM", type: "ITSystem", vendor: "GOSS", users: 100, annualCost: 4e4, endYear: 2030, endMonth: 12, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "vendor-supported" },
+        { id: "sys-koha-library", label: "Koha Library System", type: "ITSystem", vendor: "In-House", users: 30, annualCost: 18e3, endYear: 2030, endMonth: 9, noticePeriod: 3, portability: "High", dataPartitioning: "Segmented", hosting: "cloud", isERP: false, supportModel: "community-supported", sharedWith: ["Neighbouring Council A", "Neighbouring Council B"] }
       ],
       edges: [
         { source: "sys-sage-finance", target: "fn-116", relationship: "REALIZES" },

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signals and Analysis — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">User Guide</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Signals and Analysis</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="../technical/architecture.html">Architecture</a><a class="nav-link" href="../technical/signals-system.html">Signals System</a><a class="nav-link" href="../technical/simulation-engine.html">Simulation Engine</a><a class="nav-link" href="../technical/build-system.html">Build System</a><a class="nav-link" href="../technical/editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="getting-started.html">Getting Started</a><a class="nav-link" href="architecture-editor.html">Architecture Editor</a><a class="nav-link" href="transition-planning.html">Transition Planning</a><a class="nav-link active" href="signals-analysis.html" class="nav-link active">Signals and Analysis</a><a class="nav-link" href="simulation.html">Simulation</a><a class="nav-link" href="data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Signals and Analysis</h1>
+
+<p>The analysis dashboard is the main output of the engine. It presents your combined IT estate as a structured matrix with configurable signals that surface factual observations about risk, complexity, and opportunity - without prescribing conclusions.</p>
+
+<h2>What signals are</h2>
+
+<p>Signals are factual observations derived from your data. They are not recommendations. Each signal measures one specific aspect of the systems within a function row and presents it as neutral information for your team to interpret in context.</p>
+
+<p>For example, the "Contract urgency" signal does not tell you <em>what to do</em> about an expiring contract. It tells you <em>when</em> the notice period triggers relative to your vesting date, so the right people can make that decision with full visibility.</p>
+
+<h2>Why signals matter</h2>
+
+<p>In a reorganisation involving multiple councils, the combined estate may have 100+ IT systems across 50+ functions. Without structured signals:</p>
+
+<ul><li>Contract deadlines are hidden in spreadsheets and discovered too late</li><li>Vendor consolidation opportunities are invisible because data lives in silos</li><li>Data disaggregation complexity is not apparent until migration planning begins</li><li>Shared service dependencies cross successor boundaries without anyone noticing</li></ul>
+<p>Signals make these observations visible, filterable, and actionable at the point of decision.</p>
+
+<h2>The 10 signals explained</h2>
+
+<h3>Contract urgency</h3>
+
+<p><strong>What it measures:</strong> How soon the earliest notice period trigger fires across all systems in a function row, classified relative to your vesting date.</p>
+
+<p><strong>Zones:</strong></p>
+<ul><li><strong>Pre-vesting</strong> - action required before the new authority exists</li><li><strong>Year 1</strong> - action required in the first year after vesting</li><li><strong>Natural expiry</strong> - contract expires naturally within a manageable window</li><li><strong>Long-tail</strong> - contract runs well beyond the transition period</li></ul>
+<p><strong>Example:</strong> A system with a March 2027 contract end and 12-month notice period has a notice trigger of March 2026. If your vesting date is April 2027, this is a pre-vesting trigger requiring action under the shadow authority arrangements.</p>
+
+<p><strong>Who cares most:</strong> Executive (what must be resolved before Day 1), Commercial (which contracts expose us to auto-renewal).</p>
+
+<h3>User volume</h3>
+
+<p><strong>What it measures:</strong> The relative scale of competing systems by reported user count, including detection of "anchor" systems.</p>
+
+<p><strong>Anchor detection:</strong> When one system has at least 50% more users than the next largest, it is flagged as the anchor system - the system with the most gravitational weight that, all else being equal, minimises disruption if adopted.</p>
+
+<p><strong>Example:</strong> Three councils serve Housing Benefits. Council A has 3,500 users, Council B has 2,200, and Council C has 800. Council A's system is the anchor (3,500 is more than 50% above 2,200).</p>
+
+<p><strong>Who cares most:</strong> Executive (operational risk of user migration), Architect (migration scale and complexity).</p>
+
+<h3>Monolithic data</h3>
+
+<p><strong>What it measures:</strong> Presence of systems with entangled data structures that would require ETL (Extract, Transform, Load) work to disaggregate.</p>
+
+<p><strong>Triggered when:</strong> A system has <code>dataPartitioning: "Monolithic"</code> or is flagged as an ERP system (<code>isERP: true</code>).</p>
+
+<p><strong>Why it matters:</strong> Monolithic data systems cannot be cleanly split across successor authorities. Data extraction projects are needed before any disaggregation or migration can proceed.</p>
+
+<p><strong>Example:</strong> A county-wide Oracle ERP with monolithic data partitioning spanning finance, HR, and payroll. When the county is a partial predecessor, all three functions inherit disaggregation complexity.</p>
+
+<p><strong>Who cares most:</strong> Architect (where will disaggregation be hardest), Executive (operational risk from data entanglement).</p>
+
+<h3>Data portability</h3>
+
+<p><strong>What it measures:</strong> The worst data portability rating present in the function row - specifically Low and Medium portability systems that pose data extraction challenges.</p>
+
+<p><strong>Ratings:</strong></p>
+<ul><li><strong>High</strong> - open APIs, standard formats, vendor provides export tools</li><li><strong>Medium</strong> - some export capability but may require vendor support or have proprietary elements</li><li><strong>Low</strong> - proprietary format, no bulk export API, significant vendor lock-in</li></ul>
+<p><strong>Example:</strong> A legacy on-premise planning system with Low portability. Migrating away requires the vendor's active cooperation and likely a bespoke data extraction project.</p>
+
+<p><strong>Who cares most:</strong> Architect (vendor lock-in risk, migration complexity), Commercial (negotiation leverage with locked-in vendors).</p>
+
+<h3>Vendor density</h3>
+
+<p><strong>What it measures:</strong> Whether the same vendor appears across multiple councils for the same function - a potential consolidation or renegotiation opportunity.</p>
+
+<p><strong>Example:</strong> Three councils all use Civica for Revenues and Benefits. This signals a potential volume discount negotiation or a simpler consolidation path (same platform, different instances).</p>
+
+<p><strong>Who cares most:</strong> Commercial (procurement leverage, framework consolidation), Executive (consolidation simplicity).</p>
+
+<h3>On-premise systems (tech debt)</h3>
+
+<p><strong>What it measures:</strong> Systems hosted on council-owned infrastructure rather than cloud/SaaS.</p>
+
+<p><strong>Why it matters:</strong> On-premise systems create infrastructure transfer obligations. The hosting environment (servers, data centres, network) must either transfer to the successor authority or the system must be migrated to cloud before or during transition.</p>
+
+<p><strong>Example:</strong> An on-premise Capita Revenues system running on council-owned servers. When that council dissolves, someone must take responsibility for the physical infrastructure - or the system must be moved to cloud.</p>
+
+<p><strong>Who cares most:</strong> Architect (infrastructure obligations, cloud migration planning).</p>
+
+<h3>TCoP alignment</h3>
+
+<p><strong>What it measures:</strong> How well each system aligns with five points from the UK Government Technology Code of Practice.</p>
+
+<p><strong>Points assessed:</strong></p>
+
+<table><thead><tr><th>Point</th><th>What is checked</th></tr></thead><tbody><tr><td>Point 3 - Spend controls</td><td>Low portability creates spend risk through vendor lock-in</td></tr><tr><td>Point 4 - Open standards</td><td>Portability rating (High = aligned, Low = concern)</td></tr><tr><td>Point 5 - Cloud first</td><td>Whether the system is cloud-hosted</td></tr><tr><td>Point 9 - Modularity</td><td>ERP + monolithic data indicates a modularity concern</td></tr><tr><td>Point 11 - Commercial</td><td>Low portability triggers vendor lock-in concern</td></tr></tbody></table><strong>Example:</strong> A monolithic on-premise ERP with Low portability would flag concerns on Points 3, 4, 5, 9, and 11 - a clear signal for the architecture team.
+
+<p><strong>Who cares most:</strong> Architect (technology standards compliance, technical risk assessment).</p>
+
+<h3>Shared service</h3>
+
+<p><strong>What it measures:</strong> Systems jointly operated by multiple predecessor councils that will need unwinding or re-contracting during transition.</p>
+
+<p><strong>Boundary crossing:</strong> In transition mode, the engine checks whether a shared system crosses successor authority boundaries - that is, whether the sharing councils are assigned to different successors. This is flagged distinctly because it requires inter-authority governance arrangements.</p>
+
+<p><strong>Example:</strong> NEC Revenues shared between Easton District and Southby Borough. If Easton goes to North Unitary and Southby goes to South Unitary, the shared service crosses a successor boundary and needs a formal governance decision.</p>
+
+<p><strong>Who cares most:</strong> Commercial (contract re-negotiation), Executive (governance arrangements across successors).</p>
+
+<h3>Support model</h3>
+
+<p><strong>What it measures:</strong> The sustainability of system maintenance arrangements - whether the system has a commercial vendor SLA, is community-maintained, or has no active support.</p>
+
+<p><strong>Ratings:</strong></p>
+<ul><li><strong>Vendor-supported</strong> - commercial vendor with SLA, support contract, and product roadmap</li><li><strong>Community-supported</strong> - maintained collaboratively (multi-council consortium, open source, shared digital team)</li><li><strong>Unsupported</strong> - no active maintenance agreement (developer left, product end-of-life, no SLA)</li></ul>
+<p><strong>Example:</strong> A bespoke scheduling system built by a developer who has since left the council, with no documentation and no support contract. Flagged as unsupported - a Day 1 risk if it fails during transition.</p>
+
+<p><strong>Who cares most:</strong> Architect (sustainability risk), Executive (operational continuity).</p>
+
+<h3>Same-vendor consolidation</h3>
+
+<p><strong>What it measures:</strong> Where all or most systems serving a function come from the same vendor, suggesting consolidation may be simpler.</p>
+
+<p><strong>Why it matters:</strong> When multiple councils use the same vendor for the same function (potentially different versions or configurations), the consolidation path is often an instance merge or upgrade rather than a full platform migration.</p>
+
+<p><strong>Example:</strong> Four councils all run Civica for Council Tax. Consolidation likely means merging instances rather than migrating data between different platforms.</p>
+
+<p><strong>Who cares most:</strong> Commercial (vendor negotiation strategy, volume licensing), Executive (simpler consolidation path).</p>
+
+<h2>Persona-specific weight defaults</h2>
+
+<p>Each persona starts with different signal weights reflecting their professional concerns:</p>
+
+<table><thead><tr><th>Signal</th><th>Executive</th><th>Commercial</th><th>Architect</th></tr></thead><tbody><tr><td>Contract urgency</td><td>High</td><td>High</td><td>Low</td></tr><tr><td>User volume</td><td>Medium</td><td>Low</td><td>Medium</td></tr><tr><td>Monolithic data</td><td>High</td><td>Low</td><td>High</td></tr><tr><td>Data portability</td><td>Low</td><td>Off</td><td>High</td></tr><tr><td>Vendor density</td><td>Medium</td><td>High</td><td>Low</td></tr><tr><td>On-premise</td><td>Low</td><td>Off</td><td>High</td></tr><tr><td>TCoP alignment</td><td>Low</td><td>Off</td><td>High</td></tr><tr><td>Shared service</td><td>Medium</td><td>High</td><td>Low</td></tr><tr><td>Support model</td><td>Low</td><td>Low</td><td>Medium</td></tr><tr><td>Same-vendor consolidation</td><td>Medium</td><td>High</td><td>Medium</td></tr></tbody></table>Weight levels control visibility: <strong>High</strong> shows a coloured badge, <strong>Medium</strong> shows plain text, <strong>Low</strong> shows a small grey note, <strong>Off</strong> hides the signal entirely.
+
+<h2>How to adjust signal weights</h2>
+
+<ol><li>Click <strong>Signal Options</strong> in the header controls (visible in Stage 3)</li><li>For each signal, select a weight: Off, Low, Medium, or High</li><li>The dashboard updates immediately to reflect your choices</li><li>Switching persona resets weights to that persona's defaults</li></ol>
+<blockquote><p><strong>Note:</strong> Custom weight settings are useful when focusing a specific meeting or workshop. For example, set everything to Off except Contract urgency and Shared service when running a commercial strategy session.</p></blockquote>
+
+<h2>Reading the analysis dashboard</h2>
+
+<h3>The matrix</h3>
+
+<p>The main view is a matrix with:</p>
+<ul><li><strong>Rows</strong> - one per ESD function that appears in your uploaded data</li><li><strong>Columns</strong> - one per successor authority (transition mode) or predecessor council (discovery mode)</li><li><strong>Cells</strong> - show which system(s) serve that function, with metadata badges</li></ul>
+<h3>Sort and filter</h3>
+
+<ul><li><strong>Sort by:</strong> Tier priority (default), collision count, alphabetical, or contract urgency</li><li><strong>Filter by tier:</strong> Show only Tier 1, Tier 2, or Tier 3 functions</li><li><strong>Filter by collision status:</strong> All functions, collisions only (2+ systems), or unique only (single system)</li></ul>
+<h3>Estate summary panel</h3>
+
+<p>At the top of the dashboard, summary metrics show:</p>
+<ul><li>Total predecessor councils</li><li>Total IT systems in scope</li><li>Functions with cross-council collisions</li><li>Combined annual spend</li><li>Pre-vesting contract triggers</li><li>Disaggregation count (systems requiring data splitting)</li></ul>
+<h3>Perspective filtering</h3>
+
+<p>Use the perspective dropdown to view the estate through a specific successor's lens. Non-relevant systems are dimmed, making it easy to see what belongs to each new authority.</p>
+
+<h2>Rationalisation patterns</h2>
+
+<p>In transition mode, every function row is classified into one of four patterns:</p>
+
+<table><thead><tr><th>Pattern</th><th>Colour</th><th>Condition</th><th>What it means</th></tr></thead><tbody><tr><td><strong>Inherit as-is</strong></td><td>Green</td><td>Single system, no disaggregation</td><td>No rationalisation decision needed. Focus on contract novation to the successor.</td></tr><tr><td><strong>Choose and consolidate</strong></td><td>Blue</td><td>Multiple systems, no disaggregation</td><td>Successor must pick which system to keep and plan decommissioning of others.</td></tr><tr><td><strong>Extract and partition</strong></td><td>Red</td><td>Disaggregation present, no competing systems</td><td>System must be split across successors. Data extraction project required.</td></tr><tr><td><strong>Extract, partition and consolidate</strong></td><td>Purple</td><td>Disaggregation + competing systems</td><td>Most complex: data must be split AND the receiving successor has competing systems to resolve.</td></tr></tbody></table>Patterns are assigned automatically based on the system allocations. They tell you the <em>type</em> of work required, not what decision to make.
+
+<h2>TCoP assessment</h2>
+
+<p>The Technology Code of Practice (TCoP) assessment gives architecture teams a quick compliance check. Each system is scored against five points, with concerns flagged when:</p>
+
+<ul><li>Portability is Low (Points 3, 4, 11)</li><li>System is not cloud-hosted (Point 5)</li><li>System is an ERP with monolithic data (Point 9)</li></ul>
+<p>TCoP results appear in the analysis column at Medium or High weight for the Architect persona. They help prioritise which systems need modernisation investment during or after transition.</p>
+
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="transition-planning.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Transition Planning</a><a href="simulation.html" class="text-[#1d70b8] hover:underline font-bold">Simulation &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

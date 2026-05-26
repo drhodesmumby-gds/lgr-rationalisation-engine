@@ -159,12 +159,6 @@
               description: "Annual cost in pounds"
             },
             {
-              name: "cost",
-              type: "string",
-              required: false,
-              description: "Human-readable cost (e.g. '\xA3950k/yr')"
-            },
-            {
               name: "endYear",
               type: "number",
               required: false,
@@ -339,7 +333,7 @@
         councilMetadata: { tier: "borough", financialDistress: false },
         nodes: [
           { id: "fn-1", label: "Adult Social Care", type: "Function", lgaFunctionId: "148" },
-          { id: "sys-1", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 350, annualCost: 95e3, portability: "High", isCloud: true }
+          { id: "sys-1", label: "Liquidlogic LAS", type: "ITSystem", vendor: "System C", users: 350, annualCost: 95e3, portability: "High", hosting: "cloud" }
         ],
         edges: [
           { source: "sys-1", target: "fn-1", relationship: "REALIZES" }

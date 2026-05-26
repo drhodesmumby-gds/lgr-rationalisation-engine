@@ -98,10 +98,6 @@
                 "description": "Annual cost in pounds",
                 "type": "number"
               },
-              "cost": {
-                "description": "Human-readable cost (e.g. '£950k/yr')",
-                "type": "string"
-              },
               "endYear": {
                 "description": "Contract expiry year",
                 "type": "number"

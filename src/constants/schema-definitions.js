@@ -145,12 +145,6 @@ export const SCHEMA_DEFINITIONS = {
                         description: 'Annual cost in pounds'
                     },
                     {
-                        name: 'cost',
-                        type: 'string',
-                        required: false,
-                        description: "Human-readable cost (e.g. '£950k/yr')"
-                    },
-                    {
                         name: 'endYear',
                         type: 'number',
                         required: false,
@@ -328,7 +322,7 @@ export const SCHEMA_DEFINITIONS = {
             councilMetadata: { tier: 'borough', financialDistress: false },
             nodes: [
                 { id: 'fn-1', label: 'Adult Social Care', type: 'Function', lgaFunctionId: '148' },
-                { id: 'sys-1', label: 'Liquidlogic LAS', type: 'ITSystem', vendor: 'System C', users: 350, annualCost: 95000, portability: 'High', isCloud: true }
+                { id: 'sys-1', label: 'Liquidlogic LAS', type: 'ITSystem', vendor: 'System C', users: 350, annualCost: 95000, portability: 'High', hosting: 'cloud' }
             ],
             edges: [
                 { source: 'sys-1', target: 'fn-1', relationship: 'REALIZES' }

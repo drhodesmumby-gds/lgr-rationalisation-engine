@@ -134,7 +134,7 @@ Ten configurable signals, each with weight levels (Off=0, Low=1, Med=2, High=3):
 | `dataMonolith` | Systems with `dataPartitioning === 'Monolithic'` or `isERP` |
 | `dataPortability` | Worst portability tier present (Low > Medium) |
 | `vendorDensity` | Same vendor across 2+ councils for a function |
-| `techDebt` | Systems where `!isCloud` (on-premise) |
+| `techDebt` | Systems with hosting 'on-premise' or 'partner-hosted' |
 | `tcopAlignment` | TCoP Points 3, 4, 5, 9, 11 assessment |
 | `sharedService` | `sharedWith` arrays; cross-boundary detection in transition mode |
 | `supportModel` | System maintenance sustainability — vendor SLA, community, or unsupported |
@@ -184,7 +184,7 @@ Six modal types, all using the same pattern (`fixed inset-0 bg-black bg-opacity-
     { "id": "fn-1", "label": "Adult Social Care", "type": "Function", "lgaFunctionId": "148" },
     {
       "id": "sys-1", "label": "Liquidlogic LAS", "type": "ITSystem",
-      "vendor": "System C", "users": 3500, "cost": "£950k/yr", "annualCost": 950000,
+      "vendor": "System C", "users": 3500, "annualCost": 950000,
       "endYear": 2028, "endMonth": 3, "noticePeriod": 12,
       "portability": "High" | "Medium" | "Low",
       "dataPartitioning": "Segmented" | "Monolithic",

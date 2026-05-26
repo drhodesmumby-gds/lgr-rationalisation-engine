@@ -9,22 +9,9 @@ describe('getHostingType', () => {
         expect(getHostingType({ hosting: 'partner-hosted' })).toBe('partner-hosted');
     });
 
-    it('maps legacy isCloud:true to cloud', () => {
-        expect(getHostingType({ isCloud: true })).toBe('cloud');
-    });
-
-    it('maps legacy isCloud:false to on-premise', () => {
-        expect(getHostingType({ isCloud: false })).toBe('on-premise');
-    });
-
-    it('returns null when neither hosting nor isCloud present', () => {
+    it('returns null when hosting not set', () => {
         expect(getHostingType({})).toBe(null);
         expect(getHostingType({ vendor: 'SAP' })).toBe(null);
-    });
-
-    it('hosting field takes precedence over isCloud', () => {
-        expect(getHostingType({ hosting: 'partner-hosted', isCloud: true })).toBe('partner-hosted');
-        expect(getHostingType({ hosting: 'on-premise', isCloud: true })).toBe('on-premise');
     });
 });
 
@@ -45,10 +32,6 @@ describe('isNonCloud', () => {
         expect(isNonCloud({})).toBe(false);
     });
 
-    it('handles legacy isCloud', () => {
-        expect(isNonCloud({ isCloud: false })).toBe(true);
-        expect(isNonCloud({ isCloud: true })).toBe(false);
-    });
 });
 
 describe('isCloud', () => {

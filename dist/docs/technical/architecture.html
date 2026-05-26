@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">Technical</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Architecture</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link active" href="architecture.html" class="nav-link active">Architecture</a><a class="nav-link" href="signals-system.html">Signals System</a><a class="nav-link" href="simulation-engine.html">Simulation Engine</a><a class="nav-link" href="build-system.html">Build System</a><a class="nav-link" href="editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="../user-guide/getting-started.html">Getting Started</a><a class="nav-link" href="../user-guide/architecture-editor.html">Architecture Editor</a><a class="nav-link" href="../user-guide/transition-planning.html">Transition Planning</a><a class="nav-link" href="../user-guide/signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="../user-guide/simulation.html">Simulation</a><a class="nav-link" href="../user-guide/data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Module Architecture</h1>
+
+<p>The LGR Rationalisation Engine is a modular ES module application bundled by esbuild into a single self-contained HTML file. This page covers module organisation, state management, data flow, and key data structures.</p>
+
+<h2>Module Organisation</h2>
+
+<pre><code>src/
+├── index.html                  # HTML template with {{STYLES}} and {{BUNDLE}} placeholders
+├── styles.css                  # CSS custom properties (GDS palette) and component styles
+├── main.js                     # Entry point: UI rendering, event wiring, pipeline orchestration (~2600 lines)
+├── state.js                    # Central state singleton (exported mutable object)
+├── taxonomy.js                 # ESD function taxonomy lookups (getLgaFunction, getLgaBreadcrumb, etc.)
+├── ui-helpers.js               # escHtml, wrapWithTooltip, helpIcon, tagToSignalDotClass
+├── ui-notifications.js         # Toast notification system (showNotification, showConfirm)
+├── constants/                  # Static data - never mutated at runtime
+│   ├── lga-functions.js        #   176-entry ESD taxonomy: { id, label, parentId }
+│   ├── tier-map.js             #   DEFAULT_TIER_MAP: Map&lt;lgaFunctionId, 1|2|3&gt;
+│   ├── signals.js              #   SIGNAL_DEFS array + PERSONA_DEFAULT_WEIGHTS object
+│   ├── capabilities.js         #   LGAM_CAPABILITIES vocabulary
+│   ├── domain-terms.js         #   Rich tooltip definitions for domain terminology
+│   ├── documentation.js        #   Structured content for help modals
+│   └── schema-definitions.js   #   Schema definitions used by build for JSON Schema generation
+├── analysis/                   # Pure analysis functions (no side effects)
+│   ├── allocation.js           #   buildSuccessorAllocation, classifyVestingZone, boundary detection
+│   ├── signals.js              #   computeSignals, computeSignalEmphasis, computeTcopAssessment
+│   ├── metrics.js              #   computeEstateSummaryMetrics, computeEffectiveTier, sortFunctionRows
+│   ├── hosting.js              #   getHostingType, isNonCloud, isCloud, detectHostingRisk
+│   └── questions.js            #   generatePersonaQuestions
+├── simulation/                 # Decision simulation engine
+│   ├── actions.js              #   applyAllActions - applies action array to baseline nodes/edges
+│   ├── decisions.js            #   FunctionDecision model, createDecision, getDecisionKey
+│   ├── projector.js            #   projectDecisions - translates decisions into legacy actions
+│   ├── obligations.js          #   generateObligations, generateDisaggregationObligations, etc.
+│   └── impact.js              #   Impact scoring and severity computation
+└── features/                   # Feature modules (UI + logic for distinct tools)
+    ├── unified-editor/         #   Three-pane architecture editor (see editor-internals page)
+    │   ├── editor.js           #     Orchestrator: render + wire + state management
+    │   ├── list-panel.js       #     Left pane: domain-grouped system list
+    │   ├── props-panel.js      #     Centre pane: property editor for selected node
+    │   ├── rel-panel.js        #     Right pane: relationships and capabilities
+    │   ├── bulk-mode.js        #     Full-width tabular editing mode
+    │   ├── dep-matrix.js       #     Dependency heatmap (CONSUMES_CAPABILITY edges)
+    │   ├── smart-inputs.js     #     Shared input utilities (formatThousands, chips, radio groups)
+    │   └── wizard.js           #     Step-by-step onboarding for "Build from Scratch"
+    ├── decision-panel.js       #   Decision UI: radio buttons, blast radius, cross-successor
+    ├── simulation-panel.js     #   Side panel: decision list, progress, undo, metrics
+    ├── import-wizard.js        #   Multi-format import (CSV, Excel, clipboard, manual)
+    ├── baseline-report.js      #   Pre-simulation estate report (persona-tailored)
+    ├── report-export.js        #   Formatted report export per persona
+    ├── scenario-manager.js     #   Save/load/export decision scenarios
+    ├── sankey-diagram.js       #   Sankey flow overlay (D3-based)
+    ├── domain-cards.js         #   Hierarchical matrix: domain summaries and cards
+    ├── template-generator.js   #   Excel template download
+    ├── template-converter.js   #   XLSX-to-architecture JSON converter
+    ├── schema-reference.js     #   In-app schema documentation
+    ├── validation-panel.js     #   Architecture validation and completeness checks
+    └── pre-import-editor.js    #   Transition config editor (pre-import stage)</code></pre>
+
+<h2>Entry Point and Bundling</h2>
+
+<p><code>src/main.js</code> is the sole entry point for esbuild. It imports everything the app needs:</p>
+
+<pre><code class="language-javascript">// main.js - first lines show the import graph
+import { LGA_FUNCTIONS } from './constants/lga-functions.js';
+import { DEFAULT_TIER_MAP } from './constants/tier-map.js';
+import { SIGNAL_DEFS, PERSONA_DEFAULT_WEIGHTS } from './constants/signals.js';
+import { buildSuccessorAllocation, classifyVestingZone, ... } from './analysis/allocation.js';
+import { computeSignals, computeSignalEmphasis, ... } from './analysis/signals.js';
+import { state } from './state.js';
+import { renderUnifiedEditor, wireUnifiedEditor } from './features/unified-editor/editor.js';
+// ... ~30 more imports</code></pre>
+
+<p>esbuild resolves the full dependency tree from <code>main.js</code>, bundles it as a single IIFE, and the build script injects it into <code>src/index.html</code> at the <code>{{BUNDLE}}</code> placeholder. The result is a single <code>.html</code> file that runs anywhere.</p>
+
+<p><strong>To add a new module:</strong> create the file in the appropriate directory, <code>export</code> your functions, and <code>import</code> them from <code>main.js</code> (or from another module that <code>main.js</code> already imports). esbuild handles the rest.</p>
+
+<h2>State Management</h2>
+
+<p>All mutable application state lives in a single exported object in <code>src/state.js</code>:</p>
+
+<pre><code class="language-javascript">export const state = {
+    // --- Core workspace ---
+    rawUploads: [],                          // Parsed council JSON payloads
+    mergedArchitecture: { nodes: [], edges: [], councils: new Set() },
+    lgaFunctionMap: new Map(),               // lgaFunctionId -&gt; { lgaId, label, breadcrumb, councils, localNodeIds }
+
+    // --- Transition planning ---
+    transitionStructure: null,               // { vestingDate, successors[] } or null
+    operatingMode: 'discovery',              // 'discovery' | 'transition'
+    successorAllocationMap: null,            // Map&lt;successorName, Map&lt;lgaFunctionId, SystemAllocation[]&gt;&gt;
+    pendingTransitionConfig: null,           // Auto-detected transition config from upload
+
+    // --- Analysis ---
+    activePersona: 'executive',             // 'executive' | 'commercial' | 'architect'
+    activePerspective: 'all',               // 'all' | specific name
+    signalWeights: null,                    // Cloned from PERSONA_DEFAULT_WEIGHTS on init
+
+    // --- Simulation ---
+    simulationState: null,                  // { decisions: Map, actions: [], obligations: [], ... }
+
+    // --- Capability graph ---
+    capabilityDependencies: new Map(),      // consumerId -&gt; Set&lt;providerId&gt;
+    capabilityProviders: new Map(),         // providerId -&gt; Map&lt;consumerId, capabilities[]&gt;
+
+    // --- UI state ---
+    activeTab: 'matrix',                    // 'matrix' | 'overview' | 'timeline'
+    matrixViewMode: 'hierarchy',            // 'hierarchy' | 'flat'
+    cardCollapseState: 'collapsed',         // Global default for system cards
+    expandedCards: new Set(),               // Individual overrides
+    // ... sort, filter, and panel states
+};</code></pre>
+
+<p>State mutations happen directly (e.g., <code>state.operatingMode = 'transition'</code>). There is no reducer pattern - the pipeline is one-directional so this remains manageable.</p>
+
+<h2>Data Flow: The 4-Stage Pipeline</h2>
+
+<pre class="mermaid">
+flowchart LR
+    A[Stage 1: Ingest<br/>File upload/import<br/>produces: rawUploads, pendingConfig] --> B[Stage 1.5: Transition<br/>Define successors + vesting<br/>produces: transitionStructure, operatingMode]
+    B --> C[Stage 2: Baselining<br/>runBaselining<br/>produces: mergedArchitecture, lgaFunctionMap]
+    C --> D[Stage 3: Dashboard<br/>renderDashboard<br/>produces: allocation, signals, patterns, simulation]
+</pre>
+
+<p>Each stage's output becomes the next stage's input. The "Start Over" button clears all state back to Stage 1.</p>
+
+<h2>Key Data Structures</h2>
+
+<h3>SystemAllocation</h3>
+
+<p>Returned by <code>buildSuccessorAllocation()</code>. Represents one system's assignment to a successor for a specific function:</p>
+
+<pre><code class="language-javascript">{
+    system: { ...ITSystemNode },     // Full node object (access via a.system.id, a.system.vendor)
+    sourceCouncil: "Essex County",   // Council that owns this system
+    allocationType: "full",          // "full" | "partial" | "explicit"
+    needsAllocationReview: false,    // True if allocation is ambiguous
+    isDisaggregation: false          // True if this system maps to 2+ successors
+}</code></pre>
+
+<p><strong>Important:</strong> The system object is nested under <code>a.system</code>, not flattened.</p>
+
+<h3>lgaFunctionMap</h3>
+
+<p>Built during Stage 2 baselining. Keyed by ESD function ID:</p>
+
+<pre><code class="language-javascript">Map&lt;string, {
+    lgaId: string,          // Same as key
+    label: string,          // "Adult Social Care"
+    breadcrumb: string|null,// "Health &amp; Social Care &gt; Adult Social Care" (or null for top-level)
+    councils: Set&lt;string&gt;,  // Set of council names that have this function
+    localNodeIds: Set&lt;string&gt;  // Set of Function node IDs across all uploads
+}&gt;</code></pre>
+
+<h3>editorState (Unified Editor)</h3>
+
+<p>A deep clone of a council's architecture JSON, held locally within the editor closure:</p>
+
+<pre><code class="language-javascript">{
+    nodes: [...],               // Array of Function and ITSystem node objects
+    edges: [...],               // Array of edge objects
+    councilName: "...",
+    councilMetadata: { tier, financialDistress },
+    _bulkActiveTab: 'contract', // Internal editor UI state
+    _bulkFilters: {},
+    _bulkSort: null
+}</code></pre>
+
+<h3>FunctionDecision (Simulation)</h3>
+
+<p>The user-facing decision model (see <a href="../simulation-engine.html">Simulation Engine</a>):</p>
+
+<pre><code class="language-javascript">{
+    id: "dec-148-north-essex-1714000000000",
+    functionId: "148",
+    successorName: "North Essex Unitary",
+    systemChoice: "choose",         // 'choose' | 'procure' | 'defer'
+    retainedSystemIds: ["sys-1"],
+    boundaryChoice: "none",         // 'none' | 'disaggregate' | 'maintain-shared' | 'establish-shared'
+    // ... additional fields per choice type
+}</code></pre>
+
+<h2>External Dependencies</h2>
+
+<table><thead><tr><th>Dependency</th><th>Load Method</th><th>Purpose</th></tr></thead><tbody><tr><td>Tailwind CSS</td><td>CDN (<code>&lt;script&gt;</code> in index.html)</td><td>Utility-class styling</td></tr><tr><td>PapaParse</td><td>Lazy-loaded from CDN</td><td>CSV parsing in import wizard</td></tr><tr><td>SheetJS (xlsx)</td><td>Lazy-loaded from CDN</td><td>Excel file reading/writing</td></tr><tr><td>D3.js</td><td>Lazy-loaded from CDN</td><td>Sankey diagram rendering</td></tr></tbody></table>All external dependencies are loaded from CDN at runtime. The bundled JavaScript has zero npm runtime dependencies - only build tools (esbuild, vitest, fast-check) are in <code>node_modules</code>.
+
+<h2>Module Dependency Graph</h2>
+
+<p>The import structure follows a strict hierarchy to avoid circular dependencies:</p>
+
+<pre class="mermaid">
+flowchart TD
+    E[main.js - Orchestrator] --> D[features/ - UI modules]
+    E --> C
+    E --> B
+    D --> C[simulation/ - Decision engine]
+    D --> B[analysis/ - Pure functions]
+    C --> B
+    B --> A[constants/ - Pure data]
+    E -.-> F[state.js - Shared singleton]
+    C -.-> F
+    B -.-> F
+</pre>
+
+<p>Each layer imports only from layers below it. Solid arrows show the primary dependency direction. Dashed arrows show state access (read for context, never mutated by analysis/simulation).</p>
+
+<p><strong>Key rule:</strong> <code>analysis/</code> functions are pure - they accept data as arguments and return results. They read <code>state</code> only for context (e.g., <code>state.transitionStructure?.vestingDate</code>) but never mutate it. Mutation happens in <code>main.js</code> event handlers.</p>
+
+<h2>How to Add a New Feature Module</h2>
+
+<ol><li>Create <code>src/features/my-feature.js</code> (or a directory for multi-file features)</li><li>Export your render and wire functions:</li></ol>   <pre><code class="language-javascript">   export function renderMyFeature(data) { return '&lt;div&gt;...&lt;/div&gt;'; }
+   export function wireMyFeature(container, callbacks) { /* attach listeners */ }</code></pre>
+<ol><li>Import in <code>src/main.js</code>:</li></ol>   <pre><code class="language-javascript">   import { renderMyFeature, wireMyFeature } from './features/my-feature.js';</code></pre>
+<ol><li>Call your render function at the appropriate pipeline stage</li><li>Run <code>node build.js</code> to verify the bundle compiles</li></ol>
+<h2>How to Add a New Analysis Function</h2>
+
+<ol><li>Create or extend a file in <code>src/analysis/</code></li><li>Keep it pure - accept data as arguments, return results, no DOM access</li><li>Import from <code>main.js</code> to wire into the pipeline</li><li>Write property tests in <code>tests/properties/</code> using the existing generators</li></ol>
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="../index.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Overview</a><a href="signals-system.html" class="text-[#1d70b8] hover:underline font-bold">Signals System &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>

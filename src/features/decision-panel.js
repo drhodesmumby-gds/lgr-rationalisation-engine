@@ -1477,7 +1477,7 @@ function prefillDecision(decision, systems, successorName) {
         if (labelEl) labelEl.value = ps.label || '';
         if (vendorEl) vendorEl.value = ps.vendor || '';
         if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : '';
-        if (hostingEl) hostingEl.value = ps.hosting || (ps.isCloud === false ? 'on-premise' : 'cloud');
+        if (hostingEl) hostingEl.value = ps.hosting || 'cloud';
     }
 
     // Axis 2

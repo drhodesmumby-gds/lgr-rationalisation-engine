@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build System — LGR Rationalisation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <style>
+        :root { --govuk-black: #0b0c0c; --govuk-blue: #1d70b8; --govuk-light-grey: #f3f2f1; --govuk-red: #d4351c; --govuk-green: #00703c; --govuk-purple: #53284f; --govuk-orange: #f47738; }
+        body { font-family: "Arial", sans-serif; color: var(--govuk-black); }
+        a { color: var(--govuk-blue); }
+        a:hover { color: #003078; }
+        .doc-content h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 4px solid var(--govuk-blue); padding-bottom: 0.75rem; }
+        .doc-content h2 { font-size: 1.5rem; font-weight: bold; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid #b1b4b6; padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.2rem; font-weight: bold; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .doc-content h4 { font-size: 1rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .doc-content p { margin-bottom: 1rem; line-height: 1.7; }
+        .doc-content ul, .doc-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .doc-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+        .doc-content ul { list-style-type: disc; }
+        .doc-content ol { list-style-type: decimal; }
+        .doc-content code { background-color: var(--govuk-light-grey); padding: 2px 6px; font-size: 0.9em; font-family: monospace; }
+        .doc-content pre { background-color: #f8f8f8; border: 1px solid #b1b4b6; border-left: 4px solid var(--govuk-blue); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.5rem; font-size: 14px; line-height: 1.6; border-radius: 0; }
+        .doc-content pre code { background: none; padding: 0; font-size: inherit; font-family: 'Menlo', 'Consolas', 'Monaco', monospace; }
+        .doc-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        .doc-content th { background-color: var(--govuk-light-grey); font-weight: bold; text-align: left; padding: 12px; border-bottom: 2px solid var(--govuk-black); }
+        .doc-content td { padding: 12px; border-bottom: 1px solid #b1b4b6; vertical-align: top; }
+        .doc-content blockquote { border-left: 4px solid var(--govuk-blue); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; color: #505a5f; font-style: italic; }
+        .doc-content img { max-width: 100%; height: auto; margin: 1rem 0; border: 1px solid #b1b4b6; }
+        .doc-content .callout { padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid; }
+        .doc-content .callout-info { background: #e8f0fe; border-color: var(--govuk-blue); }
+        .doc-content .callout-warning { background: #fef3e8; border-color: var(--govuk-orange); }
+        .doc-content .callout-success { background: #e6f4ea; border-color: var(--govuk-green); }
+        .nav-link { display: block; padding: 6px 12px; font-size: 14px; text-decoration: none; color: #505a5f; border-left: 3px solid transparent; }
+        .nav-link:hover { background: var(--govuk-light-grey); color: var(--govuk-black); }
+        .nav-link.active { border-left-color: var(--govuk-blue); color: var(--govuk-black); font-weight: bold; background: var(--govuk-light-grey); }
+        .nav-section { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #505a5f; padding: 12px 12px 4px; margin-top: 12px; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="border-t-8 border-[#1d70b8] bg-[#0b0c0c] text-white">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-lg">LGR Rationalisation Engine</span>
+                <span class="text-sm text-gray-300">Documentation</span>
+            </div>
+            <a href="../../lgr-rationalisation-engine.html" class="text-sm text-gray-300 hover:text-white underline">Open Application</a>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-7xl mx-auto px-6 py-2 text-sm" aria-label="Breadcrumb">
+        <a href="../index.html" class="text-[#1d70b8] hover:underline">Docs</a> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#505a5f]">Technical</span> <span class="text-[#b1b4b6] mx-1">/</span> <span class="text-[#0b0c0c] font-bold">Build System</span>
+    </nav>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8">
+        <!-- Sidebar -->
+        <aside class="w-60 flex-shrink-0 hidden lg:block">
+            <nav class="sticky top-4 py-4" aria-label="Documentation navigation">
+                <a class="nav-link" href="../index.html">Overview</a><div class="nav-section">Technical Reference</div><a class="nav-link" href="architecture.html">Architecture</a><a class="nav-link" href="signals-system.html">Signals System</a><a class="nav-link" href="simulation-engine.html">Simulation Engine</a><a class="nav-link active" href="build-system.html" class="nav-link active">Build System</a><a class="nav-link" href="editor-internals.html">Editor Internals</a><div class="nav-section">User Guide</div><a class="nav-link" href="../user-guide/getting-started.html">Getting Started</a><a class="nav-link" href="../user-guide/architecture-editor.html">Architecture Editor</a><a class="nav-link" href="../user-guide/transition-planning.html">Transition Planning</a><a class="nav-link" href="../user-guide/signals-analysis.html">Signals and Analysis</a><a class="nav-link" href="../user-guide/simulation.html">Simulation</a><a class="nav-link" href="../user-guide/data-format.html">Data Format Reference</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 py-6 pb-16">
+            <article class="doc-content max-w-[800px]">
+                
+<h1>Build System</h1>
+
+<p>The build system bundles the modular source into deployable outputs. The key constraint is that the primary output is a <strong>single self-contained HTML file</strong> that works without a server, build tools, or network access (except for Tailwind CDN).</p>
+
+<h2>Build Pipeline Stages</h2>
+
+<p><code>build.js</code> (Node.js, CommonJS) executes these stages sequentially:</p>
+
+<pre><code>1. BUNDLE JS          esbuild: src/main.js -&gt; single IIFE
+2. READ CSS           Read src/styles.css
+3. INJECT INTO HTML   Replace {{STYLES}} and {{BUNDLE}} in src/index.html
+4. WRITE OUTPUT       -&gt; dist/lgr-rationalisation-engine.html
+
+5. GENERATE SCHEMAS   Bundle schema-definitions.js -&gt; evaluate -&gt; JSON Schema files
+                      -&gt; dist/lgr-architecture.schema.json
+                      -&gt; dist/lgr-transition-config.schema.json
+
+6. BUILD SCHEMA PAGE  esbuild: src/schema-page-entry.js -&gt; inject into schema-page.html
+                      -&gt; dist/schema.html
+
+7. BUILD DOCS         Scan src/docs/ for .md files -&gt; render to HTML via template
+                      -&gt; dist/docs/*.html</code></pre>
+
+<h2>Commands</h2>
+
+<table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody><tr><td><code>npm run build</code></td><td>Single build: bundles everything, writes to <code>dist/</code></td></tr><tr><td><code>npm run dev</code></td><td>Watch mode: rebuilds on any <code>src/</code> file change (requires chokidar)</td></tr><tr><td><code>npm test</code></td><td>Run property tests via vitest + fast-check</td></tr><tr><td><code>npm run test:watch</code></td><td>Vitest in watch mode</td></tr><tr><td><code>node build.js</code></td><td>Direct invocation (same as <code>npm run build</code>)</td></tr><tr><td><code>node build.js --watch</code></td><td>Direct watch mode invocation</td></tr></tbody></table><h2>esbuild Configuration</h2>
+
+<pre><code class="language-javascript">const jsResult = await esbuild.build({
+    entryPoints: [path.join(SRC, 'main.js')],
+    bundle: true,       // Resolve all imports into one file
+    format: 'iife',     // Immediately-invoked function expression (no module system needed)
+    target: 'es2020',   // Browser compatibility target
+    minify: false,      // Keep readable for debugging
+    write: false,       // Don't write to disk - we inject into HTML template
+});</code></pre>
+
+<p>The IIFE format means the bundled code executes immediately when the browser parses the <code>&lt;script&gt;</code> tag. No module loader required.</p>
+
+<h2>Template Injection</h2>
+
+<p><code>src/index.html</code> contains two placeholders:</p>
+
+<pre><code class="language-html">&lt;style&gt;{{STYLES}}&lt;/style&gt;
+&lt;script&gt;{{BUNDLE}}&lt;/script&gt;</code></pre>
+
+<p>The build reads <code>src/styles.css</code> and the bundled JS, then replaces these placeholders:</p>
+
+<pre><code class="language-javascript">let html = fs.readFileSync(path.join(SRC, 'index.html'), 'utf-8');
+html = html.replace('{{STYLES}}', css);
+html = html.replace('{{BUNDLE}}', jsBundle);
+fs.writeFileSync(outPath, html);</code></pre>
+
+<h2>JSON Schema Generation</h2>
+
+<p>The build evaluates <code>src/constants/schema-definitions.js</code> to extract the schema structure, then converts it to JSON Schema (draft 2020-12):</p>
+
+<pre><code class="language-javascript">async function generateJsonSchemas() {
+    // Bundle schema-definitions into CJS format
+    const result = await esbuild.build({
+        entryPoints: [path.join(SRC, 'constants/schema-definitions.js')],
+        bundle: true, format: 'cjs', write: false, platform: 'node'
+    });
+    // Evaluate in sandbox to get exports
+    vm.runInNewContext(result.outputFiles[0].text, { module: mod, exports, require });
+    const { SCHEMA_DEFINITIONS } = mod.exports;
+    // Convert and write
+    const archSchema = convertToJsonSchema(SCHEMA_DEFINITIONS.architecture);
+    fs.writeFileSync(path.join(DIST, 'lgr-architecture.schema.json'), ...);
+}</code></pre>
+
+<p>This generates two schema files:</p>
+<ul><li><code>dist/lgr-architecture.schema.json</code> - validates council architecture files</li><li><code>dist/lgr-transition-config.schema.json</code> - validates transition config files</li></ul>
+<h2>Documentation Site Build</h2>
+
+<p>The <code>buildDocs()</code> function:</p>
+
+<ol><li>Scans <code>src/docs/</code> for <code>.md</code> files (root, <code>user-guide/</code>, <code>technical/</code>)</li><li>Parses YAML frontmatter for <code>title</code>, <code>order</code>, <code>section</code></li><li>Converts markdown to HTML using a built-in converter (no external dependency)</li><li>Injects content into <code>src/docs/template.html</code></li><li>Generates sidebar navigation, breadcrumbs, and prev/next pagination</li><li>Writes to <code>dist/docs/</code></li></ol>
+<p>The markdown converter handles: headings, code blocks, tables, lists, links, images, bold/italic, blockquotes. It does NOT support nested lists or complex markdown extensions.</p>
+
+<h3>Frontmatter Format</h3>
+
+<pre><code class="language-yaml">---
+title: Page Title
+order: 1
+section: technical
+---</code></pre>
+
+<ul><li><code>title</code> - displayed in sidebar and page header</li><li><code>order</code> - sort position within its section (lower = earlier)</li><li><code>section</code> - one of: `<code> (root/overview), </code>user-guide<code>, </code>technical<code></li></ul>
+<h2>Adding New Modules</h2>
+
+<p>Adding a new source module requires zero build configuration:</p>
+
+<ol><li>Create your file anywhere under </code>src/<code></li><li>Use ES module syntax (</code>export<code>, </code>import<code>)</li><li>Import it from </code>main.js<code> or from a module that </code>main.js<code> already imports</li><li>esbuild's tree of imports resolves everything automatically</li></ol>
+<p>&lt;!--CODEBLOCK_6--&gt;</p>
+
+<p>That's it. No config file to update, no manifest to edit.</p>
+
+<h2>Testing Approach</h2>
+
+<h3>Property Tests (vitest + fast-check)</h3>
+
+<p>Test files: </code>tests/properties/*.property.test.js<code></p>
+<p>Generators: </code>tests/generators/<code></p>
+
+<p>Property tests verify pure functions with randomised inputs. They catch edge cases that unit tests miss.</p>
+
+<p>&lt;!--CODEBLOCK_7--&gt;</p>
+
+<h3>Test Generators</h3>
+
+<table><thead><tr><th>Generator</th><th>File</th><th>Produces</th></tr></thead><tbody><tr><td></code>arbITSystem<code></td><td></code>tests/generators/arbITSystem.js<code></td><td>Randomised ITSystem node objects</td></tr><tr><td></code>arbCouncil<code></td><td></code>tests/generators/arbCouncil.js<code></td><td>Full council architecture payloads</td></tr><tr><td></code>arbEstate<code></td><td></code>tests/generators/arbEstate.js<code></td><td>Multi-council estates with edges</td></tr><tr><td></code>arbTransitionStructure<code></td><td></code>tests/generators/arbTransitionStructure.js<code></td><td>Valid transition configs</td></tr><tr><td></code>arbEditorState<code> / </code>arbBulkState<code></td><td></code>tests/generators/unified-editor-generators.js<code></td><td>Editor state objects</td></tr></tbody></table><h3>Running Tests</h3>
+
+<p>&lt;!--CODEBLOCK_8--&gt;</p>
+
+<h3>Browser Testing</h3>
+
+<p>The app must be served over HTTP (not </code>file:///<code>):</p>
+
+<p>&lt;!--CODEBLOCK_9--&gt;</p>
+
+<p>Browser testing uses Playwright MCP tools (not custom scripts):</p>
+
+<p>&lt;!--CODEBLOCK_10--&gt;</p>
+
+<h2>How the Single-File Output Works</h2>
+
+<p>The output </code>dist/lgr-rationalisation-engine.html<code> is completely self-contained:</p>
+
+<ul><li>All JavaScript is inlined in a </code><script><code> tag (no external </code>.js<code> files)</li><li>All CSS is inlined in a </code><style><code> tag</li><li>The only network dependency is Tailwind CSS CDN (loaded in </code><head><code>)</li><li>External libraries (PapaParse, SheetJS, D3) are lazy-loaded from CDN only when their features are used</li></ul>
+<p>This means the file can be:</p>
+<ul><li>Served from any static host</li><li>Opened directly from disk (with Tailwind CDN limitation)</li><li>Emailed as an attachment</li><li>Stored in SharePoint/Teams</li></ul>
+<h2>Watch Mode</h2>
+
+<p>&lt;!--CODEBLOCK_11--&gt;</p>
+
+<p>Uses chokidar to watch all files under </code>src/<code>. On any change:</p>
+<ol><li>Triggers a full rebuild</li><li>Reports build size on success</li><li>Reports error message on failure (does not exit)</li></ol>
+<p>Note: chokidar is an optional dev dependency. If not installed, watch mode falls back to a single build with a warning message.</p>
+
+<h2>dist/ Outputs</h2>
+
+<table><thead><tr><th>File</th><th>Size (typical)</th><th>Description</th></tr></thead><tbody><tr><td></code>lgr-rationalisation-engine.html<code></td><td>~450 KB</td><td>Main application (self-contained)</td></tr><tr><td></code>lgr-architecture.schema.json<code></td><td>~8 KB</td><td>JSON Schema for architecture files</td></tr><tr><td></code>lgr-transition-config.schema.json<code></td><td>~3 KB</td><td>JSON Schema for transition configs</td></tr><tr><td></code>schema.html<code></td><td>~120 KB</td><td>Schema documentation page</td></tr><tr><td></code>docs/<code></td><td>~15 files</td><td>Documentation site (HTML pages)</td></tr></tbody></table><h2>How to Add a Documentation Page</h2>
+
+<ol><li>Create a </code>.md<code> file in the appropriate </code>src/docs/<code> subdirectory</li><li>Add YAML frontmatter:</li></ol>   &lt;!--CODEBLOCK_12--&gt;
+<ol><li>Write your content in markdown</li><li>Run </code>node build.js<code> - the page appears in </code>dist/docs/<code></li><li>Update </code>src/docs/index.md<code> to link to the new page</li></ol>
+<h2>Build Troubleshooting</h2>
+
+<table><thead><tr><th>Problem</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td></code>Cannot resolve './my-module.js'<code></td><td>Missing file or wrong path</td><td>Check the import path matches the actual file location</td></tr><tr><td>Bundle size spike</td><td>Large constant or duplicated import</td><td>Check for accidental data duplication in constants</td></tr><tr><td>Schema generation fails</td><td>Invalid schema-definitions.js export</td><td>Ensure </code>SCHEMA_DEFINITIONS<code> exports correctly after </code>vm.runInNewContext<code></td></tr><tr><td>Watch mode not working</td><td>chokidar not installed</td><td></code>npm install --save-dev chokidar`</td></tr><tr><td>Build passes but app blank</td><td>JS error at runtime</td><td>Serve over HTTP, check browser console</td></tr></tbody></table>
+            </article>
+
+            <!-- Prev/Next -->
+            <nav class="flex justify-between mt-12 pt-6 border-t border-[#b1b4b6]" aria-label="Pagination">
+                <a href="simulation-engine.html" class="text-[#1d70b8] hover:underline font-bold">&larr; Simulation Engine</a><a href="editor-internals.html" class="text-[#1d70b8] hover:underline font-bold">Editor Internals &rarr;</a>
+            </nav>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#b1b4b6] mt-16 bg-[#f3f2f1]">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-sm text-[#505a5f]">
+            <p>LGR Rationalisation Engine documentation.</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: { primaryColor: '#1d70b8', primaryTextColor: '#0b0c0c', lineColor: '#505a5f' } });
+    </script>
+</body>
+</html>
