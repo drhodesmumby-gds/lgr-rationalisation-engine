@@ -203,13 +203,15 @@ function countDecidableFunctions() {
     if (!ss) return 0;
     const allocMap = ss.baselineAllocation || state.successorAllocationMap;
     if (!allocMap) return 0;
-    let count = 0;
+    let contested = 0;
+    let total = 0;
     allocMap.forEach((funcMap) => {
         funcMap.forEach((allocations) => {
-            if (allocations.length >= 2) count++;
+            if (allocations.length >= 1) total++;
+            if (allocations.length >= 2) contested++;
         });
     });
-    return count;
+    return { contested, total };
 }
 
 /**
@@ -411,17 +413,20 @@ function renderTransitionCostCard() {
  */
 function renderDecisionSummary(el, impact) {
     const decisions = state.simulationState ? (state.simulationState.decisions || new Map()) : new Map();
-    const totalDecidable = countDecidableFunctions();
+    const { contested, total } = countDecidableFunctions();
     const decidedCount = decisions.size;
-    const pct = totalDecidable > 0 ? Math.round((decidedCount / totalDecidable) * 100) : 0;
+    const contestedDecided = Math.min(decidedCount, contested);
+    const additionalDecisions = Math.max(0, decidedCount - contested);
+    const pct = contested > 0 ? Math.round((contestedDecided / contested) * 100) : 0;
 
     // Progress bar
+    const additionalLabel = additionalDecisions > 0 ? ` + ${additionalDecisions} single-system` : '';
     const progressBarHtml = `
         <div class="mt-1 mb-1" aria-label="Decision progress: ${pct}%">
             <div class="w-full bg-gray-200 h-2 border border-gray-300">
                 <div class="h-full bg-[#1d70b8]" style="width:${pct}%"></div>
             </div>
-            <div class="text-xs text-gray-500 mt-0.5">${decidedCount} of ${totalDecidable} decidable functions &mdash; ${pct}%</div>
+            <div class="text-xs text-gray-500 mt-0.5">${contestedDecided} of ${contested} contested functions${additionalLabel} &mdash; ${pct}%</div>
         </div>
     `;
 

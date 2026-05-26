@@ -74,7 +74,8 @@ export function projectDecisions(decisions, baselineNodes, baselineEdges, baseli
             baselineEdges,
             baselineAllocation,
             lgaFunctionMap,
-            globalRetainedSystemIds
+            globalRetainedSystemIds,
+            decisions
         );
         allActions.push(...actions);
         allObligations.push(...obligations);
@@ -114,12 +115,12 @@ function decisionPriority(decision) {
  * @param {Set<string>} globalRetainedSystemIds  All system IDs retained by any decision
  * @returns {{ actions: Array, obligations: Array }}
  */
-function projectOneDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds) {
+function projectOneDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions) {
     switch (decision.systemChoice) {
         case 'choose':
-            return projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds);
+            return projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions);
         case 'procure':
-            return projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds);
+            return projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions);
         case 'defer':
             return projectDeferDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap);
         default:
@@ -137,7 +138,7 @@ function projectOneDecision(decision, baselineNodes, baselineEdges, baselineAllo
  *
  * If boundaryChoice === 'disaggregate', a disaggregate action is emitted BEFORE the consolidate.
  */
-function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds) {
+function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions) {
     const actions = [];
     const obligations = [];
 
@@ -179,17 +180,40 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
     });
 
     // Partition non-retained systems:
-    // - severOnly: system has REALIZES edges OUTSIDE this cell's scope (serves other functions
-    //   or other successors) OR is retained by another decision. Only sever the edge to this cell.
-    // - removeSystemIds: system has NO REALIZES edges outside this scope — safe to fully remove.
+    // - severOnly: system is retained by another decision, OR serves other functions that
+    //   DON'T have decisions addressing them. Only sever the edge to this cell.
+    // - removeSystemIds: system is not retained anywhere AND all other functions it serves
+    //   also have decisions that don't retain it — safe to fully remove.
     const severOnly = nonRetainedSystems.filter(sysId => {
         if (globalRetainedSystemIds.has(sysId)) return true;
-        // Check if system has any REALIZES edges outside this cell's function scope
-        return baselineEdges.some(e =>
+        // Find all REALIZES edges outside this cell's function scope
+        const outsideEdges = baselineEdges.filter(e =>
             e.source === sysId &&
             e.relationship === 'REALIZES' &&
             !scopeFuncNodeIds.has(e.target)
         );
+        if (outsideEdges.length === 0) return false; // No outside edges — safe to remove
+        // Check if ALL outside functions have decisions that don't retain this system
+        for (const edge of outsideEdges) {
+            const targetFuncNode = baselineNodes.find(n => n.id === edge.target && n.type === 'Function');
+            if (!targetFuncNode || !targetFuncNode.lgaFunctionId) return true; // Can't resolve — sever to be safe
+            const otherFuncId = targetFuncNode.lgaFunctionId;
+            // Check if there's a decision for this function (any successor) that doesn't retain this system
+            let otherFuncHasDecision = false;
+            if (allDecisions) {
+                for (const otherDec of allDecisions.values()) {
+                    if (otherDec.functionId === otherFuncId && otherDec.successorName === successorName) {
+                        otherFuncHasDecision = true;
+                        if (otherDec.retainedSystemIds && otherDec.retainedSystemIds.includes(sysId)) {
+                            return true; // Retained by another function's decision — must sever
+                        }
+                        break;
+                    }
+                }
+            }
+            if (!otherFuncHasDecision) return true; // No decision for this function yet — sever to be safe
+        }
+        return false; // All outside functions have decisions that don't retain this system — safe to remove
     });
     const severOnlySet = new Set(severOnly);
     const removeSystemIds = nonRetainedSystems.filter(sysId => !severOnlySet.has(sysId));
@@ -297,7 +321,7 @@ function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineA
  * Existing systems serving this function in this successor are removed
  * (unless they are retained by other decisions).
  */
-function projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds) {
+function projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions) {
     const actions = [];
     const { functionId, successorName, procuredSystem, boundaryChoice, disaggregationSplits } = decision;
 
@@ -321,26 +345,40 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         }
     });
 
-    // Partition systems: sever-only (has REALIZES edges outside this scope) vs fully replaced
+    // Partition systems: sever-only vs fully replaced
+    // A system is sever-only if it's retained elsewhere OR serves other functions
+    // that don't yet have decisions addressing them.
     const scopeSet = new Set(scopeFunctionNodeIds);
-    const replacedSystems = allSystemsInCell.filter(sysId => {
-        if (globalRetainedSystemIds.has(sysId)) return false;
-        // Check if system has REALIZES edges outside this cell's scope
-        const hasExternalEdges = baselineEdges.some(e =>
-            e.source === sysId &&
-            e.relationship === 'REALIZES' &&
-            !scopeSet.has(e.target)
-        );
-        return !hasExternalEdges;
-    });
     const severOnlySystems = allSystemsInCell.filter(sysId => {
         if (globalRetainedSystemIds.has(sysId)) return true;
-        return baselineEdges.some(e =>
+        const outsideEdges = baselineEdges.filter(e =>
             e.source === sysId &&
             e.relationship === 'REALIZES' &&
             !scopeSet.has(e.target)
         );
+        if (outsideEdges.length === 0) return false;
+        for (const edge of outsideEdges) {
+            const targetFuncNode = baselineNodes.find(n => n.id === edge.target && n.type === 'Function');
+            if (!targetFuncNode || !targetFuncNode.lgaFunctionId) return true;
+            const otherFuncId = targetFuncNode.lgaFunctionId;
+            let otherFuncHasDecision = false;
+            if (allDecisions) {
+                for (const otherDec of allDecisions.values()) {
+                    if (otherDec.functionId === otherFuncId && otherDec.successorName === successorName) {
+                        otherFuncHasDecision = true;
+                        if (otherDec.retainedSystemIds && otherDec.retainedSystemIds.includes(sysId)) {
+                            return true;
+                        }
+                        break;
+                    }
+                }
+            }
+            if (!otherFuncHasDecision) return true;
+        }
+        return false;
     });
+    const severOnlySet = new Set(severOnlySystems);
+    const replacedSystems = allSystemsInCell.filter(sysId => !severOnlySet.has(sysId));
 
     // Build the new system node — include targetAuthorities so buildSuccessorAllocation()
     // can allocate the procured system to the correct successor after simulation

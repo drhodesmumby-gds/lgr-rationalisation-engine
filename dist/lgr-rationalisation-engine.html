@@ -8395,7 +8395,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         baselineEdges,
         baselineAllocation,
         lgaFunctionMap,
-        globalRetainedSystemIds
+        globalRetainedSystemIds,
+        decisions
       );
       allActions.push(...actions);
       allObligations.push(...obligations);
@@ -8412,19 +8413,19 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     if (decision.sharedServiceOrigin) return 1;
     return 1;
   }
-  function projectOneDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds) {
+  function projectOneDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions) {
     switch (decision.systemChoice) {
       case "choose":
-        return projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds);
+        return projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions);
       case "procure":
-        return projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds);
+        return projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions);
       case "defer":
         return projectDeferDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap);
       default:
         return { actions: [], obligations: [] };
     }
   }
-  function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds) {
+  function projectChooseDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions) {
     const actions = [];
     const obligations = [];
     const { functionId, successorName, retainedSystemIds, boundaryChoice, disaggregationSplits } = decision;
@@ -8458,9 +8459,29 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     });
     const severOnly = nonRetainedSystems.filter((sysId) => {
       if (globalRetainedSystemIds.has(sysId)) return true;
-      return baselineEdges.some(
+      const outsideEdges = baselineEdges.filter(
         (e) => e.source === sysId && e.relationship === "REALIZES" && !scopeFuncNodeIds.has(e.target)
       );
+      if (outsideEdges.length === 0) return false;
+      for (const edge of outsideEdges) {
+        const targetFuncNode = baselineNodes.find((n) => n.id === edge.target && n.type === "Function");
+        if (!targetFuncNode || !targetFuncNode.lgaFunctionId) return true;
+        const otherFuncId = targetFuncNode.lgaFunctionId;
+        let otherFuncHasDecision = false;
+        if (allDecisions) {
+          for (const otherDec of allDecisions.values()) {
+            if (otherDec.functionId === otherFuncId && otherDec.successorName === successorName) {
+              otherFuncHasDecision = true;
+              if (otherDec.retainedSystemIds && otherDec.retainedSystemIds.includes(sysId)) {
+                return true;
+              }
+              break;
+            }
+          }
+        }
+        if (!otherFuncHasDecision) return true;
+      }
+      return false;
     });
     const severOnlySet = new Set(severOnly);
     const removeSystemIds = nonRetainedSystems.filter((sysId) => !severOnlySet.has(sysId));
@@ -8532,7 +8553,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     }
     return { actions, obligations };
   }
-  function projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds) {
+  function projectProcureDecision(decision, baselineNodes, baselineEdges, baselineAllocation, lgaFunctionMap, globalRetainedSystemIds, allDecisions) {
     const actions = [];
     const { functionId, successorName, procuredSystem, boundaryChoice, disaggregationSplits } = decision;
     if (!procuredSystem || !procuredSystem.label) {
@@ -8550,19 +8571,34 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       }
     });
     const scopeSet = new Set(scopeFunctionNodeIds);
-    const replacedSystems = allSystemsInCell.filter((sysId) => {
-      if (globalRetainedSystemIds.has(sysId)) return false;
-      const hasExternalEdges = baselineEdges.some(
-        (e) => e.source === sysId && e.relationship === "REALIZES" && !scopeSet.has(e.target)
-      );
-      return !hasExternalEdges;
-    });
     const severOnlySystems = allSystemsInCell.filter((sysId) => {
       if (globalRetainedSystemIds.has(sysId)) return true;
-      return baselineEdges.some(
+      const outsideEdges = baselineEdges.filter(
         (e) => e.source === sysId && e.relationship === "REALIZES" && !scopeSet.has(e.target)
       );
+      if (outsideEdges.length === 0) return false;
+      for (const edge of outsideEdges) {
+        const targetFuncNode = baselineNodes.find((n) => n.id === edge.target && n.type === "Function");
+        if (!targetFuncNode || !targetFuncNode.lgaFunctionId) return true;
+        const otherFuncId = targetFuncNode.lgaFunctionId;
+        let otherFuncHasDecision = false;
+        if (allDecisions) {
+          for (const otherDec of allDecisions.values()) {
+            if (otherDec.functionId === otherFuncId && otherDec.successorName === successorName) {
+              otherFuncHasDecision = true;
+              if (otherDec.retainedSystemIds && otherDec.retainedSystemIds.includes(sysId)) {
+                return true;
+              }
+              break;
+            }
+          }
+        }
+        if (!otherFuncHasDecision) return true;
+      }
+      return false;
     });
+    const severOnlySet = new Set(severOnlySystems);
+    const replacedSystems = allSystemsInCell.filter((sysId) => !severOnlySet.has(sysId));
     const newSystemId = `sys-procured-${functionId}-${successorName.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}`;
     const newSystem = {
       id: procuredSystem.id || newSystemId,
@@ -9610,13 +9646,15 @@ ${hardErrors.join("\n")}`);
     if (!ss) return 0;
     const allocMap = ss.baselineAllocation || state.successorAllocationMap;
     if (!allocMap) return 0;
-    let count = 0;
+    let contested = 0;
+    let total = 0;
     allocMap.forEach((funcMap) => {
       funcMap.forEach((allocations) => {
-        if (allocations.length >= 2) count++;
+        if (allocations.length >= 1) total++;
+        if (allocations.length >= 2) contested++;
       });
     });
-    return count;
+    return { contested, total };
   }
   function computeErpDecisionStatus(decisions) {
     const ss = state.simulationState;
@@ -9765,15 +9803,18 @@ ${hardErrors.join("\n")}`);
   }
   function renderDecisionSummary(el, impact) {
     const decisions = state.simulationState ? state.simulationState.decisions || /* @__PURE__ */ new Map() : /* @__PURE__ */ new Map();
-    const totalDecidable = countDecidableFunctions();
+    const { contested, total } = countDecidableFunctions();
     const decidedCount = decisions.size;
-    const pct = totalDecidable > 0 ? Math.round(decidedCount / totalDecidable * 100) : 0;
+    const contestedDecided = Math.min(decidedCount, contested);
+    const additionalDecisions = Math.max(0, decidedCount - contested);
+    const pct = contested > 0 ? Math.round(contestedDecided / contested * 100) : 0;
+    const additionalLabel = additionalDecisions > 0 ? ` + ${additionalDecisions} single-system` : "";
     const progressBarHtml = `
         <div class="mt-1 mb-1" aria-label="Decision progress: ${pct}%">
             <div class="w-full bg-gray-200 h-2 border border-gray-300">
                 <div class="h-full bg-[#1d70b8]" style="width:${pct}%"></div>
             </div>
-            <div class="text-xs text-gray-500 mt-0.5">${decidedCount} of ${totalDecidable} decidable functions &mdash; ${pct}%</div>
+            <div class="text-xs text-gray-500 mt-0.5">${contestedDecided} of ${contested} contested functions${additionalLabel} &mdash; ${pct}%</div>
         </div>
     `;
     const sortedDecisions = [...decisions.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 5);
