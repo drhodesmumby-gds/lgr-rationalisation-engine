@@ -61,7 +61,8 @@ export function applyAllActions(baselineNodes, baselineEdges, actions, baselineA
                 const targetSystem = getTargetSystem(result.nodes, action);
                 const obligations = generateObligations(
                     baselineAllocation, action, i,
-                    removedSystems, targetSystem, lgaFunctionMap
+                    removedSystems, targetSystem, lgaFunctionMap,
+                    actions, result.nodes
                 );
                 allObligations.push(...obligations);
             }

@@ -14,6 +14,16 @@
 
 import { isNonCloud, isCloud as isCloudHosted, getHostingType } from '../analysis/hosting.js';
 
+function resolveActionTarget(resultNodes, action) {
+    if (action.type === 'consolidate' && action.targetSystemId) {
+        return resultNodes.find(n => n.id === action.targetSystemId) || null;
+    }
+    if (action.type === 'procure-replacement' && action.newSystem) {
+        return resultNodes.find(n => n.id === action.newSystem.id) || null;
+    }
+    return null;
+}
+
 /**
  * @typedef {Object} SimulationObligation
  * @property {string} id
@@ -58,7 +68,7 @@ import { isNonCloud, isCloud as isCloudHosted, getHostingType } from '../analysi
  * @param {Map|null} lgaFunctionMap  Map<lgaFunctionId, { lgaId, label, ... }>
  * @returns {SimulationObligation[]}
  */
-export function generateObligations(baselineAllocation, action, actionIndex, removedSystems, targetSystem, lgaFunctionMap) {
+export function generateObligations(baselineAllocation, action, actionIndex, removedSystems, targetSystem, lgaFunctionMap, allActions, resultNodes) {
     const obligations = [];
     if (!baselineAllocation || !removedSystems || removedSystems.length === 0) return obligations;
 
@@ -95,12 +105,26 @@ export function generateObligations(baselineAllocation, action, actionIndex, rem
                     noticePeriod: sys.noticePeriod || null
                 };
 
-                const toSystemData = targetSystem ? {
-                    id: targetSystem.id,
-                    label: targetSystem.label || targetSystem.id,
-                    council: targetSystem._sourceCouncil || 'Unknown',
-                    upfrontCost: targetSystem.upfrontCost || 0,
-                    annualCost: typeof targetSystem.annualCost === 'number' ? targetSystem.annualCost : 0
+                // Resolve the correct target for THIS function (may differ from the action's own target)
+                let resolvedTarget = targetSystem;
+                if (allActions && resultNodes && lgaFunctionId !== action.functionId) {
+                    const funcAction = allActions.find(a =>
+                        a.functionId === lgaFunctionId &&
+                        a.successorName === successorName &&
+                        a !== action
+                    );
+                    if (funcAction) {
+                        const funcTarget = resolveActionTarget(resultNodes, funcAction);
+                        if (funcTarget) resolvedTarget = funcTarget;
+                    }
+                }
+
+                const toSystemData = resolvedTarget ? {
+                    id: resolvedTarget.id,
+                    label: resolvedTarget.label || resolvedTarget.id,
+                    council: resolvedTarget._sourceCouncil || 'Unknown',
+                    upfrontCost: resolvedTarget.upfrontCost || 0,
+                    annualCost: typeof resolvedTarget.annualCost === 'number' ? resolvedTarget.annualCost : 0
                 } : null;
 
                 const oblType = isCrossSuccessor

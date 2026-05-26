@@ -557,22 +557,75 @@ function renderDecisionSummary(el, impact) {
     const obligationsHtml = impact ? renderObligationsPanel(impact.obligations) : '';
     const costCardHtml = renderTransitionCostCard();
 
+    // Tab-based layout
+    const activeTab = state._simPanelTab || 'progress';
+    const tabItems = [
+        { id: 'progress', label: 'Progress' },
+        { id: 'decisions', label: `Decisions (${decidedCount})` },
+        { id: 'obligations', label: 'Obligations' },
+        { id: 'costs', label: 'Costs' }
+    ];
+    const tabBar = tabItems.map(t => {
+        const active = t.id === activeTab;
+        const cls = active
+            ? 'font-bold text-[#0b0c0c] border-b-[3px] border-[#1d70b8]'
+            : 'font-bold text-[#505a5f] border-b-[3px] border-transparent hover:text-[#0b0c0c]';
+        return `<button type="button" onclick="window._simSwitchTab('${t.id}')" class="px-2 py-1.5 text-xs ${cls}">${t.label}</button>`;
+    }).join('');
+
+    let tabContent = '';
+    switch (activeTab) {
+        case 'progress':
+            tabContent = `
+                ${progressBarHtml}
+                ${undecidedHtml}
+                ${erpHtml}
+                ${warningHtml}
+            `;
+            break;
+        case 'decisions': {
+            // Show ALL decisions (not just latest 5)
+            const allDecisionsSorted = [...decisions.values()]
+                .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+            const allDecisionsHtml = allDecisionsSorted.length === 0
+                ? '<div class="text-xs text-gray-500 italic">No decisions made yet.</div>'
+                : allDecisionsSorted.map(dec => {
+                    const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(dec.functionId) : null;
+                    const funcLabel = funcEntry ? funcEntry.label : `Function ${dec.functionId}`;
+                    const retainedLabel = dec.systemChoice === 'choose' && dec.retainedSystemIds && dec.retainedSystemIds.length > 0
+                        ? resolveSystemLabel(dec.retainedSystemIds[0]) : null;
+                    const dLabel = decisionLabel(dec, retainedLabel);
+                    const sharedTag = dec.sharedServiceOrigin
+                        ? ' <span class="text-[10px] font-bold text-[#0b0c0c]">[Shared]</span>'
+                        : (dec.sharedWithSuccessors && dec.sharedWithSuccessors.length > 0
+                            ? ` <span class="text-[10px] text-gray-400">(shared with ${dec.sharedWithSuccessors.length})</span>` : '');
+                    const safeFuncId = escHtml(dec.functionId);
+                    const safeSucc = escHtml(dec.successorName);
+                    return `<div class="text-xs py-1.5 border-b border-gray-100 last:border-0 flex items-start gap-1">
+                        <div class="flex-1">
+                            <span class="font-bold">${escHtml(funcLabel)}</span>
+                            <span class="text-gray-500"> (${safeSucc})</span>${sharedTag}
+                            <span class="block text-gray-700">&rarr; ${escHtml(dLabel)}</span>
+                        </div>
+                        <button onclick="window._simOpenDecision('${safeFuncId}', '${safeSucc}')" class="text-gray-400 hover:text-[#1d70b8] p-0.5" title="Edit">&#9998;</button>
+                        <button onclick="window._simRemoveDecision('${safeFuncId}', '${safeSucc}')" class="text-gray-400 hover:text-[#d4351c] p-0.5" title="Remove">&times;</button>
+                    </div>`;
+                }).join('');
+            tabContent = allDecisionsHtml;
+            break;
+        }
+        case 'obligations':
+            tabContent = obligationsHtml || '<div class="text-xs text-gray-500 italic">No obligations generated yet.</div>';
+            break;
+        case 'costs':
+            tabContent = `${costCardHtml}${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ''}`;
+            break;
+    }
+
     el.innerHTML = `
-        <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold uppercase tracking-wide text-[#0b0c0c]">Decisions</span>
-        </div>
-        ${progressBarHtml}
-        <div class="mt-2 pt-2 border-t border-gray-200">
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Latest Decisions</div>
-            ${latestHtml}
-        </div>
-        ${undecidedHtml}
-        ${erpHtml}
-        ${warningHtml}
-        ${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ''}
-        ${obligationsHtml}
-        ${costCardHtml}
-        <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2">
+        <div class="flex border-b border-[#b1b4b6] mb-2">${tabBar}</div>
+        <div class="flex-1 overflow-y-auto">${tabContent}</div>
+        <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2 shrink-0">
             ${!!(state.simulationState?.baselineAllocation || state.successorAllocationMap)
                 ? `<button onclick="window._simOpenSankeyOverlay()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left border-[#1d70b8] text-[#1d70b8]">View flow diagram</button>`
                 : ''}
@@ -1415,6 +1468,10 @@ window._simClearAllDecisions = function() {
 };
 window._simToggleSidePanel = function() {
     state.simPanelCollapsed = !state.simPanelCollapsed;
+    renderSimulationWorkspace();
+};
+window._simSwitchTab = function(tabId) {
+    state._simPanelTab = tabId;
     renderSimulationWorkspace();
 };
 
