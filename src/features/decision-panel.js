@@ -764,12 +764,16 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
                             </div>
                             <div>
                                 <label for="procureHosting" class="block text-xs font-bold mb-1">Hosting</label>
-                                <select id="procureHosting" class="border border-[#b1b4b6] p-1.5 text-sm w-full">
+                                <select id="procureHosting" class="border border-[#b1b4b6] p-1.5 text-sm w-full" onchange="document.getElementById('procureHostingPartnerRow').classList.toggle('hidden', this.value !== 'partner-hosted')">
                                     <option value="cloud" selected>Cloud</option>
                                     <option value="on-premise">On-premise</option>
                                     <option value="partner-hosted">Partner-hosted</option>
                                 </select>
                             </div>
+                        </div>
+                        <div id="procureHostingPartnerRow" class="hidden mt-2">
+                            <label for="procureHostingPartner" class="block text-xs font-bold mb-1">Hosting partner</label>
+                            <input id="procureHostingPartner" type="text" placeholder="Council or organisation name" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full" />
                         </div>
                     </div>
                 </div>
@@ -1485,7 +1489,13 @@ function prefillDecision(decision, systems, successorName) {
         if (vendorEl) vendorEl.value = ps.vendor || '';
         if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : '';
         if (upfrontCostEl) upfrontCostEl.value = ps.upfrontCost != null ? ps.upfrontCost : '';
-        if (hostingEl) hostingEl.value = ps.hosting || 'cloud';
+        if (hostingEl) {
+            hostingEl.value = ps.hosting || 'cloud';
+            const partnerRow = content.querySelector('#procureHostingPartnerRow');
+            if (partnerRow) partnerRow.classList.toggle('hidden', ps.hosting !== 'partner-hosted');
+        }
+        const hostingPartnerEl = content.querySelector('#procureHostingPartner');
+        if (hostingPartnerEl) hostingPartnerEl.value = ps.hostingPartner || '';
     }
 
     // Axis 2
@@ -1557,12 +1567,14 @@ export async function applyDecisionFromPanel() {
         const costEl = content.querySelector('#procureCost');
         const upfrontCostEl = content.querySelector('#procureUpfrontCost');
         const hostingEl = content.querySelector('#procureHosting');
+        const hostingPartnerEl = content.querySelector('#procureHostingPartner');
         procuredSystem = {
             label,
             vendor: vendorEl ? vendorEl.value.trim() : '',
             annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
             upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
-            hosting: hostingEl ? hostingEl.value : 'cloud'
+            hosting: hostingEl ? hostingEl.value : 'cloud',
+            hostingPartner: (hostingEl && hostingEl.value === 'partner-hosted' && hostingPartnerEl) ? hostingPartnerEl.value.trim() : undefined
         };
     }
 
@@ -1957,12 +1969,14 @@ window._simBulkApplyErp = function(erpSystemId, successorName) {
         const costEl = content.querySelector('#procureCost');
         const upfrontCostEl = content.querySelector('#procureUpfrontCost');
         const hostingEl = content.querySelector('#procureHosting');
+        const hostingPartnerEl = content.querySelector('#procureHostingPartner');
         procuredSystem = {
             label,
             vendor: vendorEl ? vendorEl.value.trim() : '',
             annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
             upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
-            hosting: hostingEl ? hostingEl.value : 'cloud'
+            hosting: hostingEl ? hostingEl.value : 'cloud',
+            hostingPartner: (hostingEl && hostingEl.value === 'partner-hosted' && hostingPartnerEl) ? hostingPartnerEl.value.trim() : undefined
         };
     }
 
