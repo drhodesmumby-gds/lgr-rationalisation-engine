@@ -21,15 +21,29 @@ export function enterSimulation() {
     const baselineAllocation = state.transitionStructure
         ? buildSuccessorAllocation(state.mergedArchitecture.nodes, state.mergedArchitecture.edges, state.transitionStructure).allocation
         : null;
+
+    // Restore previously saved decisions if available
+    const restoredDecisions = new Map();
+    if (state._savedSimulationDecisions && state._savedSimulationDecisions.length > 0) {
+        for (const dec of state._savedSimulationDecisions) {
+            restoredDecisions.set(`${dec.functionId}::${dec.successorName}`, dec);
+        }
+    }
+
     state.simulationState = {
         baselineNodes: JSON.parse(JSON.stringify(state.mergedArchitecture.nodes)),
         baselineEdges: JSON.parse(JSON.stringify(state.mergedArchitecture.edges)),
         baselineAllocation,
         actions: [],
-        decisions: new Map(),
+        decisions: restoredDecisions,
         projectedActions: [],
         lastImpact: null
     };
+
+    if (restoredDecisions.size > 0) {
+        recomputeSimulation();
+    }
+
     renderDashboard();
 
     // Auto-load pending scenario if one was uploaded at Stage 1
@@ -50,6 +64,10 @@ export function enterSimulation() {
 }
 
 export function exitSimulation() {
+    // Persist decisions so they reload on re-entry
+    if (state.simulationState && state.simulationState.decisions && state.simulationState.decisions.size > 0) {
+        state._savedSimulationDecisions = [...state.simulationState.decisions.values()];
+    }
     state.simulationState = null;
     renderDashboard();
 }
@@ -169,20 +187,37 @@ export function renderSimulationWorkspace() {
 
     const impact = state.simulationState.lastImpact;
 
-    // Build the side panel shell: orange header + scrollable content area
+    // Build the side panel shell: orange header + scrollable content + pinned footer
     let html = '';
     html += `<div class="bg-[#f47738] text-white px-3 py-2 flex items-center justify-between shrink-0">`;
     html += `<span class="text-sm font-bold uppercase tracking-wide">Simulation</span>`;
     html += `<button onclick="window._simToggleSidePanel()" class="text-white hover:text-gray-200 font-bold text-lg p-1" title="Collapse panel" aria-label="Collapse simulation panel">&#x276F;</button>`;
     html += `</div>`;
     html += `<div class="sim-side-panel-content"></div>`;
+    html += `<div class="shrink-0 border-t border-[#f47738] p-3 flex flex-col gap-2 bg-white" id="simPanelFooter"></div>`;
 
     panel.innerHTML = html;
 
-    // Fill the content area using the existing renderDecisionSummary logic
+    // Fill the content area
     const contentEl = panel.querySelector('.sim-side-panel-content');
     if (contentEl) {
         renderDecisionSummary(contentEl, impact);
+    }
+
+    // Fill the pinned footer
+    const footerEl = panel.querySelector('#simPanelFooter');
+    if (footerEl) {
+        const decisions = state.simulationState ? (state.simulationState.decisions || new Map()) : new Map();
+        const decidedCount = decisions.size;
+        let footerHtml = '';
+        if (state.simulationState?.baselineAllocation || state.successorAllocationMap) {
+            footerHtml += `<button onclick="window._simOpenSankeyOverlay()" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-left border-[#1d70b8] text-[#1d70b8]">View flow diagram</button>`;
+        }
+        if (decidedCount > 0) {
+            footerHtml += `<button onclick="window._simClearAllDecisions()" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-left">Reset all decisions</button>`;
+        }
+        footerHtml += `<button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold border-[#d4351c] text-[#d4351c] w-full text-left">Exit Simulation</button>`;
+        footerEl.innerHTML = footerHtml;
     }
 }
 
@@ -624,14 +659,7 @@ function renderDecisionSummary(el, impact) {
 
     el.innerHTML = `
         <div class="flex border-b border-[#b1b4b6] mb-2">${tabBar}</div>
-        <div class="flex-1 overflow-y-auto">${tabContent}</div>
-        <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2 shrink-0">
-            ${!!(state.simulationState?.baselineAllocation || state.successorAllocationMap)
-                ? `<button onclick="window._simOpenSankeyOverlay()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left border-[#1d70b8] text-[#1d70b8]">View flow diagram</button>`
-                : ''}
-            ${decidedCount > 0 ? `<button onclick="window._simClearAllDecisions()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left">Clear All Decisions</button>` : ''}
-            <button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold border-[#d4351c] text-[#d4351c] w-full text-left">Exit Simulation</button>
-        </div>
+        <div>${tabContent}</div>
     `;
 }
 
@@ -1464,6 +1492,7 @@ window._simClearAllDecisions = function() {
     state.simulationState.decisions = new Map();
     state.simulationState.projectedActions = [];
     state.simulationState.lastImpact = null;
+    state._savedSimulationDecisions = null;
     recomputeSimulation();
 };
 window._simToggleSidePanel = function() {
