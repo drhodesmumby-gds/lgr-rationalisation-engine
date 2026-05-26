@@ -284,6 +284,19 @@ export function isCapabilitySystem(sys) {
     return sys != null && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0;
 }
 
+// --- Notice deadline computation (pure function) ---
+// Computes the last date by which contract notice must be served.
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+export function computeNoticeDeadline(system) {
+    if (!system.endYear || !system.noticePeriod) return null;
+    const endMonthVal = system.endMonth || 12;
+    const triggerTotalMonths = (system.endYear * 12 + endMonthVal) - system.noticePeriod;
+    const year = Math.floor((triggerTotalMonths - 1) / 12);
+    const month = ((triggerTotalMonths - 1) % 12) + 1;
+    return { year, month, formatted: `${MONTH_NAMES[month - 1]} ${year}` };
+}
+
 // --- Financial distress propagation (pure function) ---
 // Accepts a list of council metadata objects [{ councilName, financialDistress }, ...]
 // Returns a Set<councilName> of councils with financialDistress: true

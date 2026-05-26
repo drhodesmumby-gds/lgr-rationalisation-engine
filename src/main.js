@@ -10,7 +10,8 @@ import { wrapWithTooltip, helpIcon, escHtml, tagToSignalDotClass } from './ui-he
 import {
     buildSuccessorAllocation, classifyVestingZone,
     detectSharedServiceBoundary, detectCrossTierCollision,
-    propagateFinancialDistress, isCapabilitySystem
+    propagateFinancialDistress, isCapabilitySystem,
+    computeNoticeDeadline
 } from './analysis/allocation.js';
 import {
     computeSignals, computeSignalEmphasis,
@@ -32,7 +33,8 @@ import { renderUnifiedEditor, wireUnifiedEditor } from './features/unified-edito
 import { renderWizard, wireWizard } from './features/unified-editor/wizard.js';
 import {
     enterSimulation, exitSimulation, recomputeSimulation,
-    renderSimulationWorkspace, renderBeforeAfterMetrics
+    renderSimulationWorkspace, renderBeforeAfterMetrics,
+    computeTransitionCosts
 } from './features/simulation-panel.js';
 import { openDecisionPanel } from './features/decision-panel.js';
 import { getDecisionKey } from './simulation/decisions.js';
@@ -1803,6 +1805,36 @@ function renderEstateSummary() {
         html += '</div>'; // close Transition Risk section
     }
 
+    // --- Transition Cost Estimate (shown when simulation has at least one decision) ---
+    if (state.simulationState && state.simulationState.decisions && state.simulationState.decisions.size > 0) {
+        var transitionCosts = computeTransitionCosts();
+        if (transitionCosts && transitionCosts.year1Total > 0) {
+            var savingsColour = transitionCosts.annualSavings >= 0 ? 'text-[#00703c]' : 'text-[#d4351c]';
+            var savingsLabel = transitionCosts.annualSavings >= 0 ? '' : ' (increase)';
+            html += '<div class="mt-6">';
+            html += '<h3 class="text-lg font-bold mb-3 text-[#0b0c0c] border-b border-[#b1b4b6] pb-2">Transition Cost Estimate</h3>';
+            html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+            html += '<p class="text-xl font-bold text-[#d4351c]">£' + transitionCosts.year1Total.toLocaleString('en-GB') + '</p>';
+            html += '<p class="text-sm font-bold text-gray-700">Year 1 total</p>';
+            html += '</div>';
+            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+            html += '<p class="text-xl font-bold text-[#0b0c0c]">£' + transitionCosts.exitCosts.toLocaleString('en-GB') + '</p>';
+            html += '<p class="text-sm font-bold text-gray-700">Exit/migration costs</p>';
+            html += '</div>';
+            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+            html += '<p class="text-xl font-bold text-[#0b0c0c]">£' + transitionCosts.procurementCosts.toLocaleString('en-GB') + '</p>';
+            html += '<p class="text-sm font-bold text-gray-700">Procurement (one-off)</p>';
+            html += '</div>';
+            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+            html += '<p class="text-xl font-bold ' + savingsColour + '">£' + Math.abs(transitionCosts.annualSavings).toLocaleString('en-GB') + '/yr' + savingsLabel + '</p>';
+            html += '<p class="text-sm font-bold text-gray-700">Annual savings (ongoing)</p>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+        }
+    }
+
     // --- Capability Platforms section (shown when at least 1 system has capabilityType) ---
     var capSystems = metrics.filteredSystems.filter(function(s) {
         return s.capabilityType && Array.isArray(s.capabilityType) && s.capabilityType.length > 0;
@@ -3000,6 +3032,14 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations, successorN
                 ? formatDisaggCost(sys, successorName)
                 : (sys.annualCost ? `£${Math.round(sys.annualCost / 1000)}k/yr` : 'N/A');
 
+            const noticeDeadline = computeNoticeDeadline(sys);
+            let noticeDeadlineHtml = '';
+            if (noticeDeadline) {
+                const vestingDate = state.transitionStructure?.vestingDate;
+                const isPreVesting = vestingDate && (noticeDeadline.year * 12 + noticeDeadline.month) < (parseInt(vestingDate.split('-')[0]) * 12 + parseInt(vestingDate.split('-')[1]));
+                noticeDeadlineHtml = `<div class="flex justify-between gap-4 items-start w-full"><span class="text-gray-500 uppercase shrink-0 tooltip-label" title="Last date to serve contract notice">Notice by</span><span class="text-[10px] ${isPreVesting ? 'text-[#d4351c] font-bold' : 'text-[#505a5f]'} text-right">${noticeDeadline.formatted}</span></div>`;
+            }
+
             html += `
                 <div class="text-xs mt-2 border-t pt-3 space-y-3">
                     <div class="flex justify-between gap-4 items-start w-full">
@@ -3010,6 +3050,7 @@ function buildSystemCard(sysList, persona, anchorSystem, allocations, successorN
                         <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="End date / Notice Period">Contract</span>
                         <span class="${riskColor} text-right max-w-[60%] break-words">${expStr} <br><span class="text-[10px] text-gray-500 font-normal">(${noticeMonths}mo notice)</span></span>
                     </div>
+                    ${noticeDeadlineHtml}
                 </div>`;
         }
         if (persona === 'architect' || persona === 'executive') {

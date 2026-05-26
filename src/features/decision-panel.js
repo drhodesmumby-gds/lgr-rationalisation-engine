@@ -17,7 +17,7 @@
 import { state } from '../state.js';
 import { escHtml } from '../ui-helpers.js';
 import { createDecision, getDecisionKey, validateDecision } from '../simulation/decisions.js';
-import { classifyVestingZone, isCapabilitySystem } from '../analysis/allocation.js';
+import { classifyVestingZone, isCapabilitySystem, computeNoticeDeadline } from '../analysis/allocation.js';
 import { computeMigrationComplexity } from '../analysis/metrics.js';
 import { LGAM_CAPABILITIES } from '../constants/capabilities.js';
 import { recomputeSimulation } from './simulation-panel.js';
@@ -467,7 +467,9 @@ function renderSystemCard(sys, vestingDate, isHorizontal) {
             const z = zoneColors[zone] || zoneColors['long-tail'];
             zoneBadge = `<span class="inline-block text-xs px-1.5 py-0.5 font-bold border" style="background:${z.bg};color:${z.fg};border-color:${z.fg}">${z.label}</span>`;
         }
-        contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ''}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ''}`;
+        const deadline = computeNoticeDeadline(sys);
+        const deadlineBadge = deadline ? `<span class="gds-tag tag-outline text-[10px] ml-1" title="Notice deadline">Notice: ${deadline.formatted}</span>` : '';
+        contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ''}${deadlineBadge}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ''}`;
     }
 
     // Disaggregation note and cost split
@@ -755,6 +757,10 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
                             <div>
                                 <label for="procureCost" class="block text-xs font-bold mb-1">Annual cost (£)</label>
                                 <input type="number" id="procureCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 150000" min="0">
+                            </div>
+                            <div>
+                                <label for="procureUpfrontCost" class="block text-xs font-bold mb-1">Implementation cost (one-off, £)</label>
+                                <input type="number" id="procureUpfrontCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 500000" min="0">
                             </div>
                             <div>
                                 <label for="procureHosting" class="block text-xs font-bold mb-1">Hosting</label>
@@ -1473,10 +1479,12 @@ function prefillDecision(decision, systems, successorName) {
         const labelEl = content.querySelector('#procureLabel');
         const vendorEl = content.querySelector('#procureVendor');
         const costEl = content.querySelector('#procureCost');
+        const upfrontCostEl = content.querySelector('#procureUpfrontCost');
         const hostingEl = content.querySelector('#procureHosting');
         if (labelEl) labelEl.value = ps.label || '';
         if (vendorEl) vendorEl.value = ps.vendor || '';
         if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : '';
+        if (upfrontCostEl) upfrontCostEl.value = ps.upfrontCost != null ? ps.upfrontCost : '';
         if (hostingEl) hostingEl.value = ps.hosting || 'cloud';
     }
 
@@ -1547,11 +1555,13 @@ export async function applyDecisionFromPanel() {
         }
         const vendorEl = content.querySelector('#procureVendor');
         const costEl = content.querySelector('#procureCost');
+        const upfrontCostEl = content.querySelector('#procureUpfrontCost');
         const hostingEl = content.querySelector('#procureHosting');
         procuredSystem = {
             label,
             vendor: vendorEl ? vendorEl.value.trim() : '',
             annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
+            upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
             hosting: hostingEl ? hostingEl.value : 'cloud'
         };
     }
@@ -1945,11 +1955,13 @@ window._simBulkApplyErp = function(erpSystemId, successorName) {
         }
         const vendorEl = content.querySelector('#procureVendor');
         const costEl = content.querySelector('#procureCost');
+        const upfrontCostEl = content.querySelector('#procureUpfrontCost');
         const hostingEl = content.querySelector('#procureHosting');
         procuredSystem = {
             label,
             vendor: vendorEl ? vendorEl.value.trim() : '',
             annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
+            upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
             hosting: hostingEl ? hostingEl.value : 'cloud'
         };
     }

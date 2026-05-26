@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { classifyVestingZone, detectSharedServiceBoundary } from './allocation.js';
+import { classifyVestingZone, detectSharedServiceBoundary, computeNoticeDeadline } from './allocation.js';
 import { isNonCloud, isCloud as isCloudHosted, getHostingType, detectHostingRisk } from './hosting.js';
 
 // --- TCoP alignment assessment (pure function) ---
@@ -180,19 +180,20 @@ export function computeSignals(systems, weightsOverride) {
                 const triggerY = Math.floor((triggerMonths - 1) / 12);
                 const triggerM = ((triggerMonths - 1) % 12) + 1;
 
+                const deadlineStr = computeNoticeDeadline(e)?.formatted || 'unknown';
                 let tag, strong, valueText;
                 if (zone === 'pre-vesting') {
                     tag = 'tag-red'; strong = true;
-                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${Math.abs(monthsDiff)} months before vesting — predecessor must serve notice`;
+                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${Math.abs(monthsDiff)} months before vesting (serve notice by ${deadlineStr}) — predecessor must serve notice`;
                 } else if (zone === 'year-1') {
                     tag = 'tag-orange'; strong = true;
-                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${monthsDiff} months after vesting`;
+                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${monthsDiff} months after vesting (serve notice by ${deadlineStr})`;
                 } else if (zone === 'natural-expiry') {
                     tag = 'tag-blue'; strong = false;
-                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${monthsDiff} months after vesting`;
+                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${monthsDiff} months after vesting (serve notice by ${deadlineStr})`;
                 } else {
                     tag = 'tag-black'; strong = false;
-                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${monthsDiff} months after vesting`;
+                    valueText = `${e.label} · ${zoneLabels[zone]} — notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}, ${monthsDiff} months after vesting (serve notice by ${deadlineStr})`;
                 }
                 signals.push({ id: 'contractUrgency', weight: weights.contractUrgency, label: 'Contract urgency',
                     value: valueText, tag, border: 'border-[#d4351c]', strong });
@@ -209,8 +210,9 @@ export function computeSignals(systems, weightsOverride) {
                 const triggerY = Math.floor((triggerMonths - 1) / 12);
                 const triggerM = ((triggerMonths - 1) % 12) + 1;
                 const tag = monthsAway < 12 ? 'tag-red' : monthsAway < 24 ? 'tag-orange' : 'tag-blue';
+                const deadlineStrNoVesting = computeNoticeDeadline(e)?.formatted || 'unknown';
                 signals.push({ id: 'contractUrgency', weight: weights.contractUrgency, label: 'Contract urgency',
-                    value: `${e.label} · notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY}`,
+                    value: `${e.label} · notice trigger ${String(triggerM).padStart(2,'0')}/${triggerY} (serve notice by ${deadlineStrNoVesting})`,
                     tag, border: 'border-[#d4351c]', strong: monthsAway < 18 });
             }
         }

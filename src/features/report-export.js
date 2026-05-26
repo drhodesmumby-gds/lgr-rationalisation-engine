@@ -13,6 +13,7 @@ import { state } from '../state.js';
 import { getDecisionKey } from '../simulation/decisions.js';
 import { computeObligationSeverity, generateMigrationScopeBullets } from '../simulation/obligations.js';
 import { isNonCloud, isCloud as isCloudHosted, getHostingType } from '../analysis/hosting.js';
+import { computeNoticeDeadline } from '../analysis/allocation.js';
 
 // ===================================================================
 // HELPER FUNCTIONS (pure, module-scoped for testability)
@@ -731,6 +732,8 @@ function buildDecisionsWithContractDetail(decisions) {
                 html += `Annual cost: ${escHtml(formatCost(sys.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Contract ends: ${escHtml(formatContractEnd(sys.endYear, sys.endMonth))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
                 html += `Notice: ${sys.noticePeriod ? sys.noticePeriod + ' months' : '—'}`;
+                const chooseDeadline = computeNoticeDeadline(sys);
+                if (chooseDeadline) html += `&nbsp;&nbsp;|&nbsp;&nbsp;Serve notice by: ${escHtml(chooseDeadline.formatted)}`;
                 html += `</p>`;
                 if (sys.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml(sys.notes)}</p>`;
                 // Notice trigger date
@@ -754,6 +757,7 @@ function buildDecisionsWithContractDetail(decisions) {
             html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
             if (ps.vendor || ps.version) html += `Vendor: ${escHtml([ps.vendor, ps.version].filter(Boolean).join(' · '))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
             html += `Annual cost: ${escHtml(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+            if (ps.upfrontCost) html += `Implementation cost: ${escHtml(formatCost(ps.upfrontCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
             html += `Hosting: ${ps.hosting === 'on-premise' ? 'On-premise' : ps.hosting === 'partner-hosted' ? 'Partner-hosted' : 'Cloud'}`;
             html += `</p>`;
             if (ps.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml(ps.notes)}</p>`;
@@ -806,6 +810,8 @@ function buildDecisionsWithContractDetail(decisions) {
                     if (sys.vendor) parts.push(`vendor: ${sys.vendor}`);
                     const contractEnd = formatContractEnd(sys.endYear, sys.endMonth);
                     if (contractEnd !== '—') parts.push(`contract ends: ${contractEnd}`);
+                    const decommDeadline = computeNoticeDeadline(sys);
+                    if (decommDeadline) parts.push(`notice by: ${decommDeadline.formatted}`);
                     if (parts.length > 0) html += ` (${escHtml(parts.join(', '))})`;
                     html += `</li>`;
                 }

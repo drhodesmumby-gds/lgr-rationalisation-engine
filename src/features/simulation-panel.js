@@ -330,6 +330,79 @@ function resolveSystemLabel(systemId) {
 }
 
 /**
+ * Computes a transition cost estimate from simulation state.
+ * Returns null if no simulation is active or no costs to report.
+ */
+export function computeTransitionCosts() {
+    if (!state.simulationState) return null;
+    const decisions = state.simulationState.decisions;
+    if (!decisions || decisions.size === 0) return null;
+
+    const obligations = state.simulationState.lastImpact?.obligations || [];
+    const projObligations = obligations; // merged in recomputeSimulation
+
+    let exitCosts = 0;
+    let procurementCosts = 0;
+    let annualRemoved = 0;
+    let annualAdded = 0;
+
+    // From obligations: data-migration type means a system is being removed
+    obligations.forEach(obl => {
+        if (obl.type === 'data-migration' && obl.fromSystem) {
+            exitCosts += obl.fromSystem.annualCost || 0;
+            annualRemoved += obl.fromSystem.annualCost || 0;
+        }
+    });
+
+    // From decisions: procure decisions have upfrontCost and annualCost
+    for (const dec of decisions.values()) {
+        if (dec.systemChoice === 'procure' && dec.procuredSystem) {
+            procurementCosts += dec.procuredSystem.upfrontCost || 0;
+            annualAdded += dec.procuredSystem.annualCost || 0;
+        }
+    }
+
+    // Deferral costs
+    let deferralCosts = 0;
+    obligations.forEach(obl => {
+        if (obl.type === 'deferral-cost') {
+            deferralCosts += obl.combinedAnnualCost || 0;
+        }
+    });
+
+    return {
+        exitCosts,
+        procurementCosts,
+        deferralCosts,
+        annualSavings: annualRemoved - annualAdded,
+        year1Total: exitCosts + procurementCosts + deferralCosts
+    };
+}
+
+function formatCostValue(value) {
+    if (value === 0) return '0';
+    return value.toLocaleString('en-GB');
+}
+
+function renderTransitionCostCard() {
+    const costs = computeTransitionCosts();
+    if (!costs || costs.year1Total === 0 && costs.annualSavings === 0) return '';
+
+    const savingsColour = costs.annualSavings >= 0 ? 'text-[#00703c]' : 'text-[#d4351c]';
+
+    return `<div class="mt-4 p-3 bg-[#f3f2f1] border border-[#b1b4b6]">
+        <p class="font-bold text-sm text-[#0b0c0c] mb-2">Transition Cost Estimate</p>
+        <div class="text-xs space-y-1">
+            <div class="flex justify-between"><span>Exit/migration costs:</span><span class="font-bold">£${formatCostValue(costs.exitCosts)}</span></div>
+            <div class="flex justify-between"><span>Procurement (one-off):</span><span class="font-bold">£${formatCostValue(costs.procurementCosts)}</span></div>
+            <div class="flex justify-between"><span>Deferral (parallel running):</span><span class="font-bold">£${formatCostValue(costs.deferralCosts)}</span></div>
+            <div class="flex justify-between border-t border-[#b1b4b6] pt-1 mt-1"><span class="font-bold">Year 1 total:</span><span class="font-bold text-[#d4351c]">£${formatCostValue(costs.year1Total)}</span></div>
+            <div class="flex justify-between"><span>Annual savings (ongoing):</span><span class="font-bold ${savingsColour}">£${formatCostValue(Math.abs(costs.annualSavings))}/yr${costs.annualSavings < 0 ? ' (increase)' : ''}</span></div>
+        </div>
+    </div>`;
+}
+
+/**
  * Renders the decision summary panel into the given element.
  * Replaces the old renderActionPanel / action chip display.
  *
@@ -477,6 +550,7 @@ function renderDecisionSummary(el, impact) {
 
     const metricsHtml = impact ? renderBeforeAfterMetrics(impact, true) : '';
     const obligationsHtml = impact ? renderObligationsPanel(impact.obligations) : '';
+    const costCardHtml = renderTransitionCostCard();
 
     el.innerHTML = `
         <div class="flex items-center justify-between mb-2">
@@ -492,6 +566,7 @@ function renderDecisionSummary(el, impact) {
         ${warningHtml}
         ${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ''}
         ${obligationsHtml}
+        ${costCardHtml}
         <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2">
             ${!!(state.simulationState?.baselineAllocation || state.successorAllocationMap)
                 ? `<button onclick="window._simOpenSankeyOverlay()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left border-[#1d70b8] text-[#1d70b8]">View flow diagram</button>`

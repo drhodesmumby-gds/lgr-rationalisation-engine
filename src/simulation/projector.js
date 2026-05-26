@@ -350,6 +350,7 @@ function projectProcureDecision(decision, baselineNodes, baselineEdges, baseline
         label: procuredSystem.label,
         vendor: procuredSystem.vendor || null,
         annualCost: procuredSystem.annualCost || 0,
+        upfrontCost: procuredSystem.upfrontCost || 0,
         hosting: procuredSystem.hosting || 'cloud',
         targetAuthorities: [successorName],
         type: 'ITSystem'

@@ -19,6 +19,7 @@
  * @property {string} [procuredSystem.label]
  * @property {string} [procuredSystem.vendor]
  * @property {number} [procuredSystem.annualCost]
+ * @property {number} [procuredSystem.upfrontCost]
  * @property {string} [procuredSystem.hosting]
  *
  * // Axis 2: Operating Model Boundary

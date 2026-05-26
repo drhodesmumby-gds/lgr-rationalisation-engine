@@ -1544,6 +1544,15 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   function isCapabilitySystem(sys) {
     return sys != null && Array.isArray(sys.capabilityType) && sys.capabilityType.length > 0;
   }
+  var MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function computeNoticeDeadline(system) {
+    if (!system.endYear || !system.noticePeriod) return null;
+    const endMonthVal = system.endMonth || 12;
+    const triggerTotalMonths = system.endYear * 12 + endMonthVal - system.noticePeriod;
+    const year = Math.floor((triggerTotalMonths - 1) / 12);
+    const month = (triggerTotalMonths - 1) % 12 + 1;
+    return { year, month, formatted: `${MONTH_NAMES[month - 1]} ${year}` };
+  }
 
   // src/state.js
   var state = {
@@ -1756,23 +1765,24 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const monthsDiff = triggerMonths - vestingMonth;
           const triggerY = Math.floor((triggerMonths - 1) / 12);
           const triggerM = (triggerMonths - 1) % 12 + 1;
+          const deadlineStr = computeNoticeDeadline(e)?.formatted || "unknown";
           let tag, strong, valueText;
           if (zone === "pre-vesting") {
             tag = "tag-red";
             strong = true;
-            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${Math.abs(monthsDiff)} months before vesting \u2014 predecessor must serve notice`;
+            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${Math.abs(monthsDiff)} months before vesting (serve notice by ${deadlineStr}) \u2014 predecessor must serve notice`;
           } else if (zone === "year-1") {
             tag = "tag-orange";
             strong = true;
-            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${monthsDiff} months after vesting`;
+            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${monthsDiff} months after vesting (serve notice by ${deadlineStr})`;
           } else if (zone === "natural-expiry") {
             tag = "tag-blue";
             strong = false;
-            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${monthsDiff} months after vesting`;
+            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${monthsDiff} months after vesting (serve notice by ${deadlineStr})`;
           } else {
             tag = "tag-black";
             strong = false;
-            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${monthsDiff} months after vesting`;
+            valueText = `${e.label} \xB7 ${zoneLabels[zone]} \u2014 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}, ${monthsDiff} months after vesting (serve notice by ${deadlineStr})`;
           }
           signals.push({
             id: "contractUrgency",
@@ -1795,11 +1805,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const triggerY = Math.floor((triggerMonths - 1) / 12);
           const triggerM = (triggerMonths - 1) % 12 + 1;
           const tag = monthsAway < 12 ? "tag-red" : monthsAway < 24 ? "tag-orange" : "tag-blue";
+          const deadlineStrNoVesting = computeNoticeDeadline(e)?.formatted || "unknown";
           signals.push({
             id: "contractUrgency",
             weight: weights.contractUrgency,
             label: "Contract urgency",
-            value: `${e.label} \xB7 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY}`,
+            value: `${e.label} \xB7 notice trigger ${String(triggerM).padStart(2, "0")}/${triggerY} (serve notice by ${deadlineStrNoVesting})`,
             tag,
             border: "border-[#d4351c]",
             strong: monthsAway < 18
@@ -7403,7 +7414,9 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const toSystemData = targetSystem ? {
             id: targetSystem.id,
             label: targetSystem.label || targetSystem.id,
-            council: targetSystem._sourceCouncil || "Unknown"
+            council: targetSystem._sourceCouncil || "Unknown",
+            upfrontCost: targetSystem.upfrontCost || 0,
+            annualCost: typeof targetSystem.annualCost === "number" ? targetSystem.annualCost : 0
           } : null;
           const oblType = isCrossSuccessor ? "cross-successor-impact" : toSystemData ? "data-migration" : "function-gap";
           const resolved = !!toSystemData && !isCrossSuccessor;
@@ -8556,6 +8569,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       label: procuredSystem.label,
       vendor: procuredSystem.vendor || null,
       annualCost: procuredSystem.annualCost || 0,
+      upfrontCost: procuredSystem.upfrontCost || 0,
       hosting: procuredSystem.hosting || "cloud",
       targetAuthorities: [successorName],
       type: "ITSystem"
@@ -9694,6 +9708,61 @@ ${hardErrors.join("\n")}`);
     }
     return systemId;
   }
+  function computeTransitionCosts() {
+    if (!state.simulationState) return null;
+    const decisions = state.simulationState.decisions;
+    if (!decisions || decisions.size === 0) return null;
+    const obligations = state.simulationState.lastImpact?.obligations || [];
+    const projObligations = obligations;
+    let exitCosts = 0;
+    let procurementCosts = 0;
+    let annualRemoved = 0;
+    let annualAdded = 0;
+    obligations.forEach((obl) => {
+      if (obl.type === "data-migration" && obl.fromSystem) {
+        exitCosts += obl.fromSystem.annualCost || 0;
+        annualRemoved += obl.fromSystem.annualCost || 0;
+      }
+    });
+    for (const dec of decisions.values()) {
+      if (dec.systemChoice === "procure" && dec.procuredSystem) {
+        procurementCosts += dec.procuredSystem.upfrontCost || 0;
+        annualAdded += dec.procuredSystem.annualCost || 0;
+      }
+    }
+    let deferralCosts = 0;
+    obligations.forEach((obl) => {
+      if (obl.type === "deferral-cost") {
+        deferralCosts += obl.combinedAnnualCost || 0;
+      }
+    });
+    return {
+      exitCosts,
+      procurementCosts,
+      deferralCosts,
+      annualSavings: annualRemoved - annualAdded,
+      year1Total: exitCosts + procurementCosts + deferralCosts
+    };
+  }
+  function formatCostValue(value) {
+    if (value === 0) return "0";
+    return value.toLocaleString("en-GB");
+  }
+  function renderTransitionCostCard() {
+    const costs = computeTransitionCosts();
+    if (!costs || costs.year1Total === 0 && costs.annualSavings === 0) return "";
+    const savingsColour = costs.annualSavings >= 0 ? "text-[#00703c]" : "text-[#d4351c]";
+    return `<div class="mt-4 p-3 bg-[#f3f2f1] border border-[#b1b4b6]">
+        <p class="font-bold text-sm text-[#0b0c0c] mb-2">Transition Cost Estimate</p>
+        <div class="text-xs space-y-1">
+            <div class="flex justify-between"><span>Exit/migration costs:</span><span class="font-bold">\xA3${formatCostValue(costs.exitCosts)}</span></div>
+            <div class="flex justify-between"><span>Procurement (one-off):</span><span class="font-bold">\xA3${formatCostValue(costs.procurementCosts)}</span></div>
+            <div class="flex justify-between"><span>Deferral (parallel running):</span><span class="font-bold">\xA3${formatCostValue(costs.deferralCosts)}</span></div>
+            <div class="flex justify-between border-t border-[#b1b4b6] pt-1 mt-1"><span class="font-bold">Year 1 total:</span><span class="font-bold text-[#d4351c]">\xA3${formatCostValue(costs.year1Total)}</span></div>
+            <div class="flex justify-between"><span>Annual savings (ongoing):</span><span class="font-bold ${savingsColour}">\xA3${formatCostValue(Math.abs(costs.annualSavings))}/yr${costs.annualSavings < 0 ? " (increase)" : ""}</span></div>
+        </div>
+    </div>`;
+  }
   function renderDecisionSummary(el, impact) {
     const decisions = state.simulationState ? state.simulationState.decisions || /* @__PURE__ */ new Map() : /* @__PURE__ */ new Map();
     const totalDecidable = countDecidableFunctions();
@@ -9811,6 +9880,7 @@ ${hardErrors.join("\n")}`);
     }
     const metricsHtml = impact ? renderBeforeAfterMetrics(impact, true) : "";
     const obligationsHtml = impact ? renderObligationsPanel(impact.obligations) : "";
+    const costCardHtml = renderTransitionCostCard();
     el.innerHTML = `
         <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold uppercase tracking-wide text-[#0b0c0c]">Decisions</span>
@@ -9825,6 +9895,7 @@ ${hardErrors.join("\n")}`);
         ${warningHtml}
         ${metricsHtml ? `<div class="mt-3">${metricsHtml}</div>` : ""}
         ${obligationsHtml}
+        ${costCardHtml}
         <div class="mt-3 pt-3 border-t border-[#f47738] flex flex-col gap-2">
             ${!!(state.simulationState?.baselineAllocation || state.successorAllocationMap) ? `<button onclick="window._simOpenSankeyOverlay()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left border-[#1d70b8] text-[#1d70b8]">View flow diagram</button>` : ""}
             ${decidedCount > 0 ? `<button onclick="window._simClearAllDecisions()" class="gds-btn-secondary px-3 py-1.5 text-sm font-bold w-full text-left">Clear All Decisions</button>` : ""}
@@ -10831,7 +10902,9 @@ ${hardErrors.join("\n")}`);
         const z = zoneColors[zone] || zoneColors["long-tail"];
         zoneBadge = `<span class="inline-block text-xs px-1.5 py-0.5 font-bold border" style="background:${z.bg};color:${z.fg};border-color:${z.fg}">${z.label}</span>`;
       }
-      contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ""}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ""}`;
+      const deadline = computeNoticeDeadline(sys);
+      const deadlineBadge = deadline ? `<span class="gds-tag tag-outline text-[10px] ml-1" title="Notice deadline">Notice: ${deadline.formatted}</span>` : "";
+      contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ""}${deadlineBadge}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ""}`;
     }
     const disaggNote = sys.isDisaggregation ? `<div class="mt-1 text-xs text-[#f47738] font-bold">Partial predecessor system</div>` : "";
     let costSplitHtml = "";
@@ -11054,6 +11127,10 @@ ${hardErrors.join("\n")}`);
                             <div>
                                 <label for="procureCost" class="block text-xs font-bold mb-1">Annual cost (\xA3)</label>
                                 <input type="number" id="procureCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 150000" min="0">
+                            </div>
+                            <div>
+                                <label for="procureUpfrontCost" class="block text-xs font-bold mb-1">Implementation cost (one-off, \xA3)</label>
+                                <input type="number" id="procureUpfrontCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 500000" min="0">
                             </div>
                             <div>
                                 <label for="procureHosting" class="block text-xs font-bold mb-1">Hosting</label>
@@ -11578,10 +11655,12 @@ ${hardErrors.join("\n")}`);
       const labelEl = content.querySelector("#procureLabel");
       const vendorEl = content.querySelector("#procureVendor");
       const costEl = content.querySelector("#procureCost");
+      const upfrontCostEl = content.querySelector("#procureUpfrontCost");
       const hostingEl = content.querySelector("#procureHosting");
       if (labelEl) labelEl.value = ps.label || "";
       if (vendorEl) vendorEl.value = ps.vendor || "";
       if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : "";
+      if (upfrontCostEl) upfrontCostEl.value = ps.upfrontCost != null ? ps.upfrontCost : "";
       if (hostingEl) hostingEl.value = ps.hosting || "cloud";
     }
     if (decision.boundaryChoice && decision.boundaryChoice !== "none") {
@@ -11631,11 +11710,13 @@ ${hardErrors.join("\n")}`);
       }
       const vendorEl = content.querySelector("#procureVendor");
       const costEl = content.querySelector("#procureCost");
+      const upfrontCostEl = content.querySelector("#procureUpfrontCost");
       const hostingEl = content.querySelector("#procureHosting");
       procuredSystem = {
         label,
         vendor: vendorEl ? vendorEl.value.trim() : "",
         annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
+        upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
         hosting: hostingEl ? hostingEl.value : "cloud"
       };
     }
@@ -11923,11 +12004,13 @@ ${hardErrors.join("\n")}`);
       }
       const vendorEl = content.querySelector("#procureVendor");
       const costEl = content.querySelector("#procureCost");
+      const upfrontCostEl = content.querySelector("#procureUpfrontCost");
       const hostingEl = content.querySelector("#procureHosting");
       procuredSystem = {
         label,
         vendor: vendorEl ? vendorEl.value.trim() : "",
         annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
+        upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
         hosting: hostingEl ? hostingEl.value : "cloud"
       };
     }
@@ -12410,6 +12493,8 @@ ${hardErrors.join("\n")}`);
           html += `Annual cost: ${escHtml7(formatCost(sys.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `Contract ends: ${escHtml7(formatContractEnd(sys.endYear, sys.endMonth))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
           html += `Notice: ${sys.noticePeriod ? sys.noticePeriod + " months" : "\u2014"}`;
+          const chooseDeadline = computeNoticeDeadline(sys);
+          if (chooseDeadline) html += `&nbsp;&nbsp;|&nbsp;&nbsp;Serve notice by: ${escHtml7(chooseDeadline.formatted)}`;
           html += `</p>`;
           if (sys.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml7(sys.notes)}</p>`;
           {
@@ -12432,6 +12517,7 @@ ${hardErrors.join("\n")}`);
         html += `<p style="margin:2px 0;font-size:12px;color:#505a5f;">`;
         if (ps.vendor || ps.version) html += `Vendor: ${escHtml7([ps.vendor, ps.version].filter(Boolean).join(" \xB7 "))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
         html += `Annual cost: ${escHtml7(formatCost(ps.annualCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
+        if (ps.upfrontCost) html += `Implementation cost: ${escHtml7(formatCost(ps.upfrontCost))}&nbsp;&nbsp;|&nbsp;&nbsp;`;
         html += `Hosting: ${ps.hosting === "on-premise" ? "On-premise" : ps.hosting === "partner-hosted" ? "Partner-hosted" : "Cloud"}`;
         html += `</p>`;
         if (ps.notes) html += `<p style="margin:2px 0 4px 8px;font-size:11px;color:#505a5f;font-style:italic;border-left:2px solid #b1b4b6;padding-left:6px;">${escHtml7(ps.notes)}</p>`;
@@ -12481,6 +12567,8 @@ ${hardErrors.join("\n")}`);
             if (sys.vendor) parts.push(`vendor: ${sys.vendor}`);
             const contractEnd = formatContractEnd(sys.endYear, sys.endMonth);
             if (contractEnd !== "\u2014") parts.push(`contract ends: ${contractEnd}`);
+            const decommDeadline = computeNoticeDeadline(sys);
+            if (decommDeadline) parts.push(`notice by: ${decommDeadline.formatted}`);
             if (parts.length > 0) html += ` (${escHtml7(parts.join(", "))})`;
             html += `</li>`;
           }
@@ -16252,6 +16340,34 @@ tr:nth-child(even){background:#f3f2f1;}
       html += "</div>";
       html += "</div>";
     }
+    if (state.simulationState && state.simulationState.decisions && state.simulationState.decisions.size > 0) {
+      var transitionCosts = computeTransitionCosts();
+      if (transitionCosts && transitionCosts.year1Total > 0) {
+        var savingsColour = transitionCosts.annualSavings >= 0 ? "text-[#00703c]" : "text-[#d4351c]";
+        var savingsLabel = transitionCosts.annualSavings >= 0 ? "" : " (increase)";
+        html += '<div class="mt-6">';
+        html += '<h3 class="text-lg font-bold mb-3 text-[#0b0c0c] border-b border-[#b1b4b6] pb-2">Transition Cost Estimate</h3>';
+        html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+        html += '<p class="text-xl font-bold text-[#d4351c]">\xA3' + transitionCosts.year1Total.toLocaleString("en-GB") + "</p>";
+        html += '<p class="text-sm font-bold text-gray-700">Year 1 total</p>';
+        html += "</div>";
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+        html += '<p class="text-xl font-bold text-[#0b0c0c]">\xA3' + transitionCosts.exitCosts.toLocaleString("en-GB") + "</p>";
+        html += '<p class="text-sm font-bold text-gray-700">Exit/migration costs</p>';
+        html += "</div>";
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+        html += '<p class="text-xl font-bold text-[#0b0c0c]">\xA3' + transitionCosts.procurementCosts.toLocaleString("en-GB") + "</p>";
+        html += '<p class="text-sm font-bold text-gray-700">Procurement (one-off)</p>';
+        html += "</div>";
+        html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+        html += '<p class="text-xl font-bold ' + savingsColour + '">\xA3' + Math.abs(transitionCosts.annualSavings).toLocaleString("en-GB") + "/yr" + savingsLabel + "</p>";
+        html += '<p class="text-sm font-bold text-gray-700">Annual savings (ongoing)</p>';
+        html += "</div>";
+        html += "</div>";
+        html += "</div>";
+      }
+    }
     var capSystems = metrics.filteredSystems.filter(function(s) {
       return s.capabilityType && Array.isArray(s.capabilityType) && s.capabilityType.length > 0;
     });
@@ -17213,6 +17329,13 @@ tr:nth-child(even){background:#f3f2f1;}
         let riskColor = "text-gray-700";
         if (sys.endYear === 2025 || sys.endYear === 2026 && noticeMonths > 6) riskColor = "text-red-700 font-bold";
         const expandedCostStr = isDisagg && sys.annualCost && successorName ? formatDisaggCost(sys, successorName) : sys.annualCost ? `\xA3${Math.round(sys.annualCost / 1e3)}k/yr` : "N/A";
+        const noticeDeadline = computeNoticeDeadline(sys);
+        let noticeDeadlineHtml = "";
+        if (noticeDeadline) {
+          const vestingDate = state.transitionStructure?.vestingDate;
+          const isPreVesting = vestingDate && noticeDeadline.year * 12 + noticeDeadline.month < parseInt(vestingDate.split("-")[0]) * 12 + parseInt(vestingDate.split("-")[1]);
+          noticeDeadlineHtml = `<div class="flex justify-between gap-4 items-start w-full"><span class="text-gray-500 uppercase shrink-0 tooltip-label" title="Last date to serve contract notice">Notice by</span><span class="text-[10px] ${isPreVesting ? "text-[#d4351c] font-bold" : "text-[#505a5f]"} text-right">${noticeDeadline.formatted}</span></div>`;
+        }
         html += `
                 <div class="text-xs mt-2 border-t pt-3 space-y-3">
                     <div class="flex justify-between gap-4 items-start w-full">
@@ -17223,6 +17346,7 @@ tr:nth-child(even){background:#f3f2f1;}
                         <span class="text-gray-500 uppercase shrink-0 tooltip-label" title="End date / Notice Period">Contract</span>
                         <span class="${riskColor} text-right max-w-[60%] break-words">${expStr} <br><span class="text-[10px] text-gray-500 font-normal">(${noticeMonths}mo notice)</span></span>
                     </div>
+                    ${noticeDeadlineHtml}
                 </div>`;
       }
       if (persona === "architect" || persona === "executive") {

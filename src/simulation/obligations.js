@@ -98,7 +98,9 @@ export function generateObligations(baselineAllocation, action, actionIndex, rem
                 const toSystemData = targetSystem ? {
                     id: targetSystem.id,
                     label: targetSystem.label || targetSystem.id,
-                    council: targetSystem._sourceCouncil || 'Unknown'
+                    council: targetSystem._sourceCouncil || 'Unknown',
+                    upfrontCost: targetSystem.upfrontCost || 0,
+                    annualCost: typeof targetSystem.annualCost === 'number' ? targetSystem.annualCost : 0
                 } : null;
 
                 const oblType = isCrossSuccessor
