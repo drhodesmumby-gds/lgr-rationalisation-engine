@@ -41,6 +41,30 @@ let _allSystems = [];
 /**
  * Returns the list of successor names that have a given system in their allocations.
  */
+function buildHostingPartnerOptions() {
+    const names = new Set();
+    // Council names from uploads
+    for (const upload of state.rawUploads) {
+        if (upload.data && upload.data.councilName) names.add(upload.data.councilName);
+    }
+    // Successor names from transition structure
+    if (state.transitionStructure && state.transitionStructure.successors) {
+        for (const s of state.transitionStructure.successors) {
+            if (s.name) names.add(s.name);
+            for (const p of (s.fullPredecessors || [])) names.add(p);
+            for (const p of (s.partialPredecessors || [])) names.add(p);
+        }
+    }
+    // Existing sharedWith values and hostingPartner values from nodes
+    if (state.mergedArchitecture && state.mergedArchitecture.nodes) {
+        for (const node of state.mergedArchitecture.nodes) {
+            if (node.sharedWith) node.sharedWith.forEach(c => names.add(c));
+            if (node.hostingPartner) names.add(node.hostingPartner);
+        }
+    }
+    return [...names].sort().map(n => `<option value="${escHtml(n)}">`).join('');
+}
+
 function getSuccessorNamesForSystem(sysId) {
     const names = [];
     const allocMap = state.successorAllocationMap;
@@ -773,7 +797,8 @@ export function renderAxisOne(systems, functionId, successorName, existingDecisi
                         </div>
                         <div id="procureHostingPartnerRow" class="hidden mt-2">
                             <label for="procureHostingPartner" class="block text-xs font-bold mb-1">Hosting partner</label>
-                            <input id="procureHostingPartner" type="text" placeholder="Council or organisation name" class="border-2 border-[#0b0c0c] p-1.5 text-sm w-full" />
+                            <input id="procureHostingPartner" type="text" placeholder="Council or organisation name" list="procureHostingPartnerList" class="border border-[#b1b4b6] p-1.5 text-sm w-full" />
+                            <datalist id="procureHostingPartnerList">${buildHostingPartnerOptions()}</datalist>
                         </div>
                     </div>
                 </div>
