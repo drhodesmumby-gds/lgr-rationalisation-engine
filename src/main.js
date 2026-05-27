@@ -5,7 +5,7 @@ import { SIGNAL_DEFS, PERSONA_DEFAULT_WEIGHTS } from './constants/signals.js';
 import { LGAM_CAPABILITIES } from './constants/capabilities.js';
 import { DOMAIN_TERMS } from './constants/domain-terms.js';
 import { DOCUMENTATION } from './constants/documentation.js';
-import { getLgaFunction, getLgaBreadcrumb, getRootCategoryId, getDescendantIds } from './taxonomy.js';
+import { getLgaFunction, getLgaBreadcrumb, getRootCategoryId, getDescendantIds, getRootCategories } from './taxonomy.js';
 import { wrapWithTooltip, helpIcon, escHtml, tagToSignalDotClass } from './ui-helpers.js';
 import {
     buildSuccessorAllocation, classifyVestingZone,
@@ -1337,8 +1337,17 @@ document.getElementById('filterCollisionSelect').addEventListener('change', func
     renderDashboard();
 });
 
-document.getElementById('toggleFlatMatrix').addEventListener('change', function(e) {
-    state.matrixViewMode = e.target.checked ? 'flat' : 'hierarchy';
+document.getElementById('domainFilterSelect').addEventListener('change', function(e) {
+    const val = e.target.value;
+    if (val === '__all__') {
+        state.activeDomainId = '__all__';
+    } else {
+        state.activeDomainId = val;
+    }
+    renderDashboard();
+});
+
+document.getElementById('btnBackToCards')?.addEventListener('click', function() {
     state.activeDomainId = null;
     renderDashboard();
 });
@@ -1468,21 +1477,21 @@ document.getElementById('dashboardTabBar')?.addEventListener('keydown', (e) => {
     nextTab.click();
 });
 
-// Global card expand/collapse controls (WI-5)
-document.getElementById('btnExpandAllCards')?.addEventListener('click', () => {
-    state.cardCollapseState = 'expanded';
+// Global card expand/collapse toggle
+document.getElementById('btnToggleCards')?.addEventListener('click', () => {
+    if (state.cardCollapseState === 'collapsed') {
+        state.cardCollapseState = 'expanded';
+    } else {
+        state.cardCollapseState = 'collapsed';
+    }
     state.expandedCards.clear();
     renderDashboard();
     requestAnimationFrame(() => {
-        document.getElementById('btnExpandAllCards')?.focus();
-    });
-});
-document.getElementById('btnCollapseAllCards')?.addEventListener('click', () => {
-    state.cardCollapseState = 'collapsed';
-    state.expandedCards.clear();
-    renderDashboard();
-    requestAnimationFrame(() => {
-        document.getElementById('btnCollapseAllCards')?.focus();
+        const btn = document.getElementById('btnToggleCards');
+        if (btn) {
+            btn.textContent = state.cardCollapseState === 'expanded' ? 'Collapse all' : 'Expand all';
+            btn.focus();
+        }
     });
 });
 
@@ -1637,6 +1646,9 @@ function updatePersonaBanner() {
             if (simButtonGroup) simButtonGroup.appendChild(btnExportReport);
         }
         btnExportReport.classList.remove('hidden');
+
+        // Ensure Exit Simulation button is always last (furthest right)
+        if (simButtonGroup && btnSim) simButtonGroup.appendChild(btnSim);
     } else {
         // Hide scenario-only buttons when not in simulation (btnSim stays shown if in transition mode)
         if (btnSaveScenario) btnSaveScenario.classList.add('hidden');
@@ -1805,30 +1817,28 @@ function renderEstateSummary() {
         html += '</div>'; // close Transition Risk section
     }
 
-    // --- Transition Cost Estimate (shown when simulation has at least one decision) ---
+    // --- Cost Impact (shown when simulation has at least one decision) ---
     if (state.simulationState && state.simulationState.decisions && state.simulationState.decisions.size > 0) {
         var transitionCosts = computeTransitionCosts();
-        if (transitionCosts && transitionCosts.year1Total > 0) {
+        if (transitionCosts && (transitionCosts.procurementCosts > 0 || transitionCosts.annualSavings !== 0)) {
             var savingsColour = transitionCosts.annualSavings >= 0 ? 'text-[#00703c]' : 'text-[#d4351c]';
-            var savingsLabel = transitionCosts.annualSavings >= 0 ? '' : ' (increase)';
+            var savingsLabel = transitionCosts.annualSavings >= 0 ? 'Annual savings' : 'Annual cost increase';
             html += '<div class="mt-6">';
-            html += '<h3 class="text-lg font-bold mb-3 text-[#0b0c0c] border-b border-[#b1b4b6] pb-2">Transition Cost Estimate</h3>';
-            html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+            html += '<h3 class="text-lg font-bold mb-3 text-[#0b0c0c] border-b border-[#b1b4b6] pb-2">Cost Impact</h3>';
+            html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-4">';
+            if (transitionCosts.procurementCosts > 0) {
+                html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
+                html += '<p class="text-xl font-bold text-[#0b0c0c]">£' + transitionCosts.procurementCosts.toLocaleString('en-GB') + '</p>';
+                html += '<p class="text-sm font-bold text-gray-700">Procurement (one-off)</p>';
+                html += '</div>';
+            }
             html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-            html += '<p class="text-xl font-bold text-[#d4351c]">£' + transitionCosts.year1Total.toLocaleString('en-GB') + '</p>';
-            html += '<p class="text-sm font-bold text-gray-700">Year 1 total</p>';
+            html += '<p class="text-xl font-bold text-[#0b0c0c]">-£' + transitionCosts.annualRemoved.toLocaleString('en-GB') + '/yr</p>';
+            html += '<p class="text-sm font-bold text-gray-700">Decommissioned spend</p>';
             html += '</div>';
             html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-            html += '<p class="text-xl font-bold text-[#0b0c0c]">£' + transitionCosts.exitCosts.toLocaleString('en-GB') + '</p>';
-            html += '<p class="text-sm font-bold text-gray-700">Exit/migration costs</p>';
-            html += '</div>';
-            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-            html += '<p class="text-xl font-bold text-[#0b0c0c]">£' + transitionCosts.procurementCosts.toLocaleString('en-GB') + '</p>';
-            html += '<p class="text-sm font-bold text-gray-700">Procurement (one-off)</p>';
-            html += '</div>';
-            html += '<div class="border border-gray-300 p-4 bg-[#f3f2f1]">';
-            html += '<p class="text-xl font-bold ' + savingsColour + '">£' + Math.abs(transitionCosts.annualSavings).toLocaleString('en-GB') + '/yr' + savingsLabel + '</p>';
-            html += '<p class="text-sm font-bold text-gray-700">Annual savings (ongoing)</p>';
+            html += '<p class="text-xl font-bold ' + savingsColour + '">£' + Math.abs(transitionCosts.annualSavings).toLocaleString('en-GB') + '/yr</p>';
+            html += '<p class="text-sm font-bold text-gray-700">' + savingsLabel + '</p>';
             html += '</div>';
             html += '</div>';
             html += '</div>';
@@ -2199,31 +2209,46 @@ export function renderDashboard() {
         matrixTable.parentNode.insertBefore(domainCardsContainer, matrixTable);
     }
 
-    const showHierarchy = state.matrixViewMode === 'hierarchy' && !state.activeDomainId;
-    if (showHierarchy) {
+    const domainFilterContainer = document.getElementById('domainFilterContainer');
+    const domainFilterSelect = document.getElementById('domainFilterSelect');
+
+    if (!state.activeDomainId) {
+        // Top-level: show domain summary cards
         const summaries = computeDomainSummaries();
         domainCardsContainer.innerHTML = renderDomainCards(summaries);
         domainCardsContainer.classList.remove('hidden');
         matrixTable.classList.add('hidden');
-    } else if (state.activeDomainId) {
-        let domainLabel;
-        if (state.activeDomainId.startsWith('ws:')) {
-            const ws = state.customWorkstreams.find(w => w.id === state.activeDomainId.slice(3));
-            domainLabel = ws ? ws.name : 'Workstream';
-        } else {
-            domainLabel = getLgaFunction(state.activeDomainId)?.label || 'Domain';
-        }
-        domainCardsContainer.innerHTML = `<div class="px-4 py-2 bg-[#f3f2f1] border-b border-[#b1b4b6] flex items-center gap-3">
-            <button id="btnBackToDomains" class="text-[#1a65a6] underline text-sm font-bold hover:text-[#0f385c]">← All domains</button>
-            <span class="text-sm font-bold">${domainLabel}</span>
-        </div>`;
-        domainCardsContainer.classList.remove('hidden');
-        matrixTable.classList.remove('hidden');
+        if (domainFilterContainer) domainFilterContainer.classList.add('hidden');
     } else {
+        // Drilled-in (specific domain or all): show table
         domainCardsContainer.classList.add('hidden');
         matrixTable.classList.remove('hidden');
+        if (domainFilterContainer) domainFilterContainer.classList.remove('hidden');
+        const toggleBtn = document.getElementById('btnToggleCards');
+        if (toggleBtn) toggleBtn.textContent = state.cardCollapseState === 'expanded' ? 'Collapse all' : 'Expand all';
+
+        // Populate domain filter dropdown
+        if (domainFilterSelect) {
+            let opts = '';
+            opts += '<option value="__all__"' + (state.activeDomainId === '__all__' ? ' selected' : '') + '>All domains</option>';
+            const rootCategories = getRootCategories();
+            for (const cat of rootCategories) {
+                const sel = state.activeDomainId === cat.id ? ' selected' : '';
+                opts += `<option value="${cat.id}"${sel}>${escHtml(cat.label)}</option>`;
+            }
+            if (state.customWorkstreams && state.customWorkstreams.length > 0) {
+                opts += '<optgroup label="Workstreams">';
+                for (const ws of state.customWorkstreams) {
+                    const sel = state.activeDomainId === 'ws:' + ws.id ? ' selected' : '';
+                    opts += `<option value="ws:${ws.id}"${sel}>${escHtml(ws.name)}</option>`;
+                }
+                opts += '</optgroup>';
+            }
+            domainFilterSelect.innerHTML = opts;
+        }
     }
 
+    const showHierarchy = !state.activeDomainId;
     if (showHierarchy) {
         if (state.activePersona !== 'architect') drawTimeline(systems, councilsArray);
         renderCriticalPathPanel();
@@ -2232,7 +2257,7 @@ export function renderDashboard() {
 
     // --- Apply domain scoping if drilled into a domain ---
     let filteredRows = functionRows;
-    if (state.activeDomainId) {
+    if (state.activeDomainId && state.activeDomainId !== '__all__') {
         if (state.activeDomainId.startsWith('ws:')) {
             const wsId = state.activeDomainId.slice(3);
             const ws = state.customWorkstreams.find(w => w.id === wsId);

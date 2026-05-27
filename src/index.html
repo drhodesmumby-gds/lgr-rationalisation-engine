@@ -193,6 +193,7 @@
                     <div class="flex items-center gap-1" role="group" aria-label="Analysis actions">
                         <button id="btnBaselineReport" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Report</button>
                         <button id="btnViewTierMapping" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Tiers</button>
+                        <button id="btnManageWorkstreams" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Workstreams</button>
                         <button id="btnReconfigureTransition" class="gds-btn-secondary px-2 py-0.5 text-[11px] font-bold hover:bg-gray-100">Reconfigure</button>
                     </div>
                     <span id="toolbarSeparator" class="toolbar-separator hidden" aria-hidden="true"></span>
@@ -218,46 +219,45 @@
 
                 <!-- Matrix Panel -->
                 <div role="tabpanel" id="panelMatrix" aria-labelledby="tabMatrix" class="tab-panel active h-full flex flex-col">
-                    <!-- Sort/Filter Toolbar (fixed above scroll area) -->
-                    <div id="matrixToolbar" class="hidden bg-[#f3f2f1] border border-[#b1b4b6] flex flex-wrap items-center gap-6 px-4 py-3 shrink-0">
-                        <div class="flex items-center gap-2">
-                            <label for="sortModeSelect" class="text-sm font-bold">Sort by:</label>
-                            <select id="sortModeSelect" class="border border-[#0b0c0c] text-sm px-2 py-1">
-                                <option value="tier">Tier priority</option>
-                                <option value="collisions">Collision count</option>
-                                <option value="alpha">Function name (A-Z)</option>
-                                <option value="urgency">Contract urgency</option>
-                            </select>
+                    <!-- Sort/Filter Toolbar (two rows, fixed above scroll area) -->
+                    <div id="matrixToolbar" class="hidden bg-[#f3f2f1] border-b border-[#b1b4b6] shrink-0">
+                        <!-- Row 1: Domain navigation + row count -->
+                        <div id="domainFilterContainer" class="hidden flex items-center gap-3 px-4 py-1.5 border-b border-[#b1b4b6]">
+                            <button id="btnBackToCards" class="text-xs text-[#1d70b8] hover:text-[#003078] font-bold" type="button">← All domains</button>
+                            <span class="text-xs text-[#b1b4b6]">|</span>
+                            <select id="domainFilterSelect" class="border border-[#0b0c0c] text-xs px-2 py-0.5 font-bold"></select>
+                            <span class="flex-1"></span>
+                            <button id="btnToggleCards" class="text-xs text-[#1d70b8] hover:text-[#003078] underline font-bold" type="button">Expand all</button>
+                            <span id="matrixRowCount" class="text-xs text-[#505a5f]"></span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label for="filterTierSelect" class="text-sm font-bold">Tier:</label>
-                            <select id="filterTierSelect" class="border border-[#0b0c0c] text-sm px-2 py-1">
-                                <option value="all">All tiers</option>
-                                <option value="1">Tier 1 only</option>
-                                <option value="2">Tier 2 only</option>
-                                <option value="3">Tier 3 only</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label for="filterCollisionSelect" class="text-sm font-bold">Functions:</label>
-                            <select id="filterCollisionSelect" class="border border-[#0b0c0c] text-sm px-2 py-1">
-                                <option value="all">All functions</option>
-                                <option value="collision">Collisions only</option>
-                                <option value="unique">Unique only</option>
-                            </select>
-                        </div>
-                        <label class="flex items-center gap-1.5 text-xs cursor-pointer ml-auto">
-                            <input type="checkbox" id="toggleFlatMatrix">
-                            <span>Show all functions</span>
-                        </label>
-                        <span id="matrixRowCount" class="text-sm text-gray-600"></span>
-                        <span class="toolbar-separator" aria-hidden="true"></span>
-                        <button id="btnManageWorkstreams" class="gds-btn-secondary text-xs px-2 py-1" type="button">Workstreams</button>
-                        <span class="toolbar-separator" aria-hidden="true"></span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-bold">Cards:</span>
-                            <button id="btnExpandAllCards" class="gds-btn-secondary text-xs px-2 py-1" type="button">Expand all</button>
-                            <button id="btnCollapseAllCards" class="gds-btn-secondary text-xs px-2 py-1" type="button">Collapse all</button>
+                        <!-- Row 2: Sort and filter controls -->
+                        <div class="flex items-center gap-4 px-4 py-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <label for="sortModeSelect" class="text-xs font-bold">Sort:</label>
+                                <select id="sortModeSelect" class="border border-[#0b0c0c] text-xs px-2 py-0.5">
+                                    <option value="tier">Tier priority</option>
+                                    <option value="collisions">Collision count</option>
+                                    <option value="alpha">Function name (A-Z)</option>
+                                    <option value="urgency">Contract urgency</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <label for="filterTierSelect" class="text-xs font-bold">Tier:</label>
+                                <select id="filterTierSelect" class="border border-[#0b0c0c] text-xs px-2 py-0.5">
+                                    <option value="all">All tiers</option>
+                                    <option value="1">Tier 1 only</option>
+                                    <option value="2">Tier 2 only</option>
+                                    <option value="3">Tier 3 only</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <label for="filterCollisionSelect" class="text-xs font-bold">Functions:</label>
+                                <select id="filterCollisionSelect" class="border border-[#0b0c0c] text-xs px-2 py-0.5">
+                                    <option value="all">All functions</option>
+                                    <option value="collision">Collisions only</option>
+                                    <option value="unique">Unique only</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
