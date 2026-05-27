@@ -216,7 +216,6 @@ export function renderSimulationWorkspace() {
         if (decidedCount > 0) {
             footerHtml += `<button onclick="window._simClearAllDecisions()" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold w-full text-left">Reset all decisions</button>`;
         }
-        footerHtml += `<button onclick="window._simExit()" class="gds-btn-secondary px-3 py-1.5 text-xs font-bold border-[#d4351c] text-[#d4351c] w-full text-left">Exit Simulation</button>`;
         footerEl.innerHTML = footerHtml;
     }
 }
@@ -378,15 +377,13 @@ export function computeTransitionCosts() {
     const obligations = state.simulationState.lastImpact?.obligations || [];
     const projObligations = obligations; // merged in recomputeSimulation
 
-    let exitCosts = 0;
     let procurementCosts = 0;
     let annualRemoved = 0;
     let annualAdded = 0;
 
-    // From obligations: data-migration type means a system is being removed
+    // Annual spend being decommissioned (systems being removed)
     obligations.forEach(obl => {
         if (obl.type === 'data-migration' && obl.fromSystem) {
-            exitCosts += obl.fromSystem.annualCost || 0;
             annualRemoved += obl.fromSystem.annualCost || 0;
         }
     });
@@ -408,11 +405,11 @@ export function computeTransitionCosts() {
     });
 
     return {
-        exitCosts,
         procurementCosts,
         deferralCosts,
-        annualSavings: annualRemoved - annualAdded,
-        year1Total: exitCosts + procurementCosts + deferralCosts
+        annualRemoved,
+        annualAdded,
+        annualSavings: annualRemoved - annualAdded
     };
 }
 
@@ -423,18 +420,19 @@ function formatCostValue(value) {
 
 function renderTransitionCostCard() {
     const costs = computeTransitionCosts();
-    if (!costs || costs.year1Total === 0 && costs.annualSavings === 0) return '';
+    if (!costs || (costs.procurementCosts === 0 && costs.annualSavings === 0 && costs.deferralCosts === 0)) return '';
 
     const savingsColour = costs.annualSavings >= 0 ? 'text-[#00703c]' : 'text-[#d4351c]';
+    const savingsLabel = costs.annualSavings >= 0 ? 'Annual savings' : 'Annual cost increase';
 
     return `<div class="mt-4 p-3 bg-[#f3f2f1] border border-[#b1b4b6]">
-        <p class="font-bold text-sm text-[#0b0c0c] mb-2">Transition Cost Estimate</p>
+        <p class="font-bold text-sm text-[#0b0c0c] mb-2">Cost Impact</p>
         <div class="text-xs space-y-1">
-            <div class="flex justify-between"><span>Exit/migration costs:</span><span class="font-bold">£${formatCostValue(costs.exitCosts)}</span></div>
-            <div class="flex justify-between"><span>Procurement (one-off):</span><span class="font-bold">£${formatCostValue(costs.procurementCosts)}</span></div>
-            <div class="flex justify-between"><span>Deferral (parallel running):</span><span class="font-bold">£${formatCostValue(costs.deferralCosts)}</span></div>
-            <div class="flex justify-between border-t border-[#b1b4b6] pt-1 mt-1"><span class="font-bold">Year 1 total:</span><span class="font-bold text-[#d4351c]">£${formatCostValue(costs.year1Total)}</span></div>
-            <div class="flex justify-between"><span>Annual savings (ongoing):</span><span class="font-bold ${savingsColour}">£${formatCostValue(Math.abs(costs.annualSavings))}/yr${costs.annualSavings < 0 ? ' (increase)' : ''}</span></div>
+            <div class="flex justify-between"><span>Systems decommissioned (annual):</span><span class="font-bold">-£${formatCostValue(costs.annualRemoved)}/yr</span></div>
+            <div class="flex justify-between"><span>New systems (annual):</span><span class="font-bold">+£${formatCostValue(costs.annualAdded)}/yr</span></div>
+            ${costs.procurementCosts > 0 ? `<div class="flex justify-between"><span>Procurement (one-off):</span><span class="font-bold">£${formatCostValue(costs.procurementCosts)}</span></div>` : ''}
+            ${costs.deferralCosts > 0 ? `<div class="flex justify-between"><span>Deferral (parallel running):</span><span class="font-bold">£${formatCostValue(costs.deferralCosts)}/yr</span></div>` : ''}
+            <div class="flex justify-between border-t border-[#b1b4b6] pt-1 mt-1"><span class="font-bold">${savingsLabel}:</span><span class="font-bold ${savingsColour}">£${formatCostValue(Math.abs(costs.annualSavings))}/yr</span></div>
         </div>
     </div>`;
 }
@@ -523,12 +521,10 @@ function renderDecisionSummary(el, impact) {
             undecidedCells.sort((a, b) => {
                 const tierA = state.tierMap ? (state.tierMap.get(a.funcId) || 3) : 3;
                 const tierB = state.tierMap ? (state.tierMap.get(b.funcId) || 3) : 3;
-                return tierA - tierB; // Tier 1 first
+                if (tierA !== tierB) return tierA - tierB;
+                return a.funcLabel.localeCompare(b.funcLabel);
             });
-            const SHOW_LIMIT = 10;
-            const visible = undecidedCells.slice(0, SHOW_LIMIT);
-            const overflow = undecidedCells.length - visible.length;
-            const rows = visible.map(cell => {
+            const rows = undecidedCells.map(cell => {
                 const safeFuncId = escHtml(cell.funcId);
                 const safeSucc = escHtml(cell.succName);
                 const tier = state.tierMap ? (state.tierMap.get(cell.funcId) || 3) : 3;
@@ -542,14 +538,10 @@ function renderDecisionSummary(el, impact) {
                             type="button">Decide</button>
                 </div>`;
             }).join('');
-            const moreHtml = overflow > 0
-                ? `<div class="text-xs text-gray-400 mt-1">+${overflow} more undecided</div>`
-                : '';
             undecidedHtml = `
                 <div class="mt-2 pt-2 border-t border-gray-200">
-                    <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Undecided Functions</div>
+                    <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Undecided (${undecidedCells.length})</div>
                     ${rows}
-                    ${moreHtml}
                 </div>
             `;
         }

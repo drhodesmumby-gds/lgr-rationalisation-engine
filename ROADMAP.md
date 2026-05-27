@@ -16,6 +16,13 @@ Items are grouped by horizon:
 
 | Feature | Sprint(s) | Description |
 |---|---|---|
+| **Unified architecture editor** | editor-1 through editor-10 | Three-pane editor (list/props/relationships) replacing modal. Focus + Bulk modes, dependency matrix, wizard onboarding, council switcher, sort/filter in bulk. |
+| **Hosting expansion** | hosting-1 | Replaced `isCloud` boolean with `hosting` enum (cloud/on-premise/partner-hosted) + `hostingPartner` field. Partner-hosted risk signal in transition mode. |
+| **Documentation site** | docs-1 | 12-page multi-page site at dist/docs/ with Mermaid diagrams, Prism.js syntax highlighting, GOV.UK styling. User guide + technical reference. |
+| **Commercial cost features** | commercial-1 | Procurement upfront cost field, notice period deadline calculation ("serve notice by [date]"), transition cost estimate card. |
+| **Simulation improvements** | sim-fixes | ERP sever-only decommission fix, per-function obligation targets, tab-based panel UX, decision persistence across exit/re-entry. |
+| **Matrix navigation** | matrix-nav | Domain filter dropdown replacing flat view toggle. Workstreams moved to persona banner. Two-row toolbar. |
+| **Schema cleanup** | cleanup-1 | Removed legacy `cost` string field and `isCloud` backward compat. Updated XLSX template with hosting enum dropdown. |
 | **Tabbed navigation** | nav-1 through nav-3 | Stage 3 redesigned from vertical scroll to fixed-viewport tabbed layout (Matrix, Overview, Timeline) with sticky headers and independent scroll per tab |
 | **Simulation side panel** | nav-2 | Right-docked collapsible panel (360px) persisting across tabs with decision summary, progress, metrics, and undecided function list |
 | **Sankey overlay** | nav-3 | Flow diagram moved from inline to full-viewport-width on-demand overlay accessible from side panel |
