@@ -1,28 +1,33 @@
 /**
- * Decision Panel — Function-first simulation decision UI
+ * Decision Panel — Successor-first allocation model.
  *
- * Opens a modal for a specific (functionId, successorName) pair and lets
- * users record a FunctionDecision via two axes:
- *   Axis 1: System Choice   — choose existing / procure replacement / defer
- *   Axis 2: Operating Model — disaggregate / maintain-shared / establish-shared / none
+ * Opens a modal for a specific (functionId, successorName) pair. Users
+ * allocate systems to successors via dropdowns, with sharing configured
+ * through "Share with..." toggles and a per-function checkbox grid.
  *
- * The panel reads competing systems from the baseline allocation map and writes
- * a FunctionDecision to state.simulationState.decisions, then calls
- * recomputeSimulation() to update the dashboard.
+ * Two states:
+ *   State 1 (Simple): system comparison cards + successor allocation cards
+ *   State 2 (Expanded): function navigator + allocation cards + sharing grid
  *
- * Accessibility: focus trap, Escape to close, click-outside to close, all form
- * controls have associated labels.
+ * The operating model boundary (shared/disaggregate/none) is derived from
+ * the combination of per-successor choices, never selected directly.
  */
 
 import { state } from '../state.js';
 import { escHtml } from '../ui-helpers.js';
-import { createDecision, getDecisionKey, validateDecision } from '../simulation/decisions.js';
-import { classifyVestingZone, isCapabilitySystem, computeNoticeDeadline } from '../analysis/allocation.js';
-import { computeMigrationComplexity } from '../analysis/metrics.js';
-import { LGAM_CAPABILITIES } from '../constants/capabilities.js';
+import { getDecisionKey } from '../simulation/decisions.js';
+import { isCapabilitySystem } from '../analysis/allocation.js';
 import { recomputeSimulation } from './simulation-panel.js';
 import { showConfirm } from '../ui-notifications.js';
-import { getHostingType } from '../analysis/hosting.js';
+
+import { renderTierBadge, getSuccessorNamesForSystem } from './decision-panel/helpers.js';
+import { renderPane1Simple, renderPane1Expanded } from './decision-panel/pane-systems.js';
+import { renderPane2Allocation } from './decision-panel/pane-allocation.js';
+import { renderPane3CostImpact } from './decision-panel/pane-cost-impact.js';
+import { renderSharingGrid } from './decision-panel/sharing-grid.js';
+import { applyDecisionFromPanel } from './decision-panel/apply-decision.js';
+import { LGA_FUNCTIONS } from '../constants/lga-functions.js';
+import { createDecision } from '../simulation/decisions.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -33,57 +38,9 @@ let _currentSuccessorName = null;
 let _panelOpener = null;
 let _trapCleanup = null;
 let _allSystems = [];
-
-// ---------------------------------------------------------------------------
-// Cost split helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Returns the list of successor names that have a given system in their allocations.
- */
-function buildHostingPartnerOptions() {
-    const names = new Set();
-    const predecessors = new Set();
-
-    // Collect predecessor names (councils being abolished)
-    if (state.transitionStructure && state.transitionStructure.successors) {
-        for (const s of state.transitionStructure.successors) {
-            for (const p of (s.fullPredecessors || [])) predecessors.add(p);
-            for (const p of (s.partialPredecessors || [])) predecessors.add(p);
-            // Successors ARE valid partners (they'll exist post-vesting)
-            if (s.name) names.add(s.name);
-        }
-    }
-
-    // External partners from sharedWith (only those NOT being abolished)
-    if (state.mergedArchitecture && state.mergedArchitecture.nodes) {
-        for (const node of state.mergedArchitecture.nodes) {
-            if (node.sharedWith) {
-                node.sharedWith.forEach(c => { if (!predecessors.has(c)) names.add(c); });
-            }
-            if (node.hostingPartner && !predecessors.has(node.hostingPartner)) {
-                names.add(node.hostingPartner);
-            }
-        }
-    }
-
-    return [...names].sort().map(n => `<option value="${escHtml(n)}">`).join('');
-}
-
-function getSuccessorNamesForSystem(sysId) {
-    const names = [];
-    const allocMap = state.successorAllocationMap;
-    if (!allocMap) return names;
-    for (const [successorName, fnMap] of allocMap) {
-        for (const [, allocations] of fnMap) {
-            if (allocations.some(a => a.system && a.system.id === sysId)) {
-                names.push(successorName);
-                break;
-            }
-        }
-    }
-    return names;
-}
+let _isExpanded = false;
+let _primarySystem = null;
+let _allFunctions = [];
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -91,7 +48,6 @@ function getSuccessorNamesForSystem(sysId) {
 
 /**
  * Opens the Decision Panel for a given (functionId, successorName) cell.
- * If a decision already exists for this cell it will be pre-filled.
  *
  * @param {string} functionId
  * @param {string} successorName
@@ -103,7 +59,7 @@ export function openDecisionPanel(functionId, successorName) {
     _currentSuccessorName = successorName;
     _panelOpener = document.activeElement;
 
-    renderDecisionPanelContent(functionId, successorName);
+    renderPanel(functionId, successorName);
 
     const modal = document.getElementById('decisionPanelModal');
     if (!modal) return;
@@ -119,72 +75,34 @@ export function openDecisionPanel(functionId, successorName) {
 // Core rendering
 // ---------------------------------------------------------------------------
 
-/**
- * Renders all content inside #decisionPanelContent for the given cell.
- */
-function renderDecisionPanelContent(functionId, successorName) {
+function renderPanel(functionId, successorName) {
     const content = document.getElementById('decisionPanelContent');
     if (!content) return;
 
-    // Resolve function metadata
     const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(functionId) : null;
     const funcLabel = funcEntry ? funcEntry.label : `Function ${functionId}`;
-
-    // Get tier for this function
     const tierNum = state.tierMap ? (state.tierMap.get(functionId) || 2) : 2;
     const tierBadge = renderTierBadge(tierNum);
+    const vestingDate = state.transitionStructure ? state.transitionStructure.vestingDate : null;
 
-    // Retrieve competing systems from allocation
+    // Get competing systems from allocation
     const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
     const successorMap = allocMap ? allocMap.get(successorName) : null;
     const cellAllocations = successorMap ? (successorMap.get(functionId) || []) : [];
-    const allMappedSystems = cellAllocations.map(a => ({
+    const systems = cellAllocations.map(a => ({
         ...a.system,
         sourceCouncil: a.sourceCouncil,
         _sourceCouncil: a.sourceCouncil,
         isDisaggregation: a.isDisaggregation || false,
         allocationType: a.allocationType
     }));
+    _allSystems = systems;
 
-    // All systems in this cell REALIZE the function (they were allocated via REALIZES edges).
-    // Systems with capabilityType are ALSO function-delivery systems — they appear as choices.
-    // Annotate those with capability info for blast radius display.
-    const capabilitySystems = allMappedSystems.filter(s => isCapabilitySystem(s));
-    const baselineEdgesForCap = state.simulationState ? (state.simulationState.baselineEdges || []) : [];
-    const baselineNodesForCap = state.simulationState ? (state.simulationState.baselineNodes || []) : [];
-    capabilitySystems.forEach(sys => {
-        const realizedFuncNodeIds = baselineEdgesForCap
-            .filter(e => e.source === sys.id && e.relationship === 'REALIZES')
-            .map(e => e.target);
-        const funcIds = new Set();
-        const affectedFunctions = [];
-        const seenFuncIds = new Set();
-        for (const nodeId of realizedFuncNodeIds) {
-            const node = baselineNodesForCap.find(n => n.id === nodeId);
-            if (node && node.lgaFunctionId) {
-                funcIds.add(node.lgaFunctionId);
-                if (node.lgaFunctionId !== functionId && !seenFuncIds.has(node.lgaFunctionId)) {
-                    seenFuncIds.add(node.lgaFunctionId);
-                    const entry = state.lgaFunctionMap ? state.lgaFunctionMap.get(node.lgaFunctionId) : null;
-                    affectedFunctions.push({
-                        funcId: node.lgaFunctionId,
-                        label: entry ? entry.label : `Function ${node.lgaFunctionId}`
-                    });
-                }
-            }
-        }
-        sys._functionCount = funcIds.size || 1;
-        sys._affectedFunctions = affectedFunctions;
-    });
-
-    const systems = allMappedSystems;
-    _allSystems = allMappedSystems;
-
-    // Check for an existing decision (edit mode)
+    // Check existing decision
     const decisions = state.simulationState.decisions;
     const existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
 
-    // Check if this is a propagated shared-service decision — show read-only view if so
+    // Show propagated shared-service read-only view if applicable
     const footer = document.getElementById('decisionPanelFooter');
     if (existingDecision && existingDecision.sharedServiceOrigin) {
         content.innerHTML = renderPropagatedSharedServiceView(existingDecision, funcLabel, successorName, tierBadge);
@@ -193,183 +111,215 @@ function renderDecisionPanelContent(functionId, successorName) {
     }
     if (footer) footer.classList.remove('hidden');
 
-    // Build the header
-    const headerHtml = `
-        <div class="mb-6">
+    // Determine if expanded state is needed
+    _isExpanded = detectExpandedState(systems, functionId, successorName);
+
+    // Build header
+    const headerHtml = renderHeader(funcLabel, successorName, tierBadge, existingDecision);
+
+    // Build panes
+    let pane1Html, pane2Html, pane3Html;
+
+    if (_isExpanded) {
+        // State 2: find the primary system and all functions it serves
+        _primarySystem = findPrimarySystem(systems, functionId, successorName);
+        _allFunctions = findAllFunctionsForSystem(_primarySystem, successorName);
+
+        pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate);
+        pane2Html = renderPane2Allocation({
+            functionId,
+            primarySuccessorName: successorName,
+            systems,
+            existingDecision,
+            isExpanded: true
+        });
+
+        // Add sharing grid below allocation
+        const gridFunctions = _allFunctions.map(f => {
+            const key = getDecisionKey(f.funcId, successorName);
+            const dec = decisions.get(key);
+            return {
+                funcId: f.funcId,
+                label: f.label,
+                systemLabel: dec && dec.systemChoice === 'choose' && dec.retainedSystemIds.length > 0
+                    ? (state.simulationState.baselineNodes || []).find(n => n.id === dec.retainedSystemIds[0])?.label || null
+                    : null,
+                decided: !!dec || f.funcId === functionId
+            };
+        });
+        const otherSuccessors = (state.transitionStructure?.successors || [])
+            .map(s => s.name)
+            .filter(n => n !== successorName);
+        const sharingGridHtml = otherSuccessors.length > 0
+            ? renderSharingGrid(gridFunctions, successorName, otherSuccessors)
+            : '';
+        pane2Html += sharingGridHtml;
+
+        pane3Html = renderPane3CostImpact({
+            functionId,
+            primarySuccessorName: successorName,
+            systems,
+            selectedSystemId: existingDecision?.retainedSystemIds?.[0] || null,
+            systemChoice: existingDecision?.systemChoice || 'defer',
+            sharedWithSuccessors: existingDecision?.sharedWithSuccessors || [],
+            procuredSystem: existingDecision?.procuredSystem || null,
+            existingDecision,
+            isExpanded: true,
+            primarySystem: _primarySystem,
+            allFunctions: _allFunctions
+        });
+    } else {
+        // State 1: simple
+        pane1Html = renderPane1Simple(systems, vestingDate);
+        pane2Html = renderPane2Allocation({
+            functionId,
+            primarySuccessorName: successorName,
+            systems,
+            existingDecision,
+            isExpanded: false
+        });
+        pane3Html = renderPane3CostImpact({
+            functionId,
+            primarySuccessorName: successorName,
+            systems,
+            selectedSystemId: existingDecision?.retainedSystemIds?.[0] || null,
+            systemChoice: existingDecision?.systemChoice || 'defer',
+            sharedWithSuccessors: existingDecision?.sharedWithSuccessors || [],
+            procuredSystem: existingDecision?.procuredSystem || null,
+            existingDecision,
+            isExpanded: false,
+            primarySystem: null,
+            allFunctions: []
+        });
+    }
+
+    const pane1Width = _isExpanded ? 'w-[22%] min-w-[160px]' : 'w-[28%]';
+    const pane2Width = _isExpanded ? 'w-[46%]' : 'w-[40%]';
+    const pane3Width = _isExpanded ? 'w-[32%]' : 'w-[32%]';
+
+    content.innerHTML = headerHtml + `
+        <div class="flex flex-1 min-h-0">
+            <div class="${pane1Width} overflow-y-auto border-r border-[#b1b4b6] pr-3 shrink-0">
+                ${pane1Html}
+            </div>
+            <div class="${pane2Width} overflow-y-auto px-3">
+                ${pane2Html}
+            </div>
+            <div class="${pane3Width} overflow-y-auto pl-3 border-l border-[#b1b4b6] bg-[#fafcff]">
+                ${pane3Html}
+            </div>
+        </div>`;
+
+    wireInteractivity(systems, successorName, existingDecision);
+}
+
+// ---------------------------------------------------------------------------
+// State detection
+// ---------------------------------------------------------------------------
+
+function detectExpandedState(systems, functionId, successorName) {
+    // Expanded if: any system is ERP, or is disaggregation (partial predecessor),
+    // or system has sharedWith, or system serves multiple functions in this successor
+    const hasErp = systems.some(s => s.isERP);
+    const hasDisagg = systems.some(s => s.isDisaggregation);
+    const hasShared = systems.some(s => s.sharedWith && s.sharedWith.length > 0);
+
+    if (hasErp || hasDisagg || hasShared) return true;
+
+    // Check if any system serves multiple functions in this successor
+    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+    const successorMap = allocMap ? allocMap.get(successorName) : null;
+    if (successorMap) {
+        for (const sys of systems) {
+            let funcCount = 0;
+            for (const [, allocations] of successorMap) {
+                if (allocations.some(a => a.system && a.system.id === sys.id)) funcCount++;
+            }
+            if (funcCount > 1) return true;
+        }
+    }
+
+    return false;
+}
+
+function findPrimarySystem(systems, functionId, successorName) {
+    // Prefer ERP, then disaggregation systems, then first system
+    const erp = systems.find(s => s.isERP);
+    if (erp) return erp;
+    const disagg = systems.find(s => s.isDisaggregation);
+    if (disagg) return disagg;
+    const shared = systems.find(s => s.sharedWith && s.sharedWith.length > 0);
+    if (shared) return shared;
+    // Find the system that serves the most functions
+    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+    const successorMap = allocMap ? allocMap.get(successorName) : null;
+    if (successorMap && systems.length > 0) {
+        let best = systems[0];
+        let bestCount = 0;
+        for (const sys of systems) {
+            let count = 0;
+            for (const [, allocations] of successorMap) {
+                if (allocations.some(a => a.system && a.system.id === sys.id)) count++;
+            }
+            if (count > bestCount) { best = sys; bestCount = count; }
+        }
+        return best;
+    }
+    return systems[0] || null;
+}
+
+function findAllFunctionsForSystem(primarySystem, successorName) {
+    if (!primarySystem) return [];
+    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+    const successorMap = allocMap ? allocMap.get(successorName) : null;
+    if (!successorMap) return [];
+
+    const functions = [];
+    for (const [funcId, allocations] of successorMap) {
+        if (allocations.some(a => a.system && a.system.id === primarySystem.id)) {
+            const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+            functions.push({
+                funcId,
+                label: funcEntry ? funcEntry.label : `Function ${funcId}`
+            });
+        }
+    }
+    return functions;
+}
+
+// ---------------------------------------------------------------------------
+// Header
+// ---------------------------------------------------------------------------
+
+function renderHeader(funcLabel, successorName, tierBadge, existingDecision) {
+    return `
+        <div class="mb-4 shrink-0">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Decision</p>
             <h2 id="decisionPanelTitle" class="text-2xl font-bold mb-1">${escHtml(funcLabel)}</h2>
             <div class="flex items-center gap-3 flex-wrap">
                 <span class="text-sm font-bold text-gray-700">Successor: ${escHtml(successorName)}</span>
                 ${tierBadge}
                 ${existingDecision ? '<span class="text-xs font-bold text-[#00703c] bg-green-50 border border-[#00703c] px-2 py-0.5">Editing existing decision</span>' : ''}
+                ${_isExpanded ? '<span class="text-xs font-bold text-[#1d70b8] bg-blue-50 border border-[#1d70b8] px-2 py-0.5">Expanded scope</span>' : ''}
             </div>
         </div>
     `;
-
-    // Cross-successor context: show what other successors have decided for this function
-    let crossSuccessorHtml = '';
-    if (state.simulationState && state.simulationState.decisions && state.transitionStructure) {
-        const otherDecisions = [];
-        const currentSystemIds = new Set(allMappedSystems.map(s => s.id));
-        state.transitionStructure.successors.forEach(s => {
-            if (s.name === successorName) return;
-            const otherKey = getDecisionKey(functionId, s.name);
-            const otherDec = state.simulationState.decisions.get(otherKey);
-            if (otherDec) {
-                let desc = '';
-                let matchableSystemId = null;
-                if (otherDec.systemChoice === 'choose' && otherDec.retainedSystemIds && otherDec.retainedSystemIds.length > 0) {
-                    const retainedId = otherDec.retainedSystemIds[0];
-                    const retainedNode = state.simulationState.baselineNodes
-                        ? state.simulationState.baselineNodes.find(n => n.id === retainedId) : null;
-                    desc = `Chose: ${retainedNode ? escHtml(retainedNode.label) : 'system'}`;
-                    // If the same system is available in this cell, offer to match
-                    if (currentSystemIds.has(retainedId)) {
-                        matchableSystemId = retainedId;
-                    }
-                } else if (otherDec.systemChoice === 'procure') {
-                    desc = `Procuring: ${otherDec.procuredSystem ? escHtml(otherDec.procuredSystem.label) : 'replacement'}`;
-                } else if (otherDec.systemChoice === 'defer') {
-                    desc = 'Deferred';
-                }
-                otherDecisions.push({ successor: s.name, desc, matchableSystemId });
-            }
-        });
-        if (otherDecisions.length > 0) {
-            const matchButtons = otherDecisions
-                .filter(d => d.matchableSystemId)
-                .map(d => `<button type="button" class="ml-2 text-[#1d70b8] underline font-bold cross-successor-match-btn" data-system-id="${escHtml(d.matchableSystemId)}">Choose same</button>`)
-                .join('');
-            crossSuccessorHtml = `<div class="mb-4 p-2.5 bg-blue-50 border-l-4 border-l-[#1d70b8] text-xs">
-                <span class="font-bold text-[#1d70b8]">Other successors for this function:</span>
-                ${otherDecisions.map(d => `<span class="ml-2 text-[#0b0c0c]">${escHtml(d.successor)}: <strong>${d.desc}</strong></span>`).join('')}
-                ${matchButtons}
-            </div>`;
-        }
-    }
-
-    // Build competing systems cards
-    const systemCardsHtml = renderSystemComparisonCards(systems, functionId, successorName);
-
-    // Build Axis 1 (system choice)
-    const axis1Html = renderAxisOne(systems, functionId, successorName, existingDecision);
-
-    // Build Axis 2 (operating model boundary) — rendered conditionally inside axis 1 change handlers,
-    // but always present in the DOM (conditionally hidden)
-    const axis2Html = renderAxisTwo(systems, successorName, existingDecision);
-
-    // Build ERP impact section (shown if any system is ERP)
-    const hasErp = systems.some(s => s.isERP);
-    const erpHtml = hasErp ? renderErpImpactSection(systems, successorName, functionId) : '';
-
-    // Capability platforms section: only show for systems that are NOT already in the radio choices.
-    // Since all systems in the cell REALIZE this function, they're all shown as choices.
-    // The section is now informational — shows blast radius context for capability-providing systems.
-    const capPlatformsHtml = capabilitySystems.length > 0
-        ? renderCapabilityPlatformsSection(capabilitySystems)
-        : '';
-
-    content.innerHTML = headerHtml + crossSuccessorHtml + `
-        <div class="flex gap-6 flex-1 min-h-0">
-            <div class="w-2/5 overflow-y-auto border-r border-[#b1b4b6] pr-4 shrink-0">
-                ${systemCardsHtml}
-                ${capPlatformsHtml}
-            </div>
-            <div class="flex-1 overflow-y-auto pl-2">
-                ${axis1Html}
-                ${axis2Html}
-                ${erpHtml}
-            </div>
-        </div>`;
-
-    // Wire Axis 1 radio change to update dynamic sections
-    wireAxisOneInteractivity(systems, successorName, existingDecision);
-
-    // Pre-fill if editing
-    if (existingDecision) {
-        prefillDecision(existingDecision, systems, successorName);
-    }
-
-    // Render blast radius summary banner above the Apply button
-    renderCapabilityBlastRadiusSummary(capabilitySystems);
-
-    // Wire cost split inputs
-    wireCostSplitInputs(content);
 }
 
 // ---------------------------------------------------------------------------
-// Cost split input wiring
+// Propagated shared-service read-only view (preserved from original)
 // ---------------------------------------------------------------------------
 
-function wireCostSplitInputs(container) {
-    // Percentage inputs
-    container.querySelectorAll('.cost-split-pct').forEach(input => {
-        input.addEventListener('change', (e) => {
-            const sysId = e.target.dataset.systemId;
-            const successor = e.target.dataset.successor;
-            let pct = parseInt(e.target.value, 10);
-            if (isNaN(pct) || pct < 0) pct = 0;
-            if (pct > 100) pct = 100;
-            e.target.value = pct;
-
-            const proportion = pct / 100;
-            if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
-            state.costSplitOverrides[sysId][successor] = proportion;
-
-            // Auto-balance remaining successors
-            const successorNames = getSuccessorNamesForSystem(sysId);
-            const remaining = 1 - proportion;
-            const otherSuccessors = successorNames.filter(s => s !== successor);
-            if (otherSuccessors.length > 0) {
-                const equalRemaining = remaining / otherSuccessors.length;
-                otherSuccessors.forEach(s => {
-                    state.costSplitOverrides[sysId][s] = Math.max(0, equalRemaining);
-                });
-            }
-
-            // Re-render the decision panel to reflect updated values
-            renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
-        });
-    });
-
-    // Reset buttons
-    container.querySelectorAll('.cost-split-reset').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const sysId = e.target.dataset.systemId;
-            delete state.costSplitOverrides[sysId];
-            renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
-        });
-    });
-}
-
-// ---------------------------------------------------------------------------
-// Propagated shared-service read-only view
-// ---------------------------------------------------------------------------
-
-/**
- * Renders a read-only view for a propagated shared-service decision.
- * Shows the shared system, the origin successor, and options to navigate to the
- * primary decision or unlink this propagated decision.
- *
- * @param {Object} decision  The propagated FunctionDecision
- * @param {string} funcLabel  Human-readable function label
- * @param {string} successorName  This successor's name
- * @param {string} tierBadge  HTML for tier badge
- * @returns {string} HTML
- */
 function renderPropagatedSharedServiceView(decision, funcLabel, successorName, tierBadge) {
     const origin = decision.sharedServiceOrigin || '';
-    // Parse the origin key back to successor name — format is 'functionId::successorName'
     const originParts = origin.split('::');
     const originSuccessorName = originParts.length >= 2 ? originParts.slice(1).join('::') : origin;
 
-    // Find the shared system label
     const retainedId = decision.retainedSystemIds && decision.retainedSystemIds.length > 0
         ? decision.retainedSystemIds[0] : null;
     const baselineNodes = state.simulationState ? state.simulationState.baselineNodes : null;
     const sharedSystem = retainedId && baselineNodes
-        ? baselineNodes.find(n => n.id === retainedId)
-        : null;
+        ? baselineNodes.find(n => n.id === retainedId) : null;
     const systemLabel = sharedSystem ? sharedSystem.label : (retainedId || 'shared system');
     const systemVendor = sharedSystem && sharedSystem.vendor ? ` — ${sharedSystem.vendor}` : '';
 
@@ -382,7 +332,6 @@ function renderPropagatedSharedServiceView(decision, funcLabel, successorName, t
                 ${tierBadge}
             </div>
         </div>
-
         <div class="p-4 bg-blue-50 border-l-4 border-l-[#1d70b8] mb-4">
             <p class="text-sm font-bold text-[#1d70b8] mb-1">This function is served by a shared service</p>
             <p class="text-sm text-gray-700 mb-2">
@@ -404,1389 +353,324 @@ function renderPropagatedSharedServiceView(decision, funcLabel, successorName, t
                 </button>
             </div>
         </div>
-
         <p class="text-xs text-gray-500">To change which system serves this function in ${escHtml(successorName)}, first remove it from the shared service above, then make an independent decision.</p>
     `;
-}
-
-// ---------------------------------------------------------------------------
-// Tier badge helper
-// ---------------------------------------------------------------------------
-
-function renderTierBadge(tier) {
-    const tierConfig = {
-        1: { label: 'Tier 1 — Day 1 Critical', bg: '#d4351c', fg: 'white' },
-        2: { label: 'Tier 2 — High Priority', bg: '#f47738', fg: '#0b0c0c' },
-        3: { label: 'Tier 3 — Post-Day 1', bg: '#b1b4b6', fg: '#0b0c0c' }
-    };
-    const cfg = tierConfig[tier] || tierConfig[2];
-    return `<span style="background:${cfg.bg};color:${cfg.fg};font-size:11px;padding:2px 8px;font-weight:bold;">${escHtml(cfg.label)}</span>`;
-}
-
-// ---------------------------------------------------------------------------
-// System comparison cards
-// ---------------------------------------------------------------------------
-
-/**
- * Renders side-by-side (or stacked) comparison cards for each competing system.
- */
-export function renderSystemComparisonCards(systems, functionId, successorName) {
-    if (!systems || systems.length === 0) {
-        return `<div class="mb-6 p-4 bg-[#f3f2f1] border border-[#b1b4b6] text-sm text-gray-600 italic">No systems allocated to this function for this successor.</div>`;
-    }
-
-    const vestingDate = state.transitionStructure ? state.transitionStructure.vestingDate : null;
-    const containerClass = 'flex flex-col gap-3';
-
-    const cards = systems.map(sys => renderSystemCard(sys, vestingDate, false)).join('');
-
-    return `
-        <div class="mb-6">
-            <h3 class="font-bold text-sm uppercase tracking-wide text-gray-600 mb-3">Competing Systems (${systems.length})</h3>
-            <div class="${containerClass}">
-                ${cards}
-            </div>
-        </div>
-    `;
-}
-
-function renderSystemCard(sys, vestingDate, isHorizontal) {
-    const isErp = sys.isERP || false;
-    const cardBorder = isErp ? 'border-[#d4351c] border-2' : 'border border-gray-300';
-    const cardWidth = isHorizontal ? 'min-w-[180px] flex-1' : 'w-full';
-
-    // Cloud / on-prem / partner-hosted badge
-    const hostingType = getHostingType(sys);
-    const cloudBadge = hostingType === 'cloud'
-        ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#cce2d8] text-[#00703c] font-bold border border-[#00703c]">Cloud</span>`
-        : hostingType === 'partner-hosted'
-        ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#fde68a] text-[#f47738] font-bold border border-[#f47738]">Partner</span>`
-        : `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#f3d9c9] text-[#f47738] font-bold border border-[#f47738]">On-prem</span>`;
-
-    // Portability badge
-    const portColors = { High: '#00703c', Medium: '#f47738', Low: '#d4351c' };
-    const portBg = { High: '#cce2d8', Medium: '#fde68a', Low: '#fce4e1' };
-    const portLabel = sys.portability || 'Unknown';
-    const portBadge = `<span class="inline-block text-xs px-1.5 py-0.5 font-bold border" style="background:${portBg[portLabel]||'#f3f2f1'};color:${portColors[portLabel]||'#505a5f'};border-color:${portColors[portLabel]||'#b1b4b6'}">Port: ${escHtml(portLabel)}</span>`;
-
-    // Data partitioning badge
-    const dataLabel = sys.dataPartitioning || 'Unknown';
-    const dataBadge = dataLabel === 'Monolithic'
-        ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#fce4e1] text-[#d4351c] font-bold border border-[#d4351c]">Monolithic</span>`
-        : `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#f3f2f1] text-gray-600 font-bold border border-gray-300">${escHtml(dataLabel)}</span>`;
-
-    // ERP badge
-    const erpBadge = isErp
-        ? `<span class="inline-block text-xs px-1.5 py-0.5 bg-[#d4351c] text-white font-bold">ERP</span>`
-        : '';
-
-    // Contract / vesting zone
-    let contractHtml = '';
-    if (sys.endYear) {
-        const endStr = `${sys.endYear}-${String(sys.endMonth || 12).padStart(2, '0')}`;
-        let zoneBadge = '';
-        if (vestingDate) {
-            const zone = classifyVestingZone(sys.endYear, sys.endMonth || 12, sys.noticePeriod || 0, vestingDate);
-            const zoneColors = {
-                'pre-vesting': { bg: '#fce4e1', fg: '#d4351c', label: 'Pre-vesting' },
-                'year-1': { bg: '#fde68a', fg: '#0b0c0c', label: 'Year 1' },
-                'natural-expiry': { bg: '#cce2d8', fg: '#00703c', label: 'Natural expiry' },
-                'long-tail': { bg: '#f3f2f1', fg: '#0b0c0c', label: 'Long-tail' }
-            };
-            const z = zoneColors[zone] || zoneColors['long-tail'];
-            zoneBadge = `<span class="inline-block text-xs px-1.5 py-0.5 font-bold border" style="background:${z.bg};color:${z.fg};border-color:${z.fg}">${z.label}</span>`;
-        }
-        const deadline = computeNoticeDeadline(sys);
-        const deadlineBadge = deadline ? `<span class="gds-tag tag-outline text-[10px] ml-1" title="Notice deadline">Notice: ${deadline.formatted}</span>` : '';
-        contractHtml = `<div class="text-xs text-gray-600 mt-1">Ends: <strong>${escHtml(endStr)}</strong>${sys.noticePeriod ? ` (${sys.noticePeriod}m notice)` : ''}${deadlineBadge}</div>${zoneBadge ? `<div class="mt-1">${zoneBadge}</div>` : ''}`;
-    }
-
-    // Disaggregation note and cost split
-    const disaggNote = sys.isDisaggregation
-        ? `<div class="mt-1 text-xs text-[#f47738] font-bold">Partial predecessor system</div>`
-        : '';
-
-    // Cost split UI for disaggregation systems
-    let costSplitHtml = '';
-    if (sys.isDisaggregation && sys.annualCost) {
-        const successorNames = getSuccessorNamesForSystem(sys.id);
-        if (successorNames.length > 1) {
-            const overrides = state.costSplitOverrides[sys.id] || {};
-            const equalProportion = 1 / successorNames.length;
-            let rows = '';
-            successorNames.forEach(sName => {
-                const prop = overrides[sName] != null ? overrides[sName] : equalProportion;
-                const pct = Math.round(prop * 100);
-                const amount = Math.round(sys.annualCost * prop);
-                rows += `<tr>
-                    <td class="text-xs py-0.5 pr-2">${escHtml(sName)}</td>
-                    <td class="py-0.5 pr-2"><input type="number" min="0" max="100" value="${pct}" class="cost-split-pct border border-gray-300 text-xs w-14 px-1 py-0.5 text-right" data-system-id="${escHtml(sys.id)}" data-successor="${escHtml(sName)}">%</td>
-                    <td class="text-xs py-0.5 text-gray-600">£${amount.toLocaleString()}</td>
-                </tr>`;
-            });
-            costSplitHtml = `<div class="mt-2 p-2 bg-orange-50 border border-[#f47738] rounded text-xs">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[#f47738]">Cost split</span>
-                    <button type="button" class="cost-split-reset text-[10px] text-[#1d70b8] underline font-bold" data-system-id="${escHtml(sys.id)}">Reset to equal</button>
-                </div>
-                <table class="w-full"><tbody>${rows}</tbody></table>
-            </div>`;
-        }
-    }
-
-    // Show proportional cost for disaggregation systems
-    let costDisplay = '';
-    if (sys.annualCost != null) {
-        if (sys.isDisaggregation) {
-            const successorNames = getSuccessorNamesForSystem(sys.id);
-            const numSucc = successorNames.length || 1;
-            const overrides = state.costSplitOverrides[sys.id] || {};
-            const currentSucc = _currentSuccessorName || '';
-            const prop = overrides[currentSucc] != null ? overrides[currentSucc] : (1 / numSucc);
-            const propCost = Math.round(sys.annualCost * prop);
-            const pct = Math.round(prop * 100);
-            costDisplay = `<div class="text-xs text-gray-600">Cost: <strong>£${propCost.toLocaleString()}/yr</strong> <span class="text-[10px] text-gray-400">(${pct}% of £${Number(sys.annualCost).toLocaleString()})</span></div>`;
-        } else {
-            costDisplay = `<div class="text-xs text-gray-600">Cost: <strong>£${Number(sys.annualCost).toLocaleString()}/yr</strong></div>`;
-        }
-    }
-
-    return `
-        <div class="${cardBorder} p-3 bg-white ${cardWidth}" data-system-id="${escHtml(sys.id || '')}">
-            <div class="font-bold text-sm mb-0.5">${escHtml(sys.label || 'Unnamed')}</div>
-            <div class="text-xs text-gray-500 mb-2">${escHtml(sys.sourceCouncil || 'Unknown council')}</div>
-            <div class="flex flex-wrap gap-1 mb-2">
-                ${cloudBadge}
-                ${portBadge}
-                ${dataBadge}
-                ${erpBadge}
-            </div>
-            ${sys.vendor || sys.version ? `<div class="text-xs text-gray-600">Vendor: <strong>${escHtml([sys.vendor, sys.version].filter(Boolean).join(' · '))}</strong></div>` : ''}
-            ${sys.users != null ? `<div class="text-xs text-gray-600">Users: <strong>${Number(sys.users).toLocaleString()}</strong></div>` : ''}
-            ${costDisplay}
-            ${contractHtml}
-            ${disaggNote}
-            ${costSplitHtml}
-            ${sys.notes ? `<p class="text-xs text-[#505a5f] italic mt-1 border-l-2 border-[#b1b4b6] pl-2">${escHtml(sys.notes)}</p>` : ''}
-        </div>
-    `;
-}
-
-// ---------------------------------------------------------------------------
-// Capability Platforms section
-// ---------------------------------------------------------------------------
-
-/**
- * Renders the "Supporting Capability Platforms" section for systems with capabilityType set.
- * These are not alternatives for function delivery and are not shown as radio choices.
- *
- * @param {Array} capabilitySystems  Systems with capabilityType array
- * @returns {string} HTML, or empty string if no capability systems
- */
-function renderCapabilityPlatformsSection(capabilitySystems) {
-    if (!capabilitySystems || capabilitySystems.length === 0) return '';
-
-    const cards = capabilitySystems.map(sys => {
-        const capBadges = (sys.capabilityType || [])
-            .map(cap => {
-                const def = LGAM_CAPABILITIES.find(c => c.id === cap);
-                return def ? `<span class="inline-block text-[10px] px-1.5 py-0.5 bg-[#e0f2fe] text-[#0e7490] font-bold border border-[#0e7490] mr-1 mb-1">${escHtml(def.label)}</span>` : '';
-            }).join('');
-        const funcNote = sys._functionCount && sys._functionCount > 1
-            ? `<span class="text-xs text-gray-500 italic">serves ${sys._functionCount} functions</span>` : '';
-
-        // Blast radius details disclosure
-        let blastRadiusHtml = '';
-        if (sys._affectedFunctions && sys._affectedFunctions.length > 0) {
-            const funcList = sys._affectedFunctions
-                .map(f => `<li>${escHtml(f.label)}</li>`)
-                .join('');
-            const count = sys._affectedFunctions.length;
-            blastRadiusHtml = `
-                <details class="mt-2 border-t border-gray-200 pt-2">
-                    <summary class="text-xs font-bold text-[#d4351c] cursor-pointer">
-                        Blast radius: ${count} other function${count !== 1 ? 's' : ''} depend on this platform
-                    </summary>
-                    <ul class="mt-1 text-xs text-gray-700 list-disc pl-4 space-y-0.5">${funcList}</ul>
-                    <p class="text-xs text-gray-500 mt-1 italic">Removing this platform would generate capability-gap obligations for each listed function.</p>
-                </details>`;
-        }
-
-        return `<div class="p-3 bg-[#f0fdfa] border border-[#0e7490] rounded mb-2">
-            <div class="flex items-center gap-2 flex-wrap">
-                <span class="font-bold text-sm">${escHtml(sys.label || sys.id)}</span>
-                <span class="text-xs text-gray-500">${escHtml(sys.sourceCouncil || sys._sourceCouncil || '')}</span>
-                ${funcNote}
-            </div>
-            <div class="flex items-center flex-wrap mt-1">${capBadges}</div>
-            ${blastRadiusHtml}
-        </div>`;
-    }).join('');
-
-    return `
-        <div class="mt-6 mb-4">
-            <h3 class="font-bold text-sm uppercase tracking-wide text-[#0e7490] mb-2">Capability Dependencies (${capabilitySystems.length} system${capabilitySystems.length !== 1 ? 's' : ''})</h3>
-            <p class="text-xs text-gray-600 mb-2">These systems also provide shared capabilities to other systems. Decommissioning them may create capability gaps elsewhere.</p>
-            ${cards}
-        </div>`;
-}
-
-/**
- * Renders a summary banner in the #capabilityBlastRadiusSummary div (above the Apply button)
- * when any capability systems in the current cell serve additional functions beyond this one.
- *
- * @param {Array} capabilitySystems  Annotated capability systems (with _affectedFunctions)
- */
-function renderCapabilityBlastRadiusSummary(capabilitySystems) {
-    const el = document.getElementById('capabilityBlastRadiusSummary');
-    if (!el) return;
-
-    const affected = (capabilitySystems || []).filter(s => s._affectedFunctions && s._affectedFunctions.length > 0);
-    if (affected.length === 0) {
-        el.classList.add('hidden');
-        el.innerHTML = '';
-        return;
-    }
-
-    el.classList.remove('hidden');
-    const totalAffected = affected.reduce((sum, s) => sum + s._affectedFunctions.length, 0);
-
-    let html = `<div class="p-3 bg-[#fff7e6] border-l-4 border-l-[#f47738] text-xs mt-4">`;
-    html += `<p class="font-bold text-[#0b0c0c] mb-1">Capability platform impact</p>`;
-    html += `<p class="text-gray-700">${affected.length} capability platform${affected.length !== 1 ? 's' : ''} in this cell serve${affected.length === 1 ? 's' : ''} ${totalAffected} other function${totalAffected !== 1 ? 's' : ''}. These are managed independently from the function-delivery decision above.</p>`;
-    html += `</div>`;
-    el.innerHTML = html;
-}
-
-// ---------------------------------------------------------------------------
-// Axis 1: System Choice
-// ---------------------------------------------------------------------------
-
-/**
- * Renders the Axis 1 radio group (choose / procure / defer).
- */
-export function renderAxisOne(systems, functionId, successorName, existingDecision) {
-    const existingChoice = existingDecision ? existingDecision.systemChoice : null;
-
-    // Build choose options (one per system, as radio buttons with label)
-    // Split into simple systems (no capability providers) and complex (have dependants)
-    const providers = state.capabilityProviders;
-
-    function buildSystemRadioItem(sys) {
-        const isErp = sys.isERP || false;
-        // Capability provider annotation for complex systems
-        let capAnnotation = '';
-        if (providers && providers.has(sys.id)) {
-            const consumers = providers.get(sys.id); // Map<consumerId, capabilities[]>
-            const consumerCount = consumers.size;
-            const allCaps = new Set();
-            consumers.forEach(caps => caps.forEach(c => allCaps.add(c)));
-            const capLabels = [...allCaps].map(capId => {
-                const def = LGAM_CAPABILITIES.find(c => c.id === capId);
-                return def ? def.label : capId;
-            }).join(', ');
-            const systemWord = consumerCount === 1 ? 'system' : 'systems';
-            capAnnotation = `
-                <div class="ml-0 mt-0.5 text-xs text-[#0e7490]">
-                    <span class="font-bold">&#9888;</span> Also provides: ${escHtml(capLabels)} &mdash; used by ${consumerCount} ${systemWord}
-                </div>`;
-        }
-        return `
-            <div class="flex items-start gap-2 mt-2">
-                <input type="radio" name="chooseSystem" id="chooseSystem_${escHtml(sys.id)}"
-                       value="${escHtml(sys.id)}" class="mt-0.5">
-                <label for="chooseSystem_${escHtml(sys.id)}" class="text-sm cursor-pointer flex-1">
-                    <strong>${escHtml(sys.label || 'Unnamed')}</strong>
-                    ${isErp ? '<span class="ml-1 text-xs text-[#d4351c] font-bold">(ERP)</span>' : ''}
-                    <span class="text-gray-500 text-xs ml-1">${escHtml(sys.sourceCouncil || '')}</span>
-                    ${sys.users != null ? `<span class="text-gray-500 text-xs ml-1">· ${Number(sys.users).toLocaleString()} users</span>` : ''}
-                    ${capAnnotation}
-                </label>
-            </div>
-        `;
-    }
-
-    let chooseOptions;
-    if (systems.length === 0) {
-        chooseOptions = '<p class="text-sm text-gray-500 italic mt-1">No systems available to choose.</p>';
-    } else {
-        const simpleSystems = systems.filter(sys => !(providers && providers.has(sys.id)));
-        const complexSystems = systems.filter(sys => providers && providers.has(sys.id));
-
-        const simpleHtml = simpleSystems.map(buildSystemRadioItem).join('');
-        let complexHtml = '';
-        if (complexSystems.length > 0) {
-            const divider = simpleSystems.length > 0
-                ? '<p class="text-xs font-bold text-[#0e7490] mt-3 mb-1">Systems that provide capabilities to other systems:</p>'
-                : '';
-            complexHtml = divider + complexSystems.map(buildSystemRadioItem).join('');
-        }
-        chooseOptions = simpleHtml + complexHtml;
-    }
-
-    // Decommission preview (shown when a system is chosen)
-    const decommissionPreviewHtml = `
-        <div id="decommissionPreview" class="hidden mt-3 p-3 bg-[#f3f2f1] border-l-4 border-l-[#d4351c] text-xs">
-            <span class="font-bold text-[#d4351c]">Will decommission:</span>
-            <div id="decommissionList" class="mt-1"></div>
-        </div>
-        <div id="capabilityBlastPreview" class="hidden"></div>
-    `;
-
-    // Deferral contrast: a collapsible <details> section shown in the "choose" option
-    // so users can compare the consolidation decision against deferring
-    const vestingDate = state.transitionStructure ? state.transitionStructure.vestingDate : null;
-    const totalCost = systems.reduce((sum, s) => sum + (s.annualCost || 0), 0);
-    const deferralContrastHtml = renderDeferralContrastCollapsible(systems, vestingDate, totalCost);
-
-    // Combined cost for defer option (also shown in defer detail)
-    const expiringSystemsHtml = renderDeferralContrast(systems, vestingDate);
-
-    return `
-        <div class="mb-6">
-            <h3 class="font-bold text-base border-b border-[#b1b4b6] pb-2 mb-3">Axis 1: System Choice</h3>
-            <fieldset>
-                <legend class="sr-only">System choice for ${escHtml(successorName)}</legend>
-
-                <!-- Option: Choose existing system -->
-                <div class="mb-4">
-                    <label class="flex items-center gap-2 font-bold text-sm cursor-pointer">
-                        <input type="radio" name="axis1Choice" id="axis1Choose" value="choose"
-                               ${existingChoice === 'choose' ? 'checked' : ''}>
-                        Choose existing system
-                    </label>
-                    <div id="axis1ChooseDetail" class="ml-6 mt-2 ${existingChoice === 'choose' ? '' : 'hidden'}">
-                        <fieldset>
-                            <legend class="text-xs text-gray-600 mb-1">Select the system(s) to retain:</legend>
-                            ${chooseOptions}
-                        </fieldset>
-                        ${decommissionPreviewHtml}
-                        ${deferralContrastHtml}
-                    </div>
-                </div>
-
-                <!-- Option: Procure replacement -->
-                <div class="mb-4">
-                    <label class="flex items-center gap-2 font-bold text-sm cursor-pointer">
-                        <input type="radio" name="axis1Choice" id="axis1Procure" value="procure"
-                               ${existingChoice === 'procure' ? 'checked' : ''}>
-                        Procure replacement
-                    </label>
-                    <div id="axis1ProcureDetail" class="ml-6 mt-2 ${existingChoice === 'procure' ? '' : 'hidden'}">
-                        <p class="text-xs text-gray-600 mb-2">All current systems for this function will be decommissioned and replaced.</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label for="procureLabel" class="block text-xs font-bold mb-1">System name <span class="text-[#d4351c]">*</span></label>
-                                <input type="text" id="procureLabel" class="border border-[#0b0c0c] p-1.5 text-sm w-full" placeholder="e.g. Northgate iDev" required>
-                            </div>
-                            <div>
-                                <label for="procureVendor" class="block text-xs font-bold mb-1">Vendor</label>
-                                <input type="text" id="procureVendor" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. Northgate">
-                            </div>
-                            <div>
-                                <label for="procureCost" class="block text-xs font-bold mb-1">Annual cost (£)</label>
-                                <input type="number" id="procureCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 150000" min="0">
-                            </div>
-                            <div>
-                                <label for="procureUpfrontCost" class="block text-xs font-bold mb-1">Implementation cost (one-off, £)</label>
-                                <input type="number" id="procureUpfrontCost" class="border border-[#b1b4b6] p-1.5 text-sm w-full" placeholder="e.g. 500000" min="0">
-                            </div>
-                            <div>
-                                <label for="procureHosting" class="block text-xs font-bold mb-1">Hosting</label>
-                                <select id="procureHosting" class="border border-[#b1b4b6] p-1.5 text-sm w-full" onchange="document.getElementById('procureHostingPartnerRow').classList.toggle('hidden', this.value !== 'partner-hosted')">
-                                    <option value="cloud" selected>Cloud</option>
-                                    <option value="on-premise">On-premise</option>
-                                    <option value="partner-hosted">Partner-hosted</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="procureHostingPartnerRow" class="hidden mt-2">
-                            <label for="procureHostingPartner" class="block text-xs font-bold mb-1">Hosting partner</label>
-                            <input id="procureHostingPartner" type="text" placeholder="Council or organisation name" list="procureHostingPartnerList" class="border border-[#b1b4b6] p-1.5 text-sm w-full" />
-                            <datalist id="procureHostingPartnerList">${buildHostingPartnerOptions()}</datalist>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Option: Defer -->
-                <div class="mb-2">
-                    <label class="flex items-center gap-2 font-bold text-sm cursor-pointer">
-                        <input type="radio" name="axis1Choice" id="axis1Defer" value="defer"
-                               ${existingChoice === 'defer' ? 'checked' : ''}>
-                        Defer — keep running in parallel
-                    </label>
-                    <div id="axis1DeferDetail" class="ml-6 mt-2 ${existingChoice === 'defer' ? '' : 'hidden'}">
-                        ${totalCost > 0 ? `<p class="text-sm text-gray-700"><strong>Combined ongoing cost:</strong> £${totalCost.toLocaleString()}/yr</p>` : ''}
-                        ${expiringSystemsHtml}
-                    </div>
-                </div>
-            </fieldset>
-        </div>
-    `;
-}
-
-/**
- * Returns an HTML summary of systems whose contracts may need extending for deferral.
- */
-export function renderDeferralContrast(systems, vestingDate) {
-    if (!systems || systems.length === 0) return '';
-    if (!vestingDate) {
-        return `<p class="text-xs text-gray-500 mt-1">Configure a vesting date to see contract extension requirements.</p>`;
-    }
-
-    const expiringHtml = systems
-        .filter(s => s.endYear)
-        .map(s => {
-            const zone = classifyVestingZone(s.endYear, s.endMonth || 12, s.noticePeriod || 0, vestingDate);
-            if (zone === 'pre-vesting' || zone === 'year-1') {
-                const endStr = `${s.endYear}-${String(s.endMonth || 12).padStart(2, '0')}`;
-                const zoneLabel = zone === 'pre-vesting' ? 'Pre-vesting — extension required before vesting' : 'Year 1 — extension likely needed';
-                return `<div class="text-xs mt-1"><strong>${escHtml(s.label)}</strong>: ends ${endStr} — <span class="text-[#d4351c] font-bold">${zoneLabel}</span></div>`;
-            }
-            return null;
-        })
-        .filter(Boolean)
-        .join('');
-
-    if (!expiringHtml) {
-        return `<p class="text-xs text-gray-600 mt-1">No contracts require immediate extension for deferral.</p>`;
-    }
-
-    return `
-        <div class="mt-2 p-2 bg-yellow-50 border-l-4 border-l-[#f47738] text-xs">
-            <span class="font-bold">Contract extensions required for deferral:</span>
-            ${expiringHtml}
-        </div>
-    `;
-}
-
-/**
- * Renders a collapsible <details> "Compare with deferral" section for the "choose" option.
- * Shows combined parallel running cost, contract extensions needed, and operational notes.
- *
- * @param {Array} systems
- * @param {string|null} vestingDate
- * @param {number} totalCost
- * @returns {string} HTML
- */
-function renderDeferralContrastCollapsible(systems, vestingDate, totalCost) {
-    if (!systems || systems.length === 0) return '';
-
-    // Only meaningful if there are 2+ systems (otherwise deferral and consolidation are the same)
-    if (systems.length < 2) return '';
-
-    // Contract extensions needed for deferral
-    let contractExtensionsHtml = '';
-    if (vestingDate) {
-        const expiringItems = systems
-            .filter(s => s.endYear)
-            .map(s => {
-                const zone = classifyVestingZone(s.endYear, s.endMonth || 12, s.noticePeriod || 0, vestingDate);
-                if (zone === 'pre-vesting' || zone === 'year-1') {
-                    const endStr = `${s.endYear}-${String(s.endMonth || 12).padStart(2, '0')}`;
-                    const urgency = zone === 'pre-vesting' ? 'extension required before vesting' : 'extension likely needed';
-                    return `<li><strong>${escHtml(s.label)}</strong>: ends ${endStr} — <span class="text-[#d4351c] font-bold">${urgency}</span></li>`;
-                }
-                return null;
-            })
-            .filter(Boolean);
-
-        if (expiringItems.length > 0) {
-            contractExtensionsHtml = `
-                <div class="mt-2">
-                    <p class="font-bold text-xs mb-1">Contract extensions needed:</p>
-                    <ul class="list-disc pl-4 text-xs space-y-0.5">${expiringItems.join('')}</ul>
-                </div>`;
-        } else {
-            contractExtensionsHtml = `<p class="text-xs text-gray-600 mt-1">No contracts require immediate extension for deferral.</p>`;
-        }
-    } else {
-        contractExtensionsHtml = `<p class="text-xs text-gray-500 mt-1">Configure a vesting date to see contract extension requirements.</p>`;
-    }
-
-    const costLine = totalCost > 0
-        ? `<p class="text-xs"><strong>Combined parallel running cost:</strong> <span class="font-bold text-[#d4351c]">£${totalCost.toLocaleString()}/yr</span> (${systems.length} systems)</p>`
-        : '';
-
-    return `
-        <details class="mt-3 border border-[#b1b4b6] bg-yellow-50">
-            <summary class="px-3 py-2 text-xs font-bold cursor-pointer text-gray-700 select-none">
-                Compare with deferral — what if we keep all systems running in parallel?
-            </summary>
-            <div class="px-3 pb-3 pt-1 text-xs space-y-1">
-                ${costLine}
-                ${contractExtensionsHtml}
-                <p class="text-xs text-gray-700 mt-2"><strong>No user migration required</strong> — all users remain on their current systems.</p>
-                <p class="text-xs text-gray-600 mt-1"><em>Operational overhead:</em> running parallel systems increases support, licensing, and integration burden for the successor authority.</p>
-            </div>
-        </details>
-    `;
-}
-
-// ---------------------------------------------------------------------------
-// Axis 2: Operating Model Boundary
-// ---------------------------------------------------------------------------
-
-/**
- * Renders the Axis 2 section (boundary choice).
- * Hidden by default; shown when a chosen/procured system crosses boundaries.
- */
-export function renderAxisTwo(systems, successorName, existingDecision) {
-    const existingBoundary = existingDecision ? existingDecision.boundaryChoice : null;
-    const existingSplits = existingDecision ? (existingDecision.disaggregationSplits || []) : [];
-
-    // Pre-determine visibility based on systems and transition context
-    const hasShared = systems.some(s => s.sharedWith && s.sharedWith.length > 0);
-    const hasDisagg = systems.some(s => s.isDisaggregation);
-    const hasMultipleSuccessors = (state.transitionStructure?.successors?.length || 0) > 1;
-
-    // Hide entire Axis 2 when none of the contextual conditions apply AND no existing boundary choice
-    const isRelevant = hasShared || hasDisagg || hasMultipleSuccessors;
-    const hasSectionContent = isRelevant || existingBoundary;
-
-    // Build disaggregation split rows
-    const splitRows = existingSplits.length > 0
-        ? existingSplits.map((split, i) => renderSplitRow(split, i)).join('')
-        : renderSplitRow({ successorName: '', label: '' }, 0) + renderSplitRow({ successorName: '', label: '' }, 1);
-
-    // Individual option visibility: each option hidden unless contextually relevant OR already selected.
-    // Disaggregate and Maintain Shared are shown/hidden dynamically based on the CHOSEN system.
-    // They start hidden and are revealed by the system radio change handler.
-    const disaggHidden = (existingBoundary !== 'disaggregate') ? 'hidden' : '';
-    const maintainSharedHidden = (existingBoundary !== 'maintain-shared') ? 'hidden' : '';
-    const establishSharedHidden = (!hasMultipleSuccessors && existingBoundary !== 'establish-shared') ? 'hidden' : '';
-
-    return `
-        <div id="axis2Section" class="mb-6 ${hasSectionContent ? '' : 'hidden'}">
-            <h3 class="font-bold text-base border-b border-[#b1b4b6] pb-2 mb-3">Axis 2: Operating Model Boundary</h3>
-            <p class="text-xs text-gray-600 mb-3">Shown when the chosen system crosses successor boundaries, has shared service arrangements, or is a partial predecessor system.</p>
-            <fieldset>
-                <legend class="sr-only">Operating model boundary for ${escHtml(successorName)}</legend>
-
-                <div class="mb-2">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="radio" name="axis2Choice" id="axis2None" value="none"
-                               ${!existingBoundary || existingBoundary === 'none' ? 'checked' : ''}>
-                        <span><strong>No boundary change</strong> — operate within single successor</span>
-                    </label>
-                </div>
-
-                <div class="mb-2 ${disaggHidden}">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="radio" name="axis2Choice" id="axis2Disaggregate" value="disaggregate"
-                               ${existingBoundary === 'disaggregate' ? 'checked' : ''}>
-                        <span><strong>Disaggregate</strong> — split system along successor boundaries</span>
-                    </label>
-                    <div id="axis2DisaggDetail" class="ml-6 mt-2 ${existingBoundary === 'disaggregate' ? '' : 'hidden'}">
-                        <p class="text-xs text-gray-600 mb-2">Define how the system will be split. Each successor gets its own instance:</p>
-                        <div id="disaggSplitsContainer" class="space-y-2">
-                            ${splitRows}
-                        </div>
-                        <button type="button" onclick="window._simDecisionAddSplit()" class="text-xs text-[#1d70b8] underline font-bold mt-2">+ Add split</button>
-                    </div>
-                </div>
-
-                <div class="mb-2 ${maintainSharedHidden}">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="radio" name="axis2Choice" id="axis2MaintainShared" value="maintain-shared"
-                               ${existingBoundary === 'maintain-shared' ? 'checked' : ''}>
-                        <span><strong>Maintain shared service</strong> — keep existing cross-boundary arrangement</span>
-                    </label>
-                </div>
-
-                <div class="mb-2 ${establishSharedHidden}">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="radio" name="axis2Choice" id="axis2EstablishShared" value="establish-shared"
-                               ${existingBoundary === 'establish-shared' ? 'checked' : ''}>
-                        <span><strong>Establish shared service</strong> — create new cross-boundary arrangement</span>
-                    </label>
-                    <div id="axis2EstablishSharedDetail" class="ml-6 mt-2 ${existingBoundary === 'establish-shared' ? '' : 'hidden'}">
-                        <p id="establishSharedConsequencesDesc" class="text-xs text-gray-600 mb-2">Select which other successors will share this service. The chosen system will be adopted as the decided system for each selected successor, decommissioning their existing systems:</p>
-                        <fieldset aria-describedby="establishSharedConsequencesDesc">
-                            <legend class="text-xs font-bold text-gray-700 mb-2">Successors to include in shared service:</legend>
-                            <div id="establishSharedSuccessorsContainer" class="space-y-2">
-                                ${renderEstablishSharedSuccessorCheckboxes(successorName, existingDecision)}
-                            </div>
-                        </fieldset>
-                        <div id="crossSuccessorPreview" aria-live="polite" aria-atomic="true"></div>
-                    </div>
-                </div>
-            </fieldset>
-        </div>
-    `;
-}
-
-/**
- * Renders one checkbox per other successor in the transition structure.
- * Pre-fills from existingDecision.sharedWithSuccessors if editing.
- *
- * @param {string} currentSuccessorName
- * @param {Object|null} existingDecision
- * @returns {string} HTML
- */
-function renderEstablishSharedSuccessorCheckboxes(currentSuccessorName, existingDecision) {
-    const successors = state.transitionStructure ? state.transitionStructure.successors : [];
-    const otherSuccessors = successors.filter(s => s.name !== currentSuccessorName);
-
-    if (otherSuccessors.length === 0) {
-        return '<p class="text-xs text-gray-500 italic">No other successor authorities available.</p>';
-    }
-
-    const preChecked = new Set(
-        (existingDecision && existingDecision.sharedWithSuccessors) ? existingDecision.sharedWithSuccessors : []
-    );
-
-    return otherSuccessors.map(s => {
-        const safeId = `shareWith_${escHtml(s.name.replace(/\s+/g, '_'))}`;
-        const checked = preChecked.has(s.name) ? 'checked' : '';
-        return `
-            <div class="flex items-center gap-2">
-                <input type="checkbox" id="${safeId}" name="establishSharedSuccessor"
-                       value="${escHtml(s.name)}" class="establish-shared-successor-cb" ${checked}>
-                <label for="${safeId}" class="text-sm cursor-pointer">${escHtml(s.name)}</label>
-            </div>
-        `;
-    }).join('');
-}
-
-function renderSplitRow(split, index) {
-    const successors = state.transitionStructure && state.transitionStructure.successors
-        ? state.transitionStructure.successors : [];
-    const options = successors.map(s =>
-        `<option value="${escHtml(s.name)}" ${split.successorName === s.name ? 'selected' : ''}>${escHtml(s.name)}</option>`
-    ).join('');
-    return `
-        <div class="flex items-center gap-2 split-row">
-            <div class="flex-1">
-                <label for="splitSuccessor_${index}" class="sr-only">Successor authority for split ${index + 1}</label>
-                <select id="splitSuccessor_${index}" class="border border-[#b1b4b6] p-1.5 text-xs w-full split-successor-input">
-                    <option value="">Select successor</option>
-                    ${options}
-                </select>
-            </div>
-            <div class="flex-1">
-                <label for="splitLabel_${index}" class="sr-only">System label for split ${index + 1}</label>
-                <input type="text" id="splitLabel_${index}" class="border border-[#b1b4b6] p-1.5 text-xs w-full split-label-input"
-                       placeholder="System instance label (optional)" value="${escHtml(split.label || '')}">
-            </div>
-        </div>
-    `;
-}
-
-// ---------------------------------------------------------------------------
-// ERP Impact section
-// ---------------------------------------------------------------------------
-
-/**
- * Renders the ERP Impact section showing all functions the ERP covers in this successor.
- */
-export function renderErpImpactSection(systems, successorName, currentFunctionId) {
-    const erpSystems = systems.filter(s => s.isERP);
-    if (erpSystems.length === 0) return '';
-
-    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
-    const decisions = state.simulationState.decisions || new Map();
-    const funcMap = state.lgaFunctionMap || new Map();
-
-    let erpSectionsHtml = '';
-
-    for (const erpSystem of erpSystems) {
-        const erpSystemId = erpSystem.id;
-        const successorFuncMap = allocMap ? allocMap.get(successorName) : null;
-        if (!successorFuncMap) continue;
-
-        // Find all functions this ERP serves in this successor
-        const erpFunctions = [];
-        successorFuncMap.forEach((allocations, funcId) => {
-            if (allocations.some(a => a.system && a.system.id === erpSystemId)) {
-                const existing = decisions.get(getDecisionKey(funcId, successorName));
-                const funcEntry = funcMap.get(funcId);
-                erpFunctions.push({
-                    funcId,
-                    label: funcEntry ? funcEntry.label : `Function ${funcId}`,
-                    decided: !!existing,
-                    isCurrent: funcId === currentFunctionId,
-                    decision: existing
-                });
-            }
-        });
-
-        if (erpFunctions.length === 0) continue;
-
-        const decidedCount = erpFunctions.filter(f => f.decided).length;
-
-        const undecidedFunctions = erpFunctions.filter(f => !f.decided && !f.isCurrent);
-
-        const funcRows = erpFunctions.map(f => {
-            const status = f.isCurrent
-                ? '<span class="text-xs font-bold text-[#1d70b8]">THIS DECISION</span>'
-                : f.decided
-                    ? `<span class="text-xs font-bold text-[#00703c]">Decided: ${escHtml(f.decision ? describeDecision(f.decision) : 'unknown')}</span>`
-                    : '<span class="text-xs text-gray-500">Undecided</span>';
-
-            const check = f.decided || f.isCurrent
-                ? '<span class="text-[#00703c] font-bold mr-1">[x]</span>'
-                : '<span class="text-gray-400 mr-1">[ ]</span>';
-
-            return `<div class="flex items-center gap-2 text-xs py-0.5">
-                ${check}<span class="${f.isCurrent ? 'font-bold' : ''}">${escHtml(f.label)}</span>
-                <span class="ml-auto">${status}</span>
-            </div>`;
-        }).join('');
-
-        // Bulk apply affordance: retain this ERP across all its undecided functions.
-        // Only meaningful as a "keep the ERP" shortcut — not applicable to other system choices.
-        const bulkApplyHtml = undecidedFunctions.length > 0
-            ? `<div class="mt-3 p-3 bg-blue-50 border-l-4 border-l-[#1d70b8]">
-                <p class="text-sm font-bold">Retain ${escHtml(erpSystem.label)} for all ${undecidedFunctions.length} undecided function${undecidedFunctions.length !== 1 ? 's' : ''}?</p>
-                <p class="text-xs text-gray-600 mt-1">This will keep ${escHtml(erpSystem.label)} as the chosen system for: ${escHtml(undecidedFunctions.map(f => f.label).join(', '))}</p>
-                <button type="button" class="gds-btn text-sm px-3 py-1.5 mt-2" onclick="window._simBulkApplyErp('${escHtml(erpSystemId)}', '${escHtml(successorName)}')">Retain ${escHtml(erpSystem.label)} for all</button>
-            </div>`
-            : '';
-
-        erpSectionsHtml += `
-            <div class="mb-4 p-3 border border-[#d4351c] bg-[#fce4e1]">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-xs px-1.5 py-0.5 bg-[#d4351c] text-white font-bold">ERP</span>
-                    <strong class="text-sm">${escHtml(erpSystem.label || 'ERP System')}</strong>
-                    <span class="text-xs text-gray-600">— ${erpSystem.vendor ? escHtml(erpSystem.vendor) : 'Unknown vendor'}</span>
-                </div>
-                <p class="text-xs text-gray-700 mb-2">Serves <strong>${erpFunctions.length}</strong> function${erpFunctions.length !== 1 ? 's' : ''} in ${escHtml(successorName)} — ${decidedCount}/${erpFunctions.length} decided:</p>
-                <div class="space-y-0.5">
-                    ${funcRows}
-                </div>
-                <p class="text-xs text-gray-500 mt-2">Removing this ERP from one function does not decommission it — it continues to serve other functions unless all are decided away.</p>
-                ${bulkApplyHtml}
-            </div>
-        `;
-    }
-
-    if (!erpSectionsHtml) return '';
-
-    return `
-        <div class="mb-6">
-            <h3 class="font-bold text-base border-b border-[#b1b4b6] pb-2 mb-3">ERP Impact</h3>
-            ${erpSectionsHtml}
-        </div>
-    `;
-}
-
-function describeDecision(decision) {
-    if (!decision) return '';
-    switch (decision.systemChoice) {
-        case 'choose':
-            return `Keep ${(decision.retainedSystemIds || []).length} system(s)`;
-        case 'procure':
-            return `Procure: ${decision.procuredSystem ? escHtml(decision.procuredSystem.label) : 'new system'}`;
-        case 'defer':
-            return 'Deferred';
-        default:
-            return decision.systemChoice;
-    }
 }
 
 // ---------------------------------------------------------------------------
 // Interactivity wiring
 // ---------------------------------------------------------------------------
 
-/**
- * Wires radio/change handlers for Axis 1 within the modal.
- */
-function wireAxisOneInteractivity(systems, successorName, existingDecision) {
+function wireInteractivity(systems, successorName, existingDecision) {
     const content = document.getElementById('decisionPanelContent');
     if (!content) return;
 
-    const chooseRadio = content.querySelector('#axis1Choose');
-    const procureRadio = content.querySelector('#axis1Procure');
-    const deferRadio = content.querySelector('#axis1Defer');
+    // Successor dropdown changes → show/hide procure detail, update Pane 3 only
+    content.querySelectorAll('.successor-system-select').forEach(select => {
+        select.addEventListener('change', () => {
+            const card = select.closest('.successor-card');
+            const procureDetail = card ? card.querySelector('[data-procure-detail]') : null;
+            if (procureDetail) {
+                procureDetail.classList.toggle('hidden', select.value !== '__procure__');
+            }
+            rerenderPane3Only();
+        });
+    });
 
-    const chooseDetail = content.querySelector('#axis1ChooseDetail');
-    const procureDetail = content.querySelector('#axis1ProcureDetail');
-    const deferDetail = content.querySelector('#axis1DeferDetail');
+    // Share toggles
+    content.querySelectorAll('.share-successor-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            // Sync with grid if present
+            const gridCb = content.querySelector(`.grid-share-cb[data-successor="${cb.dataset.successor}"][data-func-id="${_currentFunctionId}"]`);
+            if (gridCb) gridCb.checked = cb.checked;
+            // Re-render to update linked cards
+            renderPanel(_currentFunctionId, _currentSuccessorName);
+        });
+    });
 
-    const axis2Section = content.querySelector('#axis2Section');
-    const disaggDetail = content.querySelector('#axis2DisaggDetail');
-    const axis2Radios = content.querySelectorAll('input[name="axis2Choice"]');
+    // Grid checkbox sync → card toggle
+    content.querySelectorAll('.grid-share-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const cardCb = content.querySelector(`.share-successor-cb[data-successor="${cb.dataset.successor}"]`);
+            if (cardCb && cb.dataset.funcId === _currentFunctionId) {
+                cardCb.checked = cb.checked;
+                cardCb.dispatchEvent(new Event('change'));
+            }
+        });
+    });
 
-    function showAxis1Detail(choice) {
-        if (chooseDetail) chooseDetail.classList.toggle('hidden', choice !== 'choose');
-        if (procureDetail) procureDetail.classList.toggle('hidden', choice !== 'procure');
-        if (deferDetail) deferDetail.classList.toggle('hidden', choice !== 'defer');
+    // Function navigator clicks (State 2)
+    content.querySelectorAll('.func-nav-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const newFuncId = row.dataset.funcId;
+            if (newFuncId && newFuncId !== _currentFunctionId) {
+                _currentFunctionId = newFuncId;
+                renderPanel(_currentFunctionId, _currentSuccessorName);
+            }
+        });
+    });
 
-        // Show Axis 2 only for choose or procure (not defer)
-        if (axis2Section) {
-            const hasMultipleSuccessors = (state.transitionStructure?.successors?.length || 0) > 1;
-            const shouldShow = (choice === 'choose' || choice === 'procure') &&
-                (systems.some(s => s.sharedWith && s.sharedWith.length > 0) ||
-                 systems.some(s => s.isDisaggregation) ||
-                 hasMultipleSuccessors ||
-                 (existingDecision && existingDecision.boundaryChoice && existingDecision.boundaryChoice !== 'none'));
-            axis2Section.classList.toggle('hidden', !shouldShow);
-        }
+    // Escalation button (State 1 → State 2)
+    const escalateBtn = content.querySelector('#escalateToExpanded');
+    if (escalateBtn) {
+        escalateBtn.addEventListener('click', () => {
+            _isExpanded = true;
+            renderPanel(_currentFunctionId, _currentSuccessorName);
+        });
     }
 
-    if (chooseRadio) chooseRadio.addEventListener('change', () => {
-        if (chooseRadio.checked) showAxis1Detail('choose');
-    });
-    if (procureRadio) procureRadio.addEventListener('change', () => {
-        if (procureRadio.checked) showAxis1Detail('procure');
-    });
-    if (deferRadio) deferRadio.addEventListener('change', () => {
-        if (deferRadio.checked) showAxis1Detail('defer');
+    // Unlink shared service buttons
+    content.querySelectorAll('.unlink-shared-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const successor = btn.dataset.successor;
+            if (successor) {
+                window._simUnlinkSharedService(_currentFunctionId, successor);
+                renderPanel(_currentFunctionId, _currentSuccessorName);
+            }
+        });
     });
 
-    // Wire choose-system radio to update decommission preview, blast radius, and boundary options
-    content.querySelectorAll('input[name="chooseSystem"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            updateDecommissionPreview(systems, radio.value, content);
-            updateCapabilityBlastPreview(systems, radio.value, content);
-            const chosenSys = systems.find(s => s.id === radio.value);
+    // Cost split inputs
+    content.querySelectorAll('.cost-split-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const sysId = e.target.dataset.systemId;
+            const successor = e.target.dataset.successor;
+            let pct = parseInt(e.target.value, 10);
+            if (isNaN(pct) || pct < 0) pct = 0;
+            if (pct > 100) pct = 100;
+            e.target.value = pct;
 
-            // Show/hide Disaggregate based on whether chosen system is a disaggregation system
-            const disaggOption = content.querySelector('#axis2Disaggregate')?.closest('.mb-2');
-            if (disaggOption) {
-                const isDisagg = chosenSys && chosenSys.isDisaggregation;
-                disaggOption.classList.toggle('hidden', !isDisagg);
-                if (!isDisagg) {
-                    const disaggRadio = content.querySelector('#axis2Disaggregate');
-                    if (disaggRadio && disaggRadio.checked) {
-                        const noneRadio = content.querySelector('#axis2None');
-                        if (noneRadio) noneRadio.checked = true;
-                        if (disaggDetail) disaggDetail.classList.add('hidden');
+            const proportion = pct / 100;
+            if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
+            state.costSplitOverrides[sysId][successor] = proportion;
+
+            const successorNames = getSuccessorNamesForSystem(sysId);
+            const remaining = 1 - proportion;
+            const otherSuccessors = successorNames.filter(s => s !== successor);
+            if (otherSuccessors.length > 0) {
+                const equalRemaining = remaining / otherSuccessors.length;
+                otherSuccessors.forEach(s => {
+                    state.costSplitOverrides[sysId][s] = Math.max(0, equalRemaining);
+                });
+            }
+
+            renderPanel(_currentFunctionId, _currentSuccessorName);
+        });
+    });
+
+    // Cost split shortcuts
+    content.querySelectorAll('.cost-split-shortcut').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const action = link.dataset.action;
+            const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+            const sysId = primarySelect ? primarySelect.value : null;
+            if (!sysId || sysId.startsWith('__')) return;
+
+            const successorNames = getSuccessorNamesForSystem(sysId);
+            if (successorNames.length === 0) return;
+
+            if (action === 'equal') {
+                delete state.costSplitOverrides[sysId];
+            } else if (action === 'by-users') {
+                const sys = systems.find(s => s.id === sysId);
+                if (sys && sys.users) {
+                    const totalUsers = successorNames.length * (sys.users / successorNames.length);
+                    const equalProp = 1 / successorNames.length;
+                    if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
+                    successorNames.forEach(s => {
+                        state.costSplitOverrides[sysId][s] = equalProp;
+                    });
+                }
+            } else if (action === 'by-functions') {
+                // Weight by how many functions each successor uses this system for
+                const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+                const counts = {};
+                let total = 0;
+                successorNames.forEach(sName => {
+                    const succMap = allocMap ? allocMap.get(sName) : null;
+                    let count = 0;
+                    if (succMap) {
+                        for (const [, allocations] of succMap) {
+                            if (allocations.some(a => a.system && a.system.id === sysId)) count++;
+                        }
                     }
+                    counts[sName] = count;
+                    total += count;
+                });
+                if (total > 0) {
+                    if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
+                    successorNames.forEach(s => {
+                        state.costSplitOverrides[sysId][s] = counts[s] / total;
+                    });
                 }
             }
 
-            // Show/hide Maintain Shared based on whether chosen system has sharedWith
-            const maintainOption = content.querySelector('#axis2MaintainShared')?.closest('.mb-2');
-            if (maintainOption) {
-                const isSharedSys = chosenSys && chosenSys.sharedWith && chosenSys.sharedWith.length > 0;
-                maintainOption.classList.toggle('hidden', !isSharedSys);
-                if (!isSharedSys) {
-                    const maintainRadio = content.querySelector('#axis2MaintainShared');
-                    if (maintainRadio && maintainRadio.checked) {
-                        const noneRadio = content.querySelector('#axis2None');
-                        if (noneRadio) noneRadio.checked = true;
-                    }
-                }
-            }
+            renderPanel(_currentFunctionId, _currentSuccessorName);
         });
     });
 
-    // Wire "Choose same" cross-successor match buttons
-    content.querySelectorAll('.cross-successor-match-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const systemId = btn.dataset.systemId;
-            // Select "Choose existing system" in Axis 1
-            if (chooseRadio && !chooseRadio.checked) {
-                chooseRadio.checked = true;
-                showAxis1Detail('choose');
-            }
-            // Select the matching system radio
-            const sysRadio = content.querySelector(`#chooseSystem_${CSS.escape(systemId)}`);
-            if (sysRadio) {
-                sysRadio.checked = true;
-                sysRadio.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+    // "+ Func" button
+    const addFuncBtn = content.querySelector('.add-func-btn');
+    if (addFuncBtn) {
+        addFuncBtn.addEventListener('click', () => {
+            showAddFunctionTypeahead(addFuncBtn);
         });
-    });
-
-    const establishSharedDetail = content.querySelector('#axis2EstablishSharedDetail');
-
-    // Wire Axis 2 radios to show/hide detail panels
-    axis2Radios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            if (disaggDetail) {
-                disaggDetail.classList.toggle('hidden', radio.value !== 'disaggregate');
-            }
-            if (establishSharedDetail) {
-                const wasHidden = establishSharedDetail.classList.contains('hidden');
-                establishSharedDetail.classList.toggle('hidden', radio.value !== 'establish-shared');
-                if (wasHidden && radio.value === 'establish-shared') {
-                    const firstCb = establishSharedDetail.querySelector('.establish-shared-successor-cb');
-                    if (firstCb) firstCb.focus();
-                }
-            }
-        });
-    });
-
-    // Wire establish-shared successor checkboxes to update cross-successor preview
-    content.querySelectorAll('.establish-shared-successor-cb').forEach(cb => {
-        cb.addEventListener('change', updateCrossSuccessorPreview);
-    });
-
-    // Also update cross-successor preview when system choice changes
-    content.querySelectorAll('input[name="chooseSystem"]').forEach(radio => {
-        radio.addEventListener('change', updateCrossSuccessorPreview);
-    });
+    }
 }
 
-/**
- * Updates the decommission preview list when a system is chosen.
- */
-function updateDecommissionPreview(systems, chosenId, content) {
-    const preview = content.querySelector('#decommissionPreview');
-    const list = content.querySelector('#decommissionList');
-    if (!preview || !list) return;
-
-    const toDecommission = systems.filter(s => s.id !== chosenId);
-    if (toDecommission.length === 0) {
-        preview.classList.add('hidden');
-        return;
-    }
-
-    preview.classList.remove('hidden');
-    list.innerHTML = toDecommission.map(s => {
-        const userNote = s.users != null ? ` — ${Number(s.users).toLocaleString()} users to migrate` : '';
-        const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP — also serves other functions, won\'t be fully decommissioned)</span>' : '';
-        const mig = computeMigrationComplexity(s);
-        const migBadge = mig.score > 0
-            ? ` <span class="inline-block text-[10px] font-bold px-1 py-0.5 rounded ${mig.size === 'XL' ? 'bg-[#d4351c] text-white' : mig.size === 'L' ? 'bg-[#f47738] text-white' : mig.size === 'M' ? 'bg-[#1d70b8] text-white' : 'bg-[#00703c] text-white'}">Mig:${mig.size}</span>`
-            : '';
-        return `<div class="mt-0.5">${escHtml(s.label)}${migBadge}${erpNote}${userNote}</div>`;
-    }).join('');
-}
-
-/**
- * Updates the capability blast radius preview below the decommission list.
- * Shows informational impact when non-chosen systems are capability providers.
- *
- * @param {Array} systems  All systems in the cell
- * @param {string} chosenId  The chosen system's ID
- * @param {Element} content  The modal content element
- */
-function updateCapabilityBlastPreview(systems, chosenId, content) {
-    const previewEl = content.querySelector('#capabilityBlastPreview');
-    if (!previewEl) return;
-
-    const providers = state.capabilityProviders;
-    if (!providers) {
-        previewEl.classList.add('hidden');
-        previewEl.innerHTML = '';
-        return;
-    }
-
-    // Find non-chosen systems that are capability providers
-    const nonChosenProviders = systems.filter(s => s.id !== chosenId && providers.has(s.id));
-
-    if (nonChosenProviders.length === 0) {
-        previewEl.classList.add('hidden');
-        previewEl.innerHTML = '';
-        return;
-    }
-
-    // Build impact lines for each non-chosen provider
-    const impactLines = nonChosenProviders.map(sys => {
-        const consumers = providers.get(sys.id); // Map<consumerId, capabilities[]>
-        const consumerCount = consumers.size;
-        const allCaps = new Set();
-        consumers.forEach(caps => caps.forEach(c => allCaps.add(c)));
-        const capLabels = [...allCaps].map(capId => {
-            const def = LGAM_CAPABILITIES.find(c => c.id === capId);
-            return def ? def.label : capId;
-        }).join(', ');
-        const systemWord = consumerCount === 1 ? 'system' : 'systems';
-        return `<p><strong>${escHtml(sys.label || sys.id)}</strong> provides ${escHtml(capLabels)} to ${consumerCount} ${systemWord}.</p>`;
-    }).join('');
-
-    previewEl.classList.remove('hidden');
-    previewEl.innerHTML = `
-        <div class="mt-3 p-3 bg-[#e0f2fe] border-l-4 border-l-[#0e7490] text-xs">
-            <span class="font-bold text-[#0e7490]">Capability impact:</span>
-            <div class="mt-1">
-                ${impactLines}
-                <p class="text-gray-600 italic mt-1">These capabilities will need alternative provision if the above system${nonChosenProviders.length !== 1 ? 's are' : ' is'} fully decommissioned.</p>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Updates the cross-successor decommission preview when establish-shared checkboxes change.
- * Shows which systems in each selected successor's cell will be decommissioned.
- */
-function updateCrossSuccessorPreview() {
-    const content = document.getElementById('decisionPanelContent');
-    if (!content) return;
-    const previewDiv = content.querySelector('#crossSuccessorPreview');
-    if (!previewDiv) return;
-
-    // Get currently selected shared successors
-    const checkedCbs = content.querySelectorAll('.establish-shared-successor-cb:checked');
-    const selectedSuccessors = [...checkedCbs].map(cb => cb.value);
-
-    if (selectedSuccessors.length === 0) {
-        previewDiv.innerHTML = '';
-        return;
-    }
-
-    // Get chosen system ID from axis 1
-    const chosenRadio = content.querySelector('input[name="chooseSystem"]:checked');
-    const axis1Radio = content.querySelector('input[name="axis1Choice"]:checked');
-    const systemChoice = axis1Radio ? axis1Radio.value : null;
-
-    let chosenSystemId = null;
-    if (systemChoice === 'choose' && chosenRadio) {
-        chosenSystemId = chosenRadio.value;
-    }
-    // For procure, there's no existing system to exclude
-
-    const allocation = state.simulationState ? state.simulationState.baselineAllocation : null;
-    if (!allocation) {
-        previewDiv.innerHTML = '';
-        return;
-    }
-
-    let html = '<div class="mt-3 p-3 bg-yellow-50 border-l-4 border-l-[#f47738]">';
-    html += '<p class="text-xs font-bold text-[#0b0c0c] mb-2">Impact on shared successors:</p>';
-
-    for (const successor of selectedSuccessors) {
-        const succMap = allocation.get(successor);
-        const allocations = succMap ? succMap.get(_currentFunctionId) : null;
-
-        html += `<div class="mt-2"><span class="text-xs font-bold">${escHtml(successor)}:</span>`;
-
-        if (!allocations || allocations.length === 0) {
-            html += '<div class="text-xs text-gray-500 ml-2">No existing systems — shared system will be newly allocated</div>';
-        } else {
-            const toDecommission = allocations.filter(a => a.system && a.system.id !== chosenSystemId);
-            if (toDecommission.length === 0) {
-                html += '<div class="text-xs text-gray-500 ml-2">Chosen system already present — no decommissions</div>';
-            } else {
-                html += toDecommission.map(a => {
-                    const s = a.system;
-                    const userNote = s.users != null ? ` — ${Number(s.users).toLocaleString()} users` : '';
-                    const erpNote = s.isERP ? ' <span class="text-[#d4351c] font-bold">(ERP)</span>' : '';
-                    const costNote = typeof s.annualCost === 'number' && s.annualCost > 0
-                        ? ` — £${s.annualCost >= 1000000 ? (s.annualCost / 1000000).toFixed(1) + 'M' : Math.round(s.annualCost / 1000) + 'k'}/yr`
-                        : '';
-                    const contractNote = s.endYear
-                        ? ` — contract ${s.endYear}-${String(s.endMonth || 12).padStart(2, '0')}${s.noticePeriod ? ` (${s.noticePeriod}mo notice)` : ''}`
-                        : '';
-                    return `<div class="text-xs ml-2 mt-0.5">${escHtml(s.label || s.id)}${erpNote}${userNote}${costNote}${contractNote}</div>`;
-                }).join('');
-                const totalCost = toDecommission.reduce((sum, a) => sum + (typeof a.system.annualCost === 'number' ? a.system.annualCost : 0), 0);
-                const totalUsers = toDecommission.reduce((sum, a) => sum + (typeof a.system.users === 'number' ? a.system.users : 0), 0);
-                if (totalCost > 0 || totalUsers > 0) {
-                    const costLabel = totalCost >= 1000000 ? `£${(totalCost / 1000000).toFixed(1)}M` : `£${Math.round(totalCost / 1000)}k`;
-                    html += `<div class="text-xs ml-2 mt-1 pt-1 border-t border-yellow-200 font-bold text-[#0b0c0c]">`;
-                    html += `Total: ${toDecommission.length} system${toDecommission.length !== 1 ? 's' : ''}`;
-                    if (totalUsers > 0) html += `, ${totalUsers.toLocaleString()} users`;
-                    if (totalCost > 0) html += `, ${costLabel}/yr`;
-                    html += `</div>`;
-                }
-            }
-        }
-        html += '</div>';
-    }
-
-    html += '</div>';
-    previewDiv.innerHTML = html;
-}
-
-// ---------------------------------------------------------------------------
-// Pre-fill from existing decision
-// ---------------------------------------------------------------------------
-
-function prefillDecision(decision, systems, successorName) {
+function rerenderPane3Only() {
     const content = document.getElementById('decisionPanelContent');
     if (!content) return;
 
-    // Axis 1
-    const axis1Radio = content.querySelector(`input[name="axis1Choice"][value="${decision.systemChoice}"]`);
-    if (axis1Radio) {
-        axis1Radio.checked = true;
-        axis1Radio.dispatchEvent(new Event('change'));
-    }
+    // Read current state from the DOM
+    const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+    const selectValue = primarySelect ? primarySelect.value : '';
 
-    if (decision.systemChoice === 'choose' && decision.retainedSystemIds && decision.retainedSystemIds.length > 0) {
-        const firstRetained = decision.retainedSystemIds[0];
-        const sysRadio = content.querySelector(`input[name="chooseSystem"][value="${CSS.escape(firstRetained)}"]`);
-        if (sysRadio) {
-            sysRadio.checked = true;
-            sysRadio.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-    }
-
-    if (decision.systemChoice === 'procure' && decision.procuredSystem) {
-        const ps = decision.procuredSystem;
-        const labelEl = content.querySelector('#procureLabel');
-        const vendorEl = content.querySelector('#procureVendor');
-        const costEl = content.querySelector('#procureCost');
-        const upfrontCostEl = content.querySelector('#procureUpfrontCost');
-        const hostingEl = content.querySelector('#procureHosting');
-        if (labelEl) labelEl.value = ps.label || '';
-        if (vendorEl) vendorEl.value = ps.vendor || '';
-        if (costEl) costEl.value = ps.annualCost != null ? ps.annualCost : '';
-        if (upfrontCostEl) upfrontCostEl.value = ps.upfrontCost != null ? ps.upfrontCost : '';
-        if (hostingEl) {
-            hostingEl.value = ps.hosting || 'cloud';
-            const partnerRow = content.querySelector('#procureHostingPartnerRow');
-            if (partnerRow) partnerRow.classList.toggle('hidden', ps.hosting !== 'partner-hosted');
-        }
-        const hostingPartnerEl = content.querySelector('#procureHostingPartner');
-        if (hostingPartnerEl) hostingPartnerEl.value = ps.hostingPartner || '';
-    }
-
-    // Axis 2
-    if (decision.boundaryChoice && decision.boundaryChoice !== 'none') {
-        const axis2Radio = content.querySelector(`input[name="axis2Choice"][value="${decision.boundaryChoice}"]`);
-        if (axis2Radio) {
-            axis2Radio.checked = true;
-            axis2Radio.dispatchEvent(new Event('change'));
-        }
-
-        if (decision.boundaryChoice === 'disaggregate' && decision.disaggregationSplits && decision.disaggregationSplits.length > 0) {
-            const container = content.querySelector('#disaggSplitsContainer');
-            if (container) {
-                container.innerHTML = decision.disaggregationSplits.map((split, i) => renderSplitRow(split, i)).join('');
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Apply Decision
-// ---------------------------------------------------------------------------
-
-/**
- * Reads the modal form, creates a FunctionDecision, stores it, and recomputes.
- */
-export async function applyDecisionFromPanel() {
-    if (!state.simulationState) return;
-    if (!_currentFunctionId || !_currentSuccessorName) return;
-
-    const content = document.getElementById('decisionPanelContent');
-    const errorEl = document.getElementById('decisionPanelError');
-
-    if (!content || !errorEl) return;
-
-    // Clear previous errors
-    errorEl.classList.add('hidden');
-    errorEl.textContent = '';
-
-    // Read Axis 1
-    const axis1Radio = content.querySelector('input[name="axis1Choice"]:checked');
-    if (!axis1Radio) {
-        showDecisionError('Please select a system choice (Axis 1).');
-        return;
-    }
-    const systemChoice = axis1Radio.value;
-
-    // Validate and read choice-specific fields
-    let retainedSystemIds = [];
+    let systemChoice = 'defer';
+    let selectedSystemId = null;
     let procuredSystem = null;
 
-    if (systemChoice === 'choose') {
-        const chosenRadio = content.querySelector('input[name="chooseSystem"]:checked');
-        if (!chosenRadio) {
-            showDecisionError('Please select which system to retain.');
-            return;
-        }
-        retainedSystemIds = [chosenRadio.value];
-
-    } else if (systemChoice === 'procure') {
-        const labelEl = content.querySelector('#procureLabel');
-        const label = labelEl ? labelEl.value.trim() : '';
-        if (!label) {
-            showDecisionError('Please enter a system name for the procured replacement.');
-            if (labelEl) labelEl.focus();
-            return;
-        }
-        const vendorEl = content.querySelector('#procureVendor');
-        const costEl = content.querySelector('#procureCost');
-        const upfrontCostEl = content.querySelector('#procureUpfrontCost');
-        const hostingEl = content.querySelector('#procureHosting');
-        const hostingPartnerEl = content.querySelector('#procureHostingPartner');
+    if (selectValue === '__defer__') {
+        systemChoice = 'defer';
+    } else if (selectValue === '__procure__') {
+        systemChoice = 'procure';
+        const card = primarySelect.closest('.successor-card');
+        const labelField = card ? card.querySelector('.procure-field[data-field="label"]') : null;
         procuredSystem = {
-            label,
-            vendor: vendorEl ? vendorEl.value.trim() : '',
-            annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
-            upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
-            hosting: hostingEl ? hostingEl.value : 'cloud',
-            hostingPartner: (hostingEl && hostingEl.value === 'partner-hosted' && hostingPartnerEl) ? hostingPartnerEl.value.trim() : undefined
+            label: labelField ? labelField.value : '',
+            annualCost: 0
         };
+    } else if (selectValue && selectValue !== '') {
+        systemChoice = 'choose';
+        selectedSystemId = selectValue;
     }
 
-    // Read Axis 2
-    const axis2Radio = content.querySelector('input[name="axis2Choice"]:checked');
-    const boundaryChoice = axis2Radio ? axis2Radio.value : 'none';
+    const sharedCbs = content.querySelectorAll('.share-successor-cb:checked');
+    const sharedWithSuccessors = [...sharedCbs].map(cb => cb.dataset.successor);
 
-    // Read disaggregation splits
-    let disaggregationSplits = [];
-    if (boundaryChoice === 'disaggregate') {
-        const successorInputs = content.querySelectorAll('.split-successor-input');
-        const labelInputs = content.querySelectorAll('.split-label-input');
-        successorInputs.forEach((inp, i) => {
-            const splitSuccessor = inp.value.trim();
-            const splitLabel = labelInputs[i] ? labelInputs[i].value.trim() : '';
-            if (splitSuccessor) {
-                disaggregationSplits.push({ successorName: splitSuccessor, label: splitLabel });
-            }
-        });
-        if (disaggregationSplits.length < 2) {
-            showDecisionError('Disaggregation requires at least 2 splits with successor names.');
-            return;
-        }
-    }
+    const decisions = state.simulationState ? state.simulationState.decisions : new Map();
+    const existingDecision = decisions.get(getDecisionKey(_currentFunctionId, _currentSuccessorName));
 
-    // Read establish-shared successors
-    let sharedWithSuccessors = [];
-    if (boundaryChoice === 'establish-shared') {
-        const checkedCbs = content.querySelectorAll('.establish-shared-successor-cb:checked');
-        sharedWithSuccessors = [...checkedCbs].map(cb => cb.value);
-        if (sharedWithSuccessors.length === 0) {
-            showDecisionError('Establish shared service requires at least one other successor to share with.');
-            return;
-        }
-    }
+    // Find the Pane 3 container (third child of the flex container)
+    const panes = content.querySelector('.flex.flex-1.min-h-0');
+    if (!panes) return;
+    const pane3 = panes.children[2];
+    if (!pane3) return;
 
-    // --- Cascade delete: if the OLD decision had sharedWithSuccessors, delete those propagated decisions ---
-    const currentKey = getDecisionKey(_currentFunctionId, _currentSuccessorName);
-    const oldDecision = state.simulationState.decisions.get(currentKey);
-    if (oldDecision && oldDecision.sharedWithSuccessors && oldDecision.sharedWithSuccessors.length > 0) {
-        for (const oldSharedSuccessor of oldDecision.sharedWithSuccessors) {
-            const oldPropKey = getDecisionKey(_currentFunctionId, oldSharedSuccessor);
-            const oldPropDecision = state.simulationState.decisions.get(oldPropKey);
-            // Only delete if it was actually a propagated decision for THIS primary
-            if (oldPropDecision && oldPropDecision.sharedServiceOrigin === currentKey) {
-                state.simulationState.decisions.delete(oldPropKey);
-            }
-        }
-    }
-
-    // --- Conflict check for establish-shared: target successors must not have independent decisions ---
-    if (boundaryChoice === 'establish-shared') {
-        for (const sharedSuccessor of sharedWithSuccessors) {
-            const targetKey = getDecisionKey(_currentFunctionId, sharedSuccessor);
-            const targetDecision = state.simulationState.decisions.get(targetKey);
-            if (targetDecision && !targetDecision.sharedServiceOrigin) {
-                showDecisionError(`${sharedSuccessor} already has an independent decision for this function. Remove it before establishing a shared service.`);
-                return;
-            }
-        }
-    }
-
-    // --- Confirmation step for establish-shared: show impact before applying ---
-    if (boundaryChoice === 'establish-shared' && sharedWithSuccessors.length > 0) {
-        // Build system label
-        let systemLabel;
-        if (systemChoice === 'choose' && retainedSystemIds.length > 0) {
-            const sys = _allSystems.find(s => s.id === retainedSystemIds[0]);
-            systemLabel = sys ? sys.label : retainedSystemIds[0];
-        } else if (systemChoice === 'procure' && procuredSystem) {
-            systemLabel = procuredSystem.label;
-        } else {
-            systemLabel = 'selected system';
-        }
-
-        // Build function label
-        const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(_currentFunctionId) : null;
-        const funcLabel = funcEntry ? funcEntry.label : _currentFunctionId;
-
-        // Count decommissions per shared successor
-        const lines = [`${_currentSuccessorName} (primary)`];
-        for (const sharedSuccessor of sharedWithSuccessors) {
-            let decommCount = 0;
-            if (state.simulationState && state.simulationState.baselineAllocation) {
-                const succMap = state.simulationState.baselineAllocation.get(sharedSuccessor);
-                if (succMap) {
-                    const allocations = succMap.get(_currentFunctionId);
-                    if (allocations) {
-                        const chosenId = retainedSystemIds.length > 0 ? retainedSystemIds[0] : (procuredSystem ? procuredSystem.id : null);
-                        decommCount = allocations.filter(a => a.system && a.system.id !== chosenId).length;
-                    }
-                }
-            }
-            const decommNote = decommCount > 0 ? ` (${decommCount} system${decommCount !== 1 ? 's' : ''} to be decommissioned)` : ' (no existing systems)';
-            lines.push(`${sharedSuccessor}${decommNote}`);
-        }
-
-        const confirmMsg = `${systemLabel} will become the shared system for ${funcLabel} across: ${lines.join(', ')}. This will decommission competing systems in all listed successors.`;
-
-        const confirmed = await showConfirm({
-            containerId: 'decisionPanelNotifications',
-            title: 'Establish shared service?',
-            message: confirmMsg,
-            confirmLabel: 'Establish',
-            cancelLabel: 'Cancel'
-        });
-        if (!confirmed) {
-            return;
-        }
-    }
-
-    // --- Pre-generate procured system ID for establish-shared + procure so propagated decisions can reference it ---
-    if (boundaryChoice === 'establish-shared' && systemChoice === 'procure' && procuredSystem) {
-        const slug = _currentSuccessorName.replace(/\s+/g, '-').toLowerCase();
-        procuredSystem.id = `sys-procured-${_currentFunctionId}-${slug}-${Date.now()}`;
-    }
-
-    // Create the primary decision
-    const decision = createDecision({
+    pane3.innerHTML = renderPane3CostImpact({
         functionId: _currentFunctionId,
-        successorName: _currentSuccessorName,
+        primarySuccessorName: _currentSuccessorName,
+        systems: _allSystems,
+        selectedSystemId,
         systemChoice,
-        retainedSystemIds,
+        sharedWithSuccessors,
         procuredSystem,
-        boundaryChoice,
-        disaggregationSplits,
-        sharedWithSuccessors
+        existingDecision,
+        isExpanded: _isExpanded,
+        primarySystem: _primarySystem,
+        allFunctions: _allFunctions
     });
 
-    // Validate
-    const validation = validateDecision(decision);
-    if (!validation.valid) {
-        showDecisionError('Validation failed: ' + validation.errors.join(', '));
-        return;
-    }
+    // Re-wire cost split inputs within pane 3
+    pane3.querySelectorAll('.cost-split-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const sysId = e.target.dataset.systemId;
+            const successor = e.target.dataset.successor;
+            let pct = parseInt(e.target.value, 10);
+            if (isNaN(pct) || pct < 0) pct = 0;
+            if (pct > 100) pct = 100;
+            e.target.value = pct;
 
-    // Store primary decision
-    state.simulationState.decisions.set(currentKey, decision);
+            const proportion = pct / 100;
+            if (!state.costSplitOverrides[sysId]) state.costSplitOverrides[sysId] = {};
+            state.costSplitOverrides[sysId][successor] = proportion;
 
-    // --- Create propagated decisions for each shared successor ---
-    if (boundaryChoice === 'establish-shared' && sharedWithSuccessors.length > 0) {
-        // Determine retainedSystemIds for propagated decisions
-        let propagatedRetainedIds;
-        if (systemChoice === 'choose') {
-            propagatedRetainedIds = [...retainedSystemIds];
-        } else if (systemChoice === 'procure') {
-            propagatedRetainedIds = [procuredSystem.id];
-        } else {
-            propagatedRetainedIds = [];
-        }
-
-        for (const sharedSuccessor of sharedWithSuccessors) {
-            const propagatedDecision = createDecision({
-                functionId: _currentFunctionId,
-                successorName: sharedSuccessor,
-                systemChoice: 'choose',
-                retainedSystemIds: propagatedRetainedIds,
-                procuredSystem: null,
-                boundaryChoice: 'establish-shared',
-                disaggregationSplits: [],
-                sharedWithSuccessors: [],
-                sharedServiceOrigin: currentKey,
-                contractExtensions: []
-            });
-
-            const propKey = getDecisionKey(_currentFunctionId, sharedSuccessor);
-            state.simulationState.decisions.set(propKey, propagatedDecision);
-        }
-    }
-
-    // Recompute simulation
-    recomputeSimulation();
-
-    // Close modal
-    closeDecisionPanel();
+            const successorNames = getSuccessorNamesForSystem(sysId);
+            const remaining = 1 - proportion;
+            const otherSuccessors = successorNames.filter(s => s !== successor);
+            if (otherSuccessors.length > 0) {
+                const equalRemaining = remaining / otherSuccessors.length;
+                otherSuccessors.forEach(s => {
+                    state.costSplitOverrides[sysId][s] = Math.max(0, equalRemaining);
+                });
+            }
+            rerenderPane3Only();
+        });
+    });
 }
 
-function showDecisionError(msg) {
-    const errorEl = document.getElementById('decisionPanelError');
-    if (!errorEl) return;
-    errorEl.textContent = msg;
-    errorEl.classList.remove('hidden');
+// ---------------------------------------------------------------------------
+// Add Function typeahead
+// ---------------------------------------------------------------------------
+
+function showAddFunctionTypeahead(anchorEl) {
+    // Remove existing typeahead if present
+    const existing = document.getElementById('addFuncTypeahead');
+    if (existing) existing.remove();
+
+    const existingFuncIds = new Set(_allFunctions.map(f => f.funcId));
+
+    const available = (LGA_FUNCTIONS || []).filter(f => !existingFuncIds.has(f.id));
+    if (available.length === 0) return;
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'addFuncTypeahead';
+    dropdown.className = 'absolute bg-white border-2 border-[#0b0c0c] shadow-lg z-50 max-h-48 overflow-y-auto w-64';
+    dropdown.innerHTML = `
+        <input type="text" placeholder="Search functions..." class="w-full border-b border-[#b1b4b6] p-2 text-xs" id="addFuncSearch">
+        <div id="addFuncResults" class="max-h-40 overflow-y-auto">
+            ${available.slice(0, 20).map(f => `<div class="p-1.5 text-xs cursor-pointer hover:bg-[#f0f4ff] add-func-option" data-func-id="${escHtml(f.id)}">${escHtml(f.label)}</div>`).join('')}
+        </div>
+    `;
+
+    anchorEl.parentElement.style.position = 'relative';
+    anchorEl.parentElement.appendChild(dropdown);
+
+    const searchInput = dropdown.querySelector('#addFuncSearch');
+    if (searchInput) {
+        searchInput.focus();
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase();
+            const filtered = available.filter(f => f.label.toLowerCase().includes(q)).slice(0, 20);
+            const results = dropdown.querySelector('#addFuncResults');
+            results.innerHTML = filtered.map(f =>
+                `<div class="p-1.5 text-xs cursor-pointer hover:bg-[#f0f4ff] add-func-option" data-func-id="${escHtml(f.id)}">${escHtml(f.label)}</div>`
+            ).join('');
+            wireAddFuncOptions(dropdown);
+        });
+    }
+
+    wireAddFuncOptions(dropdown);
+
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', function closeTypeahead(e) {
+            if (!dropdown.contains(e.target) && e.target !== anchorEl) {
+                dropdown.remove();
+                document.removeEventListener('click', closeTypeahead);
+            }
+        });
+    }, 0);
+}
+
+function wireAddFuncOptions(dropdown) {
+    dropdown.querySelectorAll('.add-func-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const funcId = opt.dataset.funcId;
+            if (funcId) {
+                // Add function to the list and re-render
+                const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+                _allFunctions.push({
+                    funcId,
+                    label: funcEntry ? funcEntry.label : `Function ${funcId}`
+                });
+                dropdown.remove();
+                renderPanel(_currentFunctionId, _currentSuccessorName);
+            }
+        });
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -1800,6 +684,9 @@ function closeDecisionPanel() {
     modal.classList.add('hidden');
     _currentFunctionId = null;
     _currentSuccessorName = null;
+    _isExpanded = false;
+    _primarySystem = null;
+    _allFunctions = [];
 
     if (_trapCleanup) {
         _trapCleanup();
@@ -1813,7 +700,7 @@ function closeDecisionPanel() {
 }
 
 // ---------------------------------------------------------------------------
-// Focus trap (same pattern as simulation-panel.js)
+// Focus trap
 // ---------------------------------------------------------------------------
 
 function createFocusTrap(modalEl) {
@@ -1842,12 +729,25 @@ const _decisionPanelModal = document.getElementById('decisionPanelModal');
 if (_decisionPanelModal) {
     document.getElementById('btnCloseDecisionPanel').addEventListener('click', closeDecisionPanel);
     document.getElementById('btnCancelDecision').addEventListener('click', closeDecisionPanel);
-    document.getElementById('btnApplyDecision').addEventListener('click', applyDecisionFromPanel);
+    document.getElementById('btnApplyDecision').addEventListener('click', () => {
+        applyDecisionFromPanel({
+            functionId: _currentFunctionId,
+            successorName: _currentSuccessorName,
+            systems: _allSystems,
+            closePanel: closeDecisionPanel,
+            showError: (msg) => {
+                const errorEl = document.getElementById('decisionPanelError');
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+            }
+        });
+    });
 
     _decisionPanelModal.addEventListener('click', async (e) => {
         if (e.target === _decisionPanelModal) { closeDecisionPanel(); return; }
 
-        // Delegated handler: unlink from shared service
         const unlinkBtn = e.target.closest('[data-action="unlink-shared-service"]');
         if (unlinkBtn) {
             const functionId = unlinkBtn.getAttribute('data-function-id');
@@ -1871,42 +771,13 @@ if (_decisionPanelModal) {
 }
 
 // ---------------------------------------------------------------------------
-// Window hook for adding disaggregation splits
+// Window hooks (preserved for backward compatibility)
 // ---------------------------------------------------------------------------
 
-window._simDecisionAddSplit = function() {
-    const container = document.getElementById('disaggSplitsContainer');
-    if (!container) return;
-    const currentCount = container.querySelectorAll('.split-row').length;
-    const newRow = document.createElement('div');
-    newRow.innerHTML = renderSplitRow({ successorName: '', label: '' }, currentCount);
-    container.appendChild(newRow.firstElementChild);
-};
-
-// ---------------------------------------------------------------------------
-// Temporary window hook for Phase 3 wiring
-// ---------------------------------------------------------------------------
-
-/**
- * Temporary global hook so Phase 3 can wire Decision Panel to matrix cell clicks.
- * Usage: window._simOpenDecision(functionId, successorName)
- */
 window._simOpenDecision = function(functionId, successorName) {
     openDecisionPanel(functionId, successorName);
 };
 
-// ---------------------------------------------------------------------------
-// Unlink from shared service — window hook
-// ---------------------------------------------------------------------------
-
-/**
- * Removes this successor's propagated decision from the shared service arrangement.
- * Updates the primary decision's sharedWithSuccessors to exclude this successor.
- * The successor's cell reverts to undecided.
- *
- * @param {string} functionId
- * @param {string} successorName  The propagated successor to unlink
- */
 window._simUnlinkSharedService = function(functionId, successorName) {
     if (!state.simulationState) return;
     const decisions = state.simulationState.decisions;
@@ -1917,10 +788,8 @@ window._simUnlinkSharedService = function(functionId, successorName) {
     const primaryKey = propDecision.sharedServiceOrigin;
     const primaryDecision = decisions.get(primaryKey);
 
-    // Remove this propagated decision
     decisions.delete(propKey);
 
-    // Update the primary decision's sharedWithSuccessors
     if (primaryDecision && Array.isArray(primaryDecision.sharedWithSuccessors)) {
         const updated = {
             ...primaryDecision,
@@ -1929,128 +798,50 @@ window._simUnlinkSharedService = function(functionId, successorName) {
         decisions.set(primaryKey, updated);
     }
 
-    // Recompute and close panel
     recomputeSimulation();
     closeDecisionPanel();
 };
 
-// ---------------------------------------------------------------------------
-// ERP Bulk Apply — window hook
-// ---------------------------------------------------------------------------
-
-/**
- * Applies the current panel's decision to all undecided functions the given ERP covers
- * in the given successor. Creates individual FunctionDecision entries for each.
- *
- * Called from the "Apply to all undecided" button in the ERP Impact section.
- *
- * @param {string} erpSystemId   The ERP system's ID
- * @param {string} successorName  The successor authority name
- */
 window._simBulkApplyErp = function(erpSystemId, successorName) {
     if (!state.simulationState) return;
 
     const erpNode = state.simulationState.baselineNodes
         ? state.simulationState.baselineNodes.find(n => n.id === erpSystemId) : null;
     const erpLabel = erpNode ? erpNode.label : 'this ERP';
-    if (!showConfirm(`Retain ${erpLabel} for all undecided functions it serves in ${successorName}? This will apply multiple decisions at once.`)) return;
 
-    // Read the current axis-1 choice from the open panel
-    const content = document.getElementById('decisionPanelContent');
-    if (!content) return;
-
-    const axis1Radio = content.querySelector('input[name="axis1Choice"]:checked');
-    if (!axis1Radio) {
-        const errorEl = document.getElementById('decisionPanelError');
-        if (errorEl) {
-            errorEl.textContent = 'Please make a system choice above before applying to all functions.';
-            errorEl.classList.remove('hidden');
-        }
-        return;
-    }
-
-    const systemChoice = axis1Radio.value;
-    let retainedSystemIds = [];
-    let procuredSystem = null;
-
-    if (systemChoice === 'choose') {
-        const chosenRadio = content.querySelector('input[name="chooseSystem"]:checked');
-        if (!chosenRadio) {
-            const errorEl = document.getElementById('decisionPanelError');
-            if (errorEl) {
-                errorEl.textContent = 'Please select which system to retain before applying to all functions.';
-                errorEl.classList.remove('hidden');
-            }
-            return;
-        }
-        retainedSystemIds = [chosenRadio.value];
-    } else if (systemChoice === 'procure') {
-        const labelEl = content.querySelector('#procureLabel');
-        const label = labelEl ? labelEl.value.trim() : '';
-        if (!label) {
-            const errorEl = document.getElementById('decisionPanelError');
-            if (errorEl) {
-                errorEl.textContent = 'Please enter a system name before applying to all functions.';
-                errorEl.classList.remove('hidden');
-            }
-            return;
-        }
-        const vendorEl = content.querySelector('#procureVendor');
-        const costEl = content.querySelector('#procureCost');
-        const upfrontCostEl = content.querySelector('#procureUpfrontCost');
-        const hostingEl = content.querySelector('#procureHosting');
-        const hostingPartnerEl = content.querySelector('#procureHostingPartner');
-        procuredSystem = {
-            label,
-            vendor: vendorEl ? vendorEl.value.trim() : '',
-            annualCost: costEl && costEl.value ? Number(costEl.value) : 0,
-            upfrontCost: upfrontCostEl ? parseFloat(upfrontCostEl.value) || 0 : 0,
-            hosting: hostingEl ? hostingEl.value : 'cloud',
-            hostingPartner: (hostingEl && hostingEl.value === 'partner-hosted' && hostingPartnerEl) ? hostingPartnerEl.value.trim() : undefined
-        };
-    }
-
-    // Find all undecided functions this ERP covers in this successor
     const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
     const decisions = state.simulationState.decisions;
     const successorFuncMap = allocMap ? allocMap.get(successorName) : null;
     if (!successorFuncMap) return;
 
     let appliedCount = 0;
-    successorFuncMap.forEach((allocations, funcId) => {
-        // Skip the current function (already being decided in the panel)
-        if (funcId === _currentFunctionId) return;
 
-        // Check if this function is served by the ERP
+    successorFuncMap.forEach((allocations, funcId) => {
+        if (funcId === _currentFunctionId) return;
         const hasErp = allocations.some(a => a.system && a.system.id === erpSystemId);
         if (!hasErp) return;
-
-        // Skip already-decided functions
         const existingKey = getDecisionKey(funcId, successorName);
         if (decisions.has(existingKey)) return;
 
-        // Create a decision for this function with the same choice
         const decision = createDecision({
             functionId: funcId,
             successorName,
-            systemChoice,
-            retainedSystemIds: [...retainedSystemIds],
-            procuredSystem: procuredSystem ? { ...procuredSystem } : null,
+            systemChoice: 'choose',
+            retainedSystemIds: [erpSystemId],
             boundaryChoice: 'none',
             disaggregationSplits: []
         });
-
         decisions.set(existingKey, decision);
         appliedCount++;
     });
 
     if (appliedCount === 0) return;
-
-    // Recompute simulation with new decisions
     recomputeSimulation();
-
-    // Re-render the panel content to show updated ERP status
     if (_currentFunctionId && _currentSuccessorName) {
-        renderDecisionPanelContent(_currentFunctionId, _currentSuccessorName);
+        renderPanel(_currentFunctionId, _currentSuccessorName);
     }
+};
+
+window._simDecisionAddSplit = function() {
+    // Legacy hook — disaggregation splits not used in new panel but kept for compatibility
 };

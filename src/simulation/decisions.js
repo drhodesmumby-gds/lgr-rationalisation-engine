@@ -73,7 +73,11 @@ export function createDecision({
     disaggregationSplits,
     sharedWithSuccessors,
     sharedServiceOrigin,
-    contractExtensions
+    contractExtensions,
+    rationale,
+    decidedBy,
+    resolvedVia,
+    assignedFunctions
 }) {
     const slug = successorName.replace(/\s+/g, '-').toLowerCase();
     return {
@@ -88,7 +92,11 @@ export function createDecision({
         disaggregationSplits: disaggregationSplits || [],
         sharedWithSuccessors: sharedWithSuccessors || [],
         sharedServiceOrigin: sharedServiceOrigin || null,
-        contractExtensions: contractExtensions || []
+        contractExtensions: contractExtensions || [],
+        rationale: rationale != null ? rationale : null,
+        decidedBy: decidedBy != null ? decidedBy : null,
+        resolvedVia: resolvedVia != null ? resolvedVia : null,
+        assignedFunctions: assignedFunctions != null ? assignedFunctions : null
     };
 }
 
@@ -165,6 +173,32 @@ export function validateDecision(decision) {
 
     if (!Array.isArray(decision.contractExtensions)) {
         errors.push('contractExtensions must be an array');
+    }
+
+    if (decision.rationale !== undefined && decision.rationale !== null) {
+        if (typeof decision.rationale !== 'string') {
+            errors.push('rationale must be a string or null');
+        }
+    }
+
+    if (decision.decidedBy !== undefined && decision.decidedBy !== null) {
+        if (typeof decision.decidedBy !== 'string') {
+            errors.push('decidedBy must be a string or null');
+        }
+    }
+
+    if (decision.resolvedVia !== undefined && decision.resolvedVia !== null) {
+        if (typeof decision.resolvedVia !== 'string') {
+            errors.push('resolvedVia must be a string or null');
+        }
+    }
+
+    if (decision.assignedFunctions !== undefined && decision.assignedFunctions !== null) {
+        if (!Array.isArray(decision.assignedFunctions)) {
+            errors.push('assignedFunctions must be an array or null');
+        } else if (decision.assignedFunctions.some(f => typeof f !== 'string')) {
+            errors.push('assignedFunctions must contain only strings');
+        }
     }
 
     if (errors.length > 0) {
