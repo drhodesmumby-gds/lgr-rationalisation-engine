@@ -41,6 +41,7 @@ let _allSystems = [];
 let _isExpanded = false;
 let _primarySystem = null;
 let _allFunctions = [];
+let _pendingFormState = null;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -98,9 +99,41 @@ function renderPanel(functionId, successorName) {
     }));
     _allSystems = systems;
 
-    // Check existing decision
+    // Check existing decision or pending form state
     const decisions = state.simulationState.decisions;
-    const existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
+    let existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
+
+    // If no saved decision but we have pending form state (mid-edit re-render), use it
+    if (!existingDecision && _pendingFormState) {
+        const pf = _pendingFormState;
+        if (pf.primarySystemValue && pf.primarySystemValue !== '') {
+            let systemChoice = 'defer';
+            let retainedSystemIds = [];
+            let procuredSystem = null;
+            if (pf.primarySystemValue === '__defer__') {
+                systemChoice = 'defer';
+            } else if (pf.primarySystemValue === '__procure__') {
+                systemChoice = 'procure';
+                procuredSystem = pf.procuredSystem ? {
+                    label: pf.procuredSystem.label || '',
+                    vendor: pf.procuredSystem.vendor || '',
+                    annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
+                    hosting: pf.procuredSystem.hosting || 'cloud'
+                } : { label: '' };
+            } else {
+                systemChoice = 'choose';
+                retainedSystemIds = [pf.primarySystemValue];
+            }
+            existingDecision = {
+                systemChoice,
+                retainedSystemIds,
+                procuredSystem,
+                sharedWithSuccessors: pf.sharedWithSuccessors || [],
+                rationale: pf.rationale || null,
+                boundaryChoice: 'none'
+            };
+        }
+    }
 
     // Show propagated shared-service read-only view if applicable
     const footer = document.getElementById('decisionPanelFooter');
@@ -358,6 +391,35 @@ function renderPropagatedSharedServiceView(decision, funcLabel, successorName, t
 }
 
 // ---------------------------------------------------------------------------
+// Form state capture (for preserving selections across re-renders)
+// ---------------------------------------------------------------------------
+
+function captureFormState() {
+    const content = document.getElementById('decisionPanelContent');
+    if (!content) return null;
+
+    const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+    const sharedCbs = content.querySelectorAll('.share-successor-cb:checked');
+    const rationaleEl = content.querySelector('#decisionRationale');
+
+    // Read procurement detail fields
+    const primaryCard = content.querySelector('.successor-card[data-is-primary="true"]');
+    let procuredSystem = null;
+    if (primarySelect && primarySelect.value === '__procure__' && primaryCard) {
+        const fields = primaryCard.querySelectorAll('.procure-field');
+        procuredSystem = {};
+        fields.forEach(f => { procuredSystem[f.dataset.field] = f.value; });
+    }
+
+    return {
+        primarySystemValue: primarySelect ? primarySelect.value : '',
+        sharedWithSuccessors: [...sharedCbs].map(cb => cb.dataset.successor),
+        rationale: rationaleEl ? rationaleEl.value : '',
+        procuredSystem
+    };
+}
+
+// ---------------------------------------------------------------------------
 // Interactivity wiring
 // ---------------------------------------------------------------------------
 
@@ -383,8 +445,10 @@ function wireInteractivity(systems, successorName, existingDecision) {
             // Sync with grid if present
             const gridCb = content.querySelector(`.grid-share-cb[data-successor="${cb.dataset.successor}"][data-func-id="${_currentFunctionId}"]`);
             if (gridCb) gridCb.checked = cb.checked;
-            // Re-render to update linked cards
+            // Capture current form state before re-rendering
+            _pendingFormState = captureFormState();
             renderPanel(_currentFunctionId, _currentSuccessorName);
+            _pendingFormState = null;
         });
     });
 

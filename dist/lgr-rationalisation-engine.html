@@ -11425,6 +11425,7 @@ ${hardErrors.join("\n")}`);
   var _isExpanded = false;
   var _primarySystem = null;
   var _allFunctions = [];
+  var _pendingFormState = null;
   function openDecisionPanel(functionId, successorName) {
     if (!state.simulationState) return;
     _currentFunctionId = functionId;
@@ -11458,7 +11459,37 @@ ${hardErrors.join("\n")}`);
     }));
     _allSystems = systems;
     const decisions = state.simulationState.decisions;
-    const existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
+    let existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
+    if (!existingDecision && _pendingFormState) {
+      const pf = _pendingFormState;
+      if (pf.primarySystemValue && pf.primarySystemValue !== "") {
+        let systemChoice = "defer";
+        let retainedSystemIds = [];
+        let procuredSystem = null;
+        if (pf.primarySystemValue === "__defer__") {
+          systemChoice = "defer";
+        } else if (pf.primarySystemValue === "__procure__") {
+          systemChoice = "procure";
+          procuredSystem = pf.procuredSystem ? {
+            label: pf.procuredSystem.label || "",
+            vendor: pf.procuredSystem.vendor || "",
+            annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
+            hosting: pf.procuredSystem.hosting || "cloud"
+          } : { label: "" };
+        } else {
+          systemChoice = "choose";
+          retainedSystemIds = [pf.primarySystemValue];
+        }
+        existingDecision = {
+          systemChoice,
+          retainedSystemIds,
+          procuredSystem,
+          sharedWithSuccessors: pf.sharedWithSuccessors || [],
+          rationale: pf.rationale || null,
+          boundaryChoice: "none"
+        };
+      }
+    }
     const footer = document.getElementById("decisionPanelFooter");
     if (existingDecision && existingDecision.sharedServiceOrigin) {
       content.innerHTML = renderPropagatedSharedServiceView(existingDecision, funcLabel, successorName, tierBadge);
@@ -11663,6 +11694,28 @@ ${hardErrors.join("\n")}`);
         <p class="text-xs text-gray-500">To change which system serves this function in ${escHtml(successorName)}, first remove it from the shared service above, then make an independent decision.</p>
     `;
   }
+  function captureFormState() {
+    const content = document.getElementById("decisionPanelContent");
+    if (!content) return null;
+    const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+    const sharedCbs = content.querySelectorAll(".share-successor-cb:checked");
+    const rationaleEl = content.querySelector("#decisionRationale");
+    const primaryCard = content.querySelector('.successor-card[data-is-primary="true"]');
+    let procuredSystem = null;
+    if (primarySelect && primarySelect.value === "__procure__" && primaryCard) {
+      const fields = primaryCard.querySelectorAll(".procure-field");
+      procuredSystem = {};
+      fields.forEach((f) => {
+        procuredSystem[f.dataset.field] = f.value;
+      });
+    }
+    return {
+      primarySystemValue: primarySelect ? primarySelect.value : "",
+      sharedWithSuccessors: [...sharedCbs].map((cb) => cb.dataset.successor),
+      rationale: rationaleEl ? rationaleEl.value : "",
+      procuredSystem
+    };
+  }
   function wireInteractivity(systems, successorName, existingDecision) {
     const content = document.getElementById("decisionPanelContent");
     if (!content) return;
@@ -11680,7 +11733,9 @@ ${hardErrors.join("\n")}`);
       cb.addEventListener("change", () => {
         const gridCb = content.querySelector(`.grid-share-cb[data-successor="${cb.dataset.successor}"][data-func-id="${_currentFunctionId}"]`);
         if (gridCb) gridCb.checked = cb.checked;
+        _pendingFormState = captureFormState();
         renderPanel(_currentFunctionId, _currentSuccessorName);
+        _pendingFormState = null;
       });
     });
     content.querySelectorAll(".grid-share-cb").forEach((cb) => {
