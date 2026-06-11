@@ -12,6 +12,7 @@ import { showConfirm } from '../../ui-notifications.js';
 
 /**
  * Reads form state from the new successor-first panel layout and applies the decision.
+ * Also applies any pending per-function decisions captured during navigation.
  *
  * @param {Object} params
  * @param {string} params.functionId
@@ -19,9 +20,11 @@ import { showConfirm } from '../../ui-notifications.js';
  * @param {Array} params.systems - competing systems in cell
  * @param {Function} params.closePanel - callback to close the modal
  * @param {Function} params.showError - callback to show error message
+ * @param {Object} [params.pendingPerFunction] - map of funcId → pending form state for other functions
+ * @param {Function} [params.getAllocationsForFunction] - returns systems for a given functionId
  * @returns {Promise<boolean>} true if applied successfully
  */
-export async function applyDecisionFromPanel({ functionId, successorName, systems, closePanel, showError }) {
+export async function applyDecisionFromPanel({ functionId, successorName, systems, closePanel, showError, pendingPerFunction, getAllocationsForFunction }) {
     if (!state.simulationState) return false;
 
     const content = document.getElementById('decisionPanelContent');
@@ -222,6 +225,82 @@ export async function applyDecisionFromPanel({ functionId, successorName, system
 
             const propKey = getDecisionKey(functionId, sharedSuccessor);
             state.simulationState.decisions.set(propKey, propagatedDecision);
+        }
+    }
+
+    // --- Apply pending per-function decisions from navigation ---
+    if (pendingPerFunction && Object.keys(pendingPerFunction).length > 0) {
+        for (const [pendingFuncId, pf] of Object.entries(pendingPerFunction)) {
+            if (pendingFuncId === functionId) continue;
+
+            let pfChoice = 'defer';
+            let pfRetained = [];
+            let pfProcured = null;
+
+            if (pf.primarySystemValue === '__defer__') {
+                pfChoice = 'defer';
+            } else if (pf.primarySystemValue === '__procure__') {
+                pfChoice = 'procure';
+                pfProcured = pf.procuredSystem ? {
+                    label: pf.procuredSystem.label || '',
+                    vendor: pf.procuredSystem.vendor || '',
+                    annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
+                    hosting: pf.procuredSystem.hosting || 'cloud'
+                } : { label: 'New system' };
+            } else if (pf.primarySystemValue && pf.primarySystemValue !== '') {
+                pfChoice = 'choose';
+                pfRetained = [pf.primarySystemValue];
+            } else {
+                continue;
+            }
+
+            const pfShared = pf.sharedWithSuccessors || [];
+            const pfBoundary = computeDerivedBoundary({
+                systemChoice: pfChoice,
+                sharedWithSuccessors: pfShared,
+                hasExistingSharedWith: false,
+                isDisaggregation: false,
+                hasMultipleSuccessors: (state.transitionStructure?.successors?.length || 0) > 1
+            });
+
+            // --- Pre-generate procured system ID for shared propagation ---
+            if (pfBoundary === 'establish-shared' && pfChoice === 'procure' && pfProcured) {
+                const slug = successorName.replace(/\s+/g, '-').toLowerCase();
+                pfProcured.id = `sys-procured-${pendingFuncId}-${slug}-${Date.now()}`;
+            }
+
+            const pfDecision = createDecision({
+                functionId: pendingFuncId,
+                successorName,
+                systemChoice: pfChoice,
+                retainedSystemIds: pfRetained,
+                procuredSystem: pfProcured,
+                boundaryChoice: pfBoundary,
+                disaggregationSplits: [],
+                sharedWithSuccessors: pfShared,
+                rationale: pf.rationale || null
+            });
+
+            const pfKey = getDecisionKey(pendingFuncId, successorName);
+            state.simulationState.decisions.set(pfKey, pfDecision);
+
+            // Propagate shared service for this function too
+            if (pfBoundary === 'establish-shared' && pfShared.length > 0) {
+                const pfPropRetained = pfChoice === 'choose' ? [...pfRetained] : (pfProcured ? [pfProcured.id || ''] : []);
+                for (const sharedSucc of pfShared) {
+                    const propDec = createDecision({
+                        functionId: pendingFuncId,
+                        successorName: sharedSucc,
+                        systemChoice: 'choose',
+                        retainedSystemIds: pfPropRetained,
+                        boundaryChoice: 'establish-shared',
+                        disaggregationSplits: [],
+                        sharedWithSuccessors: [],
+                        sharedServiceOrigin: pfKey
+                    });
+                    state.simulationState.decisions.set(getDecisionKey(pendingFuncId, sharedSucc), propDec);
+                }
+            }
         }
     }
 

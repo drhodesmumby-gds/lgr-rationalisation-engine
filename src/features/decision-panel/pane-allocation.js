@@ -68,24 +68,51 @@ export function renderPane2Allocation({
         const otherDecision = decisions.get(otherKey);
 
         if (isSecondary) {
-            const sharedSystemLabel = primaryChoice === 'choose' && primarySelectedId
-                ? (systems.find(s => s.id === primarySelectedId)?.label || primarySelectedId)
-                : primaryChoice === 'procure' && existingDecision?.procuredSystem
-                    ? existingDecision.procuredSystem.label
-                    : 'shared system';
+            // Only show linked card if primary has actually selected a system
+            const hasSystemSelected = (primaryChoice === 'choose' && primarySelectedId) || primaryChoice === 'procure';
 
-            cardsHtml += `
-                <div class="border-2 border-dashed border-[#00703c] p-2.5 mb-2 bg-[#f8fdf9]">
-                    <div class="font-bold text-xs mb-1">${escHtml(succName)}
-                        <span class="inline-block text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c] border border-[#00703c] ml-1.5">Shared</span>
-                    </div>
-                    <div class="text-xs text-[#00703c] p-1.5 bg-[#f0fdf4] border border-[#cce2d8]">
-                        <strong>${escHtml(sharedSystemLabel)}</strong> — shared with ${escHtml(primarySuccessorName)}
-                    </div>
-                    <div class="text-[10px] text-[#505a5f] mt-1">
-                        <a href="#" class="text-[#d4351c] underline unlink-shared-btn" data-successor="${escHtml(succName)}">Unlink</a> — make independent decision
-                    </div>
-                </div>`;
+            if (hasSystemSelected) {
+                const sharedSystemLabel = primaryChoice === 'choose' && primarySelectedId
+                    ? (systems.find(s => s.id === primarySelectedId)?.label || primarySelectedId)
+                    : primaryChoice === 'procure' && existingDecision?.procuredSystem
+                        ? existingDecision.procuredSystem.label
+                        : 'new system';
+
+                cardsHtml += `
+                    <div class="border-2 border-dashed border-[#00703c] p-2.5 mb-2 bg-[#f8fdf9]">
+                        <div class="font-bold text-xs mb-1">${escHtml(succName)}
+                            <span class="inline-block text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c] border border-[#00703c] ml-1.5">Shared</span>
+                        </div>
+                        <div class="text-xs text-[#00703c] p-1.5 bg-[#f0fdf4] border border-[#cce2d8]">
+                            <strong>${escHtml(sharedSystemLabel)}</strong> — shared with ${escHtml(primarySuccessorName)}
+                        </div>
+                        <div class="text-[10px] text-[#505a5f] mt-1">
+                            <a href="#" class="text-[#d4351c] underline unlink-shared-btn" data-successor="${escHtml(succName)}">Unlink</a> — make independent decision
+                        </div>
+                    </div>`;
+            } else {
+                // Sharing intent set but no system chosen — show as regular card with note
+                const otherAllocMap = state.simulationState?.baselineAllocation || state.successorAllocationMap;
+                const otherSuccMap = otherAllocMap ? otherAllocMap.get(succName) : null;
+                const otherAllocations = otherSuccMap ? (otherSuccMap.get(functionId) || []) : [];
+                const otherSystems = otherAllocations.map(a => ({
+                    id: a.system.id,
+                    label: `${a.system.label || 'Unnamed'} (${a.sourceCouncil || 'Unknown'})`
+                }));
+
+                cardsHtml += renderSuccessorCard({
+                    successorName: succName,
+                    isPrimary: false,
+                    isLinked: false,
+                    systemOptions: otherSystems,
+                    selectedSystemId: null,
+                    selectedChoice: null,
+                    existingDecision: null,
+                    functionId,
+                    allSuccessorNames: [],
+                    sharedSuccessors: []
+                });
+            }
         } else {
             const otherAllocMap = state.simulationState?.baselineAllocation || state.successorAllocationMap;
             const otherSuccMap = otherAllocMap ? otherAllocMap.get(succName) : null;
@@ -139,7 +166,7 @@ function renderSuccessorCard({
     allSuccessorNames, sharedSuccessors
 }) {
     const borderClass = isLinked
-        ? 'border-2 border-[#00703c] bg-[#f8fdf9]'
+        ? 'border-2 border-[#0b0c0c] bg-white'
         : 'border border-[#b1b4b6] bg-white';
 
     const primaryBadge = isPrimary && isLinked
@@ -170,15 +197,15 @@ function renderSuccessorCard({
         </div>`;
 
     let shareToggleHtml = '';
-    if (isPrimary && allSuccessorNames.length > 0 && selectedChoice !== 'defer') {
+    if (isPrimary && allSuccessorNames.length > 0 && selectedChoice && selectedChoice !== 'defer' && selectedChoice !== null) {
         const checkboxes = allSuccessorNames.map(name => {
             const checked = sharedSuccessors.includes(name) ? 'checked' : '';
             return `<div class="flex items-center gap-1.5 text-xs py-0.5"><input type="checkbox" class="share-successor-cb" data-successor="${escHtml(name)}" ${checked}><label>${escHtml(name)}</label></div>`;
         }).join('');
 
         shareToggleHtml = `
-            <div class="mt-1.5 p-2 bg-[#f0fdf4] border border-[#00703c]" data-share-toggle>
-                <div class="text-[10px] font-bold text-[#00703c] mb-1">⟷ Share with other successors</div>
+            <div class="mt-1.5 p-2 bg-[#f0f4ff] border border-[#1d70b8]" data-share-toggle>
+                <div class="text-[10px] font-bold text-[#1d70b8] mb-1">⟷ Share with other successors</div>
                 ${checkboxes}
             </div>`;
     }
@@ -203,8 +230,8 @@ function renderDerivedLabel(primaryChoice, sharedSuccessors, selectedSystemId, s
             : primaryChoice === 'procure' && existingDecision?.procuredSystem
                 ? existingDecision.procuredSystem.label
                 : 'new system';
-        return `<div class="flex items-center gap-1.5 p-1.5 mt-2 text-[10px] font-bold bg-[#f0fdf4] border border-[#00703c] text-[#00703c]">
-            <span>⟷</span> Shared service: ${escHtml(sysLabel)} (${sharedSuccessors.length + 1} successors)
+        return `<div class="p-1.5 mt-2 text-[10px] font-bold bg-[#f0f4ff] border-l-4 border-l-[#1d70b8] text-[#0b0c0c]">
+            <span class="text-[#1d70b8]">⟷</span> Shared service: ${escHtml(sysLabel)} (${sharedSuccessors.length + 1} successors)
         </div>`;
     }
 

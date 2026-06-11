@@ -44,9 +44,10 @@ export function renderPane1Simple(systems, vestingDate) {
  * @param {string} currentFunctionId - currently selected function
  * @param {string} successorName - primary successor
  * @param {string|null} vestingDate
+ * @param {Object} [pendingPerFunction] - map of funcId → pending form state for unsaved decisions
  * @returns {string} HTML
  */
-export function renderPane1Expanded(primarySystem, functions, currentFunctionId, successorName, vestingDate) {
+export function renderPane1Expanded(primarySystem, functions, currentFunctionId, successorName, vestingDate, pendingPerFunction) {
     const decisions = state.simulationState ? state.simulationState.decisions : new Map();
 
     const systemCardHtml = renderSystemCard(primarySystem, vestingDate, { compact: true });
@@ -55,6 +56,9 @@ export function renderPane1Expanded(primarySystem, functions, currentFunctionId,
         const isCurrent = f.funcId === currentFunctionId;
         const key = getDecisionKey(f.funcId, successorName);
         const existing = decisions.get(key);
+
+        const pendingState = pendingPerFunction && pendingPerFunction[f.funcId];
+        const hasPendingSystem = pendingState && pendingState.primarySystemValue && pendingState.primarySystemValue !== '';
 
         let statusBadge;
         if (isCurrent) {
@@ -65,6 +69,8 @@ export function renderPane1Expanded(primarySystem, functions, currentFunctionId,
             statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Shared ✓</span>';
         } else if (existing) {
             statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Done ✓</span>';
+        } else if (hasPendingSystem) {
+            statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#fde68a] text-[#0b0c0c]">Configured</span>';
         } else {
             statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f3f2f1] text-[#505a5f]">Pending</span>';
         }

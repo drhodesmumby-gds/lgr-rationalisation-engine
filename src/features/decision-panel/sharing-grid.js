@@ -18,9 +18,10 @@ import { getDecisionKey } from '../../simulation/decisions.js';
  * @param {string} primarySuccessor
  * @param {string[]} otherSuccessors
  * @param {Map} decisions - the decisions map
+ * @param {Object} [pendingSharing] - { currentFuncId, sharedWithSuccessors[] } for unsaved form state
  * @returns {Object} - { [funcId]: { [successorName]: true|false|'disabled' } }
  */
-export function computeGridState(functions, primarySuccessor, otherSuccessors, decisions) {
+export function computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing) {
     const grid = {};
 
     for (const func of functions) {
@@ -28,8 +29,11 @@ export function computeGridState(functions, primarySuccessor, otherSuccessors, d
         grid[func.funcId][primarySuccessor] = true;
 
         for (const other of otherSuccessors) {
-            if (!func.decided) {
-                grid[func.funcId][other] = 'disabled';
+            if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
+                grid[func.funcId][other] = (pendingSharing.sharedWithSuccessors || []).includes(other);
+            } else if (pendingSharing && pendingSharing.perFunction && pendingSharing.perFunction[func.funcId]) {
+                const perFuncState = pendingSharing.perFunction[func.funcId];
+                grid[func.funcId][other] = (perFuncState.sharedWithSuccessors || []).includes(other);
             } else {
                 const key = getDecisionKey(func.funcId, other);
                 const dec = decisions.get(key);
@@ -44,14 +48,15 @@ export function computeGridState(functions, primarySuccessor, otherSuccessors, d
 /**
  * Renders the sharing grid HTML.
  *
- * @param {Array<{funcId, label, systemLabel, decided}>} functions
+ * @param {Array<{funcId, label, systemLabel, decided, hasSystem}>} functions
  * @param {string} primarySuccessor
  * @param {string[]} otherSuccessors
+ * @param {Object} [pendingSharing] - { currentFuncId, sharedWithSuccessors[], perFunction }
  * @returns {string} HTML
  */
-export function renderSharingGrid(functions, primarySuccessor, otherSuccessors) {
+export function renderSharingGrid(functions, primarySuccessor, otherSuccessors, pendingSharing) {
     const decisions = state.simulationState ? state.simulationState.decisions : new Map();
-    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions);
+    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing);
 
     let headerCells = '<th class="text-left"></th>';
     for (const func of functions) {
@@ -62,7 +67,7 @@ export function renderSharingGrid(functions, primarySuccessor, otherSuccessors) 
 
     let rows = '';
 
-    rows += `<tr class="bg-[#f0fdf4]"><td class="font-semibold text-left">${escHtml(primarySuccessor)}<br><span class="text-[9px] text-[#00703c] font-bold">Primary</span></td>`;
+    rows += `<tr class="bg-white"><td class="font-semibold text-left">${escHtml(primarySuccessor)}<br><span class="text-[9px] text-[#505a5f] font-bold">Primary</span></td>`;
     for (const func of functions) {
         rows += `<td class="text-center"><input type="checkbox" checked disabled class="w-4 h-4"></td>`;
     }
@@ -72,24 +77,25 @@ export function renderSharingGrid(functions, primarySuccessor, otherSuccessors) 
         rows += `<tr><td class="font-semibold text-left">${escHtml(other)}</td>`;
         for (const func of functions) {
             const cellState = gridState[func.funcId][other];
-            if (cellState === 'disabled') {
-                rows += `<td class="text-center"><input type="checkbox" disabled class="w-4 h-4 opacity-30"></td>`;
-            } else {
-                const checked = cellState ? 'checked' : '';
+            const checked = cellState ? 'checked' : '';
+            const canEdit = func.hasSystem;
+            if (canEdit) {
                 rows += `<td class="text-center"><input type="checkbox" ${checked} class="w-4 h-4 cursor-pointer grid-share-cb" data-func-id="${escHtml(func.funcId)}" data-successor="${escHtml(other)}"></td>`;
+            } else {
+                rows += `<td class="text-center"><input type="checkbox" ${checked} disabled class="w-4 h-4 opacity-30"></td>`;
             }
         }
         rows += '<td></td></tr>';
     }
 
     return `
-        <div class="mt-3 p-2 bg-[#f0fdf4] border border-[#00703c]" id="sharingGridSection">
-            <div class="text-[10px] font-bold text-[#00703c] mb-1.5">⟷ Sharing overview — all functions</div>
+        <div class="mt-3 p-2 bg-[#f3f2f1] border border-[#b1b4b6]" id="sharingGridSection">
+            <div class="text-[10px] font-bold text-[#0b0c0c] mb-1.5">⟷ Sharing overview — all functions</div>
             <table class="w-full border-collapse text-xs">
                 <thead><tr class="border-b border-[#b1b4b6]">${headerCells}</tr></thead>
                 <tbody>${rows}</tbody>
             </table>
-            <div class="text-[10px] text-[#505a5f] mt-1">Primary = always uses it · Checked = shared participant · Disabled = pending</div>
+            <div class="text-[10px] text-[#505a5f] mt-1">Primary = always uses it · Checked = shared participant</div>
         </div>`;
 }
 

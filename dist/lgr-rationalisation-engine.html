@@ -10883,13 +10883,15 @@ ${hardErrors.join("\n")}`);
         </div>
     `;
   }
-  function renderPane1Expanded(primarySystem, functions, currentFunctionId, successorName, vestingDate) {
+  function renderPane1Expanded(primarySystem, functions, currentFunctionId, successorName, vestingDate, pendingPerFunction) {
     const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
     const systemCardHtml = renderSystemCard(primarySystem, vestingDate, { compact: true });
     const funcRows = functions.map((f) => {
       const isCurrent = f.funcId === currentFunctionId;
       const key = getDecisionKey(f.funcId, successorName);
       const existing = decisions.get(key);
+      const pendingState = pendingPerFunction && pendingPerFunction[f.funcId];
+      const hasPendingSystem = pendingState && pendingState.primarySystemValue && pendingState.primarySystemValue !== "";
       let statusBadge;
       if (isCurrent) {
         statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f0f4ff] text-[#1d70b8]">Editing</span>';
@@ -10899,6 +10901,8 @@ ${hardErrors.join("\n")}`);
         statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Shared \u2713</span>';
       } else if (existing) {
         statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Done \u2713</span>';
+      } else if (hasPendingSystem) {
+        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#fde68a] text-[#0b0c0c]">Configured</span>';
       } else {
         statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f3f2f1] text-[#505a5f]">Pending</span>';
       }
@@ -10964,19 +10968,42 @@ ${hardErrors.join("\n")}`);
       const otherKey = getDecisionKey(functionId, succName);
       const otherDecision = decisions.get(otherKey);
       if (isSecondary) {
-        const sharedSystemLabel = primaryChoice === "choose" && primarySelectedId ? systems.find((s) => s.id === primarySelectedId)?.label || primarySelectedId : primaryChoice === "procure" && existingDecision?.procuredSystem ? existingDecision.procuredSystem.label : "shared system";
-        cardsHtml += `
-                <div class="border-2 border-dashed border-[#00703c] p-2.5 mb-2 bg-[#f8fdf9]">
-                    <div class="font-bold text-xs mb-1">${escHtml(succName)}
-                        <span class="inline-block text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c] border border-[#00703c] ml-1.5">Shared</span>
-                    </div>
-                    <div class="text-xs text-[#00703c] p-1.5 bg-[#f0fdf4] border border-[#cce2d8]">
-                        <strong>${escHtml(sharedSystemLabel)}</strong> \u2014 shared with ${escHtml(primarySuccessorName)}
-                    </div>
-                    <div class="text-[10px] text-[#505a5f] mt-1">
-                        <a href="#" class="text-[#d4351c] underline unlink-shared-btn" data-successor="${escHtml(succName)}">Unlink</a> \u2014 make independent decision
-                    </div>
-                </div>`;
+        const hasSystemSelected = primaryChoice === "choose" && primarySelectedId || primaryChoice === "procure";
+        if (hasSystemSelected) {
+          const sharedSystemLabel = primaryChoice === "choose" && primarySelectedId ? systems.find((s) => s.id === primarySelectedId)?.label || primarySelectedId : primaryChoice === "procure" && existingDecision?.procuredSystem ? existingDecision.procuredSystem.label : "new system";
+          cardsHtml += `
+                    <div class="border-2 border-dashed border-[#00703c] p-2.5 mb-2 bg-[#f8fdf9]">
+                        <div class="font-bold text-xs mb-1">${escHtml(succName)}
+                            <span class="inline-block text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c] border border-[#00703c] ml-1.5">Shared</span>
+                        </div>
+                        <div class="text-xs text-[#00703c] p-1.5 bg-[#f0fdf4] border border-[#cce2d8]">
+                            <strong>${escHtml(sharedSystemLabel)}</strong> \u2014 shared with ${escHtml(primarySuccessorName)}
+                        </div>
+                        <div class="text-[10px] text-[#505a5f] mt-1">
+                            <a href="#" class="text-[#d4351c] underline unlink-shared-btn" data-successor="${escHtml(succName)}">Unlink</a> \u2014 make independent decision
+                        </div>
+                    </div>`;
+        } else {
+          const otherAllocMap = state.simulationState?.baselineAllocation || state.successorAllocationMap;
+          const otherSuccMap = otherAllocMap ? otherAllocMap.get(succName) : null;
+          const otherAllocations = otherSuccMap ? otherSuccMap.get(functionId) || [] : [];
+          const otherSystems = otherAllocations.map((a) => ({
+            id: a.system.id,
+            label: `${a.system.label || "Unnamed"} (${a.sourceCouncil || "Unknown"})`
+          }));
+          cardsHtml += renderSuccessorCard({
+            successorName: succName,
+            isPrimary: false,
+            isLinked: false,
+            systemOptions: otherSystems,
+            selectedSystemId: null,
+            selectedChoice: null,
+            existingDecision: null,
+            functionId,
+            allSuccessorNames: [],
+            sharedSuccessors: []
+          });
+        }
       } else {
         const otherAllocMap = state.simulationState?.baselineAllocation || state.successorAllocationMap;
         const otherSuccMap = otherAllocMap ? otherAllocMap.get(succName) : null;
@@ -11026,7 +11053,7 @@ ${hardErrors.join("\n")}`);
     allSuccessorNames,
     sharedSuccessors
   }) {
-    const borderClass = isLinked ? "border-2 border-[#00703c] bg-[#f8fdf9]" : "border border-[#b1b4b6] bg-white";
+    const borderClass = isLinked ? "border-2 border-[#0b0c0c] bg-white" : "border border-[#b1b4b6] bg-white";
     const primaryBadge = isPrimary && isLinked ? '<span class="inline-block text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c] border border-[#00703c] ml-1.5">Primary</span>' : "";
     let optionsHtml = '<option value="">\u2014 Select system \u2014</option>';
     optionsHtml += systemOptions.map(
@@ -11050,14 +11077,14 @@ ${hardErrors.join("\n")}`);
             </div>
         </div>`;
     let shareToggleHtml = "";
-    if (isPrimary && allSuccessorNames.length > 0 && selectedChoice !== "defer") {
+    if (isPrimary && allSuccessorNames.length > 0 && selectedChoice && selectedChoice !== "defer" && selectedChoice !== null) {
       const checkboxes = allSuccessorNames.map((name) => {
         const checked = sharedSuccessors.includes(name) ? "checked" : "";
         return `<div class="flex items-center gap-1.5 text-xs py-0.5"><input type="checkbox" class="share-successor-cb" data-successor="${escHtml(name)}" ${checked}><label>${escHtml(name)}</label></div>`;
       }).join("");
       shareToggleHtml = `
-            <div class="mt-1.5 p-2 bg-[#f0fdf4] border border-[#00703c]" data-share-toggle>
-                <div class="text-[10px] font-bold text-[#00703c] mb-1">\u27F7 Share with other successors</div>
+            <div class="mt-1.5 p-2 bg-[#f0f4ff] border border-[#1d70b8]" data-share-toggle>
+                <div class="text-[10px] font-bold text-[#1d70b8] mb-1">\u27F7 Share with other successors</div>
                 ${checkboxes}
             </div>`;
     }
@@ -11075,8 +11102,8 @@ ${hardErrors.join("\n")}`);
     if (!primaryChoice || primaryChoice === "defer") return "";
     if (sharedSuccessors.length > 0) {
       const sysLabel = primaryChoice === "choose" && selectedSystemId ? systems.find((s) => s.id === selectedSystemId)?.label || "selected system" : primaryChoice === "procure" && existingDecision?.procuredSystem ? existingDecision.procuredSystem.label : "new system";
-      return `<div class="flex items-center gap-1.5 p-1.5 mt-2 text-[10px] font-bold bg-[#f0fdf4] border border-[#00703c] text-[#00703c]">
-            <span>\u27F7</span> Shared service: ${escHtml(sysLabel)} (${sharedSuccessors.length + 1} successors)
+      return `<div class="p-1.5 mt-2 text-[10px] font-bold bg-[#f0f4ff] border-l-4 border-l-[#1d70b8] text-[#0b0c0c]">
+            <span class="text-[#1d70b8]">\u27F7</span> Shared service: ${escHtml(sysLabel)} (${sharedSuccessors.length + 1} successors)
         </div>`;
     }
     return "";
@@ -11188,14 +11215,17 @@ ${hardErrors.join("\n")}`);
   }
 
   // src/features/decision-panel/sharing-grid.js
-  function computeGridState(functions, primarySuccessor, otherSuccessors, decisions) {
+  function computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing) {
     const grid = {};
     for (const func of functions) {
       grid[func.funcId] = {};
       grid[func.funcId][primarySuccessor] = true;
       for (const other of otherSuccessors) {
-        if (!func.decided) {
-          grid[func.funcId][other] = "disabled";
+        if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
+          grid[func.funcId][other] = (pendingSharing.sharedWithSuccessors || []).includes(other);
+        } else if (pendingSharing && pendingSharing.perFunction && pendingSharing.perFunction[func.funcId]) {
+          const perFuncState = pendingSharing.perFunction[func.funcId];
+          grid[func.funcId][other] = (perFuncState.sharedWithSuccessors || []).includes(other);
         } else {
           const key = getDecisionKey(func.funcId, other);
           const dec = decisions.get(key);
@@ -11205,9 +11235,9 @@ ${hardErrors.join("\n")}`);
     }
     return grid;
   }
-  function renderSharingGrid(functions, primarySuccessor, otherSuccessors) {
+  function renderSharingGrid(functions, primarySuccessor, otherSuccessors, pendingSharing) {
     const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
-    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions);
+    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing);
     let headerCells = '<th class="text-left"></th>';
     for (const func of functions) {
       const sysNote = func.systemLabel ? `<br><span style="font-size:9px;font-weight:normal;">(${escHtml(func.systemLabel)})</span>` : "";
@@ -11215,7 +11245,7 @@ ${hardErrors.join("\n")}`);
     }
     headerCells += '<th class="text-center"><button class="bg-transparent border-2 border-dashed border-[#1d70b8] text-[#1d70b8] text-[9px] font-bold px-1.5 py-0.5 cursor-pointer add-func-btn">+ Func</button></th>';
     let rows = "";
-    rows += `<tr class="bg-[#f0fdf4]"><td class="font-semibold text-left">${escHtml(primarySuccessor)}<br><span class="text-[9px] text-[#00703c] font-bold">Primary</span></td>`;
+    rows += `<tr class="bg-white"><td class="font-semibold text-left">${escHtml(primarySuccessor)}<br><span class="text-[9px] text-[#505a5f] font-bold">Primary</span></td>`;
     for (const func of functions) {
       rows += `<td class="text-center"><input type="checkbox" checked disabled class="w-4 h-4"></td>`;
     }
@@ -11224,28 +11254,29 @@ ${hardErrors.join("\n")}`);
       rows += `<tr><td class="font-semibold text-left">${escHtml(other)}</td>`;
       for (const func of functions) {
         const cellState = gridState[func.funcId][other];
-        if (cellState === "disabled") {
-          rows += `<td class="text-center"><input type="checkbox" disabled class="w-4 h-4 opacity-30"></td>`;
-        } else {
-          const checked = cellState ? "checked" : "";
+        const checked = cellState ? "checked" : "";
+        const canEdit = func.hasSystem;
+        if (canEdit) {
           rows += `<td class="text-center"><input type="checkbox" ${checked} class="w-4 h-4 cursor-pointer grid-share-cb" data-func-id="${escHtml(func.funcId)}" data-successor="${escHtml(other)}"></td>`;
+        } else {
+          rows += `<td class="text-center"><input type="checkbox" ${checked} disabled class="w-4 h-4 opacity-30"></td>`;
         }
       }
       rows += "<td></td></tr>";
     }
     return `
-        <div class="mt-3 p-2 bg-[#f0fdf4] border border-[#00703c]" id="sharingGridSection">
-            <div class="text-[10px] font-bold text-[#00703c] mb-1.5">\u27F7 Sharing overview \u2014 all functions</div>
+        <div class="mt-3 p-2 bg-[#f3f2f1] border border-[#b1b4b6]" id="sharingGridSection">
+            <div class="text-[10px] font-bold text-[#0b0c0c] mb-1.5">\u27F7 Sharing overview \u2014 all functions</div>
             <table class="w-full border-collapse text-xs">
                 <thead><tr class="border-b border-[#b1b4b6]">${headerCells}</tr></thead>
                 <tbody>${rows}</tbody>
             </table>
-            <div class="text-[10px] text-[#505a5f] mt-1">Primary = always uses it \xB7 Checked = shared participant \xB7 Disabled = pending</div>
+            <div class="text-[10px] text-[#505a5f] mt-1">Primary = always uses it \xB7 Checked = shared participant</div>
         </div>`;
   }
 
   // src/features/decision-panel/apply-decision.js
-  async function applyDecisionFromPanel({ functionId, successorName, systems, closePanel, showError }) {
+  async function applyDecisionFromPanel({ functionId, successorName, systems, closePanel, showError, pendingPerFunction, getAllocationsForFunction }) {
     if (!state.simulationState) return false;
     const content = document.getElementById("decisionPanelContent");
     if (!content) return false;
@@ -11411,6 +11442,71 @@ ${hardErrors.join("\n")}`);
         state.simulationState.decisions.set(propKey, propagatedDecision);
       }
     }
+    if (pendingPerFunction && Object.keys(pendingPerFunction).length > 0) {
+      for (const [pendingFuncId, pf] of Object.entries(pendingPerFunction)) {
+        if (pendingFuncId === functionId) continue;
+        let pfChoice = "defer";
+        let pfRetained = [];
+        let pfProcured = null;
+        if (pf.primarySystemValue === "__defer__") {
+          pfChoice = "defer";
+        } else if (pf.primarySystemValue === "__procure__") {
+          pfChoice = "procure";
+          pfProcured = pf.procuredSystem ? {
+            label: pf.procuredSystem.label || "",
+            vendor: pf.procuredSystem.vendor || "",
+            annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
+            hosting: pf.procuredSystem.hosting || "cloud"
+          } : { label: "New system" };
+        } else if (pf.primarySystemValue && pf.primarySystemValue !== "") {
+          pfChoice = "choose";
+          pfRetained = [pf.primarySystemValue];
+        } else {
+          continue;
+        }
+        const pfShared = pf.sharedWithSuccessors || [];
+        const pfBoundary = computeDerivedBoundary({
+          systemChoice: pfChoice,
+          sharedWithSuccessors: pfShared,
+          hasExistingSharedWith: false,
+          isDisaggregation: false,
+          hasMultipleSuccessors: (state.transitionStructure?.successors?.length || 0) > 1
+        });
+        if (pfBoundary === "establish-shared" && pfChoice === "procure" && pfProcured) {
+          const slug = successorName.replace(/\s+/g, "-").toLowerCase();
+          pfProcured.id = `sys-procured-${pendingFuncId}-${slug}-${Date.now()}`;
+        }
+        const pfDecision = createDecision({
+          functionId: pendingFuncId,
+          successorName,
+          systemChoice: pfChoice,
+          retainedSystemIds: pfRetained,
+          procuredSystem: pfProcured,
+          boundaryChoice: pfBoundary,
+          disaggregationSplits: [],
+          sharedWithSuccessors: pfShared,
+          rationale: pf.rationale || null
+        });
+        const pfKey = getDecisionKey(pendingFuncId, successorName);
+        state.simulationState.decisions.set(pfKey, pfDecision);
+        if (pfBoundary === "establish-shared" && pfShared.length > 0) {
+          const pfPropRetained = pfChoice === "choose" ? [...pfRetained] : pfProcured ? [pfProcured.id || ""] : [];
+          for (const sharedSucc of pfShared) {
+            const propDec = createDecision({
+              functionId: pendingFuncId,
+              successorName: sharedSucc,
+              systemChoice: "choose",
+              retainedSystemIds: pfPropRetained,
+              boundaryChoice: "establish-shared",
+              disaggregationSplits: [],
+              sharedWithSuccessors: [],
+              sharedServiceOrigin: pfKey
+            });
+            state.simulationState.decisions.set(getDecisionKey(pendingFuncId, sharedSucc), propDec);
+          }
+        }
+      }
+    }
     recomputeSimulation();
     closePanel();
     return true;
@@ -11426,6 +11522,7 @@ ${hardErrors.join("\n")}`);
   var _primarySystem = null;
   var _allFunctions = [];
   var _pendingFormState = null;
+  var _pendingPerFunction = {};
   function openDecisionPanel(functionId, successorName) {
     if (!state.simulationState) return;
     _currentFunctionId = functionId;
@@ -11460,10 +11557,13 @@ ${hardErrors.join("\n")}`);
     _allSystems = systems;
     const decisions = state.simulationState.decisions;
     let existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
+    const isSavedDecision = !!existingDecision;
     if (!existingDecision && _pendingFormState) {
       const pf = _pendingFormState;
-      if (pf.primarySystemValue && pf.primarySystemValue !== "") {
-        let systemChoice = "defer";
+      const hasSystem = pf.primarySystemValue && pf.primarySystemValue !== "";
+      const hasSharing = pf.sharedWithSuccessors && pf.sharedWithSuccessors.length > 0;
+      if (hasSystem || hasSharing) {
+        let systemChoice = null;
         let retainedSystemIds = [];
         let procuredSystem = null;
         if (pf.primarySystemValue === "__defer__") {
@@ -11476,7 +11576,7 @@ ${hardErrors.join("\n")}`);
             annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
             hosting: pf.procuredSystem.hosting || "cloud"
           } : { label: "" };
-        } else {
+        } else if (hasSystem) {
           systemChoice = "choose";
           retainedSystemIds = [pf.primarySystemValue];
         }
@@ -11498,12 +11598,12 @@ ${hardErrors.join("\n")}`);
     }
     if (footer) footer.classList.remove("hidden");
     _isExpanded = detectExpandedState(systems, functionId, successorName);
-    const headerHtml = renderHeader(funcLabel, successorName, tierBadge, existingDecision);
+    const headerHtml = renderHeader(funcLabel, successorName, tierBadge, isSavedDecision);
     let pane1Html, pane2Html, pane3Html;
     if (_isExpanded) {
       _primarySystem = findPrimarySystem(systems, functionId, successorName);
       _allFunctions = findAllFunctionsForSystem(_primarySystem, successorName);
-      pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate);
+      pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate, _pendingPerFunction);
       pane2Html = renderPane2Allocation({
         functionId,
         primarySuccessorName: successorName,
@@ -11511,18 +11611,31 @@ ${hardErrors.join("\n")}`);
         existingDecision,
         isExpanded: true
       });
+      const currentPrimaryValue = _pendingFormState?.primarySystemValue || (existingDecision?.systemChoice === "choose" ? existingDecision.retainedSystemIds[0] : null) || (existingDecision?.systemChoice === "procure" ? "__procure__" : null);
+      const hasCurrentSystem = !!currentPrimaryValue && currentPrimaryValue !== "__defer__";
       const gridFunctions = _allFunctions.map((f) => {
         const key = getDecisionKey(f.funcId, successorName);
         const dec = decisions.get(key);
+        const pf = _pendingPerFunction[f.funcId];
+        const pfHasSystem = pf && pf.primarySystemValue && pf.primarySystemValue !== "" && !pf.primarySystemValue.startsWith("__defer");
         return {
           funcId: f.funcId,
           label: f.label,
           systemLabel: dec && dec.systemChoice === "choose" && dec.retainedSystemIds.length > 0 ? (state.simulationState.baselineNodes || []).find((n) => n.id === dec.retainedSystemIds[0])?.label || null : null,
-          decided: !!dec || f.funcId === functionId
+          decided: !!dec || f.funcId === functionId,
+          // Checkboxes are editable if the primary function has a system selected (to bulk-share)
+          // OR if this specific function already has a system assigned to it.
+          hasSystem: hasCurrentSystem || dec && (dec.systemChoice === "choose" || dec.systemChoice === "procure") || pfHasSystem
         };
       });
       const otherSuccessors = (state.transitionStructure?.successors || []).map((s) => s.name).filter((n) => n !== successorName);
-      const sharingGridHtml = otherSuccessors.length > 0 ? renderSharingGrid(gridFunctions, successorName, otherSuccessors) : "";
+      const currentShared = existingDecision?.sharedWithSuccessors || [];
+      const pendingSharing = {
+        currentFuncId: functionId,
+        sharedWithSuccessors: currentShared,
+        perFunction: _pendingPerFunction
+      };
+      const sharingGridHtml = otherSuccessors.length > 0 ? renderSharingGrid(gridFunctions, successorName, otherSuccessors, pendingSharing) : "";
       pane2Html += sharingGridHtml;
       pane3Html = renderPane3CostImpact({
         functionId,
@@ -11638,7 +11751,7 @@ ${hardErrors.join("\n")}`);
     }
     return functions;
   }
-  function renderHeader(funcLabel, successorName, tierBadge, existingDecision) {
+  function renderHeader(funcLabel, successorName, tierBadge, isSavedDecision) {
     return `
         <div class="mb-4 shrink-0">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Decision</p>
@@ -11646,7 +11759,7 @@ ${hardErrors.join("\n")}`);
             <div class="flex items-center gap-3 flex-wrap">
                 <span class="text-sm font-bold text-gray-700">Successor: ${escHtml(successorName)}</span>
                 ${tierBadge}
-                ${existingDecision ? '<span class="text-xs font-bold text-[#00703c] bg-green-50 border border-[#00703c] px-2 py-0.5">Editing existing decision</span>' : ""}
+                ${isSavedDecision ? '<span class="text-xs font-bold text-[#00703c] bg-green-50 border border-[#00703c] px-2 py-0.5">Editing existing decision</span>' : ""}
                 ${_isExpanded ? '<span class="text-xs font-bold text-[#1d70b8] bg-blue-50 border border-[#1d70b8] px-2 py-0.5">Expanded scope</span>' : ""}
             </div>
         </div>
@@ -11699,6 +11812,7 @@ ${hardErrors.join("\n")}`);
     if (!content) return null;
     const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
     const sharedCbs = content.querySelectorAll(".share-successor-cb:checked");
+    const unlinkBtns = content.querySelectorAll(".unlink-shared-btn");
     const rationaleEl = content.querySelector("#decisionRationale");
     const primaryCard = content.querySelector('.successor-card[data-is-primary="true"]');
     let procuredSystem = null;
@@ -11709,9 +11823,12 @@ ${hardErrors.join("\n")}`);
         procuredSystem[f.dataset.field] = f.value;
       });
     }
+    const sharedFromCbs = [...sharedCbs].map((cb) => cb.dataset.successor);
+    const sharedFromLinks = [...unlinkBtns].map((btn) => btn.dataset.successor);
+    const sharedWithSuccessors = [.../* @__PURE__ */ new Set([...sharedFromCbs, ...sharedFromLinks])];
     return {
       primarySystemValue: primarySelect ? primarySelect.value : "",
-      sharedWithSuccessors: [...sharedCbs].map((cb) => cb.dataset.successor),
+      sharedWithSuccessors,
       rationale: rationaleEl ? rationaleEl.value : "",
       procuredSystem
     };
@@ -11722,9 +11839,28 @@ ${hardErrors.join("\n")}`);
     content.querySelectorAll(".successor-system-select").forEach((select) => {
       select.addEventListener("change", () => {
         const card = select.closest(".successor-card");
+        const isPrimary = card && card.dataset.isPrimary === "true";
         const procureDetail = card ? card.querySelector("[data-procure-detail]") : null;
         if (procureDetail) {
           procureDetail.classList.toggle("hidden", select.value !== "__procure__");
+        }
+        if (isPrimary) {
+          const shareToggle = card.querySelector("[data-share-toggle]");
+          const hasSystem = select.value && select.value !== "" && select.value !== "__defer__";
+          if (shareToggle) {
+            shareToggle.classList.toggle("hidden", !hasSystem);
+          } else if (hasSystem) {
+            _pendingFormState = captureFormState();
+            if (_pendingFormState) _pendingFormState.primarySystemValue = select.value;
+            renderPanel(_currentFunctionId, _currentSuccessorName);
+            _pendingFormState = null;
+            const newContent = document.getElementById("decisionPanelContent");
+            if (newContent) {
+              const restoredSelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+              if (restoredSelect) restoredSelect.focus();
+            }
+            return;
+          }
         }
         rerenderPane3Only();
       });
@@ -11734,16 +11870,71 @@ ${hardErrors.join("\n")}`);
         const gridCb = content.querySelector(`.grid-share-cb[data-successor="${cb.dataset.successor}"][data-func-id="${_currentFunctionId}"]`);
         if (gridCb) gridCb.checked = cb.checked;
         _pendingFormState = captureFormState();
+        if (_pendingFormState) {
+          const allShareCbs = content.querySelectorAll(".share-successor-cb");
+          _pendingFormState.sharedWithSuccessors = [...allShareCbs].filter((c) => c.checked).map((c) => c.dataset.successor);
+        }
         renderPanel(_currentFunctionId, _currentSuccessorName);
         _pendingFormState = null;
+        const newContent = document.getElementById("decisionPanelContent");
+        if (newContent) {
+          const restoredCb = newContent.querySelector(`.share-successor-cb[data-successor="${cb.dataset.successor}"]`);
+          if (restoredCb) restoredCb.focus();
+        }
       });
     });
     content.querySelectorAll(".grid-share-cb").forEach((cb) => {
       cb.addEventListener("change", () => {
-        const cardCb = content.querySelector(`.share-successor-cb[data-successor="${cb.dataset.successor}"]`);
-        if (cardCb && cb.dataset.funcId === _currentFunctionId) {
-          cardCb.checked = cb.checked;
-          cardCb.dispatchEvent(new Event("change"));
+        const targetFuncId = cb.dataset.funcId;
+        const targetSuccessor = cb.dataset.successor;
+        if (targetFuncId === _currentFunctionId) {
+          const cardCb = content.querySelector(`.share-successor-cb[data-successor="${targetSuccessor}"]`);
+          if (cardCb) {
+            cardCb.checked = cb.checked;
+            cardCb.dispatchEvent(new Event("change"));
+          }
+        } else {
+          if (!_pendingPerFunction[targetFuncId]) {
+            const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
+            const existingDec = decisions.get(getDecisionKey(targetFuncId, _currentSuccessorName));
+            let sysVal = "";
+            let procuredSys = null;
+            if (existingDec) {
+              if (existingDec.systemChoice === "defer") sysVal = "__defer__";
+              else if (existingDec.systemChoice === "procure") sysVal = "__procure__";
+              else if (existingDec.systemChoice === "choose" && existingDec.retainedSystemIds.length > 0) sysVal = existingDec.retainedSystemIds[0];
+              procuredSys = existingDec.procuredSystem;
+            } else {
+              const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+              if (primarySelect && primarySelect.value && !primarySelect.value.startsWith("__defer")) {
+                sysVal = primarySelect.value;
+                if (sysVal === "__procure__") {
+                  const primaryCard = primarySelect.closest(".successor-card");
+                  if (primaryCard) {
+                    const fields = primaryCard.querySelectorAll(".procure-field");
+                    procuredSys = {};
+                    fields.forEach((f) => {
+                      procuredSys[f.dataset.field] = f.value;
+                    });
+                  }
+                }
+              }
+            }
+            _pendingPerFunction[targetFuncId] = {
+              primarySystemValue: sysVal,
+              sharedWithSuccessors: existingDec ? [...existingDec.sharedWithSuccessors] : [],
+              rationale: existingDec ? existingDec.rationale : "",
+              procuredSystem: procuredSys
+            };
+          }
+          const pf = _pendingPerFunction[targetFuncId];
+          if (cb.checked) {
+            if (!pf.sharedWithSuccessors.includes(targetSuccessor)) {
+              pf.sharedWithSuccessors.push(targetSuccessor);
+            }
+          } else {
+            pf.sharedWithSuccessors = pf.sharedWithSuccessors.filter((s) => s !== targetSuccessor);
+          }
         }
       });
     });
@@ -11751,8 +11942,14 @@ ${hardErrors.join("\n")}`);
       row.addEventListener("click", () => {
         const newFuncId = row.dataset.funcId;
         if (newFuncId && newFuncId !== _currentFunctionId) {
+          const currentState = captureFormState();
+          if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== "") {
+            _pendingPerFunction[_currentFunctionId] = currentState;
+          }
           _currentFunctionId = newFuncId;
+          _pendingFormState = _pendingPerFunction[newFuncId] || null;
           renderPanel(_currentFunctionId, _currentSuccessorName);
+          _pendingFormState = null;
         }
       });
     });
@@ -11768,8 +11965,19 @@ ${hardErrors.join("\n")}`);
         e.preventDefault();
         const successor = btn.dataset.successor;
         if (successor) {
-          window._simUnlinkSharedService(_currentFunctionId, successor);
+          const decisions = state.simulationState ? state.simulationState.decisions : null;
+          const key = getDecisionKey(_currentFunctionId, successor);
+          const hasSavedPropagation = decisions && decisions.has(key);
+          if (hasSavedPropagation) {
+            window._simUnlinkSharedService(_currentFunctionId, successor);
+          } else {
+            _pendingFormState = captureFormState();
+            if (_pendingFormState) {
+              _pendingFormState.sharedWithSuccessors = (_pendingFormState.sharedWithSuccessors || []).filter((s) => s !== successor);
+            }
+          }
           renderPanel(_currentFunctionId, _currentSuccessorName);
+          _pendingFormState = null;
         }
       });
     });
@@ -11981,6 +12189,7 @@ ${hardErrors.join("\n")}`);
     _isExpanded = false;
     _primarySystem = null;
     _allFunctions = [];
+    _pendingPerFunction = {};
     if (_trapCleanup) {
       _trapCleanup();
       _trapCleanup = null;
@@ -12018,6 +12227,10 @@ ${hardErrors.join("\n")}`);
     document.getElementById("btnCloseDecisionPanel").addEventListener("click", closeDecisionPanel);
     document.getElementById("btnCancelDecision").addEventListener("click", closeDecisionPanel);
     document.getElementById("btnApplyDecision").addEventListener("click", () => {
+      const currentState = captureFormState();
+      if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== "") {
+        _pendingPerFunction[_currentFunctionId] = currentState;
+      }
       applyDecisionFromPanel({
         functionId: _currentFunctionId,
         successorName: _currentSuccessorName,
@@ -12029,7 +12242,8 @@ ${hardErrors.join("\n")}`);
             errorEl.textContent = msg;
             errorEl.classList.remove("hidden");
           }
-        }
+        },
+        pendingPerFunction: _pendingPerFunction
       });
     });
     _decisionPanelModal.addEventListener("click", async (e) => {

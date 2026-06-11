@@ -26,7 +26,7 @@ describe('sharing grid state', () => {
         ));
     });
 
-    it('undecided functions have disabled state for non-primary', () => {
+    it('undecided functions default to false for non-primary (no saved decisions)', () => {
         fc.assert(fc.property(
             fc.array(arbFunction.map(f => ({ ...f, decided: false })), { minLength: 1, maxLength: 5 }),
             arbSuccessor,
@@ -35,7 +35,7 @@ describe('sharing grid state', () => {
                 const gridState = computeGridState(functions, primary, others, new Map());
                 for (const func of functions) {
                     for (const other of others) {
-                        expect(gridState[func.funcId][other]).toBe('disabled');
+                        expect(gridState[func.funcId][other]).toBe(false);
                     }
                 }
             }

@@ -42,6 +42,7 @@ let _isExpanded = false;
 let _primarySystem = null;
 let _allFunctions = [];
 let _pendingFormState = null;
+let _pendingPerFunction = {};
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -102,12 +103,16 @@ function renderPanel(functionId, successorName) {
     // Check existing decision or pending form state
     const decisions = state.simulationState.decisions;
     let existingDecision = decisions ? decisions.get(getDecisionKey(functionId, successorName)) : null;
+    const isSavedDecision = !!existingDecision;
 
     // If no saved decision but we have pending form state (mid-edit re-render), use it
     if (!existingDecision && _pendingFormState) {
         const pf = _pendingFormState;
-        if (pf.primarySystemValue && pf.primarySystemValue !== '') {
-            let systemChoice = 'defer';
+        const hasSystem = pf.primarySystemValue && pf.primarySystemValue !== '';
+        const hasSharing = pf.sharedWithSuccessors && pf.sharedWithSuccessors.length > 0;
+
+        if (hasSystem || hasSharing) {
+            let systemChoice = null;
             let retainedSystemIds = [];
             let procuredSystem = null;
             if (pf.primarySystemValue === '__defer__') {
@@ -120,7 +125,7 @@ function renderPanel(functionId, successorName) {
                     annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
                     hosting: pf.procuredSystem.hosting || 'cloud'
                 } : { label: '' };
-            } else {
+            } else if (hasSystem) {
                 systemChoice = 'choose';
                 retainedSystemIds = [pf.primarySystemValue];
             }
@@ -148,7 +153,7 @@ function renderPanel(functionId, successorName) {
     _isExpanded = detectExpandedState(systems, functionId, successorName);
 
     // Build header
-    const headerHtml = renderHeader(funcLabel, successorName, tierBadge, existingDecision);
+    const headerHtml = renderHeader(funcLabel, successorName, tierBadge, isSavedDecision);
 
     // Build panes
     let pane1Html, pane2Html, pane3Html;
@@ -158,7 +163,7 @@ function renderPanel(functionId, successorName) {
         _primarySystem = findPrimarySystem(systems, functionId, successorName);
         _allFunctions = findAllFunctionsForSystem(_primarySystem, successorName);
 
-        pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate);
+        pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate, _pendingPerFunction);
         pane2Html = renderPane2Allocation({
             functionId,
             primarySuccessorName: successorName,
@@ -168,23 +173,41 @@ function renderPanel(functionId, successorName) {
         });
 
         // Add sharing grid below allocation
+        const currentPrimaryValue = _pendingFormState?.primarySystemValue 
+            || (existingDecision?.systemChoice === 'choose' ? existingDecision.retainedSystemIds[0] : null)
+            || (existingDecision?.systemChoice === 'procure' ? '__procure__' : null);
+        const hasCurrentSystem = !!currentPrimaryValue && currentPrimaryValue !== '__defer__';
+
         const gridFunctions = _allFunctions.map(f => {
             const key = getDecisionKey(f.funcId, successorName);
             const dec = decisions.get(key);
+            const pf = _pendingPerFunction[f.funcId];
+            const pfHasSystem = pf && pf.primarySystemValue && pf.primarySystemValue !== '' && !pf.primarySystemValue.startsWith('__defer');
+            
             return {
                 funcId: f.funcId,
                 label: f.label,
                 systemLabel: dec && dec.systemChoice === 'choose' && dec.retainedSystemIds.length > 0
                     ? (state.simulationState.baselineNodes || []).find(n => n.id === dec.retainedSystemIds[0])?.label || null
                     : null,
-                decided: !!dec || f.funcId === functionId
+                decided: !!dec || f.funcId === functionId,
+                // Checkboxes are editable if the primary function has a system selected (to bulk-share)
+                // OR if this specific function already has a system assigned to it.
+                hasSystem: hasCurrentSystem || (dec && (dec.systemChoice === 'choose' || dec.systemChoice === 'procure')) || pfHasSystem
             };
         });
         const otherSuccessors = (state.transitionStructure?.successors || [])
             .map(s => s.name)
             .filter(n => n !== successorName);
+        // Build pending sharing from current form state + previously navigated functions
+        const currentShared = existingDecision?.sharedWithSuccessors || [];
+        const pendingSharing = {
+            currentFuncId: functionId,
+            sharedWithSuccessors: currentShared,
+            perFunction: _pendingPerFunction
+        };
         const sharingGridHtml = otherSuccessors.length > 0
-            ? renderSharingGrid(gridFunctions, successorName, otherSuccessors)
+            ? renderSharingGrid(gridFunctions, successorName, otherSuccessors, pendingSharing)
             : '';
         pane2Html += sharingGridHtml;
 
@@ -324,7 +347,7 @@ function findAllFunctionsForSystem(primarySystem, successorName) {
 // Header
 // ---------------------------------------------------------------------------
 
-function renderHeader(funcLabel, successorName, tierBadge, existingDecision) {
+function renderHeader(funcLabel, successorName, tierBadge, isSavedDecision) {
     return `
         <div class="mb-4 shrink-0">
             <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Decision</p>
@@ -332,7 +355,7 @@ function renderHeader(funcLabel, successorName, tierBadge, existingDecision) {
             <div class="flex items-center gap-3 flex-wrap">
                 <span class="text-sm font-bold text-gray-700">Successor: ${escHtml(successorName)}</span>
                 ${tierBadge}
-                ${existingDecision ? '<span class="text-xs font-bold text-[#00703c] bg-green-50 border border-[#00703c] px-2 py-0.5">Editing existing decision</span>' : ''}
+                ${isSavedDecision ? '<span class="text-xs font-bold text-[#00703c] bg-green-50 border border-[#00703c] px-2 py-0.5">Editing existing decision</span>' : ''}
                 ${_isExpanded ? '<span class="text-xs font-bold text-[#1d70b8] bg-blue-50 border border-[#1d70b8] px-2 py-0.5">Expanded scope</span>' : ''}
             </div>
         </div>
@@ -400,6 +423,7 @@ function captureFormState() {
 
     const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
     const sharedCbs = content.querySelectorAll('.share-successor-cb:checked');
+    const unlinkBtns = content.querySelectorAll('.unlink-shared-btn');
     const rationaleEl = content.querySelector('#decisionRationale');
 
     // Read procurement detail fields
@@ -411,9 +435,14 @@ function captureFormState() {
         fields.forEach(f => { procuredSystem[f.dataset.field] = f.value; });
     }
 
+    // Shared successors come from either the checkboxes OR the linked cards (unlink buttons)
+    const sharedFromCbs = [...sharedCbs].map(cb => cb.dataset.successor);
+    const sharedFromLinks = [...unlinkBtns].map(btn => btn.dataset.successor);
+    const sharedWithSuccessors = [...new Set([...sharedFromCbs, ...sharedFromLinks])];
+
     return {
         primarySystemValue: primarySelect ? primarySelect.value : '',
-        sharedWithSuccessors: [...sharedCbs].map(cb => cb.dataset.successor),
+        sharedWithSuccessors,
         rationale: rationaleEl ? rationaleEl.value : '',
         procuredSystem
     };
@@ -427,13 +456,37 @@ function wireInteractivity(systems, successorName, existingDecision) {
     const content = document.getElementById('decisionPanelContent');
     if (!content) return;
 
-    // Successor dropdown changes → show/hide procure detail, update Pane 3 only
+    // Successor dropdown changes → show/hide procure detail + share toggle, update Pane 3
     content.querySelectorAll('.successor-system-select').forEach(select => {
         select.addEventListener('change', () => {
             const card = select.closest('.successor-card');
+            const isPrimary = card && card.dataset.isPrimary === 'true';
             const procureDetail = card ? card.querySelector('[data-procure-detail]') : null;
             if (procureDetail) {
                 procureDetail.classList.toggle('hidden', select.value !== '__procure__');
+            }
+            // Show/hide share toggle based on whether a system is selected
+            if (isPrimary) {
+                const shareToggle = card.querySelector('[data-share-toggle]');
+                const hasSystem = select.value && select.value !== '' && select.value !== '__defer__';
+                if (shareToggle) {
+                    shareToggle.classList.toggle('hidden', !hasSystem);
+                } else if (hasSystem) {
+                    // Share toggle wasn't rendered (no system at render time) — need full re-render of Pane 2
+                    _pendingFormState = captureFormState();
+                    // Override with current select value since captureFormState reads from DOM
+                    if (_pendingFormState) _pendingFormState.primarySystemValue = select.value;
+                    renderPanel(_currentFunctionId, _currentSuccessorName);
+                    _pendingFormState = null;
+                    
+                    // Restore focus
+                    const newContent = document.getElementById('decisionPanelContent');
+                    if (newContent) {
+                        const restoredSelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+                        if (restoredSelect) restoredSelect.focus();
+                    }
+                    return;
+                }
             }
             rerenderPane3Only();
         });
@@ -445,31 +498,103 @@ function wireInteractivity(systems, successorName, existingDecision) {
             // Sync with grid if present
             const gridCb = content.querySelector(`.grid-share-cb[data-successor="${cb.dataset.successor}"][data-func-id="${_currentFunctionId}"]`);
             if (gridCb) gridCb.checked = cb.checked;
-            // Capture current form state before re-rendering
+            // Capture form state, then explicitly set shared list based on current checkboxes
             _pendingFormState = captureFormState();
+            if (_pendingFormState) {
+                // Override sharedWithSuccessors from the actual checkbox states (not unlink buttons)
+                const allShareCbs = content.querySelectorAll('.share-successor-cb');
+                _pendingFormState.sharedWithSuccessors = [...allShareCbs]
+                    .filter(c => c.checked)
+                    .map(c => c.dataset.successor);
+            }
             renderPanel(_currentFunctionId, _currentSuccessorName);
             _pendingFormState = null;
-        });
-    });
-
-    // Grid checkbox sync → card toggle
-    content.querySelectorAll('.grid-share-cb').forEach(cb => {
-        cb.addEventListener('change', () => {
-            const cardCb = content.querySelector(`.share-successor-cb[data-successor="${cb.dataset.successor}"]`);
-            if (cardCb && cb.dataset.funcId === _currentFunctionId) {
-                cardCb.checked = cb.checked;
-                cardCb.dispatchEvent(new Event('change'));
+            
+            // Restore focus
+            const newContent = document.getElementById('decisionPanelContent');
+            if (newContent) {
+                const restoredCb = newContent.querySelector(`.share-successor-cb[data-successor="${cb.dataset.successor}"]`);
+                if (restoredCb) restoredCb.focus();
             }
         });
     });
 
-    // Function navigator clicks (State 2)
+    // Grid checkbox sync → card toggle OR pending state for other functions
+    content.querySelectorAll('.grid-share-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const targetFuncId = cb.dataset.funcId;
+            const targetSuccessor = cb.dataset.successor;
+
+            if (targetFuncId === _currentFunctionId) {
+                // Sync with the card toggle for the current function
+                const cardCb = content.querySelector(`.share-successor-cb[data-successor="${targetSuccessor}"]`);
+                if (cardCb) {
+                    cardCb.checked = cb.checked;
+                    cardCb.dispatchEvent(new Event('change'));
+                }
+            } else {
+                // For other functions, update pending state directly
+                if (!_pendingPerFunction[targetFuncId]) {
+                    const decisions = state.simulationState ? state.simulationState.decisions : new Map();
+                    const existingDec = decisions.get(getDecisionKey(targetFuncId, _currentSuccessorName));
+                    
+                    // Default to the currently selected system for the primary function if no existing decision
+                    let sysVal = '';
+                    let procuredSys = null;
+                    if (existingDec) {
+                        if (existingDec.systemChoice === 'defer') sysVal = '__defer__';
+                        else if (existingDec.systemChoice === 'procure') sysVal = '__procure__';
+                        else if (existingDec.systemChoice === 'choose' && existingDec.retainedSystemIds.length > 0) sysVal = existingDec.retainedSystemIds[0];
+                        procuredSys = existingDec.procuredSystem;
+                    } else {
+                        const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+                        if (primarySelect && primarySelect.value && !primarySelect.value.startsWith('__defer')) {
+                            sysVal = primarySelect.value;
+                            if (sysVal === '__procure__') {
+                                const primaryCard = primarySelect.closest('.successor-card');
+                                if (primaryCard) {
+                                    const fields = primaryCard.querySelectorAll('.procure-field');
+                                    procuredSys = {};
+                                    fields.forEach(f => { procuredSys[f.dataset.field] = f.value; });
+                                }
+                            }
+                        }
+                    }
+                    
+                    _pendingPerFunction[targetFuncId] = { 
+                        primarySystemValue: sysVal, 
+                        sharedWithSuccessors: existingDec ? [...existingDec.sharedWithSuccessors] : [], 
+                        rationale: existingDec ? existingDec.rationale : '', 
+                        procuredSystem: procuredSys 
+                    };
+                }
+                const pf = _pendingPerFunction[targetFuncId];
+                if (cb.checked) {
+                    if (!pf.sharedWithSuccessors.includes(targetSuccessor)) {
+                        pf.sharedWithSuccessors.push(targetSuccessor);
+                    }
+                } else {
+                    pf.sharedWithSuccessors = pf.sharedWithSuccessors.filter(s => s !== targetSuccessor);
+                }
+            }
+        });
+    });
+
+    // Function navigator clicks (State 2) — save current state before switching
     content.querySelectorAll('.func-nav-row').forEach(row => {
         row.addEventListener('click', () => {
             const newFuncId = row.dataset.funcId;
             if (newFuncId && newFuncId !== _currentFunctionId) {
+                // Capture current function's form state before navigating away
+                const currentState = captureFormState();
+                if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== '') {
+                    _pendingPerFunction[_currentFunctionId] = currentState;
+                }
                 _currentFunctionId = newFuncId;
+                // Restore pending state for the new function if it exists
+                _pendingFormState = _pendingPerFunction[newFuncId] || null;
                 renderPanel(_currentFunctionId, _currentSuccessorName);
+                _pendingFormState = null;
             }
         });
     });
@@ -489,8 +614,23 @@ function wireInteractivity(systems, successorName, existingDecision) {
             e.preventDefault();
             const successor = btn.dataset.successor;
             if (successor) {
-                window._simUnlinkSharedService(_currentFunctionId, successor);
+                // Check if this is a saved decision or just pending state
+                const decisions = state.simulationState ? state.simulationState.decisions : null;
+                const key = getDecisionKey(_currentFunctionId, successor);
+                const hasSavedPropagation = decisions && decisions.has(key);
+
+                if (hasSavedPropagation) {
+                    window._simUnlinkSharedService(_currentFunctionId, successor);
+                } else {
+                    // Clear from pending state
+                    _pendingFormState = captureFormState();
+                    if (_pendingFormState) {
+                        _pendingFormState.sharedWithSuccessors = (_pendingFormState.sharedWithSuccessors || [])
+                            .filter(s => s !== successor);
+                    }
+                }
                 renderPanel(_currentFunctionId, _currentSuccessorName);
+                _pendingFormState = null;
             }
         });
     });
@@ -751,6 +891,7 @@ function closeDecisionPanel() {
     _isExpanded = false;
     _primarySystem = null;
     _allFunctions = [];
+    _pendingPerFunction = {};
 
     if (_trapCleanup) {
         _trapCleanup();
@@ -794,6 +935,12 @@ if (_decisionPanelModal) {
     document.getElementById('btnCloseDecisionPanel').addEventListener('click', closeDecisionPanel);
     document.getElementById('btnCancelDecision').addEventListener('click', closeDecisionPanel);
     document.getElementById('btnApplyDecision').addEventListener('click', () => {
+        // Capture current function's state into pending before applying
+        const currentState = captureFormState();
+        if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== '') {
+            _pendingPerFunction[_currentFunctionId] = currentState;
+        }
+
         applyDecisionFromPanel({
             functionId: _currentFunctionId,
             successorName: _currentSuccessorName,
@@ -805,7 +952,8 @@ if (_decisionPanelModal) {
                     errorEl.textContent = msg;
                     errorEl.classList.remove('hidden');
                 }
-            }
+            },
+            pendingPerFunction: _pendingPerFunction
         });
     });
 
