@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Decision Panel Redesign — Final Design v2</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .subtitle { color: #86868b; margin-bottom: 1rem; font-size: 0.82rem; }
+    .state-label {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; display: inline-block; padding: 3px 12px; margin-bottom: 8px; margin-top: 2rem;
+    }
+    .state-label.simple { background: #00703c; }
+    .state-label.expanded { background: #1d70b8; }
+    .state-desc { font-size: 12px; color: #505a5f; margin-bottom: 10px; }
+
+    .modal-frame {
+      background: #fff;
+      border: 2px solid #0b0c0c;
+      border-top: 8px solid #1d70b8;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .modal-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid #b1b4b6;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .modal-header .title { font-size: 16px; font-weight: bold; }
+    .modal-header .meta { font-size: 11px; color: #505a5f; margin-top: 2px; }
+    .modal-body { display: flex; min-height: 400px; }
+    .modal-footer {
+      padding: 8px 14px; border-top: 1px solid #b1b4b6;
+      display: flex; justify-content: space-between; align-items: center; background: #f3f2f1;
+    }
+    .btn-primary { background: #00703c; color: #fff; border: none; padding: 7px 18px; font-weight: bold; font-size: 12px; cursor: pointer; }
+    .btn-secondary { background: #fff; color: #0b0c0c; border: 2px solid #0b0c0c; padding: 5px 14px; font-weight: bold; font-size: 11px; cursor: pointer; }
+
+    .pane { padding: 12px; font-size: 12px; border-right: 1px solid #b1b4b6; overflow-y: auto; }
+    .pane:last-child { border-right: none; }
+    .pane-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #505a5f; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #1d70b8;
+    }
+
+    .sys-card { border: 1px solid #b1b4b6; padding: 8px; margin-bottom: 6px; background: #fafafa; }
+    .sys-card.erp { border: 2px solid #d4351c; }
+    .sys-card.selected { border: 2px solid #1d70b8; }
+    .sys-card .name { font-weight: bold; font-size: 12px; }
+    .sys-card .meta { font-size: 11px; color: #505a5f; }
+    .badge { display: inline-block; font-size: 9px; padding: 1px 4px; font-weight: bold; margin-right: 2px; }
+    .badge-red { background: #fce4e1; color: #d4351c; border: 1px solid #d4351c; }
+    .badge-green { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .badge-orange { background: #fde68a; color: #f47738; border: 1px solid #f47738; }
+    .badge-grey { background: #f3f2f1; color: #505a5f; border: 1px solid #b1b4b6; }
+    .badge-tier { font-size: 9px; padding: 2px 6px; font-weight: bold; }
+    .badge-tier-2 { background: #f47738; color: #0b0c0c; }
+
+    .alloc-card { border: 1px solid #b1b4b6; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 2px; }
+    .alloc-card.linked { border-color: #00703c; border-width: 2px; background: #f8fdf9; }
+    .alloc-card.linked-secondary { border-color: #00703c; border-width: 2px; border-style: dashed; background: #f8fdf9; }
+    .alloc-card .succ-name { font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+    .alloc-card select {
+      width: 100%; border: 1px solid #0b0c0c; padding: 5px 8px; font-size: 11px; background: #fff; margin-bottom: 5px;
+    }
+    .alloc-card .detail-row {
+      font-size: 11px; color: #505a5f; padding: 2px 0; display: flex; justify-content: space-between; align-items: center;
+    }
+    .alloc-card .inline-edit { border: 1px solid #b1b4b6; padding: 2px 5px; font-size: 11px; width: 130px; }
+    .linked-badge {
+      display: inline-block; font-size: 9px; padding: 1px 5px; font-weight: bold;
+      background: #cce2d8; color: #00703c; border: 1px solid #00703c; margin-left: 6px;
+    }
+    .share-toggle {
+      margin-top: 6px; padding: 6px 8px; background: #f0fdf4; border: 1px solid #00703c; border-radius: 2px;
+    }
+    .share-toggle .toggle-label { font-size: 10px; font-weight: bold; color: #00703c; margin-bottom: 3px; }
+    .share-toggle .checkbox-row { font-size: 11px; padding: 2px 0; display: flex; align-items: center; gap: 5px; }
+
+    /* Clean sharing grid (from sharing-granularity concept) */
+    .sharing-grid-section {
+      margin-top: 12px; padding: 8px 10px; background: #f0fdf4; border: 1px solid #00703c; border-radius: 2px;
+    }
+    .sharing-grid-section .section-title { font-size: 10px; font-weight: bold; color: #00703c; margin-bottom: 6px; }
+    .share-grid { border-collapse: collapse; width: 100%; }
+    .share-grid th { font-size: 10px; font-weight: bold; color: #505a5f; text-align: left; padding: 5px 8px; border-bottom: 1px solid #b1b4b6; }
+    .share-grid td { padding: 5px 8px; font-size: 11px; border-bottom: 1px solid #e5e5e5; }
+    .share-grid td:first-child { font-weight: 600; }
+    .share-grid td:not(:first-child) { text-align: center; }
+    .share-grid th:not(:first-child) { text-align: center; }
+    .share-grid input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+    .share-grid .primary-row td { background: #f0fdf4; }
+    .add-btn {
+      background: none; border: 2px dashed #1d70b8; color: #1d70b8; font-size: 9px;
+      font-weight: bold; padding: 3px 7px; cursor: pointer; border-radius: 2px; white-space: nowrap;
+    }
+
+    .func-row {
+      display: flex; align-items: center; padding: 5px 8px; border: 1px solid #b1b4b6;
+      margin-bottom: 2px; background: #fafafa; font-size: 11px; cursor: pointer;
+    }
+    .func-row:hover { background: #f0f4ff; }
+    .func-row.selected { border-color: #1d70b8; background: #f0f4ff; border-width: 2px; }
+    .func-row .func-name { flex: 1; font-weight: 600; }
+    .func-row .func-status { font-size: 9px; padding: 2px 5px; font-weight: bold; }
+    .status-decided { background: #cce2d8; color: #00703c; }
+    .status-current { background: #f0f4ff; color: #1d70b8; }
+    .status-pending { background: #f3f2f1; color: #505a5f; }
+
+    .cost-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 11px; }
+    .cost-input { width: 44px; border: 1px solid #b1b4b6; padding: 2px 3px; font-size: 10px; text-align: right; }
+    .derived-label {
+      padding: 5px 8px; border-radius: 2px; font-size: 10px; font-weight: bold;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .derived-green { background: #f0fdf4; border: 1px solid #00703c; color: #00703c; }
+
+    .note-box { font-size: 11px; padding: 6px 8px; margin-top: 8px; border-left: 3px solid; }
+    .note-orange { background: #fff7e6; border-color: #f47738; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 10px 0; }
+    .escalation {
+      margin-top: 10px; padding: 8px; border: 2px dashed #1d70b8; text-align: center;
+      border-radius: 3px; background: #f0f4ff; cursor: pointer;
+    }
+    .escalation .label { font-size: 11px; font-weight: bold; color: #1d70b8; }
+    .escalation .desc { font-size: 10px; color: #505a5f; }
+  </style>
+</head>
+<body>
+
+  <h2>Decision Panel Redesign — Final Design v2</h2>
+  <p class="subtitle">Successor cards throughout. Grid is ONLY for sharing configuration (clean checkboxes), not for system selection.</p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- STATE 1: SIMPLE -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="state-label simple">State 1: Simple — Cards with "Share with..." toggle</div>
+  <div class="state-desc">Finance, 2 successors, Xero vs Sage. User chooses Xero and establishes shared service.</div>
+
+  <div class="modal-frame">
+    <div class="modal-header">
+      <div>
+        <div class="title">Finance <span class="badge-tier badge-tier-2" style="margin-left: 8px;">Tier 2</span></div>
+        <div class="meta">West Elmhurst Council · Choose-and-consolidate</div>
+      </div>
+      <span style="cursor: pointer; font-size: 18px; color: #505a5f;">✕</span>
+    </div>
+
+    <div class="modal-body">
+      <div class="pane" style="width: 28%;">
+        <div class="pane-label">Competing Systems (2)</div>
+        <div class="sys-card selected">
+          <div class="name">Xero Finance</div>
+          <div class="meta">Grantham District</div>
+          <div style="margin-top: 4px;"><span class="badge badge-green">Cloud</span><span class="badge badge-green">Port: High</span><span class="badge badge-grey">Segmented</span></div>
+          <div class="meta" style="margin-top: 3px;">£45,000/yr · 60 users</div>
+          <div class="meta">Ends: 2027-06 (3m notice)</div>
+        </div>
+        <div class="sys-card">
+          <div class="name">Sage 200</div>
+          <div class="meta">Bromwich Borough</div>
+          <div style="margin-top: 4px;"><span class="badge badge-orange">On-prem</span><span class="badge badge-grey">Port: Med</span><span class="badge badge-grey">Segmented</span></div>
+          <div class="meta" style="margin-top: 3px;">£85,000/yr · 120 users</div>
+          <div class="meta">Ends: 2028-09 (6m notice)</div>
+        </div>
+      </div>
+
+      <div class="pane" style="width: 40%;">
+        <div class="pane-label">Allocation: Finance</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">For each successor, what system serves Finance?</div>
+
+        <div class="alloc-card linked">
+          <div class="succ-name">West Elmhurst Council <span class="linked-badge">Primary</span></div>
+          <select>
+            <option selected>Xero Finance (Grantham District)</option>
+            <option>Sage 200 (Bromwich Borough)</option>
+            <option>Procure new system</option>
+            <option>Defer — decide post-vesting</option>
+          </select>
+          <div class="share-toggle">
+            <div class="toggle-label">⟷ Share Xero with other successors</div>
+            <div class="checkbox-row"><input type="checkbox" checked><label>Ivy Hatherley Council</label></div>
+          </div>
+        </div>
+
+        <div class="alloc-card linked-secondary">
+          <div class="succ-name">Ivy Hatherley Council <span class="linked-badge">Shared</span></div>
+          <div style="font-size: 11px; color: #00703c; padding: 4px 6px; background: #f0fdf4; border: 1px solid #cce2d8;">
+            <strong>Xero Finance</strong> — shared with West Elmhurst
+          </div>
+          <div style="font-size: 10px; color: #505a5f; padding: 3px 6px;">
+            <a href="#" style="color: #d4351c; text-decoration: underline; font-size: 10px;">Unlink</a> — make independent decision
+          </div>
+        </div>
+
+        <div class="derived-label derived-green" style="margin-top: 8px;">⟷ Shared service: Xero Finance (both successors)</div>
+
+        <div class="escalation">
+          <div class="label">↗ Assign Xero to additional functions</div>
+          <div class="desc">Opens expanded view for multi-function allocation</div>
+        </div>
+      </div>
+
+      <div class="pane" style="width: 32%; background: #fafcff;">
+        <div class="pane-label">Cost & Impact</div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">Xero Finance — £45,000/yr</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 6px;">Shared service cost split:</div>
+        <div class="cost-row"><span>West Elmhurst</span><span><input class="cost-input" value="50">% → £22,500</span></div>
+        <div class="cost-row"><span>Ivy Hatherley</span><span><input class="cost-input" value="50">% → £22,500</span></div>
+        <div style="font-size: 10px; text-align: right; margin-top: 4px;">
+          <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Auto-weight by users</a> · <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Equal</a>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Decommissions</div>
+        <div style="font-size: 11px; color: #d4351c;">• Sage 200 (Bromwich) — £85k/yr saved</div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Obligations</div>
+        <div style="font-size: 11px; color: #505a5f; line-height: 1.7;">• Migrate 120 users (Sage → Xero)<br>• Shared service governance agreement</div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Rationale <span style="font-weight: normal; color: #86868b;">(optional)</span></div>
+        <textarea style="width: 100%; border: 1px solid #b1b4b6; padding: 4px 6px; font-size: 11px; height: 40px; resize: vertical;" placeholder="e.g. Cloud-hosted, high portability, lower cost."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <span style="font-size: 11px; color: #505a5f;">Shared service · Sage 200 decommissioned · £85k/yr saved</span>
+      <div><button class="btn-secondary" style="margin-right: 6px;">Cancel</button><button class="btn-primary">Apply decision</button></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- STATE 2: EXPANDED -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="state-label expanded">State 2: Expanded — Function navigator + Cards + Sharing grid</div>
+  <div class="state-desc">SAP S/4HANA ERP, 3 functions, 2 successors. HR selected — user procures Workday and shares it. Sharing grid shows the full picture across all functions.</div>
+
+  <div class="modal-frame">
+    <div class="modal-header">
+      <div>
+        <div class="title">SAP S/4HANA ERP <span class="badge badge-red" style="margin-left: 6px;">ERP</span></div>
+        <div class="meta">Westshire County Council · Partial predecessor · £2,300,000/yr · 7,000 users</div>
+      </div>
+      <span style="cursor: pointer; font-size: 18px; color: #505a5f;">✕</span>
+    </div>
+
+    <div class="modal-body">
+      <!-- Pane 1: System + Function navigator -->
+      <div class="pane" style="width: 20%; min-width: 150px;">
+        <div class="pane-label">System</div>
+        <div class="sys-card erp" style="margin-bottom: 10px;">
+          <div style="margin-bottom: 3px;">
+            <span class="badge badge-red">ERP</span>
+            <span class="badge badge-orange">On-prem</span>
+            <span class="badge badge-red">Monolithic</span>
+          </div>
+          <div class="meta">SAP · S/4HANA 2023</div>
+          <div class="meta">Ends: 2030-03 (18m notice)</div>
+          <div class="meta" style="margin-top: 3px; font-style: italic; color: #f47738; font-size: 10px;">Political sensitivity noted</div>
+        </div>
+
+        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 5px;">Functions</div>
+        <div class="func-row">
+          <span class="func-name">Finance</span>
+          <span class="func-status status-decided">Shared ✓</span>
+        </div>
+        <div class="func-row selected">
+          <span class="func-name">HR</span>
+          <span class="func-status status-current">Editing</span>
+        </div>
+        <div class="func-row">
+          <span class="func-name">Procurement</span>
+          <span class="func-status status-pending">Pending</span>
+        </div>
+
+        <div class="note-box note-orange" style="margin-top: 10px;">
+          SAP decommissioned when all 3 resolved away.
+        </div>
+      </div>
+
+      <!-- Pane 2: Allocation for selected function + sharing grid -->
+      <div class="pane" style="width: 46%;">
+        <div class="pane-label">Allocation: Human Resources</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">For each successor, what system serves HR?</div>
+
+        <!-- Successor cards for HR (same pattern as State 1) -->
+        <div class="alloc-card linked">
+          <div class="succ-name">West Elmhurst Council <span class="linked-badge">Primary</span></div>
+          <select>
+            <option>SAP S/4HANA HR (keep current)</option>
+            <option selected>Procure new system</option>
+            <option>Use existing: iTrent (Bromwich)</option>
+            <option>Defer — decide post-vesting</option>
+          </select>
+          <!-- Procurement detail inline -->
+          <div style="padding: 6px 8px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 11px; margin-bottom: 6px;">
+            <div class="detail-row"><span>System:</span><input class="inline-edit" value="Workday HCM"></div>
+            <div class="detail-row"><span>Vendor:</span><input class="inline-edit" value="Workday"></div>
+            <div class="detail-row"><span>Annual cost:</span><input class="inline-edit" value="£400,000"></div>
+            <div class="detail-row"><span>Hosting:</span>
+              <select style="border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; width: 130px;"><option selected>Cloud</option><option>On-premise</option></select>
+            </div>
+          </div>
+          <!-- Share for this function -->
+          <div class="share-toggle">
+            <div class="toggle-label">⟷ Share Workday for HR with:</div>
+            <div class="checkbox-row"><input type="checkbox" checked><label>Ivy Hatherley Council</label></div>
+          </div>
+        </div>
+
+        <div class="alloc-card linked-secondary">
+          <div class="succ-name">Ivy Hatherley Council <span class="linked-badge">Shared</span></div>
+          <div style="font-size: 11px; color: #00703c; padding: 4px 6px; background: #f0fdf4; border: 1px solid #cce2d8;">
+            <strong>Workday HCM</strong> — shared with West Elmhurst (for HR)
+          </div>
+          <div style="font-size: 10px; color: #505a5f; padding: 3px 6px;">
+            <a href="#" style="color: #d4351c; text-decoration: underline; font-size: 10px;">Unlink</a> — make independent decision
+          </div>
+        </div>
+
+        <!-- SHARING GRID: The bird's-eye view across all functions -->
+        <div class="sharing-grid-section">
+          <div class="section-title">⟷ Sharing overview — all functions</div>
+          <div style="font-size: 10px; color: #505a5f; margin-bottom: 6px;">Who participates in each system for each function:</div>
+          <table class="share-grid">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Finance<br><span style="font-size: 9px; font-weight: normal;">(SAP)</span></th>
+                <th>HR<br><span style="font-size: 9px; font-weight: normal;">(Workday)</span></th>
+                <th>Procurement<br><span style="font-size: 9px; font-weight: normal;">(pending)</span></th>
+                <th><button class="add-btn">+ Func</button></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="primary-row">
+                <td>West Elmhurst<br><span style="font-size: 9px; color: #00703c; font-weight: bold;">Primary</span></td>
+                <td><input type="checkbox" checked disabled></td>
+                <td><input type="checkbox" checked disabled></td>
+                <td><input type="checkbox" disabled style="opacity: 0.3;"></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Ivy Hatherley</td>
+                <td><input type="checkbox" checked></td>
+                <td><input type="checkbox" checked></td>
+                <td><input type="checkbox" disabled style="opacity: 0.3;"></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size: 10px; color: #505a5f; margin-top: 4px;">
+            Greyed = primary (always uses it) · Checked = shared service participant · Disabled = function pending decision
+          </div>
+        </div>
+      </div>
+
+      <!-- Pane 3: Cost & Impact -->
+      <div class="pane" style="width: 34%; background: #fafcff;">
+        <div class="pane-label">Cost & Impact</div>
+
+        <!-- SAP transition -->
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">SAP transition costs</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 6px;">Shared until replacements live:</div>
+        <div class="cost-row"><span>West Elmhurst</span><span><input class="cost-input" value="50">% → £1.15M</span></div>
+        <div class="cost-row"><span>Ivy Hatherley</span><span><input class="cost-input" value="50">% → £1.15M</span></div>
+        <div style="font-size: 10px; text-align: right; margin-top: 3px;">
+          <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Auto-weight by functions</a> · <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Equal</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Workday ongoing -->
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Workday HCM (ongoing)</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 6px;">Shared service — HR:</div>
+        <div class="cost-row"><span>West Elmhurst</span><span><input class="cost-input" value="50">% → £200k</span></div>
+        <div class="cost-row"><span>Ivy Hatherley</span><span><input class="cost-input" value="50">% → £200k</span></div>
+
+        <div class="divider"></div>
+
+        <!-- Obligations -->
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Obligations</div>
+        <div style="font-size: 11px; color: #505a5f; line-height: 1.7;">
+          <span style="color: #d4351c;">●</span> Data migration: SAP HR → Workday<br>
+          <span style="color: #f47738;">●</span> Procurement: Workday HCM<br>
+          <span style="color: #1d70b8;">●</span> Shared governance (Finance — SAP)<br>
+          <span style="color: #1d70b8;">●</span> Shared governance (HR — Workday)
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- SAP decommission status -->
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">SAP decommission</div>
+        <div style="font-size: 11px; line-height: 1.6;">
+          <span style="color: #00703c;">✓</span> Finance — shared (SAP retained)<br>
+          <span style="color: #00703c;">✓</span> HR — Workday (SAP replaced)<br>
+          <span style="color: #b1b4b6;">○</span> Procurement — pending
+        </div>
+        <div style="font-size: 10px; color: #f47738; font-weight: bold; margin-top: 4px;">
+          1 pending — SAP not yet decommissioned
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Rationale -->
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Rationale <span style="font-weight: normal; color: #86868b;">(optional)</span></div>
+        <textarea style="width: 100%; border: 1px solid #b1b4b6; padding: 4px 6px; font-size: 11px; height: 40px; resize: vertical;" placeholder="e.g. Cloud-first strategy, SAP decommission."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <span style="font-size: 11px; color: #505a5f;">2 of 3 functions resolved · SAP decommission pending</span>
+      <div><button class="btn-secondary" style="margin-right: 6px;">Cancel</button><button class="btn-primary">Apply decisions</button></div>
+    </div>
+  </div>
+
+  <!-- Key difference note -->
+  <div class="note-box note-blue" style="margin-top: 1.5rem; font-size: 12px;">
+    <strong>Key change from v1:</strong> The grid is ONLY for sharing configuration (checkboxes showing who participates in what). System selection stays in the familiar successor cards — one card per successor with a dropdown, identical to State 1. The grid provides the bird's-eye overview without trying to do double duty as both a system selector AND a sharing configurator. You click a function in Pane 1 → its successor cards appear in Pane 2 → the grid below always shows the cross-function sharing picture.
+  </div>
+
+</body>
+</html>

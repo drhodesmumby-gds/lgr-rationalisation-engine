@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Grid + Cost Splitting</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+    h3 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #86868b; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; background: #0b0c0c; display: inline-block; padding: 2px 10px; margin-bottom: 8px; margin-top: 2rem;
+    }
+
+    .mock-panel { background: #fff; border: 2px solid #0b0c0c; border-radius: 3px; overflow: hidden; }
+    .mock-panel-header {
+      background: #0b0c0c; color: #fff; padding: 6px 12px; font-size: 11px; font-weight: bold;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .mock-panel-body { padding: 14px; }
+
+    /* Grid styling */
+    .share-grid { border-collapse: collapse; width: 100%; }
+    .share-grid th {
+      font-size: 10px; font-weight: bold; color: #505a5f; text-align: center;
+      padding: 6px 8px; border-bottom: 2px solid #0b0c0c; background: #f3f2f1;
+    }
+    .share-grid th:first-child { text-align: left; }
+    .share-grid td {
+      padding: 8px; font-size: 11px; border-bottom: 1px solid #e5e5e5; text-align: center;
+    }
+    .share-grid td:first-child { text-align: left; font-weight: 600; }
+    .share-grid tr.primary td { background: #f8fdf9; }
+    .share-grid input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .share-grid .add-col {
+      padding: 6px; text-align: center; vertical-align: middle;
+    }
+    .add-btn {
+      background: none; border: 2px dashed #1d70b8; color: #1d70b8; font-size: 10px;
+      font-weight: bold; padding: 4px 8px; cursor: pointer; border-radius: 2px;
+      white-space: nowrap;
+    }
+    .add-btn:hover { background: #f0f4ff; }
+    .primary-label { font-size: 9px; color: #00703c; font-weight: bold; display: block; }
+    .participant-label { font-size: 9px; color: #505a5f; display: block; }
+
+    /* Cost approaches */
+    .cost-approach { margin-top: 12px; padding: 12px; border: 1px solid #b1b4b6; background: #fafcff; }
+    .cost-approach .title { font-size: 11px; font-weight: bold; margin-bottom: 6px; color: #0b0c0c; }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 11px; }
+    .cost-input { width: 48px; border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; text-align: right; }
+    .cost-amount { font-size: 11px; color: #505a5f; min-width: 80px; text-align: right; }
+
+    .derived-box {
+      margin-top: 8px; padding: 6px 8px; font-size: 10px; border-radius: 2px;
+      border: 1px solid; display: flex; align-items: center; gap: 6px;
+    }
+    .derived-green { background: #f0fdf4; border-color: #00703c; color: #00703c; font-weight: bold; }
+
+    .note-box { font-size: 11px; padding: 8px; margin-top: 10px; border-left: 3px solid; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; }
+    .note-orange { background: #fff7e6; border-color: #f47738; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 12px 0; }
+    .tab-bar { display: flex; border-bottom: 2px solid #0b0c0c; margin-bottom: 10px; }
+    .tab { padding: 6px 14px; font-size: 11px; font-weight: bold; cursor: pointer; border: 1px solid #b1b4b6; border-bottom: none; margin-right: 2px; background: #f3f2f1; }
+    .tab.active { background: #fff; border-bottom: 2px solid #fff; margin-bottom: -2px; color: #1d70b8; }
+  </style>
+</head>
+<body>
+
+  <h2>Grid + Cost Splitting</h2>
+  <p class="subtitle">The sharing grid with "Add function" button, and three cost UX approaches that respond to grid state.</p>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- THE GRID WITH ADD FUNCTION -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section-title">Sharing grid with "Add function" column</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">Scenario: 3 successors, Workday assigned to HR + Procurement. User can add more function columns from the LGA taxonomy.</p>
+
+  <div class="mock-panel" style="max-width: 650px;">
+    <div class="mock-panel-header"><span>Workday HCM — Function & Successor Allocation</span></div>
+    <div class="mock-panel-body">
+      <table class="share-grid">
+        <thead>
+          <tr>
+            <th style="width: 140px;"></th>
+            <th>HR</th>
+            <th>Procurement</th>
+            <th>Payroll</th>
+            <th class="add-col"><button class="add-btn">+ Function</button></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="primary">
+            <td>West Elmhurst<br><span class="primary-label">Primary</span></td>
+            <td><input type="checkbox" checked disabled></td>
+            <td><input type="checkbox" checked disabled></td>
+            <td><input type="checkbox" checked disabled></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Ivy Hatherley<br><span class="participant-label">Participant</span></td>
+            <td><input type="checkbox" checked></td>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox" checked></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>South Westshire<br><span class="participant-label">Participant</span></td>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox" checked></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="derived-box derived-green" style="margin-top: 10px;">
+        ⟷ HR: WE + IH shared · Procurement: WE only · Payroll: All three shared
+      </div>
+
+      <div class="note-box note-blue" style="margin-top: 8px;">
+        <strong>"+ Function"</strong> opens a dropdown/typeahead of LGA functions (filtered to those not already in the grid). Adding a function creates a new column — the primary row is auto-checked; participant rows start unchecked.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COST APPROACH 1: System-level split -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section-title">Cost Approach 1: System-level split (simplest)</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">One cost split for the entire system, weighted by how many functions each successor participates in.</p>
+
+  <div class="mock-panel" style="max-width: 500px;">
+    <div class="mock-panel-header"><span>Cost allocation — Workday HCM (£400,000/yr)</span></div>
+    <div class="mock-panel-body">
+      <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">
+        Split based on participation (auto-calculated from grid, editable):
+      </div>
+
+      <div class="cost-row" style="padding: 6px 0; border-bottom: 1px solid #e5e5e5;">
+        <span><strong>West Elmhurst</strong><br><span style="font-size: 10px; color: #505a5f;">3 of 3 functions</span></span>
+        <span><input class="cost-input" value="50">% <span class="cost-amount">→ £200,000</span></span>
+      </div>
+      <div class="cost-row" style="padding: 6px 0; border-bottom: 1px solid #e5e5e5;">
+        <span><strong>Ivy Hatherley</strong><br><span style="font-size: 10px; color: #505a5f;">2 of 3 functions</span></span>
+        <span><input class="cost-input" value="30">% <span class="cost-amount">→ £120,000</span></span>
+      </div>
+      <div class="cost-row" style="padding: 6px 0;">
+        <span><strong>South Westshire</strong><br><span style="font-size: 10px; color: #505a5f;">1 of 3 functions</span></span>
+        <span><input class="cost-input" value="20">% <span class="cost-amount">→ £80,000</span></span>
+      </div>
+
+      <div style="font-size: 10px; color: #86868b; text-align: right; margin-top: 6px;">
+        <a href="#" style="color: #1d70b8; text-decoration: underline;">Auto-weight by functions</a> ·
+        <a href="#" style="color: #1d70b8; text-decoration: underline;">Equal split</a> ·
+        <a href="#" style="color: #1d70b8; text-decoration: underline;">Weight by users</a>
+      </div>
+
+      <div class="note-box note-blue" style="margin-top: 10px;">
+        <strong>Pro:</strong> Simple — one number per successor.<br>
+        <strong>Con:</strong> South only uses Payroll but pays 20% of the whole system. Is that fair?
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COST APPROACH 2: Per-sharing-group -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section-title">Cost Approach 2: Per-sharing-group (derived from grid)</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">The grid creates distinct "sharing groups" — each group gets its own cost allocation. System cost is first divided across functions, then each function's cost is split among its participants.</p>
+
+  <div class="mock-panel" style="max-width: 550px;">
+    <div class="mock-panel-header"><span>Cost allocation — Workday HCM (£400,000/yr)</span></div>
+    <div class="mock-panel-body">
+      <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">
+        System cost apportioned equally across 3 functions (£133k each), then split per group:
+      </div>
+
+      <!-- Group 1: HR (WE + IH) -->
+      <div style="padding: 8px; border: 1px solid #e5e5e5; margin-bottom: 6px; background: #fafafa;">
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">HR — £133,333/yr</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 4px;">Shared: West Elmhurst + Ivy Hatherley</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span><input class="cost-input" value="50">% → £66,667</span>
+        </div>
+        <div class="cost-row">
+          <span>Ivy Hatherley</span>
+          <span><input class="cost-input" value="50">% → £66,667</span>
+        </div>
+      </div>
+
+      <!-- Group 2: Procurement (WE only) -->
+      <div style="padding: 8px; border: 1px solid #e5e5e5; margin-bottom: 6px; background: #fafafa;">
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Procurement — £133,333/yr</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 4px;">Single successor: West Elmhurst</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span style="font-size: 11px;">100% → £133,333</span>
+        </div>
+      </div>
+
+      <!-- Group 3: Payroll (WE + IH + SW) -->
+      <div style="padding: 8px; border: 1px solid #e5e5e5; margin-bottom: 6px; background: #fafafa;">
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Payroll — £133,333/yr</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 4px;">Shared: All three successors</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span><input class="cost-input" value="34">% → £45,333</span>
+        </div>
+        <div class="cost-row">
+          <span>Ivy Hatherley</span>
+          <span><input class="cost-input" value="33">% → £44,000</span>
+        </div>
+        <div class="cost-row">
+          <span>South Westshire</span>
+          <span><input class="cost-input" value="33">% → £44,000</span>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="divider"></div>
+      <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Totals per successor</div>
+      <div class="cost-row"><span><strong>West Elmhurst</strong></span><span style="font-weight: bold;">£245,333/yr</span></div>
+      <div class="cost-row"><span><strong>Ivy Hatherley</strong></span><span style="font-weight: bold;">£110,667/yr</span></div>
+      <div class="cost-row"><span><strong>South Westshire</strong></span><span style="font-weight: bold;">£44,000/yr</span></div>
+
+      <div class="note-box note-blue" style="margin-top: 10px;">
+        <strong>Pro:</strong> Fair — South only pays for Payroll. Granular control per function.<br>
+        <strong>Con:</strong> Verbose for systems serving many functions. Requires assumption about how system cost distributes across functions (equal by default — may not reflect reality).
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COST APPROACH 3: Hybrid (system-level default, per-function override) -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section-title">Cost Approach 3: Hybrid (system-level default with drill-down)</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">Default: simple system-level split. Optional: expand to override per-function if needed. Progressive disclosure.</p>
+
+  <div class="mock-panel" style="max-width: 550px;">
+    <div class="mock-panel-header"><span>Cost allocation — Workday HCM (£400,000/yr)</span></div>
+    <div class="mock-panel-body">
+
+      <!-- System-level (default view) -->
+      <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">System-level split</div>
+      <div class="cost-row" style="padding: 5px 0; border-bottom: 1px solid #e5e5e5;">
+        <span><strong>West Elmhurst</strong> <span style="font-size: 10px; color: #505a5f;">(3 functions)</span></span>
+        <span><input class="cost-input" value="50">% <span class="cost-amount">→ £200,000</span></span>
+      </div>
+      <div class="cost-row" style="padding: 5px 0; border-bottom: 1px solid #e5e5e5;">
+        <span><strong>Ivy Hatherley</strong> <span style="font-size: 10px; color: #505a5f;">(2 functions)</span></span>
+        <span><input class="cost-input" value="30">% <span class="cost-amount">→ £120,000</span></span>
+      </div>
+      <div class="cost-row" style="padding: 5px 0;">
+        <span><strong>South Westshire</strong> <span style="font-size: 10px; color: #505a5f;">(1 function)</span></span>
+        <span><input class="cost-input" value="20">% <span class="cost-amount">→ £80,000</span></span>
+      </div>
+
+      <!-- Drill-down toggle -->
+      <details style="margin-top: 10px; border: 1px solid #b1b4b6; border-radius: 2px;">
+        <summary style="padding: 8px; font-size: 11px; font-weight: bold; cursor: pointer; background: #f3f2f1;">
+          ▶ Override: configure cost per function instead
+        </summary>
+        <div style="padding: 10px; font-size: 11px;">
+          <div style="color: #505a5f; margin-bottom: 8px;">
+            Distribute system cost across functions first, then split each function's portion among its participants.
+          </div>
+
+          <!-- Function cost weights -->
+          <div style="margin-bottom: 10px; padding: 8px; background: #fafafa; border: 1px solid #e5e5e5;">
+            <div style="font-weight: bold; margin-bottom: 4px;">Function cost weighting</div>
+            <div class="cost-row"><span>HR</span><span><input class="cost-input" value="40">% → £160,000</span></div>
+            <div class="cost-row"><span>Procurement</span><span><input class="cost-input" value="35">% → £140,000</span></div>
+            <div class="cost-row"><span>Payroll</span><span><input class="cost-input" value="25">% → £100,000</span></div>
+            <div style="font-size: 10px; color: #86868b; text-align: right; margin-top: 3px;">
+              <a href="#" style="color: #1d70b8; text-decoration: underline;">Equal</a> ·
+              <a href="#" style="color: #1d70b8; text-decoration: underline;">Weight by users</a>
+            </div>
+          </div>
+
+          <!-- Per-function splits (auto from grid) -->
+          <div style="font-size: 10px; color: #505a5f; margin-bottom: 6px;">
+            Per-function participant splits (derived from grid, editable):
+          </div>
+          <div style="padding: 6px; border-left: 3px solid #00703c; margin-bottom: 6px;">
+            <strong>HR (£160k)</strong>: WE 50% (£80k) · IH 50% (£80k)
+          </div>
+          <div style="padding: 6px; border-left: 3px solid #1d70b8; margin-bottom: 6px;">
+            <strong>Procurement (£140k)</strong>: WE 100% (£140k)
+          </div>
+          <div style="padding: 6px; border-left: 3px solid #4c2c92;">
+            <strong>Payroll (£100k)</strong>: WE 34% (£34k) · IH 33% (£33k) · SW 33% (£33k)
+          </div>
+        </div>
+      </details>
+
+      <div class="note-box note-blue" style="margin-top: 10px;">
+        <strong>Pro:</strong> Simple by default, powerful when needed. Progressive disclosure matches persona needs — Executive sees top-level, Architect drills in.<br>
+        <strong>Con:</strong> System-level default might be "wrong enough" that users don't know to drill in. Needs smart auto-calculation to be useful at the top level.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COMPARISON -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div style="margin-top: 2rem; padding: 14px; background: #fff; border: 2px solid #0b0c0c;">
+    <h3 style="font-size: 13px; font-weight: bold; margin-bottom: 8px; margin-top: 0;">Cost approach comparison</h3>
+    <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom: 2px solid #0b0c0c;">
+          <th style="text-align: left; padding: 6px;">Dimension</th>
+          <th style="text-align: left; padding: 6px;">1: System-level</th>
+          <th style="text-align: left; padding: 6px;">2: Per-sharing-group</th>
+          <th style="text-align: left; padding: 6px;">3: Hybrid</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Fairness</td>
+          <td style="padding: 6px;">Approximate</td>
+          <td style="padding: 6px;">Precise per function</td>
+          <td style="padding: 6px;">Precise if drilled in</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Complexity</td>
+          <td style="padding: 6px;">Minimal (one row per successor)</td>
+          <td style="padding: 6px;">High (section per function)</td>
+          <td style="padding: 6px;">Low default, high on demand</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Domain realism</td>
+          <td style="padding: 6px;">How contracts usually work</td>
+          <td style="padding: 6px;">How cost modelling works</td>
+          <td style="padding: 6px;">Supports both mental models</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Visual weight in panel</td>
+          <td style="padding: 6px;">Light</td>
+          <td style="padding: 6px;">Heavy</td>
+          <td style="padding: 6px;">Light (collapsed), Heavy (expanded)</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px; font-weight: 600;">Persona fit</td>
+          <td style="padding: 6px;">Executive / Commercial</td>
+          <td style="padding: 6px;">Commercial / Architect</td>
+          <td style="padding: 6px;">All (progressive)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note-box note-orange" style="margin-top: 1rem; font-size: 12px;">
+    <strong>Domain note:</strong> In practice, most council contracts are system-level (one contract = one cost, regardless of how many functions it serves). Per-function cost allocation is an internal modelling exercise, not a contractual reality. This suggests Approach 1 or 3 — system-level reflects how costs actually land, with per-function breakdown being analytical rather than operational.
+  </div>
+
+</body>
+</html>

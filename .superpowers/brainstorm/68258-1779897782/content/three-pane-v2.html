@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Three-Pane Revised — Per-Function Granularity</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .subtitle { color: #86868b; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      background: #0b0c0c;
+      display: inline-block;
+      padding: 2px 10px;
+      margin-bottom: 8px;
+      margin-top: 2rem;
+    }
+    .panel-mock {
+      background: #ffffff;
+      border: 2px solid #0b0c0c;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .panel-header {
+      background: #0b0c0c;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-body { display: flex; min-height: 300px; }
+    .pane {
+      padding: 12px;
+      font-size: 12px;
+      border-right: 1px solid #b1b4b6;
+      overflow-y: auto;
+    }
+    .pane:last-child { border-right: none; }
+    .pane-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #505a5f;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #1d70b8;
+    }
+    .sys-card {
+      border: 1px solid #b1b4b6;
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #fafafa;
+    }
+    .sys-card.erp { border: 2px solid #d4351c; }
+    .sys-card .name { font-weight: bold; font-size: 12px; }
+    .sys-card .meta { font-size: 11px; color: #505a5f; }
+    .badge { display: inline-block; font-size: 10px; padding: 1px 5px; font-weight: bold; margin-right: 3px; }
+    .badge-red { background: #fce4e1; color: #d4351c; border: 1px solid #d4351c; }
+    .badge-green { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .badge-orange { background: #fde68a; color: #f47738; border: 1px solid #f47738; }
+    .badge-teal { background: #e0f2fe; color: #0e7490; border: 1px solid #0e7490; }
+    .radio-item { margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px; }
+    .radio-item input { margin-top: 2px; }
+    .radio-label { font-size: 12px; }
+    .radio-label strong { display: block; }
+    .radio-label span { font-size: 11px; color: #505a5f; }
+    .func-row {
+      display: flex;
+      align-items: center;
+      padding: 7px 8px;
+      border: 1px solid #b1b4b6;
+      margin-bottom: 3px;
+      background: #fafafa;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .func-row:hover { background: #f0f4ff; }
+    .func-row.selected { border-color: #1d70b8; background: #f0f4ff; border-width: 2px; }
+    .func-row .func-name { flex: 1; font-weight: 600; }
+    .func-row .func-status { font-size: 10px; padding: 2px 6px; font-weight: bold; }
+    .status-decided { background: #cce2d8; color: #00703c; }
+    .status-current { background: #f0f4ff; color: #1d70b8; }
+    .status-pending { background: #f3f2f1; color: #505a5f; }
+    .successor-check {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid #b1b4b6;
+      margin-bottom: 4px;
+      background: #fafafa;
+      gap: 8px;
+    }
+    .successor-check.checked { border-color: #1d70b8; background: #f0f4ff; }
+    .successor-check label { font-size: 12px; font-weight: 600; flex: 1; cursor: pointer; }
+    .successor-check .detail { font-size: 11px; color: #505a5f; }
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 11px;
+    }
+    .cost-input { width: 48px; border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; text-align: right; }
+    .note-box { font-size: 11px; padding: 8px; margin-top: 10px; border-left: 3px solid; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; color: #0b0c0c; }
+    .note-orange { background: #fff7e6; border-color: #f47738; color: #0b0c0c; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 12px 0; }
+  </style>
+</head>
+<body>
+
+  <h2>Revised Three-Pane: Per-Function Granularity</h2>
+  <p class="subtitle">Middle pane lists functions; selecting one configures its fate. Right pane always shows successor allocation for the selected function's decision.</p>
+
+  <!-- STATE 1: Simple case with "establish shared" triggering pane 3 -->
+  <div class="section-title">State 1: Simple system — "Establish shared" reveals pane 3</div>
+  <div class="panel-mock">
+    <div class="panel-header">
+      <span>Decision: Finance → West Elmhurst</span>
+      <span style="opacity: 0.7;">✕</span>
+    </div>
+    <div class="panel-body">
+      <!-- Pane 1: Systems -->
+      <div class="pane" style="width: 35%;">
+        <div class="pane-label">Systems</div>
+        <div class="sys-card" style="border-color: #1d70b8; border-width: 2px;">
+          <div class="name">Xero Finance</div>
+          <div class="meta">Grantham District</div>
+          <div style="margin-top: 4px;"><span class="badge badge-green">Cloud</span><span class="badge badge-green">Port: High</span></div>
+          <div class="meta">£45,000/yr · 60 users</div>
+        </div>
+        <div class="sys-card">
+          <div class="name">Sage 200</div>
+          <div class="meta">Bromwich Borough</div>
+          <div style="margin-top: 4px;"><span class="badge badge-orange">On-prem</span></div>
+          <div class="meta">£85,000/yr · 120 users</div>
+        </div>
+      </div>
+
+      <!-- Pane 2: Decision -->
+      <div class="pane" style="width: 30%;">
+        <div class="pane-label">Decision</div>
+        <strong style="font-size: 11px; color: #505a5f;">System choice</strong>
+        <div class="radio-item" style="margin-top: 6px;">
+          <input type="radio" name="s1a" checked>
+          <div class="radio-label"><strong>Xero Finance</strong></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="s1a">
+          <div class="radio-label"><strong>Sage 200</strong></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="s1a">
+          <div class="radio-label"><strong>Procure new</strong></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="s1a">
+          <div class="radio-label"><strong>Defer</strong></div>
+        </div>
+        <div class="divider"></div>
+        <strong style="font-size: 11px; color: #505a5f;">Operating model</strong>
+        <div class="radio-item" style="margin-top: 6px;">
+          <input type="radio" name="om1" checked>
+          <div class="radio-label"><strong>Establish shared service</strong><span>Both successors use Xero</span></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="om1">
+          <div class="radio-label"><strong>Single successor only</strong><span>Only West Elmhurst uses Xero</span></div>
+        </div>
+      </div>
+
+      <!-- Pane 3: Successor allocation (revealed by "establish shared") -->
+      <div class="pane" style="width: 35%; background: #fafcff;">
+        <div class="pane-label">Successor Allocation</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">
+          Which successors share Xero Finance?
+        </div>
+        <div class="successor-check checked">
+          <input type="checkbox" checked>
+          <label>West Elmhurst Council</label>
+        </div>
+        <div class="successor-check checked">
+          <input type="checkbox" checked>
+          <label>Ivy Hatherley Council</label>
+        </div>
+
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">Cost sharing</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span><input class="cost-input" value="50">% → £22,500</span>
+        </div>
+        <div class="cost-row">
+          <span>Ivy Hatherley</span>
+          <span><input class="cost-input" value="50">% → £22,500</span>
+        </div>
+
+        <div class="note-box note-blue" style="margin-top: 12px;">
+          Selecting "Establish shared" will auto-resolve Finance for Ivy Hatherley — their existing decision (if any) will be replaced.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 2: Complex ERP with per-function variation -->
+  <div class="section-title">State 2: ERP expanded — per-function decisions vary</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">SAP is shared for Finance, but each successor gets a different system for HR and Procurement.</p>
+  <div class="panel-mock">
+    <div class="panel-header">
+      <span>System Decision: SAP S/4HANA ERP — Westshire County</span>
+      <span style="opacity: 0.7;">✕</span>
+    </div>
+    <div class="panel-body">
+      <!-- Pane 1: System + Function list -->
+      <div class="pane" style="width: 30%;">
+        <div class="pane-label">System & Functions</div>
+        <div class="sys-card erp" style="margin-bottom: 12px;">
+          <div class="name">SAP S/4HANA ERP</div>
+          <div class="meta">Westshire County · £2.3M/yr · 7,000 users</div>
+          <div style="margin-top: 4px;">
+            <span class="badge badge-red">ERP</span>
+            <span class="badge badge-orange">On-prem</span>
+            <span class="badge badge-red">Monolithic</span>
+          </div>
+        </div>
+
+        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 6px;">Functions served (click to configure)</div>
+        <div class="func-row">
+          <span class="func-name">Finance</span>
+          <span class="func-status status-decided">Shared ✓</span>
+        </div>
+        <div class="func-row selected">
+          <span class="func-name">Human Resources</span>
+          <span class="func-status status-current">Editing</span>
+        </div>
+        <div class="func-row">
+          <span class="func-name">Procurement</span>
+          <span class="func-status status-pending">Pending</span>
+        </div>
+
+        <div class="note-box note-orange" style="margin-top: 12px;">
+          <strong>ERP note:</strong> SAP is only decommissioned once ALL functions are decided away from it.
+        </div>
+      </div>
+
+      <!-- Pane 2: Decision for selected function -->
+      <div class="pane" style="width: 35%;">
+        <div class="pane-label">Decision: Human Resources</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 10px;">
+          What system serves HR for each successor?
+        </div>
+
+        <strong style="font-size: 11px; color: #505a5f;">System choice for HR</strong>
+        <div class="radio-item" style="margin-top: 6px;">
+          <input type="radio" name="hr">
+          <div class="radio-label"><strong>Keep SAP (HR module)</strong><span>Continue using S/4HANA for HR</span></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="hr" checked>
+          <div class="radio-label"><strong>Procure replacement</strong><span>Each successor gets their own HR system</span></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="hr">
+          <div class="radio-label"><strong>Defer</strong><span>Keep SAP HR running, decide later</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Procure details shown -->
+        <div style="padding: 8px; border: 1px solid #b1b4b6; background: #fafafa;">
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">Replacement details (optional)</div>
+          <div style="font-size: 11px; margin-bottom: 4px;">
+            <label>System name: <input style="border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; width: 120px;" placeholder="e.g. Workday HCM"></label>
+          </div>
+          <div style="font-size: 11px;">
+            <label>Vendor: <input style="border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; width: 120px;" placeholder="e.g. Workday"></label>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <strong style="font-size: 11px; color: #505a5f;">Operating model</strong>
+        <div class="radio-item" style="margin-top: 6px;">
+          <input type="radio" name="hrom" checked>
+          <div class="radio-label"><strong>Independent per successor</strong><span>Each gets their own HR system</span></div>
+        </div>
+        <div class="radio-item">
+          <input type="radio" name="hrom">
+          <div class="radio-label"><strong>Shared replacement</strong><span>Both successors share one new HR system</span></div>
+        </div>
+      </div>
+
+      <!-- Pane 3: Successor allocation for selected function -->
+      <div class="pane" style="width: 35%; background: #fafcff;">
+        <div class="pane-label">Allocation: Human Resources</div>
+
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 10px;">
+          "Independent per successor" selected — each successor procures separately.
+        </div>
+
+        <!-- West Elmhurst -->
+        <div style="border: 1px solid #b1b4b6; padding: 8px; margin-bottom: 6px; background: #fff;">
+          <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px;">West Elmhurst Council</div>
+          <div style="font-size: 11px; color: #505a5f;">Will procure: <strong>Workday HCM</strong></div>
+          <div style="font-size: 11px; color: #505a5f;">~3,500 users migrating from SAP HR</div>
+        </div>
+
+        <!-- Ivy Hatherley -->
+        <div style="border: 1px solid #b1b4b6; padding: 8px; margin-bottom: 6px; background: #fff;">
+          <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px;">Ivy Hatherley Council</div>
+          <div style="font-size: 11px; color: #505a5f;">Will procure: <strong>Workday HCM</strong></div>
+          <div style="font-size: 11px; color: #505a5f;">~3,500 users migrating from SAP HR</div>
+          <div style="font-size: 10px; color: #86868b; margin-top: 2px; font-style: italic;">Or specify different system →</div>
+        </div>
+
+        <!-- Transition cost for HR -->
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">SAP HR module cost during transition</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 4px;">Until migration complete, SAP HR costs are shared:</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span><input class="cost-input" value="50">%</span>
+        </div>
+        <div class="cost-row">
+          <span>Ivy Hatherley</span>
+          <span><input class="cost-input" value="50">%</span>
+        </div>
+
+        <!-- Summary of all functions -->
+        <div class="divider"></div>
+        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 4px;">SAP decisions summary</div>
+        <div style="font-size: 11px; line-height: 1.6;">
+          <span style="color: #00703c;">●</span> Finance: Shared service (both)<br>
+          <span style="color: #1d70b8;">●</span> HR: Independent procurement (editing)<br>
+          <span style="color: #b1b4b6;">●</span> Procurement: Pending
+        </div>
+        <div style="font-size: 10px; color: #86868b; margin-top: 6px;">
+          SAP decommission triggered when all 3 functions resolved away
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note-box note-blue" style="margin-top: 1.5rem;">
+    <strong>Design principle:</strong> Pane 1 shows WHAT (system + which function is active). Pane 2 shows the DECISION (system choice + operating model for that function). Pane 3 shows WHO (successor allocation, cost split, impact) — and adapts based on the operating model selected in Pane 2. Clicking between functions in Pane 1 updates Panes 2 and 3.
+  </div>
+
+</body>
+</html>

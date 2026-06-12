@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sharing Granularity — Options A, B, C</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .subtitle { color: #86868b; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    .option-header {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; display: inline-block; padding: 3px 12px; margin-bottom: 8px; margin-top: 2rem;
+    }
+    .option-a .option-header { background: #1d70b8; }
+    .option-b .option-header { background: #00703c; }
+    .option-c .option-header { background: #4c2c92; }
+    .option-desc { font-size: 12px; color: #505a5f; margin-bottom: 10px; }
+
+    .mock-panel {
+      background: #fff; border: 2px solid #0b0c0c; border-radius: 3px; overflow: hidden;
+      max-width: 520px;
+    }
+    .mock-panel-header {
+      background: #0b0c0c; color: #fff; padding: 6px 12px; font-size: 11px; font-weight: bold;
+    }
+    .mock-panel-body { padding: 14px; }
+
+    .alloc-card { border: 1px solid #b1b4b6; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 2px; }
+    .alloc-card.linked { border-color: #00703c; border-width: 2px; background: #f8fdf9; }
+    .alloc-card .succ-name { font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+    .alloc-card select {
+      width: 100%; border: 1px solid #0b0c0c; padding: 5px 8px; font-size: 11px; background: #fff; margin-bottom: 5px;
+    }
+    .alloc-card .detail-row {
+      font-size: 11px; color: #505a5f; padding: 2px 0; display: flex; justify-content: space-between; align-items: center;
+    }
+    .alloc-card .inline-edit { border: 1px solid #b1b4b6; padding: 2px 5px; font-size: 11px; width: 130px; }
+
+    .linked-badge {
+      display: inline-block; font-size: 9px; padding: 1px 5px; font-weight: bold;
+      background: #cce2d8; color: #00703c; border: 1px solid #00703c; margin-left: 6px;
+    }
+
+    .share-toggle {
+      margin-top: 6px; padding: 6px 8px; background: #f0fdf4; border: 1px solid #00703c; border-radius: 2px;
+    }
+    .share-toggle .toggle-label { font-size: 10px; font-weight: bold; color: #00703c; margin-bottom: 3px; }
+    .share-toggle .checkbox-row { font-size: 11px; padding: 2px 0; display: flex; align-items: center; gap: 5px; }
+    .share-toggle .checkbox-row label { cursor: pointer; }
+
+    .multi-func-section {
+      margin-top: 8px; padding: 6px 8px; background: #eff6ff; border: 1px solid #1d70b8; border-radius: 2px;
+    }
+    .multi-func-section .section-label { font-size: 10px; font-weight: bold; color: #1d70b8; margin-bottom: 3px; }
+    .multi-func-section .checkbox-row { font-size: 11px; padding: 2px 0; display: flex; align-items: center; gap: 5px; }
+    .multi-func-section .checkbox-row label { cursor: pointer; }
+    .multi-func-section .sub-option {
+      margin-left: 22px; font-size: 10px; color: #505a5f; padding: 1px 0;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* Function navigator mock */
+    .func-nav { margin-bottom: 12px; }
+    .func-row {
+      display: flex; align-items: center; padding: 5px 8px; border: 1px solid #b1b4b6;
+      margin-bottom: 2px; background: #fafafa; font-size: 11px; cursor: pointer;
+    }
+    .func-row.selected { border-color: #1d70b8; background: #f0f4ff; border-width: 2px; }
+    .func-row .func-name { flex: 1; font-weight: 600; }
+    .func-row .func-status { font-size: 9px; padding: 2px 5px; font-weight: bold; }
+    .status-decided { background: #cce2d8; color: #00703c; }
+    .status-shared { background: #cce2d8; color: #00703c; }
+    .status-partial { background: #fde68a; color: #0b0c0c; }
+    .status-pending { background: #f3f2f1; color: #505a5f; }
+    .status-current { background: #f0f4ff; color: #1d70b8; }
+
+    /* Grid for option C */
+    .share-grid { border-collapse: collapse; width: 100%; margin-top: 4px; }
+    .share-grid th { font-size: 10px; font-weight: bold; color: #505a5f; text-align: left; padding: 4px 6px; border-bottom: 1px solid #b1b4b6; }
+    .share-grid td { padding: 4px 6px; font-size: 11px; border-bottom: 1px solid #e5e5e5; }
+    .share-grid td:first-child { font-weight: 600; }
+    .share-grid input[type="checkbox"] { margin: 0; }
+
+    .pros-cons { display: flex; gap: 10px; margin-top: 8px; font-size: 11px; }
+    .pros-cons .pros { color: #00703c; }
+    .pros-cons .cons { color: #d4351c; }
+    .pros-cons ul { margin: 2px 0 0 14px; }
+    .pros-cons li { margin-bottom: 2px; }
+
+    .note-box { font-size: 11px; padding: 8px; margin-top: 8px; border-left: 3px solid; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; }
+    .note-green { background: #f0fdf4; border-color: #00703c; }
+    .note-purple { background: #f5f0ff; border-color: #4c2c92; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+  <h2>Sharing × Multi-Function: Three Approaches</h2>
+  <p class="subtitle">Scenario: West Elmhurst procures Workday, assigns it to HR + Procurement, and wants to share with Ivy Hatherley — but Ivy Hatherley only wants to share for HR, not Procurement.</p>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- OPTION A -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="option-a">
+    <div class="option-header">Option A: Sharing configured per-function (navigate to each)</div>
+    <p class="option-desc">Multi-function assignment sets what YOU use. Sharing is configured separately when you click each function in the navigator. No sharing UI appears during multi-function assignment.</p>
+
+    <div style="display: flex; gap: 12px;">
+      <!-- Left: Function navigator showing state -->
+      <div style="width: 160px;">
+        <div style="font-size: 10px; font-weight: bold; color: #505a5f; margin-bottom: 4px;">PANE 1</div>
+        <div class="func-row">
+          <span class="func-name">Finance</span>
+          <span class="func-status status-shared">Shared ✓</span>
+        </div>
+        <div class="func-row selected">
+          <span class="func-name">HR</span>
+          <span class="func-status status-current">Editing</span>
+        </div>
+        <div class="func-row">
+          <span class="func-name">Procurement</span>
+          <span class="func-status status-partial">WE only</span>
+        </div>
+        <div class="note-box note-blue" style="margin-top: 8px;">
+          Procurement shows "WE only" — user must click into it to configure sharing for Ivy Hatherley.
+        </div>
+      </div>
+
+      <!-- Right: What Pane 2 looks like for HR -->
+      <div class="mock-panel" style="flex: 1;">
+        <div class="mock-panel-header">Pane 2 — HR (currently editing)</div>
+        <div class="mock-panel-body">
+          <div class="alloc-card linked">
+            <div class="succ-name">West Elmhurst <span class="linked-badge">Primary</span></div>
+            <select><option selected>Procure: Workday HCM</option></select>
+
+            <!-- Multi-function (no sharing mentioned) -->
+            <div class="multi-func-section">
+              <div class="section-label">Also assign Workday to:</div>
+              <div class="checkbox-row"><input type="checkbox" checked><label><strong>Procurement</strong></label></div>
+              <div style="font-size: 10px; color: #505a5f; margin-top: 2px;">Sets Workday as West Elmhurst's system for Procurement. Sharing for Procurement configured separately.</div>
+            </div>
+
+            <!-- Share toggle (HR only) -->
+            <div class="share-toggle">
+              <div class="toggle-label">⟷ Share Workday for HR with:</div>
+              <div class="checkbox-row"><input type="checkbox" checked><label>Ivy Hatherley Council</label></div>
+            </div>
+          </div>
+
+          <div class="alloc-card" style="border-color: #00703c; border-style: dashed; border-width: 2px; background: #f8fdf9;">
+            <div class="succ-name">Ivy Hatherley <span class="linked-badge">Shared</span></div>
+            <div style="font-size: 11px; color: #00703c; padding: 4px;">Workday HCM — shared with West Elmhurst (for HR)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros"><ul><li>Each function's sharing is self-contained</li><li>Clear mental model: navigate → configure</li><li>No complex nested UI</li></ul></div>
+      <div class="cons"><ul><li>Requires clicking into Procurement separately to share</li><li>User might forget to configure sharing for assigned functions</li><li>More clicks for the "share everything" case</li></ul></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- OPTION B -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="option-b">
+    <div class="option-header">Option B: "Also share?" sub-checkbox per assigned function</div>
+    <p class="option-desc">When you check "Also assign to Procurement" AND sharing is active, a sub-checkbox appears: "Also share for Procurement?" — opt-in per function, inline.</p>
+
+    <div class="mock-panel">
+      <div class="mock-panel-header">Pane 2 — HR (with inline sharing per function)</div>
+      <div class="mock-panel-body">
+        <div class="alloc-card linked">
+          <div class="succ-name">West Elmhurst <span class="linked-badge">Primary</span></div>
+          <select><option selected>Procure: Workday HCM</option></select>
+
+          <div style="padding: 6px 8px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 11px; margin-bottom: 6px;">
+            <div class="detail-row"><span>System:</span><input class="inline-edit" value="Workday HCM"></div>
+            <div class="detail-row"><span>Vendor:</span><input class="inline-edit" value="Workday"></div>
+          </div>
+
+          <!-- Multi-function WITH sharing sub-options -->
+          <div class="multi-func-section">
+            <div class="section-label">Also assign Workday to:</div>
+            <div class="checkbox-row">
+              <input type="checkbox" checked id="b-proc"><label for="b-proc"><strong>Procurement</strong></label>
+            </div>
+            <!-- Sub-option: share? -->
+            <div class="sub-option">
+              <input type="checkbox" id="b-proc-share"><label for="b-proc-share" style="color: #00703c;">↳ Also share Procurement with Ivy Hatherley?</label>
+            </div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="b-payroll"><label for="b-payroll">Payroll</label>
+            </div>
+          </div>
+
+          <!-- Share toggle (for current function: HR) -->
+          <div class="share-toggle">
+            <div class="toggle-label">⟷ Share Workday for HR with:</div>
+            <div class="checkbox-row"><input type="checkbox" checked><label>Ivy Hatherley Council</label></div>
+          </div>
+        </div>
+
+        <div class="alloc-card" style="border-color: #00703c; border-style: dashed; border-width: 2px; background: #f8fdf9;">
+          <div class="succ-name">Ivy Hatherley <span class="linked-badge">Shared (HR only)</span></div>
+          <div style="font-size: 11px; color: #00703c; padding: 4px;">Workday HCM — shared for HR. Procurement NOT shared (unchecked above).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros"><ul><li>Single screen — no navigation required for common case</li><li>Explicit opt-in per function</li><li>Clear cause/effect: check "Procurement" → see "share for Procurement?"</li></ul></div>
+      <div class="cons"><ul><li>Nested checkboxes can feel cramped</li><li>Scaling: 5 functions + 3 successors = many sub-options</li><li>Mixes two concerns (assignment + sharing) in one section</li></ul></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- OPTION C -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="option-c">
+    <div class="option-header">Option C: Sharing grid (successor × function matrix)</div>
+    <p class="option-desc">After multi-function assignment, a small grid appears showing which successors share which functions. Compact but dense.</p>
+
+    <div class="mock-panel">
+      <div class="mock-panel-header">Pane 2 — Workday HCM sharing configuration</div>
+      <div class="mock-panel-body">
+        <div class="alloc-card linked">
+          <div class="succ-name">West Elmhurst <span class="linked-badge">Primary</span></div>
+          <select><option selected>Procure: Workday HCM</option></select>
+
+          <div style="padding: 6px 8px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 11px; margin-bottom: 6px;">
+            <div class="detail-row"><span>System:</span><input class="inline-edit" value="Workday HCM"></div>
+            <div class="detail-row"><span>Vendor:</span><input class="inline-edit" value="Workday"></div>
+          </div>
+
+          <!-- Multi-function (simple, no sharing here) -->
+          <div class="multi-func-section">
+            <div class="section-label">Workday serves:</div>
+            <div class="checkbox-row"><input type="checkbox" checked disabled><label><strong>Human Resources</strong> (current)</label></div>
+            <div class="checkbox-row"><input type="checkbox" checked><label><strong>Procurement</strong></label></div>
+          </div>
+
+          <!-- Sharing grid -->
+          <div class="share-toggle" style="margin-top: 8px;">
+            <div class="toggle-label">⟷ Sharing configuration</div>
+            <div style="font-size: 10px; color: #505a5f; margin-bottom: 4px;">Check which successors share Workday for which functions:</div>
+            <table class="share-grid">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>HR</th>
+                  <th>Procurement</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>West Elmhurst</td>
+                  <td><input type="checkbox" checked disabled></td>
+                  <td><input type="checkbox" checked disabled></td>
+                </tr>
+                <tr>
+                  <td>Ivy Hatherley</td>
+                  <td><input type="checkbox" checked></td>
+                  <td><input type="checkbox"></td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="font-size: 10px; color: #505a5f; margin-top: 4px;">
+              Grey = primary (always uses it). Checkable = opt into shared service.
+            </div>
+          </div>
+        </div>
+
+        <!-- Result -->
+        <div style="font-size: 11px; margin-top: 8px; padding: 8px; background: #f8fdf9; border: 1px solid #00703c; border-radius: 2px;">
+          <strong style="color: #00703c;">Result:</strong><br>
+          • HR: Shared service (West Elmhurst + Ivy Hatherley)<br>
+          • Procurement: West Elmhurst only (Ivy Hatherley decides independently)
+        </div>
+      </div>
+    </div>
+
+    <!-- Show how this scales to 3 successors -->
+    <div style="margin-top: 12px;">
+      <div style="font-size: 11px; font-weight: bold; color: #4c2c92; margin-bottom: 4px;">Scaling example: 3 successors, 3 functions</div>
+      <div class="mock-panel" style="max-width: 400px;">
+        <div class="mock-panel-header">Sharing grid — 3×3</div>
+        <div class="mock-panel-body" style="padding: 10px;">
+          <table class="share-grid">
+            <thead>
+              <tr><th></th><th>HR</th><th>Procurement</th><th>Payroll</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>North</td><td><input type="checkbox" checked disabled></td><td><input type="checkbox" checked disabled></td><td><input type="checkbox" checked disabled></td></tr>
+              <tr><td>Central</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td></tr>
+              <tr><td>South</td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+            </tbody>
+          </table>
+          <div style="font-size: 10px; color: #505a5f; margin-top: 6px;">
+            Result: North + Central share HR & Procurement. Payroll = North only. South independent on all.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros"><ul><li>Maximum expressiveness — any combination possible</li><li>Single compact view for complex scenarios</li><li>Scales cleanly (grid grows linearly)</li><li>Clear visual: "who shares what"</li></ul></div>
+      <div class="cons"><ul><li>Dense — requires understanding the grid pattern</li><li>May intimidate non-technical users (Executive persona)</li><li>Overkill for simple 2-successor, 1-function cases</li></ul></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COMPARISON -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div style="margin-top: 2rem; padding: 14px; background: #fff; border: 2px solid #0b0c0c;">
+    <h3 style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">Comparison at a glance</h3>
+    <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom: 2px solid #0b0c0c;">
+          <th style="text-align: left; padding: 6px;">Dimension</th>
+          <th style="text-align: left; padding: 6px; color: #1d70b8;">A: Navigate per-function</th>
+          <th style="text-align: left; padding: 6px; color: #00703c;">B: Sub-checkboxes</th>
+          <th style="text-align: left; padding: 6px; color: #4c2c92;">C: Grid</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Clicks for simple case</td>
+          <td style="padding: 6px;">2 (assign + navigate to share)</td>
+          <td style="padding: 6px;">1 (assign + sub-check)</td>
+          <td style="padding: 6px;">1 (check grid cell)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Scaling (5 funcs × 3 succ)</td>
+          <td style="padding: 6px;">Click into each function</td>
+          <td style="padding: 6px;">15 sub-checkboxes (noisy)</td>
+          <td style="padding: 6px;">5×3 grid (compact)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Cognitive load</td>
+          <td style="padding: 6px;">Low per screen</td>
+          <td style="padding: 6px;">Medium (nested)</td>
+          <td style="padding: 6px;">High upfront, fast once learned</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e5e5;">
+          <td style="padding: 6px; font-weight: 600;">Risk of incomplete config</td>
+          <td style="padding: 6px;">High (might forget a function)</td>
+          <td style="padding: 6px;">Low (shown inline)</td>
+          <td style="padding: 6px;">Low (all visible at once)</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px; font-weight: 600;">Persona fit</td>
+          <td style="padding: 6px;">All personas</td>
+          <td style="padding: 6px;">All personas</td>
+          <td style="padding: 6px;">Architect-first</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 1.5rem; margin: 0; }
+h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.85rem; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.panel { background: white; border: 1px solid #b1b4b6; }
+
+/* List panel styles */
+.list-header { padding: 8px 10px; background: #f3f2f1; border-bottom: 1px solid #ddd; font-size: 0.7rem; position: sticky; top: 0; z-index: 2; }
+.list-toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.list-count { font-weight: bold; }
+.list-search { border: 1px solid #b1b4b6; padding: 3px 6px; font-size: 0.65rem; width: 120px; }
+.list-filter { border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 0.6rem; background: white; }
+.list-add { font-size: 0.65rem; color: #1d70b8; font-weight: bold; cursor: pointer; margin-left: auto; }
+
+/* Progress bar in header */
+.progress-mini { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 0.6rem; color: #505a5f; }
+.progress-bar { flex: 1; height: 4px; background: #e0e0e0; border-radius: 2px; }
+.progress-fill { height: 100%; border-radius: 2px; }
+.progress-green { background: #00703c; }
+.progress-orange { background: #f47738; }
+
+/* Domain groups */
+.domain-group { border-bottom: 1px solid #e0e0e0; }
+.domain-header { padding: 5px 10px; background: #fafafa; font-size: 0.6rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e8e8e8; }
+.domain-header .count { font-weight: normal; color: #b1b4b6; }
+.domain-header .chevron { color: #505a5f; font-size: 0.7rem; }
+
+.list-item { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 0.7rem; display: flex; align-items: flex-start; gap: 6px; }
+.list-item:hover { background: #f5f8fb; }
+.list-item-active { background: #e8f4fd; border-left: 3px solid #1d70b8; padding-left: 7px; }
+.list-item-content { flex: 1; min-width: 0; }
+.list-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-meta { color: #505a5f; font-size: 0.6rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-status { flex-shrink: 0; font-size: 0.65rem; }
+.green { color: #00703c; }
+.orange { color: #f47738; }
+.red { color: #d4351c; }
+
+/* Platform/infrastructure items */
+.list-item-platform { border-left: 3px solid #505a5f; padding-left: 7px; }
+.list-item-platform .list-name { color: #505a5f; }
+</style>
+</head>
+<body>
+
+<h1>System List Panel Options</h1>
+<p class="subtitle">Left panel of the Focus view. Two approaches to organising the list.</p>
+
+<div class="panels">
+
+<!-- Option A: Flat list with search/filter -->
+<div class="panel">
+<div class="list-header">
+<div class="list-toolbar">
+<span class="list-count">14 systems</span>
+<input class="list-search" placeholder="Search...">
+<select class="list-filter">
+<option>All</option>
+<option>Incomplete only</option>
+<option>Has issues</option>
+</select>
+<select class="list-filter">
+<option>All domains</option>
+<option>Admin & Gov</option>
+<option>Health & SC</option>
+<option>Environment</option>
+</select>
+<span class="list-add">+ Add</span>
+</div>
+<div class="progress-mini">
+<span>10/14 complete</span>
+<div class="progress-bar"><div class="progress-fill progress-green" style="width:71%;"></div></div>
+<span>71%</span>
+</div>
+</div>
+
+<div class="list-item list-item-active">
+<div class="list-item-content">
+<div class="list-name">SAP S/4HANA ERP</div>
+<div class="list-meta">SAP · Finance, HR, Procurement</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Liquidlogic LAS</div>
+<div class="list-meta">System C · Adult Social Care</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">NEC Revenues & Benefits</div>
+<div class="list-meta">NEC · Benefits</div>
+</div>
+<span class="list-status orange">⚠ 2</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">In-House Customer Portal</div>
+<div class="list-meta">In-House · CRM · unsupported</div>
+</div>
+<span class="list-status red">✗ 4</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Bartec Waste Management</div>
+<div class="list-meta">Bartec · Waste Management</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+
+<div style="border-top: 2px solid #e0e0e0; padding: 5px 10px; font-size:0.6rem; color:#505a5f; font-weight:bold; text-transform:uppercase; margin-top:4px;">Platform / Infrastructure</div>
+<div class="list-item list-item-platform">
+<div class="list-item-content">
+<div class="list-name">Capita Pay360</div>
+<div class="list-meta">Capita · provides: payments</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item list-item-platform">
+<div class="list-item-content">
+<div class="list-name">GOV.UK Notify</div>
+<div class="list-meta">GDS · provides: SMS, email</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+
+<div style="padding:1rem; font-size:0.7rem; color:#505a5f; border-top:1px solid #ddd;">
+<strong style="color:#0b0c0c;">Flat list + filters</strong><br>
+Search narrows by name/vendor. Filter dropdowns for completion status and domain. Platform systems (no function) shown in separate section at bottom.
+</div>
+</div>
+
+<!-- Option B: Grouped by domain with collapsible sections -->
+<div class="panel">
+<div class="list-header">
+<div class="list-toolbar">
+<span class="list-count">14 systems</span>
+<input class="list-search" placeholder="Search...">
+<select class="list-filter">
+<option>All</option>
+<option>Incomplete only</option>
+<option>Has issues</option>
+</select>
+<span class="list-add">+ Add</span>
+</div>
+<div class="progress-mini">
+<span>10/14 complete</span>
+<div class="progress-bar"><div class="progress-fill progress-green" style="width:71%;"></div></div>
+<span>71%</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header"><span>Administration & Government</span> <span><span class="count">5</span> <span class="chevron">▾</span></span></div>
+<div class="list-item list-item-active">
+<div class="list-item-content">
+<div class="list-name">SAP S/4HANA ERP</div>
+<div class="list-meta">SAP · Finance, HR, Procurement</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Xero Finance</div>
+<div class="list-meta">Xero · Finance</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Civica Electoral</div>
+<div class="list-meta">Civica · Democratic Services</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header"><span>Health & Social Care</span> <span><span class="count">3</span> <span class="chevron">▾</span></span></div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Liquidlogic LAS</div>
+<div class="list-meta">System C · Adult Social Care</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Liquidlogic EHM</div>
+<div class="list-meta">System C · Children's</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header"><span>Environmental Protection</span> <span><span class="count">2</span> <span class="chevron">▾</span></span></div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">Bartec Waste</div>
+<div class="list-meta">Bartec · Waste Management</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content">
+<div class="list-name">In-House Env Tracker</div>
+<div class="list-meta">In-House · Env Health</div>
+</div>
+<span class="list-status red">✗ 3</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header"><span>Platform / Infrastructure</span> <span><span class="count">2</span> <span class="chevron">▾</span></span></div>
+<div class="list-item list-item-platform">
+<div class="list-item-content">
+<div class="list-name">Capita Pay360</div>
+<div class="list-meta">provides: payments</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item list-item-platform">
+<div class="list-item-content">
+<div class="list-name">GOV.UK Notify</div>
+<div class="list-meta">provides: SMS, email</div>
+</div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+
+<div style="padding:1rem; font-size:0.7rem; color:#505a5f; border-top:1px solid #ddd;">
+<strong style="color:#0b0c0c;">Grouped by domain</strong><br>
+Systems grouped by their function's ESD root category. Collapsible sections. Platform systems (no function) in their own group. Search still narrows across all groups.
+</div>
+</div>
+
+</div>
+
+<p style="margin-top:1.5rem; font-size:0.8rem; color:#505a5f;">
+<strong>Both options include:</strong> sticky header with search + progress bar, completeness indicators per system (✓ = complete, ⚠ N = warnings, ✗ N = errors), system name + vendor + function always visible in list items.
+<br><br>
+<strong>Status numbers</strong> (⚠ 2, ✗ 4) show how many fields are incomplete/invalid — clicking jumps to that system with issues highlighted.
+</p>
+
+</body>
+</html>

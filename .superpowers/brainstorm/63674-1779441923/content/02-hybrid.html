@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 2rem; margin: 0; }
+h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+h2 { font-size: 1rem; margin-top: 0; color: #505a5f; font-weight: normal; }
+h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.9rem; }
+.section { background: white; border: 1px solid #b1b4b6; padding: 1.5rem; margin-bottom: 2rem; }
+.mode-toggle { display: flex; gap: 0; margin-bottom: 1rem; }
+.mode-btn { padding: 6px 16px; font-size: 0.8rem; font-weight: bold; border: 2px solid #0b0c0c; cursor: pointer; }
+.mode-active { background: #0b0c0c; color: white; }
+.mode-inactive { background: white; color: #0b0c0c; }
+
+/* List + Detail layout */
+.layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; min-height: 400px; border: 1px solid #ddd; }
+.list-panel { border-right: 2px solid #b1b4b6; background: #fafafa; overflow-y: auto; }
+.list-header { padding: 10px 12px; background: #f3f2f1; border-bottom: 1px solid #ddd; font-weight: bold; font-size: 0.75rem; position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; }
+.list-item { padding: 8px 12px; border-bottom: 1px solid #e8e8e8; cursor: pointer; font-size: 0.75rem; }
+.list-item:hover { background: #f0f4f8; }
+.list-item-active { background: #e8f4fd; border-left: 4px solid #1d70b8; }
+.list-name { font-weight: bold; color: #0b0c0c; }
+.list-meta { color: #505a5f; font-size: 0.65rem; margin-top: 2px; }
+.list-status { float: right; font-size: 0.7rem; }
+
+/* Detail panel */
+.detail-panel { padding: 1.5rem; overflow-y: auto; }
+.detail-title { font-size: 1rem; font-weight: bold; margin-bottom: 4px; }
+.detail-subtitle { font-size: 0.75rem; color: #505a5f; margin-bottom: 1rem; }
+.pinned-fields { display: flex; gap: 1.5rem; padding: 10px 12px; background: #f3f2f1; border: 1px solid #ddd; margin-bottom: 1rem; font-size: 0.75rem; }
+.pinned-field label { font-weight: bold; font-size: 0.65rem; color: #505a5f; display: block; }
+.pinned-field span { color: #0b0c0c; font-weight: bold; }
+
+/* Column group tabs */
+.col-tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid #b1b4b6; }
+.col-tab { padding: 6px 14px; font-size: 0.75rem; font-weight: bold; cursor: pointer; border: none; background: none; color: #505a5f; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.col-tab-active { color: #1d70b8; border-bottom-color: #1d70b8; }
+
+/* Form fields */
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field label { font-weight: bold; font-size: 0.7rem; display: block; margin-bottom: 3px; color: #0b0c0c; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 6px 8px; font-size: 0.8rem; width: 100%; box-sizing: border-box; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.65rem; color: #505a5f; margin-top: 2px; }
+
+/* Bulk mode table */
+.bulk-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+.bulk-table th { background: #f3f2f1; padding: 6px 8px; text-align: left; border-bottom: 2px solid #0b0c0c; position: sticky; top: 0; font-size: 0.65rem; color: #0b0c0c; }
+.bulk-table td { padding: 4px 6px; border-bottom: 1px solid #e0e0e0; color: #0b0c0c; }
+.bulk-table .pinned { background: #fafafa; font-weight: bold; position: sticky; left: 0; }
+.bulk-table input, .bulk-table select { border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 0.7rem; width: 100%; box-sizing: border-box; }
+.bulk-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+
+.green { color: #00703c; }
+.orange { color: #f47738; }
+.red { color: #d4351c; }
+
+.progress { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; margin-bottom: 1rem; }
+.progress-bar { flex: 1; height: 6px; background: #e0e0e0; border-radius: 3px; }
+.progress-fill { height: 100%; background: #00703c; border-radius: 3px; width: 60%; }
+</style>
+</head>
+<body>
+
+<h1>Hybrid: List + Detail with Bulk Mode</h1>
+<p class="subtitle">Name, vendor, and function/capability always visible in both modes.</p>
+
+<!-- MODE 1: List + Detail (Default) -->
+<div class="section">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+<h3 style="margin:0;">Mode 1: Focus View (default)</h3>
+<div class="mode-toggle">
+<button class="mode-btn mode-active">Focus</button>
+<button class="mode-btn mode-inactive">Bulk</button>
+</div>
+</div>
+
+<div class="progress">
+<span>12/20 systems complete</span>
+<div class="progress-bar"><div class="progress-fill"></div></div>
+<span>60%</span>
+</div>
+
+<div class="layout">
+<!-- Left: System list -->
+<div class="list-panel">
+<div class="list-header">
+<span>20 Systems</span>
+<span style="font-weight:normal; font-size:0.65rem;">Filter ▾</span>
+</div>
+<div class="list-item list-item-active">
+<div>
+<span class="list-name">SAP S/4HANA ERP</span>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-meta">SAP · Finance, HR, Procurement</div>
+</div>
+<div class="list-item">
+<div>
+<span class="list-name">Liquidlogic LAS</span>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-meta">System C · Adult Social Care</div>
+</div>
+<div class="list-item">
+<div>
+<span class="list-name">NEC Revenues & Benefits</span>
+<span class="list-status orange">⚠</span>
+</div>
+<div class="list-meta">NEC · Benefits</div>
+</div>
+<div class="list-item">
+<div>
+<span class="list-name">Bartec Waste Management</span>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-meta">Bartec · Waste Management</div>
+</div>
+<div class="list-item">
+<div>
+<span class="list-name">In-House Customer Portal</span>
+<span class="list-status red">✗</span>
+</div>
+<div class="list-meta">In-House · CRM <span style="color:#d4351c;">· unsupported</span></div>
+</div>
+<div class="list-item">
+<div>
+<span class="list-name">Capita Pay360</span>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-meta">Capita · <em>Provides: payments</em></div>
+</div>
+<div class="list-item" style="border-bottom:none;">
+<div>
+<span class="list-name">GOV.UK Notify</span>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-meta">GDS · <em>Provides: SMS, email</em></div>
+</div>
+</div>
+
+<!-- Right: Detail panel -->
+<div class="detail-panel">
+<!-- Pinned identity -->
+<div class="pinned-fields">
+<div class="pinned-field"><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div class="pinned-field"><label>Vendor</label><span>SAP</span></div>
+<div class="pinned-field"><label>Function</label><span>Finance · HR · Procurement</span></div>
+</div>
+
+<!-- Column group tabs -->
+<div class="col-tabs">
+<button class="col-tab col-tab-active">Core Details</button>
+<button class="col-tab">Contract & Cost</button>
+<button class="col-tab">Technical Profile</button>
+<button class="col-tab">Relationships</button>
+</div>
+
+<!-- Fields for active tab (Core Details) -->
+<div class="field-grid">
+<div class="field">
+<label>System Name</label>
+<input value="SAP S/4HANA ERP">
+</div>
+<div class="field">
+<label>Vendor / Supplier</label>
+<input value="SAP">
+</div>
+<div class="field">
+<label>Users</label>
+<input type="number" value="7000">
+<div class="hint">Approximate staff who use this system</div>
+</div>
+<div class="field">
+<label>Annual Cost (£)</label>
+<input type="number" value="2300000">
+</div>
+<div class="field">
+<label>ESD Function Assignment</label>
+<select><option>116 — Finance</option></select>
+<div class="hint">+ add another function</div>
+</div>
+<div class="field">
+<label>This is an ERP system</label>
+<select><option>Yes</option></select>
+<div class="hint">Spans multiple functions (SAP, Oracle, Unit4)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MODE 2: Bulk Table -->
+<div class="section">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+<h3 style="margin:0;">Mode 2: Bulk View (toggle)</h3>
+<div class="mode-toggle">
+<button class="mode-btn mode-inactive">Focus</button>
+<button class="mode-btn mode-active">Bulk</button>
+</div>
+</div>
+
+<div class="bulk-tabs">
+<button class="col-tab col-tab-active" style="font-size:0.7rem;">Contract & Cost</button>
+<button class="col-tab" style="font-size:0.7rem;">Technical</button>
+<button class="col-tab" style="font-size:0.7rem;">Relationships</button>
+</div>
+
+<div style="overflow-x:auto; border:1px solid #ddd;">
+<table class="bulk-table">
+<tr>
+<th class="pinned" style="min-width:140px;">System</th>
+<th class="pinned" style="min-width:80px;">Vendor</th>
+<th class="pinned" style="min-width:130px;">Function</th>
+<th style="min-width:90px;">Annual Cost</th>
+<th style="min-width:80px;">End Year</th>
+<th style="min-width:70px;">End Mo</th>
+<th style="min-width:80px;">Notice (mo)</th>
+<th style="min-width:90px;">Portability</th>
+<th>✓</th>
+</tr>
+<tr>
+<td class="pinned"><strong>SAP S/4HANA</strong></td>
+<td class="pinned">SAP</td>
+<td class="pinned">Finance</td>
+<td><input value="2300000"></td>
+<td><input value="2030"></td>
+<td><input value="3"></td>
+<td><input value="18"></td>
+<td><select><option>Low</option></select></td>
+<td class="green">✓</td>
+</tr>
+<tr>
+<td class="pinned"><strong>Liquidlogic</strong></td>
+<td class="pinned">System C</td>
+<td class="pinned">Adult SC</td>
+<td><input value="1000000"></td>
+<td><input value="2028"></td>
+<td><input value="9"></td>
+<td><input value="6"></td>
+<td><select><option>Medium</option></select></td>
+<td class="green">✓</td>
+</tr>
+<tr>
+<td class="pinned"><strong>NEC Revenues</strong></td>
+<td class="pinned">NEC</td>
+<td class="pinned">Benefits</td>
+<td><input value="180000"></td>
+<td><input value="2027"></td>
+<td><input value="3"></td>
+<td><input value="9"></td>
+<td><select><option>Low</option></select></td>
+<td class="orange">⚠</td>
+</tr>
+<tr>
+<td class="pinned"><strong>In-House CRM</strong></td>
+<td class="pinned">In-House</td>
+<td class="pinned">CRM</td>
+<td><input value="35000"></td>
+<td><input value="" placeholder="--"></td>
+<td><input value="" placeholder="--"></td>
+<td><input value="" placeholder="--"></td>
+<td><select><option>--</option></select></td>
+<td class="red">✗</td>
+</tr>
+</table>
+</div>
+<p style="font-size:0.7rem; color:#505a5f; margin-top:8px;">Name, Vendor, and Function columns are pinned (always visible). Switch tab groups to edit different field categories across all systems at once.</p>
+</div>
+
+<div style="background:white; border:1px solid #b1b4b6; padding:1rem; font-size:0.8rem; color:#505a5f;">
+<strong style="color:#0b0c0c;">Key principles:</strong>
+<ul style="margin:8px 0 0; padding-left:1.2rem;">
+<li>System name, vendor, and function/capability <strong>always visible</strong> in both modes</li>
+<li>Focus mode: one system at a time with full form + field hints (like Build from Scratch cards)</li>
+<li>Bulk mode: spreadsheet-density with column groups for quick multi-system edits</li>
+<li>Completeness status (✓/⚠/✗) visible per system in both modes</li>
+<li>Sticky headers in table, sticky list header in Focus mode</li>
+<li>Progress bar shows overall completeness</li>
+<li>Domain grouping available via Filter in the list panel</li>
+</ul>
+</div>
+
+</body>
+</html>

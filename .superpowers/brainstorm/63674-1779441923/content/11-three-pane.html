@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 1rem; margin: 0; }
+h1 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+.subtitle { color: #505a5f; margin-bottom: 1rem; font-size: 0.8rem; }
+
+/* 3-pane layout */
+.three-pane { display: grid; grid-template-columns: 230px 1fr 280px; border: 1px solid #b1b4b6; background: white; min-height: 560px; }
+
+/* Left: system list */
+.list-panel { border-right: 2px solid #b1b4b6; background: #fafafa; overflow-y: auto; }
+.list-header { padding: 6px 8px; background: #f3f2f1; border-bottom: 1px solid #ddd; font-size: 0.65rem; position: sticky; top: 0; z-index: 2; }
+.list-toolbar { display: flex; align-items: center; gap: 4px; }
+.list-count { font-weight: bold; }
+.list-search { border: 1px solid #b1b4b6; padding: 2px 5px; font-size: 0.6rem; width: 80px; }
+.list-add { font-size: 0.6rem; color: white; background: #00703c; padding: 2px 6px; border: none; margin-left: auto; cursor: pointer; font-weight: bold; }
+.progress-mini { display: flex; align-items: center; gap: 3px; margin-top: 3px; font-size: 0.55rem; color: #505a5f; }
+.progress-bar { flex: 1; height: 3px; background: #e0e0e0; border-radius: 2px; }
+.progress-fill { height: 100%; border-radius: 2px; background: #00703c; }
+.domain-header { padding: 4px 8px; font-size: 0.55rem; font-weight: bold; color: #0b0c0c; cursor: pointer; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.dh-admin { background: #d4e5f7; }
+.dh-health { background: #cce2d8; }
+.dh-env { background: #fce5cc; }
+.dh-platform { background: #e8e8e8; }
+.list-item { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 0.63rem; }
+.list-item:hover { background: #f0f4f8; }
+.list-item-active { background: #e8f4fd; border-left: 3px solid #1d70b8; padding-left: 5px; }
+.list-name { font-weight: bold; }
+.list-meta { color: #505a5f; font-size: 0.55rem; }
+.list-status { float: right; font-size: 0.6rem; }
+.green { color: #00703c; } .orange { color: #f47738; } .red { color: #d4351c; }
+
+/* Centre: system properties */
+.props-panel { padding: 1rem; overflow-y: auto; border-right: 1px solid #e0e0e0; }
+.props-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 2px; }
+.props-subtitle { font-size: 0.65rem; color: #505a5f; margin-bottom: 0.75rem; }
+.section { margin-bottom: 0.9rem; }
+.section-title { font-size: 0.6rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.03em; padding-bottom: 2px; border-bottom: 1px solid #ddd; margin-bottom: 6px; }
+.field-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-end; }
+.field label { font-weight: bold; font-size: 0.62rem; margin-bottom: 1px; display: block; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 3px 5px; font-size: 0.75rem; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.52rem; color: #505a5f; margin-top: 1px; }
+.fn-chips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.fn-chip { display: inline-flex; align-items: center; gap: 2px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 1px 6px; font-size: 0.6rem; border-radius: 2px; }
+.fn-chip .x { color: #d4351c; cursor: pointer; font-weight: bold; }
+.fn-add { font-size: 0.6rem; color: #1d70b8; cursor: pointer; font-weight: bold; }
+.radio-group { margin-bottom: 5px; }
+.radio-title { font-weight: bold; font-size: 0.62rem; margin-bottom: 1px; }
+.radio-row { display: flex; gap: 8px; }
+.radio-row label { font-size: 0.65rem; display: flex; align-items: center; gap: 2px; cursor: pointer; }
+.radio-row input[type="radio"] { margin: 0; width: 12px; height: 12px; }
+.check-row { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; }
+.check-row input { width: 13px; height: 13px; }
+
+/* Right: capability/relationship panel */
+.rel-panel { padding: 1rem; overflow-y: auto; background: #fcfcfc; }
+.rel-title { font-size: 0.75rem; font-weight: bold; margin-bottom: 0.75rem; }
+
+/* Capability toggles */
+.cap-grid { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
+.cap-toggle { font-size: 0.6rem; padding: 2px 7px; border: 2px solid #b1b4b6; background: white; cursor: pointer; color: #505a5f; border-radius: 2px; }
+.cap-toggle:hover { border-color: #1d70b8; color: #1d70b8; }
+.cap-toggle-on { background: #1d70b8; color: white; border-color: #1d70b8; font-weight: bold; }
+.cap-custom-row { display: flex; gap: 3px; margin-bottom: 10px; }
+.cap-custom-row input { border: 1px solid #b1b4b6; padding: 2px 5px; font-size: 0.58rem; width: 90px; }
+.cap-custom-row button { font-size: 0.55rem; padding: 2px 6px; border: 1px solid #1d70b8; background: white; color: #1d70b8; cursor: pointer; }
+
+/* Consumer rows — one row per system, pills inside */
+.consumer-section { margin-bottom: 12px; }
+.consumer-section-title { font-size: 0.6rem; font-weight: bold; color: #505a5f; text-transform: uppercase; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px solid #ddd; }
+.consumer-row { padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+.consumer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.consumer-name { font-weight: bold; font-size: 0.68rem; }
+.consumer-x { color: #d4351c; cursor: pointer; font-size: 0.6rem; font-weight: bold; }
+.consumer-caps { display: flex; flex-wrap: wrap; gap: 3px; }
+.consumer-pill { font-size: 0.55rem; padding: 1px 5px; border-radius: 2px; cursor: pointer; border: 1px solid #b1b4b6; background: white; color: #505a5f; }
+.consumer-pill-on { background: #1d70b8; color: white; border-color: #1d70b8; }
+.consumer-add { font-size: 0.58rem; color: #1d70b8; cursor: pointer; font-weight: bold; margin-top: 4px; display: inline-block; }
+
+/* Depends on */
+.depends-row { display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.65rem; }
+.depends-name { font-weight: bold; }
+.depends-cap { font-size: 0.55rem; background: #f3f2f1; padding: 1px 4px; color: #505a5f; }
+.depends-x { color: #d4351c; cursor: pointer; margin-left: auto; font-weight: bold; font-size: 0.58rem; }
+
+/* Shared with */
+.chip-container { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px; border: 2px solid #0b0c0c; min-height: 26px; align-items: center; background: white; }
+.chip { display: inline-flex; align-items: center; gap: 2px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 1px 5px; font-size: 0.58rem; border-radius: 2px; }
+.chip .remove { cursor: pointer; color: #505a5f; font-weight: bold; }
+.chip-input { border: none; outline: none; font-size: 0.6rem; min-width: 60px; flex: 1; padding: 1px; }
+</style>
+</head>
+<body>
+
+<h1>Three-Pane Layout: List | Properties | Relationships</h1>
+<p class="subtitle">System properties separated from capability/dependency relationships. Each gets dedicated space.</p>
+
+<div class="three-pane">
+
+<!-- LEFT: System List -->
+<div class="list-panel">
+<div class="list-header">
+<div class="list-toolbar">
+<span class="list-count">14 systems</span>
+<input class="list-search" placeholder="Search...">
+<button class="list-add">+ Add</button>
+</div>
+<div class="progress-mini">
+<span>10/14</span>
+<div class="progress-bar"><div class="progress-fill" style="width:71%;"></div></div>
+</div>
+</div>
+<div class="domain-header dh-admin"><span>Admin & Government</span> <span style="opacity:0.6;">5</span></div>
+<div class="list-item list-item-active"><span class="list-name">SAP S/4HANA ERP</span><span class="list-status green">✓</span><div class="list-meta">SAP · Finance +2</div></div>
+<div class="list-item"><span class="list-name">Xero Finance</span><span class="list-status green">✓</span><div class="list-meta">Xero · Finance</div></div>
+<div class="list-item"><span class="list-name">MHR iTrent</span><span class="list-status green">✓</span><div class="list-meta">MHR · HR</div></div>
+<div class="list-item"><span class="list-name">Civica Electoral</span><span class="list-status orange">⚠</span><div class="list-meta">Civica · Democratic Svcs</div></div>
+<div class="list-item"><span class="list-name">Microsoft Dynamics</span><span class="list-status green">✓</span><div class="list-meta">Microsoft · CRM</div></div>
+<div class="domain-header dh-health"><span>Health & Social Care</span> <span style="opacity:0.6;">3</span></div>
+<div class="list-item"><span class="list-name">Liquidlogic LAS</span><span class="list-status green">✓</span><div class="list-meta">System C · Adult SC</div></div>
+<div class="list-item"><span class="list-name">Liquidlogic EHM</span><span class="list-status green">✓</span><div class="list-meta">System C · Children's</div></div>
+<div class="list-item"><span class="list-name">Public Health Intel</span><span class="list-status green">✓</span><div class="list-meta">In-House · Pub Health</div></div>
+<div class="domain-header dh-env"><span>Environmental</span> <span style="opacity:0.6;">2</span></div>
+<div class="list-item"><span class="list-name">Bartec Waste</span><span class="list-status green">✓</span><div class="list-meta">Bartec · Waste</div></div>
+<div class="list-item"><span class="list-name">In-House Env Tracker</span><span class="list-status red">✗</span><div class="list-meta">In-House · Env Health</div></div>
+<div class="domain-header dh-platform"><span>Platform</span> <span style="opacity:0.6;">2</span></div>
+<div class="list-item"><span class="list-name">Capita Pay360</span><span class="list-status green">✓</span><div class="list-meta">provides: payments</div></div>
+<div class="list-item"><span class="list-name">GOV.UK Notify</span><span class="list-status green">✓</span><div class="list-meta">provides: SMS, email</div></div>
+</div>
+
+<!-- CENTRE: System Properties -->
+<div class="props-panel">
+<div class="props-title">SAP S/4HANA ERP</div>
+<div class="props-subtitle">SAP · 7,000 users · £2.3m/yr</div>
+
+<div class="section">
+<div class="section-title">Identity</div>
+<div class="field-row">
+<div class="field"><label>System Name</label><input value="SAP S/4HANA ERP" style="width:180px;"></div>
+<div class="field"><label>Vendor</label><input value="SAP" style="width:100px;"></div>
+<div class="field"><label>Users</label><input value="7,000" style="width:60px;"></div>
+</div>
+<div style="margin-bottom:4px;">
+<label style="font-weight:bold; font-size:0.62rem; display:block; margin-bottom:2px;">Functions</label>
+<div class="fn-chips">
+<span class="fn-chip">Finance <span class="x">×</span></span>
+<span class="fn-chip">HR <span class="x">×</span></span>
+<span class="fn-chip">Procurement <span class="x">×</span></span>
+<span class="fn-add">+ add</span>
+</div>
+</div>
+<div class="check-row"><input type="checkbox" checked> <span>ERP system</span></div>
+</div>
+
+<div class="section">
+<div class="section-title">Contract & Cost</div>
+<div class="field-row">
+<div class="field"><label>Annual Cost</label><input value="£2,300,000" style="width:110px;"></div>
+<div class="field"><label>Contract End</label><input value="03/2030" style="width:72px;"></div>
+<div class="field"><label>Notice</label><input value="18" style="width:35px;"><div class="hint">mo</div></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">Technical Profile</div>
+<div class="radio-group"><div class="radio-title">Hosting</div><div class="radio-row"><label><input type="radio" name="h"> Cloud</label><label><input type="radio" name="h" checked> On-prem</label></div></div>
+<div class="radio-group"><div class="radio-title">Data</div><div class="radio-row"><label><input type="radio" name="d"> Segmented</label><label><input type="radio" name="d" checked> Monolithic</label></div><div class="hint">Monolithic = entangled, needs ETL</div></div>
+<div class="radio-group"><div class="radio-title">Portability</div><div class="radio-row"><label><input type="radio" name="p"> High</label><label><input type="radio" name="p"> Med</label><label><input type="radio" name="p" checked> Low</label></div><div class="hint">Low = vendor lock-in</div></div>
+<div class="field" style="margin-top:4px;"><label>Support Model</label><select style="border:2px solid #0b0c0c; padding:2px 4px; font-size:0.68rem; width:140px;"><option selected>Vendor-supported</option></select></div>
+</div>
+</div>
+
+<!-- RIGHT: Relationships & Capabilities -->
+<div class="rel-panel">
+<div class="rel-title">Capabilities & Relationships</div>
+
+<div class="section">
+<div class="section-title">Capabilities this system provides</div>
+<div class="cap-grid">
+<span class="cap-toggle cap-toggle-on">payments</span>
+<span class="cap-toggle cap-toggle-on">workflow</span>
+<span class="cap-toggle">forms</span>
+<span class="cap-toggle">SSO</span>
+<span class="cap-toggle">SMS</span>
+<span class="cap-toggle">email</span>
+<span class="cap-toggle">booking</span>
+<span class="cap-toggle">integration</span>
+</div>
+<div class="cap-custom-row"><input placeholder="Custom..."><button>+</button></div>
+</div>
+
+<div class="consumer-section">
+<div class="consumer-section-title">Systems consuming from this</div>
+
+<div class="consumer-row">
+<div class="consumer-header"><span class="consumer-name">Liquidlogic LAS</span><span class="consumer-x">×</span></div>
+<div class="consumer-caps">
+<span class="consumer-pill consumer-pill-on">payments</span>
+<span class="consumer-pill">workflow</span>
+</div>
+</div>
+
+<div class="consumer-row">
+<div class="consumer-header"><span class="consumer-name">Liquidlogic EHM</span><span class="consumer-x">×</span></div>
+<div class="consumer-caps">
+<span class="consumer-pill consumer-pill-on">payments</span>
+<span class="consumer-pill">workflow</span>
+</div>
+</div>
+
+<div class="consumer-row">
+<div class="consumer-header"><span class="consumer-name">Confirm Highways</span><span class="consumer-x">×</span></div>
+<div class="consumer-caps">
+<span class="consumer-pill consumer-pill-on">payments</span>
+<span class="consumer-pill consumer-pill-on">workflow</span>
+</div>
+</div>
+
+<a class="consumer-add">+ add consuming system</a>
+</div>
+
+<div class="section" style="margin-top:12px;">
+<div class="section-title">This system depends on</div>
+<div class="depends-row">
+<span class="depends-name">GOV.UK Notify</span>
+<span class="depends-cap">SMS</span>
+<span class="depends-x">×</span>
+</div>
+<a class="consumer-add">+ add dependency</a>
+</div>
+
+<div class="section" style="margin-top:12px;">
+<div class="section-title">Shared with</div>
+<div class="chip-container">
+<span class="chip">District Council 1 <span class="remove">×</span></span>
+<input class="chip-input" placeholder="Council...">
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="margin-top:1.5rem; background:white; border:1px solid #b1b4b6; padding:1rem; font-size:0.75rem; color:#505a5f;">
+<strong style="color:#0b0c0c;">Three-pane design:</strong>
+<ul style="margin:4px 0 0; padding-left:1.2rem;">
+<li><strong>Left</strong>: System list with domain groups, search, progress</li>
+<li><strong>Centre</strong>: System properties (identity, contract, technical) — facts about THIS system</li>
+<li><strong>Right</strong>: Relationships — capabilities provided (toggleable pills), consuming systems with per-system capability pills (toggle which caps each consumer uses), dependencies, sharing</li>
+<li>Each consuming system shows the provider's capabilities as small pills — toggle on/off which ones it actually uses</li>
+<li>Right panel only has content when the system provides capabilities or has dependencies — otherwise it shows "No relationships defined"</li>
+</ul>
+</div>
+
+</body>
+</html>

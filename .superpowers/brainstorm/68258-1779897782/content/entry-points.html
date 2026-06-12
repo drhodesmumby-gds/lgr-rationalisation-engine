@@ -1,0 +1,119 @@
+<h2>Decision Panel Entry Points</h2>
+<p class="subtitle">How should users enter decisions for complex cross-boundary systems?</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">A: Function-first with "Expand Scope" escalation</div>
+    <div class="mockup-body" style="padding: 16px; font-family: system-ui, sans-serif; font-size: 13px;">
+      <!-- Matrix entry -->
+      <div style="background: #f3f2f1; padding: 8px 12px; border-left: 4px solid #1d70b8; margin-bottom: 12px;">
+        <span style="font-size: 11px; color: #505a5f;">Entry point: Matrix cell click</span><br>
+        <strong>Finance → West Elmhurst</strong>
+      </div>
+
+      <!-- Panel opens function-scoped -->
+      <div style="border: 2px solid #0b0c0c; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 11px; color: #505a5f; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">Decision Panel</div>
+        <div style="font-size: 15px; font-weight: bold; margin-bottom: 8px;">Finance</div>
+        <div style="font-size: 12px; color: #505a5f; margin-bottom: 12px;">Successor: West Elmhurst Council</div>
+
+        <!-- System choice shows SAP -->
+        <div style="background: #fff7e6; border-left: 4px solid #f47738; padding: 8px; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: bold; color: #f47738;">⚠ Complex system detected</div>
+          <div style="font-size: 11px; margin-top: 4px;">SAP S/4HANA serves <strong>3 functions</strong> across <strong>2 successors</strong></div>
+        </div>
+
+        <!-- Normal function-scoped options -->
+        <div style="padding: 8px; background: white; border: 1px solid #b1b4b6; margin-bottom: 8px;">
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Axis 1: System Choice</div>
+          <div style="font-size: 12px;">○ SAP S/4HANA &nbsp; ○ Xero Finance &nbsp; ○ Procure &nbsp; ○ Defer</div>
+        </div>
+
+        <!-- Escalation button -->
+        <div style="background: #f0f4ff; border: 2px dashed #1d70b8; padding: 10px; text-align: center; border-radius: 4px;">
+          <div style="font-size: 12px; font-weight: bold; color: #1d70b8;">↗ Expand scope: Decide SAP across all functions & successors</div>
+          <div style="font-size: 11px; color: #505a5f; margin-top: 2px;">Resolve Finance, HR, and Procurement for both successors at once</div>
+        </div>
+      </div>
+
+      <!-- Pros/cons -->
+      <div style="font-size: 11px; margin-top: 8px;">
+        <div style="color: #00703c; margin-bottom: 2px;">✓ Familiar entry — matrix click stays the same</div>
+        <div style="color: #00703c; margin-bottom: 2px;">✓ Simple cases stay simple</div>
+        <div style="color: #00703c; margin-bottom: 2px;">✓ Escalation only when needed</div>
+        <div style="color: #d4351c; margin-top: 4px;">△ User must recognise when to escalate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B: Dual entry — function-first OR system-first</div>
+    <div class="mockup-body" style="padding: 16px; font-family: system-ui, sans-serif; font-size: 13px;">
+      <!-- Two entry points shown -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <div style="flex: 1; background: #f3f2f1; padding: 8px; border-left: 4px solid #1d70b8;">
+          <span style="font-size: 10px; color: #505a5f; text-transform: uppercase; font-weight: bold;">Entry 1</span><br>
+          <span style="font-size: 12px;">Matrix cell → Function-scoped</span>
+        </div>
+        <div style="flex: 1; background: #f0fdfa; padding: 8px; border-left: 4px solid #0e7490;">
+          <span style="font-size: 10px; color: #505a5f; text-transform: uppercase; font-weight: bold;">Entry 2</span><br>
+          <span style="font-size: 12px;">System card → System-scoped</span>
+        </div>
+      </div>
+
+      <!-- System-first panel -->
+      <div style="border: 2px solid #0b0c0c; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 11px; color: #0e7490; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">System Decision Panel</div>
+        <div style="font-size: 15px; font-weight: bold; margin-bottom: 2px;">SAP S/4HANA ERP</div>
+        <div style="font-size: 12px; color: #505a5f; margin-bottom: 12px;">Westshire County Council · Serves 3 functions · 2 successors</div>
+
+        <!-- All functions listed -->
+        <div style="border: 1px solid #b1b4b6; margin-bottom: 8px;">
+          <div style="padding: 6px 8px; background: #f3f2f1; font-size: 11px; font-weight: bold; border-bottom: 1px solid #b1b4b6;">Functions served by this system</div>
+          <div style="padding: 6px 8px; border-bottom: 1px solid #e5e5e5; font-size: 12px; display: flex; justify-content: space-between;">
+            <span>Finance</span>
+            <span style="font-size: 11px; color: #505a5f;">West Elmhurst · Ivy Hatherley</span>
+          </div>
+          <div style="padding: 6px 8px; border-bottom: 1px solid #e5e5e5; font-size: 12px; display: flex; justify-content: space-between;">
+            <span>Human resources</span>
+            <span style="font-size: 11px; color: #505a5f;">West Elmhurst · Ivy Hatherley</span>
+          </div>
+          <div style="padding: 6px 8px; font-size: 12px; display: flex; justify-content: space-between;">
+            <span>Procurement</span>
+            <span style="font-size: 11px; color: #505a5f;">West Elmhurst · Ivy Hatherley</span>
+          </div>
+        </div>
+
+        <!-- Global allocation decision -->
+        <div style="padding: 8px; background: white; border: 1px solid #b1b4b6; margin-bottom: 8px;">
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">System fate</div>
+          <div style="font-size: 12px; line-height: 1.8;">
+            ○ Retain for all successors (shared service)<br>
+            ○ Assign to single successor<br>
+            ○ Disaggregate (split instances)<br>
+            ○ Decommission (procure replacements)<br>
+            ○ Defer
+          </div>
+        </div>
+
+        <!-- Successor allocation -->
+        <div style="padding: 8px; background: #f0f4ff; border: 1px solid #1d70b8;">
+          <div style="font-size: 11px; font-weight: bold; color: #1d70b8; margin-bottom: 4px;">Successor allocation & cost</div>
+          <div style="font-size: 11px; color: #505a5f;">Shown after selecting fate — who gets what, cost split</div>
+        </div>
+      </div>
+
+      <!-- Pros/cons -->
+      <div style="font-size: 11px; margin-top: 8px;">
+        <div style="color: #00703c; margin-bottom: 2px;">✓ Natural for Architect persona (thinks in systems)</div>
+        <div style="color: #00703c; margin-bottom: 2px;">✓ Resolves all related decisions at once</div>
+        <div style="color: #00703c; margin-bottom: 2px;">✓ Cost split is coherent (system-level, not per-function)</div>
+        <div style="color: #d4351c; margin-top: 4px;">△ Two mental models to learn</div>
+        <div style="color: #d4351c; margin-bottom: 2px;">△ System-first panel needs its own list/navigation</div>
+        <div style="color: #d4351c; margin-bottom: 2px;">△ How do per-function and per-system decisions sync?</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 20px;">Key difference: A escalates from within the existing flow. B provides a separate entry point that thinks system-first from the start.</p>

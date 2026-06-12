@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Concept B Extended: Shared Service Linking</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+    h3 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #0b0c0c; }
+    .subtitle { color: #86868b; margin-bottom: 1rem; font-size: 0.85rem; }
+    .insight { background: #f0f4ff; border-left: 3px solid #1d70b8; padding: 10px 12px; margin-bottom: 1.5rem; font-size: 12px; color: #0b0c0c; }
+    .insight strong { color: #1d70b8; }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; background: #0b0c0c; display: inline-block; padding: 2px 10px; margin-bottom: 8px; margin-top: 2rem;
+    }
+    .panel-mock { background: #ffffff; border: 2px solid #0b0c0c; border-radius: 4px; overflow: hidden; }
+    .panel-header {
+      background: #0b0c0c; color: #fff; padding: 8px 12px; font-size: 12px; font-weight: bold;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-body { padding: 16px; }
+
+    .alloc-card {
+      border: 1px solid #b1b4b6; padding: 12px; margin-bottom: 8px; background: #fff; border-radius: 3px;
+    }
+    .alloc-card.linked { border-color: #00703c; border-width: 2px; background: #f8fdf9; }
+    .alloc-card.linked-secondary { border-color: #00703c; border-width: 2px; border-style: dashed; background: #f8fdf9; }
+    .alloc-card .succ-name { font-weight: bold; font-size: 13px; margin-bottom: 6px; }
+    .alloc-card select {
+      width: 100%; border: 1px solid #0b0c0c; padding: 6px 8px; font-size: 12px;
+      background: #fff; margin-bottom: 6px;
+    }
+    .alloc-card .detail-row {
+      font-size: 11px; color: #505a5f; padding: 3px 0; display: flex; justify-content: space-between; align-items: center;
+    }
+    .alloc-card .inline-edit {
+      border: 1px solid #b1b4b6; padding: 2px 6px; font-size: 11px; width: 140px;
+    }
+
+    .share-toggle {
+      margin-top: 8px; padding: 8px; background: #f0fdf4; border: 1px solid #00703c; border-radius: 3px;
+    }
+    .share-toggle .toggle-label {
+      font-size: 11px; font-weight: bold; color: #00703c; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+    }
+    .share-toggle .checkbox-row {
+      font-size: 11px; padding: 2px 0; display: flex; align-items: center; gap: 6px;
+    }
+    .share-toggle .checkbox-row label { cursor: pointer; }
+
+    .linked-badge {
+      display: inline-block; font-size: 10px; padding: 2px 6px; font-weight: bold;
+      background: #cce2d8; color: #00703c; border: 1px solid #00703c; margin-left: 8px;
+    }
+
+    .derived-label {
+      margin-top: 12px; padding: 8px 10px; border-radius: 3px;
+      font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px;
+    }
+    .derived-shared { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .derived-mixed { background: #fde68a; color: #0b0c0c; border: 1px solid #f47738; }
+
+    .note-box { font-size: 11px; padding: 8px; margin-top: 10px; border-left: 3px solid; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; }
+    .note-green { background: #f0fdf4; border-color: #00703c; }
+  </style>
+</head>
+<body>
+
+  <h2>Concept B Extended: "Share with..." Linking</h2>
+  <p class="subtitle">Each successor picks their system, but after selecting, they can opt to "Share with..." other successors — linking their choices together.</p>
+
+  <div class="insight">
+    <strong>Mechanism:</strong> After selecting a system (existing or new), a "Share this with other successors?" toggle appears. Checking a successor links their decision — their row updates to show "Shared: [System] (with [Successor])" and becomes read-only unless unlinked. This expresses intentional coordination within the per-successor model.
+  </div>
+
+  <!-- Scenario 1: Two successors establish NEW shared service -->
+  <div class="section-title">Scenario: Establish new shared service (2 successors)</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">West Elmhurst procures Workday and shares it with Ivy Hatherley.</p>
+
+  <div class="panel-mock" style="max-width: 650px;">
+    <div class="panel-header"><span>Human Resources — per successor</span></div>
+    <div class="panel-body">
+
+      <!-- West Elmhurst — primary, with sharing -->
+      <div class="alloc-card linked">
+        <div class="succ-name">West Elmhurst Council <span class="linked-badge">Primary</span></div>
+        <select>
+          <option>SAP S/4HANA (keep current)</option>
+          <option selected>Procure new system</option>
+          <option>Defer</option>
+        </select>
+        <div style="padding: 6px 8px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 11px; margin-bottom: 8px;">
+          <div class="detail-row"><span>System:</span><input class="inline-edit" value="Workday HCM"></div>
+          <div class="detail-row"><span>Vendor:</span><input class="inline-edit" value="Workday"></div>
+          <div class="detail-row"><span>Annual cost:</span><input class="inline-edit" value="£400,000"></div>
+        </div>
+
+        <!-- Share toggle -->
+        <div class="share-toggle">
+          <div class="toggle-label">⟷ Share this system with other successors</div>
+          <div class="checkbox-row"><input type="checkbox" checked id="share-ih"><label for="share-ih">Ivy Hatherley Council</label></div>
+        </div>
+      </div>
+
+      <!-- Ivy Hatherley — linked/secondary -->
+      <div class="alloc-card linked-secondary">
+        <div class="succ-name">Ivy Hatherley Council <span class="linked-badge">Shared</span></div>
+        <div style="font-size: 12px; color: #00703c; padding: 8px; background: #f0fdf4; border: 1px solid #cce2d8;">
+          <strong>Workday HCM</strong> — shared with West Elmhurst
+          <div style="font-size: 11px; color: #505a5f; margin-top: 4px;">
+            <a href="#" style="color: #d4351c; text-decoration: underline;">Remove from shared service</a> (make independent decision)
+          </div>
+        </div>
+      </div>
+
+      <div class="derived-label derived-shared">
+        <span>⟷</span> Derived: Shared service — Workday HCM (new procurement, shared by both successors)
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario 2: Three successors, partial sharing -->
+  <div class="section-title">Scenario: 3 successors — A+B share, C independent</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">North and Central share SAP; South procures their own system.</p>
+
+  <div class="panel-mock" style="max-width: 650px;">
+    <div class="panel-header"><span>Finance — per successor (3-way split)</span></div>
+    <div class="panel-body">
+
+      <!-- North — primary sharer -->
+      <div class="alloc-card linked">
+        <div class="succ-name">North Westshire <span class="linked-badge">Primary</span></div>
+        <select>
+          <option selected>SAP S/4HANA (keep current)</option>
+        </select>
+        <div class="share-toggle">
+          <div class="toggle-label">⟷ Share this system with other successors</div>
+          <div class="checkbox-row"><input type="checkbox" checked id="share-cw"><label for="share-cw">Central Westshire</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="share-sw"><label for="share-sw">South Westshire</label></div>
+        </div>
+      </div>
+
+      <!-- Central — linked -->
+      <div class="alloc-card linked-secondary">
+        <div class="succ-name">Central Westshire <span class="linked-badge">Shared</span></div>
+        <div style="font-size: 12px; color: #00703c; padding: 8px; background: #f0fdf4; border: 1px solid #cce2d8;">
+          <strong>SAP S/4HANA</strong> — shared with North Westshire
+          <div style="font-size: 11px; color: #505a5f; margin-top: 4px;">
+            <a href="#" style="color: #d4351c; text-decoration: underline;">Remove from shared service</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- South — independent -->
+      <div class="alloc-card">
+        <div class="succ-name">South Westshire</div>
+        <select>
+          <option>SAP S/4HANA (keep current)</option>
+          <option selected>Procure new system</option>
+          <option>Defer</option>
+        </select>
+        <div style="padding: 6px 8px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 11px;">
+          <div class="detail-row"><span>System:</span><input class="inline-edit" value="Xero Finance"></div>
+          <div class="detail-row"><span>Vendor:</span><input class="inline-edit" value="Xero"></div>
+          <div class="detail-row"><span>Annual cost:</span><input class="inline-edit" value="£45,000"></div>
+        </div>
+        <!-- South doesn't share — no toggle shown, or shown but unchecked -->
+      </div>
+
+      <div class="derived-label derived-mixed">
+        <span>◆</span> Derived: Mixed — North + Central shared service (SAP); South independent (Xero)
+      </div>
+    </div>
+  </div>
+
+  <!-- How "Keep SAP" shared differs from "both independently keep SAP" -->
+  <h3 style="margin-top: 2rem;">Semantic distinction: Shared vs coincidentally-same</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+    <div class="note-box note-green">
+      <strong>Shared service (linked):</strong><br>
+      Both select "Keep SAP" AND are linked via "Share with..."<br>
+      → Generates shared governance obligation<br>
+      → Cost split applies<br>
+      → Changes propagate between successors
+    </div>
+    <div class="note-box note-blue">
+      <strong>Coincidentally same (unlinked):</strong><br>
+      Both select "Keep SAP" but NOT linked<br>
+      → Each operates SAP independently<br>
+      → Implies disaggregation into separate instances<br>
+      → No shared governance needed
+    </div>
+  </div>
+  <div style="font-size: 11px; color: #86868b; margin-top: 8px;">
+    This distinction resolves an ambiguity in the current tool: if two successors both "choose" the same system, is it shared or disaggregated? The linking mechanism makes the intent explicit.
+  </div>
+
+</body>
+</html>

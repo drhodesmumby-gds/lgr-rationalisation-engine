@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Simple Case — B (Always Grid) vs C (Cards → Grid)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .subtitle { color: #86868b; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; display: inline-block; padding: 3px 12px; margin-bottom: 8px; margin-top: 2rem;
+    }
+    .section-title.blue { background: #1d70b8; }
+    .section-title.green { background: #00703c; }
+
+    /* Modal frame */
+    .modal-frame {
+      background: #fff;
+      border: 2px solid #0b0c0c;
+      border-top: 8px solid #1d70b8;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .modal-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid #b1b4b6;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .modal-header .title { font-size: 16px; font-weight: bold; }
+    .modal-header .meta { font-size: 11px; color: #505a5f; margin-top: 2px; }
+    .modal-body { display: flex; min-height: 320px; }
+    .modal-footer {
+      padding: 8px 14px; border-top: 1px solid #b1b4b6;
+      display: flex; justify-content: space-between; align-items: center; background: #f3f2f1;
+    }
+    .btn-primary { background: #00703c; color: #fff; border: none; padding: 7px 18px; font-weight: bold; font-size: 12px; cursor: pointer; }
+    .btn-secondary { background: #fff; color: #0b0c0c; border: 2px solid #0b0c0c; padding: 5px 14px; font-weight: bold; font-size: 11px; cursor: pointer; }
+
+    .pane { padding: 12px; font-size: 12px; border-right: 1px solid #b1b4b6; }
+    .pane:last-child { border-right: none; }
+    .pane-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #505a5f; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #1d70b8;
+    }
+
+    /* System cards */
+    .sys-card { border: 1px solid #b1b4b6; padding: 8px; margin-bottom: 6px; background: #fafafa; }
+    .sys-card .name { font-weight: bold; font-size: 12px; }
+    .sys-card .meta { font-size: 11px; color: #505a5f; }
+    .badge { display: inline-block; font-size: 9px; padding: 1px 4px; font-weight: bold; margin-right: 2px; }
+    .badge-green { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .badge-orange { background: #fde68a; color: #f47738; border: 1px solid #f47738; }
+    .badge-grey { background: #f3f2f1; color: #505a5f; border: 1px solid #b1b4b6; }
+
+    /* Grid */
+    .share-grid { border-collapse: collapse; width: 100%; }
+    .share-grid th {
+      font-size: 10px; font-weight: bold; color: #505a5f; text-align: center;
+      padding: 6px 8px; border-bottom: 2px solid #0b0c0c; background: #f3f2f1;
+    }
+    .share-grid th:first-child { text-align: left; }
+    .share-grid td { padding: 8px; font-size: 11px; border-bottom: 1px solid #e5e5e5; text-align: center; }
+    .share-grid td:first-child { text-align: left; font-weight: 600; }
+    .share-grid input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+    .share-grid select { width: 100%; border: 1px solid #0b0c0c; padding: 4px 6px; font-size: 10px; background: #fff; }
+    .add-btn {
+      background: none; border: 2px dashed #1d70b8; color: #1d70b8; font-size: 10px;
+      font-weight: bold; padding: 3px 7px; cursor: pointer; border-radius: 2px;
+    }
+
+    /* Allocation cards */
+    .alloc-card { border: 1px solid #b1b4b6; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 2px; }
+    .alloc-card .succ-name { font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+    .alloc-card select {
+      width: 100%; border: 1px solid #0b0c0c; padding: 5px 8px; font-size: 11px; background: #fff; margin-bottom: 5px;
+    }
+    .share-toggle {
+      margin-top: 6px; padding: 6px 8px; background: #f0fdf4; border: 1px solid #00703c; border-radius: 2px;
+    }
+    .share-toggle .toggle-label { font-size: 10px; font-weight: bold; color: #00703c; margin-bottom: 3px; }
+    .share-toggle .checkbox-row { font-size: 11px; padding: 2px 0; display: flex; align-items: center; gap: 5px; }
+
+    /* Cost */
+    .cost-section { padding: 10px; background: #fafcff; }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 11px; }
+    .cost-input { width: 44px; border: 1px solid #b1b4b6; padding: 2px 3px; font-size: 10px; text-align: right; }
+
+    .derived-label {
+      padding: 5px 8px; border-radius: 2px; font-size: 10px; font-weight: bold;
+      display: flex; align-items: center; gap: 5px; margin-top: 8px;
+    }
+    .derived-green { background: #f0fdf4; border: 1px solid #00703c; color: #00703c; }
+    .derived-blue { background: #f0f4ff; border: 1px solid #1d70b8; color: #1d70b8; }
+
+    .note-box { font-size: 11px; padding: 8px; margin-top: 10px; border-left: 3px solid; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; }
+    .note-green { background: #f0fdf4; border-color: #00703c; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 10px 0; }
+
+    .comparison { margin-top: 2rem; padding: 14px; background: #fff; border: 2px solid #0b0c0c; }
+    .comparison h3 { font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+    .comparison table { width: 100%; font-size: 11px; border-collapse: collapse; }
+    .comparison th { text-align: left; padding: 6px; border-bottom: 2px solid #0b0c0c; }
+    .comparison td { padding: 6px; border-bottom: 1px solid #e5e5e5; }
+  </style>
+</head>
+<body>
+
+  <h2>Simple Case: Always-Grid vs Cards-then-Grid</h2>
+  <p class="subtitle">Scenario: Finance function, 2 successors, Xero vs Sage — no shared service, no ERP, no cross-boundary complexity.</p>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- OPTION B: Always Grid -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section-title blue">B: Always grid — even for simple cases</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">The grid is the universal interaction pattern. For a simple case it's just 1 column × 2 rows — compact, consistent.</p>
+
+  <div class="modal-frame">
+    <div class="modal-header">
+      <div>
+        <div class="title">Finance</div>
+        <div class="meta">Tier 2 — High Priority · West Elmhurst Council</div>
+      </div>
+      <span style="cursor: pointer; font-size: 18px; color: #505a5f;">✕</span>
+    </div>
+
+    <div class="modal-body">
+      <!-- Pane 1: Systems -->
+      <div class="pane" style="width: 30%;">
+        <div class="pane-label">Competing Systems (2)</div>
+        <div class="sys-card" style="border-color: #1d70b8; border-width: 2px;">
+          <div class="name">Xero Finance</div>
+          <div class="meta">Grantham District · £45k/yr · 60 users</div>
+          <div style="margin-top: 4px;"><span class="badge badge-green">Cloud</span><span class="badge badge-green">Port: High</span><span class="badge badge-grey">Segmented</span></div>
+        </div>
+        <div class="sys-card">
+          <div class="name">Sage 200</div>
+          <div class="meta">Bromwich Borough · £85k/yr · 120 users</div>
+          <div style="margin-top: 4px;"><span class="badge badge-orange">On-prem</span><span class="badge badge-grey">Port: Med</span><span class="badge badge-grey">Segmented</span></div>
+        </div>
+      </div>
+
+      <!-- Pane 2: Grid allocation (minimal for simple case) -->
+      <div class="pane" style="width: 42%;">
+        <div class="pane-label">Allocation</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">
+          For each successor, what system serves Finance?
+        </div>
+
+        <table class="share-grid">
+          <thead>
+            <tr>
+              <th style="width: 130px;"></th>
+              <th>Finance</th>
+              <th style="width: 60px;"><button class="add-btn">+ Func</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>West Elmhurst</td>
+              <td>
+                <select>
+                  <option selected>Xero Finance</option>
+                  <option>Sage 200</option>
+                  <option>Procure new</option>
+                  <option>Defer</option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Ivy Hatherley</td>
+              <td>
+                <select>
+                  <option selected>Xero Finance</option>
+                  <option>Sage 200</option>
+                  <option>Procure new</option>
+                  <option>Defer</option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="derived-label derived-green" style="margin-top: 10px;">
+          ⟷ Both chose Xero — Shared service or coincidence?
+          <label style="font-size: 10px; font-weight: normal; margin-left: 8px; cursor: pointer;">
+            <input type="checkbox" checked> Link as shared service
+          </label>
+        </div>
+
+        <div class="note-box note-blue" style="margin-top: 8px;">
+          When both successors pick the same system, the tool asks: is this a shared service (governance + cost split) or are they independently using the same product?
+        </div>
+      </div>
+
+      <!-- Pane 3: Cost -->
+      <div class="pane" style="width: 28%; background: #fafcff;">
+        <div class="pane-label">Cost & Impact</div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">Xero Finance — £45,000/yr</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 8px;">Shared service cost split:</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span><input class="cost-input" value="50">%</span>
+        </div>
+        <div class="cost-row">
+          <span>Ivy Hatherley</span>
+          <span><input class="cost-input" value="50">%</span>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Decommissions</div>
+        <div style="font-size: 11px; color: #d4351c;">• Sage 200 (Bromwich) — £85k/yr saved</div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Obligations</div>
+        <div style="font-size: 11px; color: #505a5f; line-height: 1.7;">
+          • Migrate 120 users (Sage → Xero)<br>
+          • Shared service governance agreement
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <span style="font-size: 11px; color: #505a5f;">Shared service · Sage 200 decommissioned</span>
+      <div><button class="btn-secondary" style="margin-right: 6px;">Cancel</button><button class="btn-primary">Apply</button></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- OPTION C: Cards then Grid -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section-title green">C: Successor cards (simple) → Grid emerges on complexity</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">Same scenario — but uses the familiar successor card pattern. Grid only appears if user triggers multi-function assignment or "Expand scope."</p>
+
+  <div class="modal-frame">
+    <div class="modal-header">
+      <div>
+        <div class="title">Finance</div>
+        <div class="meta">Tier 2 — High Priority · West Elmhurst Council</div>
+      </div>
+      <span style="cursor: pointer; font-size: 18px; color: #505a5f;">✕</span>
+    </div>
+
+    <div class="modal-body">
+      <!-- Pane 1: Systems -->
+      <div class="pane" style="width: 30%;">
+        <div class="pane-label">Competing Systems (2)</div>
+        <div class="sys-card" style="border-color: #1d70b8; border-width: 2px;">
+          <div class="name">Xero Finance</div>
+          <div class="meta">Grantham District · £45k/yr · 60 users</div>
+          <div style="margin-top: 4px;"><span class="badge badge-green">Cloud</span><span class="badge badge-green">Port: High</span><span class="badge badge-grey">Segmented</span></div>
+        </div>
+        <div class="sys-card">
+          <div class="name">Sage 200</div>
+          <div class="meta">Bromwich Borough · £85k/yr · 120 users</div>
+          <div style="margin-top: 4px;"><span class="badge badge-orange">On-prem</span><span class="badge badge-grey">Port: Med</span><span class="badge badge-grey">Segmented</span></div>
+        </div>
+      </div>
+
+      <!-- Pane 2: Successor cards -->
+      <div class="pane" style="width: 42%;">
+        <div class="pane-label">Allocation: Finance</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">
+          For each successor, what system serves Finance?
+        </div>
+
+        <div class="alloc-card" style="border-color: #00703c; border-width: 2px; background: #f8fdf9;">
+          <div class="succ-name">West Elmhurst Council</div>
+          <select>
+            <option selected>Xero Finance (Grantham District)</option>
+            <option>Sage 200 (Bromwich Borough)</option>
+            <option>Procure new system</option>
+            <option>Defer — decide post-vesting</option>
+          </select>
+          <div class="share-toggle">
+            <div class="toggle-label">⟷ Share Xero with other successors</div>
+            <div class="checkbox-row"><input type="checkbox" checked><label>Ivy Hatherley Council</label></div>
+          </div>
+        </div>
+
+        <div class="alloc-card" style="border-color: #00703c; border-width: 2px; border-style: dashed; background: #f8fdf9;">
+          <div class="succ-name">Ivy Hatherley Council <span style="display: inline-block; font-size: 9px; padding: 1px 5px; font-weight: bold; background: #cce2d8; color: #00703c; border: 1px solid #00703c; margin-left: 6px;">Shared</span></div>
+          <div style="font-size: 11px; color: #00703c; padding: 4px;">
+            <strong>Xero Finance</strong> — shared with West Elmhurst
+          </div>
+          <div style="font-size: 10px; color: #505a5f; padding: 2px 4px;">
+            <a href="#" style="color: #d4351c; text-decoration: underline; font-size: 10px;">Unlink</a> — make independent decision
+          </div>
+        </div>
+
+        <div class="derived-label derived-green">
+          ⟷ Derived: Shared service (Xero Finance, both successors)
+        </div>
+
+        <!-- Escalation: expand into grid -->
+        <div style="margin-top: 12px; padding: 8px; border: 2px dashed #1d70b8; text-align: center; border-radius: 3px; background: #f0f4ff; cursor: pointer;">
+          <div style="font-size: 11px; font-weight: bold; color: #1d70b8;">↗ Assign Xero to additional functions</div>
+          <div style="font-size: 10px; color: #505a5f;">Opens grid view for multi-function allocation</div>
+        </div>
+      </div>
+
+      <!-- Pane 3: Cost -->
+      <div class="pane" style="width: 28%; background: #fafcff;">
+        <div class="pane-label">Cost & Impact</div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">Xero Finance — £45,000/yr</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 8px;">Shared service cost split:</div>
+        <div class="cost-row">
+          <span>West Elmhurst</span>
+          <span><input class="cost-input" value="50">%</span>
+        </div>
+        <div class="cost-row">
+          <span>Ivy Hatherley</span>
+          <span><input class="cost-input" value="50">%</span>
+        </div>
+        <div style="font-size: 10px; text-align: right; margin-top: 4px;">
+          <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Auto-weight by users</a>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Decommissions</div>
+        <div style="font-size: 11px; color: #d4351c;">• Sage 200 (Bromwich) — £85k/yr saved</div>
+        <div class="divider"></div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Obligations</div>
+        <div style="font-size: 11px; color: #505a5f; line-height: 1.7;">
+          • Migrate 120 users (Sage → Xero)<br>
+          • Shared service governance agreement
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <span style="font-size: 11px; color: #505a5f;">Shared service · Sage 200 decommissioned</span>
+      <div><button class="btn-secondary" style="margin-right: 6px;">Cancel</button><button class="btn-primary">Apply</button></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COMPARISON -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="comparison">
+    <h3>Comparison</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 180px;">Dimension</th>
+          <th style="color: #1d70b8;">B: Always grid</th>
+          <th style="color: #00703c;">C: Cards → Grid on demand</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600;">Learning curve</td>
+          <td>One pattern to learn (grid)</td>
+          <td>Two patterns (cards for simple, grid for complex)</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Simple case feel</td>
+          <td>Grid with 1 column feels like overkill — "why is this a table?"</td>
+          <td>Cards feel natural and quick — familiar dropdown pattern</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Transition to complex</td>
+          <td>Just add columns — no mode change</td>
+          <td>Clicking "Assign to additional functions" swaps cards → grid (mode change)</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Shared service UX</td>
+          <td>Both select same → prompt "Link as shared?" inline in grid</td>
+          <td>"Share with..." toggle is explicit and visible</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">"Establish shared" discoverability</td>
+          <td>Less obvious — implied by both rows choosing same option</td>
+          <td>Explicit green "Share with..." section — hard to miss</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Implementation complexity</td>
+          <td>One component (grid), always rendered</td>
+          <td>Two components (cards + grid), conditional rendering, transition logic</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Persona fit</td>
+          <td>Architect-natural; may feel dense for Executive</td>
+          <td>Executive-friendly by default; Architect gets grid when needed</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note-box note-blue" style="margin-top: 1rem; font-size: 12px;">
+    <strong>The "shared service" discoverability problem in B:</strong> In the grid, if both rows independently select "Xero Finance", is that a shared service or two independent Xero subscriptions? The grid needs an additional mechanism to express this (the "Link as shared service" checkbox shown above). In C, the "Share with..." toggle makes the intent explicit upfront — you can't accidentally create a shared service.
+  </div>
+
+</body>
+</html>

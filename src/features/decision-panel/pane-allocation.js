@@ -19,6 +19,7 @@ import { buildHostingPartnerOptions } from './helpers.js';
  * @param {Array} params.systems - competing systems for this (function, primarySuccessor) cell
  * @param {Object|null} params.existingDecision
  * @param {boolean} params.isExpanded - true if in State 2
+ * @param {Object|null} [params.pendingFormState] - unsaved edits from navigation
  * @returns {string} HTML
  */
 export function renderPane2Allocation({
@@ -26,7 +27,8 @@ export function renderPane2Allocation({
     primarySuccessorName,
     systems,
     existingDecision,
-    isExpanded
+    isExpanded,
+    pendingFormState
 }) {
     const successors = state.transitionStructure ? state.transitionStructure.successors : [];
     const allSuccessorNames = successors.map(s => s.name);
@@ -37,15 +39,34 @@ export function renderPane2Allocation({
         return { id: sys.id, label };
     });
 
-    const sharedSuccessors = existingDecision ? (existingDecision.sharedWithSuccessors || []) : [];
+    const sharedSuccessors = pendingFormState
+        ? (pendingFormState.sharedWithSuccessors || [])
+        : existingDecision ? (existingDecision.sharedWithSuccessors || []) : [];
     const primaryIsLinked = sharedSuccessors.length > 0;
 
     let cardsHtml = '';
 
-    const primarySelectedId = existingDecision && existingDecision.systemChoice === 'choose' && existingDecision.retainedSystemIds.length > 0
-        ? existingDecision.retainedSystemIds[0]
-        : null;
-    const primaryChoice = existingDecision ? existingDecision.systemChoice : null;
+    let primarySelectedId;
+    let primaryChoice;
+
+    if (pendingFormState && pendingFormState.primarySystemValue && pendingFormState.primarySystemValue !== '') {
+        const pv = pendingFormState.primarySystemValue;
+        if (pv === '__defer__') {
+            primaryChoice = 'defer';
+            primarySelectedId = null;
+        } else if (pv === '__procure__') {
+            primaryChoice = 'procure';
+            primarySelectedId = null;
+        } else {
+            primaryChoice = 'choose';
+            primarySelectedId = pv;
+        }
+    } else {
+        primarySelectedId = existingDecision && existingDecision.systemChoice === 'choose' && existingDecision.retainedSystemIds.length > 0
+            ? existingDecision.retainedSystemIds[0]
+            : null;
+        primaryChoice = existingDecision ? existingDecision.systemChoice : null;
+    }
 
     cardsHtml += renderSuccessorCard({
         successorName: primarySuccessorName,

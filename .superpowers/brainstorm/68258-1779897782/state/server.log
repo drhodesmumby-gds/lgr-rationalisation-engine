@@ -1,0 +1,6 @@
+{"type":"server-started","port":55233,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:55233","screen_dir":"/Users/daniel.rhodes-mumby/Documents/Local-Government-Architecture/Architecture-Modelling/rationalisation-engine/.superpowers/brainstorm/68258-1779897782/content","state_dir":"/Users/daniel.rhodes-mumby/Documents/Local-Government-Architecture/Architecture-Modelling/rationalisation-engine/.superpowers/brainstorm/68258-1779897782/state"}
+{"type":"screen-added","file":"/Users/daniel.rhodes-mumby/Documents/Local-Government-Architecture/Architecture-Modelling/rationalisation-engine/.superpowers/brainstorm/68258-1779897782/content/entry-points.html"}
+{"type":"screen-added","file":"/Users/daniel.rhodes-mumby/Documents/Local-Government-Architecture/Architecture-Modelling/rationalisation-engine/.superpowers/brainstorm/68258-1779897782/content/entry-points-v2.html"}
+{"type":"screen-added","file":"/Users/daniel.rhodes-mumby/Documents/Local-Government-Architecture/Architecture-Modelling/rationalisation-engine/.superpowers/brainstorm/68258-1779897782/content/three-pane-concepts.html"}
+{"type":"screen-added","file":"/Users/daniel.rhodes-mumby/Documents/Local-Government-Architecture/Architecture-Modelling/rationalisation-engine/.superpowers/brainstorm/68258-1779897782/content/three-pane-v2.html"}
+{"type":"server-stopped","reason":"idle timeout"}

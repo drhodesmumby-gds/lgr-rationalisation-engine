@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Three-Pane Decision Panel Concepts</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 2rem;
+    }
+    h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; margin-top: 2rem; color: #1d70b8; }
+    .subtitle { color: #86868b; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .concept { margin-bottom: 2.5rem; }
+    .concept-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      background: #1d70b8;
+      display: inline-block;
+      padding: 2px 10px;
+      margin-bottom: 8px;
+    }
+    .panel-mock {
+      background: #ffffff;
+      border: 2px solid #0b0c0c;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .panel-header {
+      background: #0b0c0c;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-body { display: flex; min-height: 340px; }
+    .pane {
+      padding: 12px;
+      font-size: 12px;
+      border-right: 1px solid #b1b4b6;
+      overflow-y: auto;
+    }
+    .pane:last-child { border-right: none; }
+    .pane-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #505a5f;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #1d70b8;
+    }
+    .sys-card {
+      border: 1px solid #b1b4b6;
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #fafafa;
+    }
+    .sys-card.erp { border: 2px solid #d4351c; }
+    .sys-card .name { font-weight: bold; font-size: 12px; }
+    .sys-card .meta { font-size: 11px; color: #505a5f; }
+    .badge { display: inline-block; font-size: 10px; padding: 1px 5px; font-weight: bold; margin-right: 3px; }
+    .badge-red { background: #fce4e1; color: #d4351c; border: 1px solid #d4351c; }
+    .badge-green { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .badge-orange { background: #fde68a; color: #f47738; border: 1px solid #f47738; }
+    .badge-grey { background: #f3f2f1; color: #505a5f; border: 1px solid #b1b4b6; }
+    .radio-item { margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px; }
+    .radio-item input { margin-top: 2px; }
+    .radio-label { font-size: 12px; }
+    .radio-label strong { display: block; }
+    .radio-label span { font-size: 11px; color: #505a5f; }
+    .escalation-bar {
+      background: #f0f4ff;
+      border: 2px dashed #1d70b8;
+      padding: 8px 12px;
+      text-align: center;
+      margin: 8px 0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .escalation-bar:hover { background: #e0ecff; }
+    .escalation-bar .label { color: #1d70b8; font-weight: bold; font-size: 12px; }
+    .escalation-bar .desc { color: #505a5f; font-size: 11px; }
+    .successor-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      border: 1px solid #b1b4b6;
+      margin-bottom: 4px;
+      background: #fafafa;
+    }
+    .successor-row.active { border-color: #1d70b8; background: #f0f4ff; }
+    .cost-input { width: 50px; border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; text-align: right; }
+    .arrow-flow { text-align: center; color: #1d70b8; font-size: 18px; margin: 8px 0; }
+    .note { font-size: 11px; color: #86868b; margin-top: 12px; padding: 8px; background: #f9f9f9; border-left: 3px solid #b1b4b6; }
+    .transition-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0;
+      color: #1d70b8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .transition-arrow span { margin: 0 12px; font-size: 24px; }
+  </style>
+</head>
+<body>
+  <h2>Three-Pane Decision Panel</h2>
+  <p class="subtitle">Concept A's "expand scope" reveals the third pane — progressive disclosure from simple → complex</p>
+
+  <!-- STATE 1: Simple case (two-pane) -->
+  <div class="concept">
+    <div class="concept-label">State 1: Simple case (single-successor, single-function system)</div>
+    <div class="panel-mock">
+      <div class="panel-header">
+        <span>Decision: Finance → West Elmhurst</span>
+        <span style="font-size: 11px; opacity: 0.7;">✕</span>
+      </div>
+      <div class="panel-body">
+        <!-- Pane 1: Systems -->
+        <div class="pane" style="width: 40%;">
+          <div class="pane-label">Systems</div>
+          <div class="sys-card">
+            <div class="name">Xero Finance</div>
+            <div class="meta">Grantham District</div>
+            <div style="margin-top: 4px;"><span class="badge badge-green">Cloud</span><span class="badge badge-green">Port: High</span></div>
+            <div class="meta">£45,000/yr · 60 users</div>
+          </div>
+          <div class="sys-card">
+            <div class="name">Sage 200</div>
+            <div class="meta">Bromwich Borough</div>
+            <div style="margin-top: 4px;"><span class="badge badge-orange">On-prem</span><span class="badge badge-grey">Port: Med</span></div>
+            <div class="meta">£85,000/yr · 120 users</div>
+          </div>
+        </div>
+
+        <!-- Pane 2: Decision -->
+        <div class="pane" style="width: 60%;">
+          <div class="pane-label">Decision</div>
+          <div style="margin-bottom: 12px;">
+            <strong style="font-size: 13px;">System Choice</strong>
+            <div class="radio-item" style="margin-top: 6px;">
+              <input type="radio" name="s1" checked>
+              <div class="radio-label"><strong>Xero Finance</strong><span>Cloud, high portability, lower cost</span></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="s1">
+              <div class="radio-label"><strong>Sage 200</strong><span>Larger user base, on-premise</span></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="s1">
+              <div class="radio-label"><strong>Procure replacement</strong></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="s1">
+              <div class="radio-label"><strong>Defer</strong></div>
+            </div>
+          </div>
+          <div class="note">No boundary decision needed — both systems serve only this successor.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transition-arrow">Simple case above <span>→</span> Complex case below (after "Expand scope")</div>
+
+  <!-- STATE 2: Expanded (three-pane) -->
+  <div class="concept">
+    <div class="concept-label">State 2: Expanded scope (cross-boundary ERP — three panes)</div>
+    <div class="panel-mock">
+      <div class="panel-header">
+        <span>System Decision: SAP S/4HANA ERP — all functions, all successors</span>
+        <span style="font-size: 11px; opacity: 0.7;">✕</span>
+      </div>
+      <div class="panel-body">
+        <!-- Pane 1: System context -->
+        <div class="pane" style="width: 28%;">
+          <div class="pane-label">System</div>
+          <div class="sys-card erp">
+            <div class="name">SAP S/4HANA ERP</div>
+            <div class="meta">Westshire County Council</div>
+            <div style="margin-top: 4px;">
+              <span class="badge badge-orange">On-prem</span>
+              <span class="badge badge-red">Port: Low</span>
+              <span class="badge badge-red">Monolithic</span>
+              <span class="badge badge-red">ERP</span>
+            </div>
+            <div class="meta" style="margin-top: 6px;">
+              Vendor: SAP · S/4HANA 2023<br>
+              Users: 7,000<br>
+              Cost: £2,300,000/yr<br>
+              Ends: 2030-03 (18m notice)
+            </div>
+            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e5e5;">
+              <div style="font-size: 11px; font-weight: bold; color: #505a5f;">Functions served:</div>
+              <div style="font-size: 11px; color: #0b0c0c; margin-top: 2px;">
+                • Finance<br>• Human Resources<br>• Procurement
+              </div>
+            </div>
+            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e5e5;">
+              <div style="font-size: 11px; font-weight: bold; color: #505a5f;">Allocated to:</div>
+              <div style="font-size: 11px; color: #0b0c0c; margin-top: 2px;">
+                • West Elmhurst (partial)<br>• Ivy Hatherley (partial)
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 8px; font-size: 11px; color: #505a5f; font-style: italic; padding: 6px; background: #fff7e6; border-left: 3px solid #f47738;">
+            County CEO relationship with SAP UK MD. Political sensitivity around decommission.
+          </div>
+        </div>
+
+        <!-- Pane 2: Fate decision -->
+        <div class="pane" style="width: 35%;">
+          <div class="pane-label">System Fate</div>
+          <div style="margin-bottom: 12px;">
+            <strong style="font-size: 12px; color: #0b0c0c;">What happens to this system?</strong>
+            <div class="radio-item" style="margin-top: 8px;">
+              <input type="radio" name="fate">
+              <div class="radio-label"><strong>Shared service</strong><span>Both successors continue using SAP under a shared arrangement</span></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="fate" checked>
+              <div class="radio-label"><strong>Assign to one successor</strong><span>One successor retains SAP; the other procures/uses alternative</span></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="fate">
+              <div class="radio-label"><strong>Disaggregate</strong><span>Split into separate instances per successor</span></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="fate">
+              <div class="radio-label"><strong>Decommission</strong><span>Replace with new system(s) for all successors</span></div>
+            </div>
+            <div class="radio-item">
+              <input type="radio" name="fate">
+              <div class="radio-label"><strong>Defer</strong><span>Keep running as-is, decide post-vesting</span></div>
+            </div>
+          </div>
+
+          <!-- Conditional: per-function override -->
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e5e5;">
+            <div style="font-size: 11px; font-weight: bold; color: #505a5f; margin-bottom: 4px;">Per-function scope (optional)</div>
+            <div style="font-size: 11px; color: #505a5f;">Apply this decision to:</div>
+            <div style="margin-top: 4px;">
+              <label style="font-size: 11px; display: block;"><input type="checkbox" checked> Finance</label>
+              <label style="font-size: 11px; display: block;"><input type="checkbox" checked> Human Resources</label>
+              <label style="font-size: 11px; display: block;"><input type="checkbox" checked> Procurement</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pane 3: Successor allocation -->
+        <div class="pane" style="width: 37%; background: #fafcff;">
+          <div class="pane-label">Successor Allocation</div>
+
+          <div style="font-size: 11px; color: #505a5f; margin-bottom: 10px;">
+            Assign to one successor selected — who gets SAP?
+          </div>
+
+          <div class="successor-row active">
+            <div>
+              <div style="font-weight: bold; font-size: 12px;">West Elmhurst Council</div>
+              <div style="font-size: 11px; color: #505a5f;">Retains SAP</div>
+            </div>
+            <div style="text-align: right;">
+              <input type="radio" name="assign" checked>
+            </div>
+          </div>
+          <div class="successor-row">
+            <div>
+              <div style="font-weight: bold; font-size: 12px;">Ivy Hatherley Council</div>
+              <div style="font-size: 11px; color: #505a5f;">Needs alternative</div>
+            </div>
+            <div style="text-align: right;">
+              <input type="radio" name="assign">
+            </div>
+          </div>
+
+          <!-- Cost split -->
+          <div style="margin-top: 16px; padding-top: 10px; border-top: 1px solid #d1d1d6;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">Transition cost allocation</div>
+            <div style="font-size: 11px; color: #505a5f; margin-bottom: 6px;">During transition, both successors share costs until migration complete:</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 11px;">West Elmhurst</span>
+              <span style="font-size: 11px;"><input class="cost-input" value="60"> % → £1,380,000</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px;">Ivy Hatherley</span>
+              <span style="font-size: 11px;"><input class="cost-input" value="40"> % → £920,000</span>
+            </div>
+            <div style="font-size: 10px; color: #86868b; margin-top: 6px; text-align: right;">
+              <a href="#" style="color: #1d70b8; text-decoration: underline;">Reset to equal</a>
+            </div>
+          </div>
+
+          <!-- Impact preview -->
+          <div style="margin-top: 16px; padding: 8px; background: #fff7e6; border-left: 3px solid #f47738;">
+            <div style="font-size: 11px; font-weight: bold; color: #f47738;">Impact on Ivy Hatherley</div>
+            <div style="font-size: 11px; color: #0b0c0c; margin-top: 4px;">
+              Needs to procure or source alternatives for:<br>
+              • Finance<br>• Human Resources<br>• Procurement
+            </div>
+            <div style="font-size: 11px; color: #505a5f; margin-top: 4px; font-style: italic;">
+              3 procurement obligations will be generated
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top: 1.5rem; font-size: 12px; background: #f0f4ff; border-left: 3px solid #1d70b8;">
+    <strong>Key insight:</strong> The third pane only appears when the system crosses boundaries. It answers "who gets this system?" and "who pays what?" — questions that don't exist for simple single-successor systems. The "Expand scope" in State 1 transitions to State 2 by widening the panel and revealing Pane 3.
+  </div>
+</body>
+</html>

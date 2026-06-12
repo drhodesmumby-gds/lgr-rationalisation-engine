@@ -169,7 +169,8 @@ function renderPanel(functionId, successorName) {
             primarySuccessorName: successorName,
             systems,
             existingDecision,
-            isExpanded: true
+            isExpanded: true,
+            pendingFormState: _pendingFormState
         });
 
         // Add sharing grid below allocation

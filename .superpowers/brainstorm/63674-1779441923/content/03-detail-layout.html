@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 2rem; margin: 0; }
+h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.9rem; }
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.option { background: white; border: 2px solid #b1b4b6; padding: 1.5rem; }
+.option:hover { border-color: #1d70b8; }
+.option h2 { font-size: 1rem; margin-top: 0; margin-bottom: 0.25rem; }
+.option .desc { font-size: 0.8rem; color: #505a5f; margin-bottom: 1rem; }
+
+/* Shared styles */
+.pinned-bar { display: flex; gap: 1.5rem; padding: 8px 12px; background: #f3f2f1; border: 1px solid #ddd; margin-bottom: 1rem; font-size: 0.7rem; }
+.pinned-bar label { font-weight: bold; font-size: 0.6rem; color: #505a5f; display: block; }
+.pinned-bar span { color: #0b0c0c; font-weight: bold; }
+
+/* Tabs version */
+.tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid #b1b4b6; }
+.tab { padding: 5px 12px; font-size: 0.7rem; font-weight: bold; cursor: pointer; border: none; background: none; color: #505a5f; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.tab-active { color: #1d70b8; border-bottom-color: #1d70b8; }
+
+/* Grouped sections version */
+.field-section { margin-bottom: 1.25rem; }
+.field-section-title { font-size: 0.7rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 4px; border-bottom: 1px solid #ddd; margin-bottom: 8px; }
+
+/* Fields */
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fields-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.field label { font-weight: bold; font-size: 0.65rem; display: block; margin-bottom: 2px; color: #0b0c0c; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 5px 6px; font-size: 0.75rem; width: 100%; box-sizing: border-box; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.6rem; color: #505a5f; margin-top: 1px; }
+.field-inline { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+.field-inline input[type="checkbox"] { width: 16px; height: 16px; }
+
+.pros { font-size: 0.75rem; color: #505a5f; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #ddd; }
+.pros strong { color: #0b0c0c; }
+</style>
+</head>
+<body>
+
+<h1>Focus Mode Detail: Tabs vs Grouped Sections</h1>
+<p class="subtitle">Same data, two ways to present it in the detail panel. Which scans better?</p>
+
+<div class="comparison">
+
+<!-- Option A: Tabs -->
+<div class="option">
+<h2>A: Tabbed Groups</h2>
+<p class="desc">Fields split across tabs. Only one group visible at a time. Cleaner but requires clicking to see everything.</p>
+
+<div class="pinned-bar">
+<div><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div><label>Vendor</label><span>SAP</span></div>
+<div><label>Function</label><span>Finance</span></div>
+</div>
+
+<div class="tabs">
+<button class="tab tab-active">Core</button>
+<button class="tab">Contract</button>
+<button class="tab">Technical</button>
+<button class="tab">Relationships</button>
+</div>
+
+<div class="fields">
+<div class="field"><label>System Name</label><input value="SAP S/4HANA ERP"></div>
+<div class="field"><label>Vendor</label><input value="SAP"></div>
+<div class="field"><label>Users</label><input value="7000"></div>
+<div class="field"><label>Annual Cost (£)</label><input value="2300000"></div>
+<div class="field"><label>Function</label><select><option>116 — Finance</option></select></div>
+<div class="field"><label>ERP?</label><select><option>Yes</option></select></div>
+</div>
+
+<div class="pros">
+<strong>Pros:</strong> Less visual noise. Each tab is focused. Good for small detail panels.<br>
+<strong>Cons:</strong> Can't see contract AND technical at same time. Extra clicks to review full system. "Out of sight, out of mind" for less-used fields.
+</div>
+</div>
+
+<!-- Option B: Grouped sections (single scrollable view) -->
+<div class="option">
+<h2>B: Labelled Sections (all visible)</h2>
+<p class="desc">All fields on one scrollable page, separated by section headings. Everything visible without clicking.</p>
+
+<div class="pinned-bar">
+<div><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div><label>Vendor</label><span>SAP</span></div>
+<div><label>Function</label><span>Finance</span></div>
+</div>
+
+<div class="field-section">
+<div class="field-section-title">Identity</div>
+<div class="fields">
+<div class="field"><label>System Name</label><input value="SAP S/4HANA ERP"></div>
+<div class="field"><label>Vendor</label><input value="SAP"></div>
+<div class="field"><label>Users</label><input value="7000"></div>
+<div class="field"><label>Annual Cost (£)</label><input value="2300000"></div>
+</div>
+</div>
+
+<div class="field-section">
+<div class="field-section-title">Contract</div>
+<div class="fields-3">
+<div class="field"><label>End Year</label><input value="2030"></div>
+<div class="field"><label>End Month</label><select><option>3 — March</option></select></div>
+<div class="field"><label>Notice (months)</label><input value="18"></div>
+</div>
+</div>
+
+<div class="field-section">
+<div class="field-section-title">Technical Profile</div>
+<div class="fields">
+<div class="field"><label>Portability</label><select><option>Low</option></select><div class="hint">How easy to extract data in bulk</div></div>
+<div class="field"><label>Data Partitioning</label><select><option>Monolithic</option></select><div class="hint">How data is organised internally</div></div>
+<div class="field"><label>Support Model</label><select><option>Vendor-supported</option></select></div>
+<div class="field"><label>Hosting</label><select><option>On-premise</option></select></div>
+</div>
+<div style="margin-top:8px;">
+<div class="field-inline"><input type="checkbox" checked> <span>This is an ERP system</span></div>
+</div>
+</div>
+
+<div class="field-section">
+<div class="field-section-title">Relationships</div>
+<div class="fields">
+<div class="field"><label>Function Assignment</label><select><option>116 — Finance</option></select><div class="hint">+ add function</div></div>
+<div class="field"><label>Shared With</label><input value="" placeholder="Council A, Council B"></div>
+<div class="field"><label>Capabilities Provided</label><input value="payments, workflow" placeholder="payments, forms..."></div>
+<div class="field"><label>Depends On</label><span style="font-size:0.7rem; color:#505a5f;">None</span></div>
+</div>
+</div>
+
+<div class="pros">
+<strong>Pros:</strong> See everything at once. No hidden fields. Scan entire system in one look. Section headers provide grouping without interaction.<br>
+<strong>Cons:</strong> More vertical scrolling in the detail panel. Denser. Might feel long for 15+ fields.
+</div>
+</div>
+
+</div>
+
+<p style="margin-top:1.5rem; font-size:0.8rem; color:#505a5f;">Note: the detail panel scrolls independently from the system list, so vertical length is manageable — the list stays fixed on the left.</p>
+
+</body>
+</html>

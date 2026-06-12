@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Concept B: Successor-First Allocation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .subtitle { color: #86868b; margin-bottom: 1rem; font-size: 0.85rem; }
+    .insight { background: #f0f4ff; border-left: 3px solid #1d70b8; padding: 10px 12px; margin-bottom: 1.5rem; font-size: 12px; color: #0b0c0c; }
+    .insight strong { color: #1d70b8; }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; background: #0b0c0c; display: inline-block; padding: 2px 10px; margin-bottom: 8px; margin-top: 1.5rem;
+    }
+    .panel-mock { background: #ffffff; border: 2px solid #0b0c0c; border-radius: 4px; overflow: hidden; }
+    .panel-header {
+      background: #0b0c0c; color: #fff; padding: 8px 12px; font-size: 12px; font-weight: bold;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-body { display: flex; min-height: 380px; }
+    .pane { padding: 12px; font-size: 12px; border-right: 1px solid #b1b4b6; }
+    .pane:last-child { border-right: none; }
+    .pane-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #505a5f; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #1d70b8;
+    }
+    .sys-card { border: 1px solid #b1b4b6; padding: 8px; margin-bottom: 6px; background: #fafafa; }
+    .sys-card.erp { border: 2px solid #d4351c; }
+    .sys-card .name { font-weight: bold; font-size: 12px; }
+    .sys-card .meta { font-size: 11px; color: #505a5f; }
+    .badge { display: inline-block; font-size: 10px; padding: 1px 5px; font-weight: bold; margin-right: 3px; }
+    .badge-red { background: #fce4e1; color: #d4351c; border: 1px solid #d4351c; }
+    .badge-green { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .badge-orange { background: #fde68a; color: #f47738; border: 1px solid #f47738; }
+    .func-row {
+      display: flex; align-items: center; padding: 7px 8px; border: 1px solid #b1b4b6;
+      margin-bottom: 3px; background: #fafafa; font-size: 12px; cursor: pointer;
+    }
+    .func-row:hover { background: #f0f4ff; }
+    .func-row.selected { border-color: #1d70b8; background: #f0f4ff; border-width: 2px; }
+    .func-row .func-name { flex: 1; font-weight: 600; }
+    .func-row .func-status { font-size: 10px; padding: 2px 6px; font-weight: bold; }
+    .status-decided { background: #cce2d8; color: #00703c; }
+    .status-current { background: #f0f4ff; color: #1d70b8; }
+    .status-pending { background: #f3f2f1; color: #505a5f; }
+
+    /* Successor allocation rows */
+    .alloc-card {
+      border: 1px solid #b1b4b6; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 3px;
+    }
+    .alloc-card .succ-name { font-weight: bold; font-size: 13px; margin-bottom: 6px; }
+    .alloc-card select {
+      width: 100%; border: 1px solid #0b0c0c; padding: 6px 8px; font-size: 12px;
+      background: #fff; margin-bottom: 6px;
+    }
+    .alloc-card .detail-row {
+      font-size: 11px; color: #505a5f; padding: 4px 0; display: flex; justify-content: space-between;
+    }
+    .alloc-card .inline-edit {
+      border: 1px solid #b1b4b6; padding: 2px 6px; font-size: 11px; width: 140px;
+    }
+
+    .derived-label {
+      margin-top: 12px; padding: 8px 10px; border-radius: 3px;
+      font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px;
+    }
+    .derived-shared { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .derived-independent { background: #f0f4ff; color: #1d70b8; border: 1px solid #1d70b8; }
+    .derived-assign { background: #fde68a; color: #0b0c0c; border: 1px solid #f47738; }
+
+    .cost-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e5e5; }
+    .cost-section .title { font-size: 11px; font-weight: bold; margin-bottom: 6px; }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 11px; }
+    .cost-input { width: 48px; border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; text-align: right; }
+
+    .summary-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e5e5; }
+    .note-box { font-size: 11px; padding: 8px; margin-top: 10px; border-left: 3px solid; }
+    .note-orange { background: #fff7e6; border-color: #f47738; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+  <h2>Concept B: Successor-First Allocation</h2>
+  <p class="subtitle">Eliminate the two-axis model. For each function, ask: "what serves each successor?" The operating model is derived, not selected.</p>
+
+  <div class="insight">
+    <strong>Key difference from Concept A:</strong> No "System Choice" vs "Operating Model" split. Instead, Pane 2 shows each successor as a row, and you directly specify what system serves each. The pattern (shared service, disaggregate, independent) is <em>inferred</em> from the combination of choices and shown as a derived label.
+  </div>
+
+  <!-- STATE 2: ERP expanded, successor-first -->
+  <div class="section-title">State 2: ERP — successor-first allocation per function</div>
+  <div class="panel-mock">
+    <div class="panel-header">
+      <span>System Decision: SAP S/4HANA ERP — Westshire County</span>
+      <span style="opacity: 0.7;">✕</span>
+    </div>
+    <div class="panel-body">
+      <!-- Pane 1: System + Function list -->
+      <div class="pane" style="width: 26%;">
+        <div class="pane-label">System & Functions</div>
+        <div class="sys-card erp" style="margin-bottom: 12px;">
+          <div class="name">SAP S/4HANA ERP</div>
+          <div class="meta">Westshire County · £2.3M/yr</div>
+          <div style="margin-top: 4px;">
+            <span class="badge badge-red">ERP</span>
+            <span class="badge badge-orange">On-prem</span>
+            <span class="badge badge-red">Monolithic</span>
+          </div>
+          <div class="meta" style="margin-top: 4px;">7,000 users · Ends 2030-03</div>
+        </div>
+
+        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 6px;">Functions (click to configure)</div>
+        <div class="func-row">
+          <span class="func-name">Finance</span>
+          <span class="func-status status-decided">Done ✓</span>
+        </div>
+        <div class="func-row selected">
+          <span class="func-name">Human Resources</span>
+          <span class="func-status status-current">Editing</span>
+        </div>
+        <div class="func-row">
+          <span class="func-name">Procurement</span>
+          <span class="func-status status-pending">Pending</span>
+        </div>
+
+        <div class="note-box note-orange" style="margin-top: 12px;">
+          SAP decommissioned only when all 3 functions resolved away from it.
+        </div>
+      </div>
+
+      <!-- Pane 2: Per-successor allocation for selected function -->
+      <div class="pane" style="width: 42%;">
+        <div class="pane-label">Human Resources — per successor</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 10px;">
+          For each successor, select what will serve HR after transition:
+        </div>
+
+        <!-- West Elmhurst -->
+        <div class="alloc-card">
+          <div class="succ-name">West Elmhurst Council</div>
+          <select>
+            <option>SAP S/4HANA (keep current)</option>
+            <option selected>Procure new system</option>
+            <option>Use existing: iTrent (Bromwich)</option>
+            <option>Defer — decide later</option>
+          </select>
+          <!-- Procure detail inline -->
+          <div style="padding: 6px 8px; background: #f9f9f9; border: 1px solid #e5e5e5; font-size: 11px;">
+            <div class="detail-row">
+              <span>System:</span>
+              <input class="inline-edit" value="Workday HCM" placeholder="System name">
+            </div>
+            <div class="detail-row">
+              <span>Vendor:</span>
+              <input class="inline-edit" value="Workday" placeholder="Vendor">
+            </div>
+            <div class="detail-row">
+              <span>Est. annual cost:</span>
+              <input class="inline-edit" value="£400,000" placeholder="£">
+            </div>
+          </div>
+        </div>
+
+        <!-- Ivy Hatherley -->
+        <div class="alloc-card">
+          <div class="succ-name">Ivy Hatherley Council</div>
+          <select>
+            <option>SAP S/4HANA (keep current)</option>
+            <option selected>Procure new system</option>
+            <option>Use existing: iTrent (Bromwich)</option>
+            <option>Defer — decide later</option>
+          </select>
+          <div style="padding: 6px 8px; background: #f9f9f9; border: 1px solid #e5e5e5; font-size: 11px;">
+            <div class="detail-row">
+              <span>System:</span>
+              <input class="inline-edit" value="Oracle HCM Cloud" placeholder="System name">
+            </div>
+            <div class="detail-row">
+              <span>Vendor:</span>
+              <input class="inline-edit" value="Oracle" placeholder="Vendor">
+            </div>
+            <div class="detail-row">
+              <span>Est. annual cost:</span>
+              <input class="inline-edit" value="£350,000" placeholder="£">
+            </div>
+          </div>
+        </div>
+
+        <!-- Derived operating model -->
+        <div class="derived-label derived-independent">
+          <span>↔</span> Derived: Independent per successor
+        </div>
+        <div style="font-size: 10px; color: #86868b; margin-top: 4px; padding-left: 4px;">
+          Each successor procures their own — no shared arrangement.
+        </div>
+      </div>
+
+      <!-- Pane 3: Cost + impact + summary -->
+      <div class="pane" style="width: 32%; background: #fafcff;">
+        <div class="pane-label">Cost & Impact</div>
+
+        <!-- Transition cost -->
+        <div class="cost-section" style="border-top: none; margin-top: 0;">
+          <div class="title">SAP HR costs during transition</div>
+          <div style="font-size: 11px; color: #505a5f; margin-bottom: 6px;">
+            Both successors share SAP HR costs until their replacement is live:
+          </div>
+          <div class="cost-row">
+            <span>West Elmhurst</span>
+            <span><input class="cost-input" value="50">% → £575k</span>
+          </div>
+          <div class="cost-row">
+            <span>Ivy Hatherley</span>
+            <span><input class="cost-input" value="50">% → £575k</span>
+          </div>
+          <div style="font-size: 10px; color: #86868b; text-align: right; margin-top: 4px;">
+            <a href="#" style="color: #1d70b8; text-decoration: underline;">Reset to equal</a> ·
+            <a href="#" style="color: #1d70b8; text-decoration: underline;">Weight by users</a>
+          </div>
+        </div>
+
+        <!-- Obligations generated -->
+        <div class="divider"></div>
+        <div class="title" style="font-size: 11px; font-weight: bold;">Obligations generated</div>
+        <div style="font-size: 11px; margin-top: 4px; line-height: 1.7;">
+          <span style="color: #d4351c;">●</span> Data migration: SAP HR → Workday (WE)<br>
+          <span style="color: #d4351c;">●</span> Data migration: SAP HR → Oracle (IH)<br>
+          <span style="color: #f47738;">●</span> Procurement: Workday HCM (WE)<br>
+          <span style="color: #f47738;">●</span> Procurement: Oracle HCM Cloud (IH)
+        </div>
+
+        <!-- Full SAP summary -->
+        <div class="summary-section">
+          <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 6px;">SAP overall status</div>
+          <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #e5e5e5;">
+              <td style="padding: 4px 0; font-weight: 600;">Finance</td>
+              <td style="padding: 4px 0; text-align: right;"><span style="background: #cce2d8; color: #00703c; padding: 1px 6px; font-size: 10px; font-weight: bold;">Shared</span></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e5e5e5;">
+              <td style="padding: 4px 0; font-weight: 600;">HR</td>
+              <td style="padding: 4px 0; text-align: right;"><span style="background: #f0f4ff; color: #1d70b8; padding: 1px 6px; font-size: 10px; font-weight: bold;">Independent</span></td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; font-weight: 600;">Procurement</td>
+              <td style="padding: 4px 0; text-align: right;"><span style="background: #f3f2f1; color: #505a5f; padding: 1px 6px; font-size: 10px; font-weight: bold;">Pending</span></td>
+            </tr>
+          </table>
+          <div style="font-size: 10px; color: #505a5f; margin-top: 8px; padding: 6px; background: #fff7e6; border-left: 3px solid #f47738;">
+            2 of 3 functions decided away → SAP <strong>not yet</strong> decommissioned (Procurement pending)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Show what "shared" looks like with this model -->
+  <div class="section-title">Same concept — Finance function (shared service result)</div>
+  <p style="font-size: 12px; color: #505a5f; margin-bottom: 8px;">When both successors select "Keep SAP", the derived label shows "Shared service" automatically.</p>
+  <div class="panel-mock" style="max-width: 600px;">
+    <div class="panel-header"><span>Finance — per successor</span></div>
+    <div style="padding: 12px;">
+      <div class="alloc-card">
+        <div class="succ-name">West Elmhurst Council</div>
+        <select><option selected>SAP S/4HANA (keep current)</option></select>
+      </div>
+      <div class="alloc-card">
+        <div class="succ-name">Ivy Hatherley Council</div>
+        <select><option selected>SAP S/4HANA (keep current)</option></select>
+      </div>
+      <div class="derived-label derived-shared">
+        <span>⟷</span> Derived: Shared service — both successors retain SAP for Finance
+      </div>
+      <div style="font-size: 11px; color: #505a5f; margin-top: 6px; padding: 4px;">
+        A shared service governance arrangement will be generated. Cost split applies to the full system (configured at system level, not per-function).
+      </div>
+    </div>
+  </div>
+
+  <div class="insight" style="margin-top: 1.5rem;">
+    <strong>Why this works:</strong> The user never selects "shared service" or "disaggregate" as an abstract concept. They make concrete per-successor choices ("West Elmhurst keeps SAP, Ivy Hatherley procures Oracle") and the tool <em>derives</em> the operating model pattern. This eliminates the redundancy between System Choice and Operating Model entirely. The dropdown per successor contains only options that are valid for that context.
+  </div>
+
+</body>
+</html>

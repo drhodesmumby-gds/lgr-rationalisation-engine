@@ -10936,7 +10936,8 @@ ${hardErrors.join("\n")}`);
     primarySuccessorName,
     systems,
     existingDecision,
-    isExpanded
+    isExpanded,
+    pendingFormState
   }) {
     const successors = state.transitionStructure ? state.transitionStructure.successors : [];
     const allSuccessorNames = successors.map((s) => s.name);
@@ -10945,11 +10946,27 @@ ${hardErrors.join("\n")}`);
       const label = `${sys.label || "Unnamed"} (${sys.sourceCouncil || sys._sourceCouncil || "Unknown"})`;
       return { id: sys.id, label };
     });
-    const sharedSuccessors = existingDecision ? existingDecision.sharedWithSuccessors || [] : [];
+    const sharedSuccessors = pendingFormState ? pendingFormState.sharedWithSuccessors || [] : existingDecision ? existingDecision.sharedWithSuccessors || [] : [];
     const primaryIsLinked = sharedSuccessors.length > 0;
     let cardsHtml = "";
-    const primarySelectedId = existingDecision && existingDecision.systemChoice === "choose" && existingDecision.retainedSystemIds.length > 0 ? existingDecision.retainedSystemIds[0] : null;
-    const primaryChoice = existingDecision ? existingDecision.systemChoice : null;
+    let primarySelectedId;
+    let primaryChoice;
+    if (pendingFormState && pendingFormState.primarySystemValue && pendingFormState.primarySystemValue !== "") {
+      const pv = pendingFormState.primarySystemValue;
+      if (pv === "__defer__") {
+        primaryChoice = "defer";
+        primarySelectedId = null;
+      } else if (pv === "__procure__") {
+        primaryChoice = "procure";
+        primarySelectedId = null;
+      } else {
+        primaryChoice = "choose";
+        primarySelectedId = pv;
+      }
+    } else {
+      primarySelectedId = existingDecision && existingDecision.systemChoice === "choose" && existingDecision.retainedSystemIds.length > 0 ? existingDecision.retainedSystemIds[0] : null;
+      primaryChoice = existingDecision ? existingDecision.systemChoice : null;
+    }
     cardsHtml += renderSuccessorCard({
       successorName: primarySuccessorName,
       isPrimary: true,
@@ -11609,7 +11626,8 @@ ${hardErrors.join("\n")}`);
         primarySuccessorName: successorName,
         systems,
         existingDecision,
-        isExpanded: true
+        isExpanded: true,
+        pendingFormState: _pendingFormState
       });
       const currentPrimaryValue = _pendingFormState?.primarySystemValue || (existingDecision?.systemChoice === "choose" ? existingDecision.retainedSystemIds[0] : null) || (existingDecision?.systemChoice === "procure" ? "__procure__" : null);
       const hasCurrentSystem = !!currentPrimaryValue && currentPrimaryValue !== "__defer__";

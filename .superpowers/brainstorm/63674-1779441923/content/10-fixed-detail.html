@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 2rem; margin: 0; }
+h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.8rem; }
+
+.detail-panel { background: white; border: 1px solid #b1b4b6; padding: 1.25rem; max-width: 660px; }
+
+.pinned-bar { display: flex; gap: 1.25rem; padding: 6px 10px; background: #f3f2f1; border: 1px solid #ddd; margin-bottom: 1rem; font-size: 0.7rem; }
+.pinned-bar label { font-weight: bold; font-size: 0.55rem; color: #505a5f; display: block; }
+.pinned-bar span { color: #0b0c0c; font-weight: bold; }
+
+.section { margin-bottom: 1.1rem; }
+.section-title { font-size: 0.65rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 3px; border-bottom: 1px solid #ddd; margin-bottom: 8px; }
+
+/* Fields with explicit widths — no flex grow */
+.field-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; }
+.field label { font-weight: bold; font-size: 0.65rem; margin-bottom: 2px; color: #0b0c0c; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 4px 6px; font-size: 0.8rem; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.55rem; color: #505a5f; margin-top: 1px; }
+
+/* Two column lower */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+/* Function chips */
+.fn-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+.fn-chip { display: inline-flex; align-items: center; gap: 3px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 2px 8px; font-size: 0.68rem; border-radius: 2px; }
+.fn-chip .x { color: #d4351c; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+.fn-add { font-size: 0.65rem; color: #1d70b8; cursor: pointer; font-weight: bold; }
+.fn-note { font-size: 0.55rem; color: #505a5f; margin-top: 2px; }
+
+/* Capability toggles - clearly interactive */
+.cap-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.cap-toggle { font-size: 0.65rem; padding: 3px 8px; border: 2px solid #b1b4b6; background: white; cursor: pointer; color: #505a5f; border-radius: 2px; user-select: none; transition: all 0.1s; }
+.cap-toggle:hover { border-color: #1d70b8; color: #1d70b8; }
+.cap-toggle-on { background: #1d70b8; color: white; border-color: #1d70b8; font-weight: bold; }
+.cap-toggle-on:hover { background: #144e81; }
+.cap-custom-row { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.cap-custom-row input { border: 1px solid #b1b4b6; padding: 3px 6px; font-size: 0.65rem; width: 110px; }
+.cap-custom-row button { font-size: 0.6rem; padding: 3px 8px; border: 1px solid #1d70b8; background: white; color: #1d70b8; cursor: pointer; font-weight: bold; }
+.cap-custom-row button:hover { background: #e8f4fd; }
+
+/* Radio compact */
+.radio-group { margin-bottom: 6px; }
+.radio-title { font-weight: bold; font-size: 0.65rem; color: #0b0c0c; margin-bottom: 2px; }
+.radio-row { display: flex; gap: 10px; }
+.radio-row label { font-size: 0.7rem; display: flex; align-items: center; gap: 3px; cursor: pointer; }
+.radio-row input[type="radio"] { margin: 0; width: 14px; height: 14px; }
+
+.check-row { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; margin-top: 4px; }
+.check-row input { width: 15px; height: 15px; }
+
+/* Dependency editing - Option 1 style + Option 3 editability */
+.dep-row { display: flex; align-items: center; gap: 5px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.7rem; }
+.dep-row select { border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 0.68rem; background: white; }
+.dep-row .dep-sys-select { width: 130px; }
+.dep-row .dep-cap-select { width: 100px; }
+.dep-row .arrow { color: #505a5f; font-size: 0.7rem; }
+.dep-row .dep-x { color: #d4351c; cursor: pointer; font-weight: bold; margin-left: auto; }
+.dep-add { font-size: 0.63rem; color: #1d70b8; cursor: pointer; font-weight: bold; margin-top: 4px; display: inline-block; }
+
+/* Chip selector for shared with */
+.chip-container { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px; border: 2px solid #0b0c0c; min-height: 28px; align-items: center; background: white; }
+.chip { display: inline-flex; align-items: center; gap: 2px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 1px 6px; font-size: 0.63rem; border-radius: 2px; }
+.chip .remove { cursor: pointer; color: #505a5f; font-weight: bold; }
+.chip-input { border: none; outline: none; font-size: 0.65rem; min-width: 70px; flex: 1; padding: 1px; }
+</style>
+</head>
+<body>
+
+<h1>Detail Panel — Fixed Spacing & Editability</h1>
+<p class="subtitle">Controlled field widths, interactive capability toggles, editable dependency rows with dropdowns.</p>
+
+<div class="detail-panel">
+
+<div class="pinned-bar">
+<div><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div><label>Vendor</label><span>SAP</span></div>
+<div><label>Functions</label><span>Finance, HR, Procurement</span></div>
+<div><label>Provides</label><span>payments, workflow</span></div>
+</div>
+
+<!-- WHAT THIS SYSTEM DOES -->
+<div class="section">
+<div class="section-title">What this system does</div>
+
+<!-- Name / Vendor / Users — controlled widths, no flex-grow blowout -->
+<div class="field-row">
+<div class="field"><label>System Name</label><input value="SAP S/4HANA ERP" style="width:200px;"></div>
+<div class="field"><label>Vendor</label><input value="SAP" style="width:120px;"></div>
+<div class="field"><label>Users</label><input value="7,000" style="width:70px;"></div>
+</div>
+
+<!-- Functions served -->
+<div style="margin-bottom:8px;">
+<label style="font-weight:bold; font-size:0.65rem; display:block; margin-bottom:3px;">Functions served</label>
+<div class="fn-chips">
+<span class="fn-chip">116 — Finance <span class="x">×</span></span>
+<span class="fn-chip">119 — Human Resources <span class="x">×</span></span>
+<span class="fn-chip">145 — Procurement <span class="x">×</span></span>
+<span class="fn-add">+ add</span>
+</div>
+<div class="fn-note">Remove all to mark as platform/infrastructure.</div>
+</div>
+
+<!-- Capabilities — clearly toggleable -->
+<div style="margin-bottom:6px;">
+<label style="font-weight:bold; font-size:0.65rem; display:block; margin-bottom:3px;">Capabilities provided <span style="font-weight:normal; color:#505a5f;">(click to toggle)</span></label>
+<div class="cap-grid">
+<span class="cap-toggle cap-toggle-on">payments</span>
+<span class="cap-toggle cap-toggle-on">workflow</span>
+<span class="cap-toggle">forms</span>
+<span class="cap-toggle">SSO</span>
+<span class="cap-toggle">SMS</span>
+<span class="cap-toggle">email</span>
+<span class="cap-toggle">booking</span>
+<span class="cap-toggle">integration</span>
+<span class="cap-toggle">telephony</span>
+</div>
+<div class="cap-custom-row">
+<input placeholder="Custom capability...">
+<button>+ Add</button>
+</div>
+</div>
+
+<div class="check-row"><input type="checkbox" checked> <span>ERP system (spans multiple functions)</span></div>
+</div>
+
+<!-- TWO COLUMN LOWER SECTION -->
+<div class="two-col">
+<!-- LEFT: Contract + Technical -->
+<div>
+<div class="section">
+<div class="section-title">Contract & Cost</div>
+<div class="field-row">
+<div class="field"><label>Annual Cost</label><input value="£2,300,000" style="width:120px;"></div>
+<div class="field"><label>Contract End</label><input value="03/2030" style="width:80px;" placeholder="mm/yyyy"></div>
+<div class="field"><label>Notice</label><input value="18" style="width:40px;"><div class="hint">months</div></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">Technical Profile</div>
+<div class="radio-group">
+<div class="radio-title">Hosting</div>
+<div class="radio-row"><label><input type="radio" name="h"> Cloud</label><label><input type="radio" name="h" checked> On-prem</label></div>
+</div>
+<div class="radio-group">
+<div class="radio-title">Data Partitioning</div>
+<div class="radio-row"><label><input type="radio" name="d"> Segmented</label><label><input type="radio" name="d" checked> Monolithic</label></div>
+<div class="hint">Monolithic = entangled data, needs ETL</div>
+</div>
+<div class="radio-group">
+<div class="radio-title">Portability</div>
+<div class="radio-row"><label><input type="radio" name="p"> High</label><label><input type="radio" name="p"> Med</label><label><input type="radio" name="p" checked> Low</label></div>
+<div class="hint">Low = proprietary, vendor lock-in</div>
+</div>
+<div class="field" style="margin-top:6px;">
+<label>Support Model</label>
+<select style="border:2px solid #0b0c0c; padding:3px 5px; font-size:0.72rem; width:155px;"><option selected>Vendor-supported</option><option>Community-supported</option><option>Unsupported</option></select>
+<div class="hint">Who maintains this going forward?</div>
+</div>
+</div>
+</div>
+
+<!-- RIGHT: Dependencies + Sharing -->
+<div>
+<div class="section">
+<div class="section-title">Provides capabilities to</div>
+<div class="dep-row">
+<select class="dep-sys-select"><option>Liquidlogic LAS</option></select>
+<span class="arrow">←</span>
+<select class="dep-cap-select"><option>payments</option></select>
+<span class="dep-x">×</span>
+</div>
+<div class="dep-row">
+<select class="dep-sys-select"><option>Liquidlogic EHM</option></select>
+<span class="arrow">←</span>
+<select class="dep-cap-select"><option>payments</option></select>
+<span class="dep-x">×</span>
+</div>
+<div class="dep-row">
+<select class="dep-sys-select"><option>Confirm Highways</option></select>
+<span class="arrow">←</span>
+<select class="dep-cap-select"><option>payments, workflow</option></select>
+<span class="dep-x">×</span>
+</div>
+<a class="dep-add">+ add consumer</a>
+</div>
+
+<div class="section">
+<div class="section-title">Depends on</div>
+<div class="dep-row">
+<select class="dep-sys-select"><option>GOV.UK Notify</option></select>
+<span class="arrow">→</span>
+<select class="dep-cap-select"><option>SMS</option></select>
+<span class="dep-x">×</span>
+</div>
+<a class="dep-add">+ add dependency</a>
+</div>
+
+<div class="section">
+<div class="section-title">Shared with</div>
+<div class="chip-container">
+<span class="chip">District Council 1 <span class="remove">×</span></span>
+<input class="chip-input" placeholder="Type council...">
+</div>
+<div class="hint">Autocompletes from councils in the programme</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="margin-top:2rem; padding:1rem; background:#fafafa; border:1px solid #ddd; font-size:0.75rem; color:#505a5f;">
+<strong style="color:#0b0c0c;">What's fixed:</strong>
+<ul style="margin:4px 0 0; padding-left:1.2rem;">
+<li><strong>Spacing:</strong> Fields use explicit pixel widths (200/120/70px) — no flex-grow blowout</li>
+<li><strong>Capabilities:</strong> Thicker borders, hover states, "click to toggle" label. Active = solid filled. Inactive = bordered with hover highlight. Clearly interactive.</li>
+<li><strong>Dependencies:</strong> Each row has dropdowns for system + capability selection (Option 3 editability). Arrow shows direction. Can change the system or capability inline.</li>
+</ul>
+</div>
+
+</body>
+</html>

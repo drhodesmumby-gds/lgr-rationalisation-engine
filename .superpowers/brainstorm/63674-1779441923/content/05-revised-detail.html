@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 2rem; margin: 0; }
+h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.85rem; }
+
+.detail-panel { background: white; border: 1px solid #b1b4b6; padding: 1.5rem; max-width: 680px; }
+
+.pinned-bar { display: flex; gap: 1.5rem; padding: 8px 12px; background: #f3f2f1; border: 1px solid #ddd; margin-bottom: 1.25rem; font-size: 0.75rem; }
+.pinned-bar label { font-weight: bold; font-size: 0.6rem; color: #505a5f; display: block; }
+.pinned-bar span { color: #0b0c0c; font-weight: bold; }
+
+.section { margin-bottom: 1.5rem; }
+.section-title { font-size: 0.7rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 4px; border-bottom: 1px solid #ddd; margin-bottom: 10px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.field { display: flex; flex-direction: column; }
+.field label { font-weight: bold; font-size: 0.7rem; margin-bottom: 2px; color: #0b0c0c; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 5px 8px; font-size: 0.8rem; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.6rem; color: #505a5f; margin-top: 2px; max-width: 280px; }
+
+.w-full { flex: 1 1 100%; }
+.w-large { flex: 1 1 280px; min-width: 200px; }
+.w-medium { flex: 1 1 160px; min-width: 120px; }
+.w-small { flex: 0 0 100px; }
+.w-tiny { flex: 0 0 70px; }
+
+/* Chip/tag selectors */
+.chip-container { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border: 2px solid #0b0c0c; min-height: 34px; align-items: center; background: white; }
+.chip { display: inline-flex; align-items: center; gap: 3px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 2px 8px; font-size: 0.7rem; border-radius: 2px; color: #0b0c0c; }
+.chip .remove { cursor: pointer; color: #505a5f; font-weight: bold; font-size: 0.8rem; }
+.chip-input { border: none; outline: none; font-size: 0.75rem; min-width: 100px; flex: 1; padding: 2px; }
+.chip-none { font-size: 0.7rem; color: #505a5f; font-style: italic; }
+
+/* Function assignment */
+.fn-assignment { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.fn-assignment select { border: 2px solid #0b0c0c; padding: 4px 6px; font-size: 0.75rem; flex: 1; }
+.fn-remove { color: #d4351c; font-weight: bold; cursor: pointer; font-size: 0.8rem; border: none; background: none; padding: 4px 8px; }
+.fn-remove:hover { text-decoration: underline; }
+.fn-add { font-size: 0.7rem; color: #1d70b8; cursor: pointer; margin-top: 4px; display: inline-block; }
+.fn-add:hover { text-decoration: underline; }
+.fn-none-note { font-size: 0.65rem; color: #505a5f; margin-top: 4px; }
+
+/* Capability pills */
+.cap-options { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.cap-pill { font-size: 0.65rem; padding: 3px 8px; border: 1px solid #b1b4b6; background: white; cursor: pointer; color: #0b0c0c; border-radius: 2px; }
+.cap-pill-active { background: #1d70b8; color: white; border-color: #1d70b8; }
+.cap-pill:hover { border-color: #1d70b8; }
+.cap-custom { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.cap-custom input { border: 1px solid #b1b4b6; padding: 3px 6px; font-size: 0.7rem; width: 120px; }
+.cap-custom button { font-size: 0.65rem; padding: 3px 8px; border: 1px solid #1d70b8; background: white; color: #1d70b8; cursor: pointer; }
+
+/* Radio groups */
+.radio-row { display: flex; gap: 12px; align-items: center; padding: 4px 0; }
+.radio-row label { font-weight: normal; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.radio-row input[type="radio"] { margin: 0; }
+.radio-title { font-weight: bold; font-size: 0.7rem; margin-bottom: 2px; color: #0b0c0c; }
+
+.check-row { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; padding: 4px 0; }
+.check-row input { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Revised Detail Panel</h1>
+<p class="subtitle">Function prioritised. Capabilities in same section. Custom capability entry. Removable functions.</p>
+
+<div class="detail-panel">
+
+<div class="pinned-bar">
+<div><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div><label>Vendor</label><span>SAP</span></div>
+<div><label>Function</label><span>Finance</span></div>
+</div>
+
+<!-- WHAT THIS SYSTEM DOES -->
+<div class="section">
+<div class="section-title">What this system does</div>
+
+<div class="row">
+<div class="field w-large">
+<label>System Name</label>
+<input value="SAP S/4HANA ERP">
+</div>
+<div class="field w-medium">
+<label>Vendor / Supplier</label>
+<input value="SAP">
+</div>
+</div>
+
+<div class="row">
+<div class="field w-full">
+<label>ESD Function(s) served</label>
+<div class="fn-assignment">
+<select><option>116 — Finance</option></select>
+<button class="fn-remove" title="Remove this assignment">×</button>
+</div>
+<div class="fn-assignment">
+<select><option>119 — Human Resources</option></select>
+<button class="fn-remove" title="Remove this assignment">×</button>
+</div>
+<div class="fn-assignment">
+<select><option>145 — Procurement</option></select>
+<button class="fn-remove" title="Remove this assignment">×</button>
+</div>
+<a class="fn-add">+ add function</a>
+<div class="fn-none-note">Systems without a function assignment will appear as infrastructure/platform components.</div>
+</div>
+</div>
+
+<div class="row">
+<div class="field w-full">
+<label>Capabilities provided to other systems</label>
+<div class="cap-options">
+<span class="cap-pill cap-pill-active">payments</span>
+<span class="cap-pill cap-pill-active">workflow</span>
+<span class="cap-pill">forms</span>
+<span class="cap-pill">SSO</span>
+<span class="cap-pill">SMS</span>
+<span class="cap-pill">email</span>
+<span class="cap-pill">booking</span>
+<span class="cap-pill">integration</span>
+<span class="cap-pill">telephony</span>
+</div>
+<div class="cap-custom">
+<input placeholder="Custom capability...">
+<button>+ Add</button>
+</div>
+<div class="hint">Select capabilities this system provides that OTHER systems depend on. Leave empty if none.</div>
+</div>
+</div>
+
+<div class="check-row">
+<input type="checkbox" checked> <span>This is an ERP system (large integrated platform spanning multiple functions)</span>
+</div>
+</div>
+
+<!-- SCALE & COST -->
+<div class="section">
+<div class="section-title">Scale & Cost</div>
+<div class="row">
+<div class="field w-small">
+<label>Users</label>
+<input value="7,000">
+</div>
+<div class="field w-medium">
+<label>Annual Cost</label>
+<input value="£2,300,000">
+</div>
+</div>
+</div>
+
+<!-- CONTRACT -->
+<div class="section">
+<div class="section-title">Contract</div>
+<div class="row">
+<div class="field w-small">
+<label>Contract End</label>
+<input value="03/2030" placeholder="mm/yyyy">
+</div>
+<div class="field w-tiny">
+<label>Notice</label>
+<input value="18" style="width:60px;">
+<div class="hint">months</div>
+</div>
+</div>
+</div>
+
+<!-- TECHNICAL -->
+<div class="section">
+<div class="section-title">Technical Profile</div>
+<div class="row">
+<div class="field" style="flex:1;">
+<div class="radio-title">Hosting</div>
+<div class="radio-row">
+<label><input type="radio" name="hosting"> Cloud / SaaS</label>
+<label><input type="radio" name="hosting" checked> On-premise</label>
+</div>
+</div>
+<div class="field" style="flex:1;">
+<div class="radio-title">Data Partitioning</div>
+<div class="radio-row">
+<label><input type="radio" name="dp"> Segmented</label>
+<label><input type="radio" name="dp" checked> Monolithic</label>
+</div>
+<div class="hint">Segmented = data can be split cleanly. Monolithic = entangled, needs ETL to separate.</div>
+</div>
+</div>
+<div class="row">
+<div class="field" style="flex:1;">
+<div class="radio-title">Data Portability</div>
+<div class="radio-row">
+<label><input type="radio" name="port"> High</label>
+<label><input type="radio" name="port"> Medium</label>
+<label><input type="radio" name="port" checked> Low</label>
+</div>
+<div class="hint">High = open APIs, standard exports. Low = proprietary format, vendor lock-in.</div>
+</div>
+<div class="field w-medium">
+<label>Support Model</label>
+<select>
+<option value="vendor-supported" selected>Vendor-supported</option>
+<option value="community-supported">Community-supported</option>
+<option value="unsupported">Unsupported</option>
+</select>
+<div class="hint">Who maintains this going forward?</div>
+</div>
+</div>
+</div>
+
+<!-- SHARING -->
+<div class="section">
+<div class="section-title">Sharing & Dependencies</div>
+<div class="row">
+<div class="field w-full">
+<label>Shared With</label>
+<div class="chip-container">
+<span class="chip">District Council 1 <span class="remove">×</span></span>
+<span class="chip">District Council 3 <span class="remove">×</span></span>
+<input class="chip-input" placeholder="Type council name...">
+</div>
+<div class="hint">Other councils sharing this same system instance. Autocompletes from councils in the programme.</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="margin-top:1.5rem; background:white; border:1px solid #b1b4b6; padding:1rem; font-size:0.75rem; color:#505a5f;">
+<strong style="color:#0b0c0c;">Changes from previous version:</strong>
+<ul style="margin:6px 0 0; padding-left:1.2rem;">
+<li><strong>"What this system does"</strong> section leads — function and capabilities are first, defining the system's purpose</li>
+<li>Function assignment is multi-select with × to remove each. Note explains systems without functions appear as infrastructure.</li>
+<li>Capabilities moved to same section as function (both define what the system does)</li>
+<li>Capabilities: LGAM pills + custom entry field for non-standard ones</li>
+<li>Scale & Cost demoted to their own brief section (important but secondary to function)</li>
+<li>Sections reordered: Purpose → Scale → Contract → Technical → Sharing</li>
+</ul>
+</div>
+
+</body>
+</html>

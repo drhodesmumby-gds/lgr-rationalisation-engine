@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 1.5rem; margin: 0; }
+h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+h2 { font-size: 1.1rem; margin-top: 2.5rem; margin-bottom: 0.5rem; border-top: 3px solid #0b0c0c; padding-top: 1rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.85rem; }
+
+/* ============ FOCUS VIEW ============ */
+.focus-layout { display: grid; grid-template-columns: 270px 1fr; border: 1px solid #b1b4b6; background: white; min-height: 580px; }
+
+/* List panel */
+.list-panel { border-right: 2px solid #b1b4b6; background: #fafafa; overflow-y: auto; display: flex; flex-direction: column; }
+.list-header { padding: 8px 10px; background: #f3f2f1; border-bottom: 1px solid #ddd; font-size: 0.7rem; position: sticky; top: 0; z-index: 2; }
+.list-toolbar { display: flex; align-items: center; gap: 6px; }
+.list-count { font-weight: bold; font-size: 0.7rem; }
+.list-search { border: 1px solid #b1b4b6; padding: 3px 6px; font-size: 0.65rem; width: 100px; border-radius: 0; }
+.list-filter { border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 0.6rem; background: white; border-radius: 0; }
+.list-add { font-size: 0.65rem; color: white; font-weight: bold; cursor: pointer; margin-left: auto; background: #00703c; padding: 3px 8px; border: none; }
+.progress-mini { display: flex; align-items: center; gap: 4px; margin-top: 5px; font-size: 0.6rem; color: #505a5f; }
+.progress-bar { flex: 1; height: 4px; background: #e0e0e0; border-radius: 2px; }
+.progress-fill { height: 100%; border-radius: 2px; background: #00703c; }
+
+/* Domain groups with tinted headers */
+.domain-group { }
+.domain-header { padding: 5px 10px; font-size: 0.6rem; font-weight: bold; color: #0b0c0c; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.1); border-top: 1px solid rgba(0,0,0,0.05); }
+.domain-header .count { font-weight: normal; opacity: 0.7; }
+.dh-admin { background: #d4e5f7; }
+.dh-health { background: #cce2d8; }
+.dh-env { background: #fce5cc; }
+.dh-housing { background: #e8d6f0; }
+.dh-transport { background: #d6eef8; }
+.dh-platform { background: #e8e8e8; }
+
+.list-item { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 0.68rem; display: flex; align-items: flex-start; gap: 5px; }
+.list-item:hover { background: #f0f4f8; }
+.list-item-active { background: #e8f4fd; border-left: 3px solid #1d70b8; padding-left: 7px; }
+.list-item-content { flex: 1; min-width: 0; }
+.list-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.68rem; }
+.list-meta { color: #505a5f; font-size: 0.58rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-status { flex-shrink: 0; font-size: 0.6rem; }
+.green { color: #00703c; }
+.orange { color: #f47738; }
+.red { color: #d4351c; }
+.list-item-platform .list-name { color: #505a5f; }
+
+/* Detail panel */
+.detail-panel { padding: 1.25rem; overflow-y: auto; }
+.mode-toggle { display: flex; gap: 0; margin-bottom: 1rem; }
+.mode-btn { padding: 4px 14px; font-size: 0.7rem; font-weight: bold; border: 2px solid #0b0c0c; cursor: pointer; }
+.mode-active { background: #0b0c0c; color: white; }
+.mode-inactive { background: white; color: #0b0c0c; }
+
+.pinned-bar { display: flex; gap: 1.25rem; padding: 6px 10px; background: #f3f2f1; border: 1px solid #ddd; margin-bottom: 1rem; font-size: 0.7rem; }
+.pinned-bar label { font-weight: bold; font-size: 0.55rem; color: #505a5f; display: block; }
+.pinned-bar span { color: #0b0c0c; font-weight: bold; }
+
+.section { margin-bottom: 1.1rem; }
+.section-title { font-size: 0.65rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 3px; border-bottom: 1px solid #ddd; margin-bottom: 6px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.field label { font-weight: bold; font-size: 0.65rem; margin-bottom: 1px; display: block; color: #0b0c0c; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 3px 5px; font-size: 0.75rem; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.55rem; color: #505a5f; margin-top: 1px; }
+.w-large { flex: 1 1 220px; }
+.w-medium { flex: 1 1 130px; }
+.w-small { flex: 0 0 80px; }
+.w-tiny { flex: 0 0 55px; }
+
+/* Two column lower section */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* Function inline */
+.fn-inline { font-size: 0.7rem; line-height: 1.6; }
+.fn-chip { display: inline-flex; align-items: center; gap: 2px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 1px 6px; font-size: 0.63rem; border-radius: 2px; margin-right: 3px; }
+.fn-chip .x { color: #d4351c; cursor: pointer; font-weight: bold; margin-left: 2px; }
+.fn-add { font-size: 0.63rem; color: #1d70b8; cursor: pointer; }
+
+/* Capability pills */
+.cap-options { display: flex; flex-wrap: wrap; gap: 3px; }
+.cap-pill { font-size: 0.6rem; padding: 2px 6px; border: 1px solid #b1b4b6; background: white; cursor: pointer; color: #0b0c0c; border-radius: 2px; }
+.cap-pill-active { background: #1d70b8; color: white; border-color: #1d70b8; }
+.cap-custom { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; }
+.cap-custom input { border: 1px solid #b1b4b6; padding: 1px 4px; font-size: 0.58rem; width: 80px; }
+.cap-custom button { font-size: 0.55rem; padding: 1px 5px; border: 1px solid #1d70b8; background: white; color: #1d70b8; cursor: pointer; }
+
+/* Radio compact */
+.radio-title { font-weight: bold; font-size: 0.65rem; margin-bottom: 1px; color: #0b0c0c; }
+.radio-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.radio-row label { font-weight: normal; font-size: 0.68rem; display: flex; align-items: center; gap: 3px; cursor: pointer; }
+.radio-row input[type="radio"] { margin: 0; width: 13px; height: 13px; }
+
+.check-row { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
+.check-row input { width: 14px; height: 14px; }
+
+/* Dependencies inline */
+.dep-item { display: flex; align-items: center; gap: 4px; padding: 2px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.65rem; }
+.dep-system { font-weight: bold; }
+.dep-cap { color: #505a5f; font-size: 0.58rem; background: #f3f2f1; padding: 0 3px; }
+.dep-x { color: #d4351c; cursor: pointer; margin-left: auto; font-size: 0.6rem; }
+.dep-add { font-size: 0.6rem; color: #1d70b8; cursor: pointer; margin-top: 3px; display: inline-block; }
+
+/* Chip selector */
+.chip-container { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px; border: 2px solid #0b0c0c; min-height: 28px; align-items: center; background: white; }
+.chip { display: inline-flex; align-items: center; gap: 2px; background: #e8f4fd; border: 1px solid #1d70b8; padding: 1px 6px; font-size: 0.6rem; border-radius: 2px; }
+.chip .remove { cursor: pointer; color: #505a5f; font-weight: bold; }
+.chip-input { border: none; outline: none; font-size: 0.65rem; min-width: 70px; flex: 1; padding: 1px; }
+
+/* ============ BULK VIEW ============ */
+.bulk-section { background: white; border: 1px solid #b1b4b6; padding: 1rem; margin-top: 1rem; }
+.bulk-tabs { display: flex; gap: 0; margin-bottom: 8px; border-bottom: 2px solid #b1b4b6; }
+.bulk-tab { padding: 4px 12px; font-size: 0.7rem; font-weight: bold; cursor: pointer; border: none; background: none; color: #505a5f; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.bulk-tab-active { color: #1d70b8; border-bottom-color: #1d70b8; }
+.bulk-table { width: 100%; border-collapse: collapse; font-size: 0.68rem; }
+.bulk-table th { background: #f3f2f1; padding: 5px 6px; text-align: left; border-bottom: 2px solid #0b0c0c; position: sticky; top: 0; font-size: 0.6rem; white-space: nowrap; }
+.bulk-table td { padding: 3px 5px; border-bottom: 1px solid #e8e8e8; }
+.bulk-table .pinned { background: #fafafa; font-weight: bold; }
+.bulk-table input, .bulk-table select { border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 0.68rem; width: 100%; box-sizing: border-box; }
+</style>
+</head>
+<body>
+
+<h1>Unified Architecture Editor — Final Design</h1>
+<p class="subtitle">One component, two modes. Used across all entry points (Build from Scratch, Edit, Validator).</p>
+
+<!-- ============================================ -->
+<!-- FOCUS VIEW -->
+<!-- ============================================ -->
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+<h2 style="margin:0; border:none; padding:0;">Focus View (Default)</h2>
+<div class="mode-toggle">
+<button class="mode-btn mode-active">Focus</button>
+<button class="mode-btn mode-inactive">Bulk</button>
+</div>
+</div>
+
+<div class="focus-layout">
+<!-- LIST PANEL -->
+<div class="list-panel">
+<div class="list-header">
+<div class="list-toolbar">
+<span class="list-count">14 systems</span>
+<input class="list-search" placeholder="Search...">
+<select class="list-filter"><option>All</option><option>Incomplete</option></select>
+<button class="list-add">+ Add</button>
+</div>
+<div class="progress-mini">
+<span>10/14 complete</span>
+<div class="progress-bar"><div class="progress-fill" style="width:71%;"></div></div>
+<span>71%</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header dh-admin"><span>Administration & Government</span> <span class="count">5</span></div>
+<div class="list-item list-item-active">
+<div class="list-item-content"><div class="list-name">SAP S/4HANA ERP</div><div class="list-meta">SAP · Finance, HR, Procurement</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Xero Finance</div><div class="list-meta">Xero · Finance</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">MHR iTrent</div><div class="list-meta">MHR · Human Resources</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Civica Electoral</div><div class="list-meta">Civica · Democratic Services</div></div>
+<span class="list-status orange">⚠ 1</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Microsoft Dynamics</div><div class="list-meta">Microsoft · CRM</div></div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header dh-health"><span>Health & Social Care</span> <span class="count">3</span></div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Liquidlogic LAS</div><div class="list-meta">System C · Adult Social Care</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Liquidlogic EHM</div><div class="list-meta">System C · Children's</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Public Health Intel</div><div class="list-meta">In-House · Public Health</div></div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header dh-env"><span>Environmental Protection</span> <span class="count">2</span></div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Bartec Waste</div><div class="list-meta">Bartec · Waste Mgmt</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">In-House Env Tracker</div><div class="list-meta">In-House · Env Health</div></div>
+<span class="list-status red">✗ 3</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header dh-transport"><span>Transport & Highways</span> <span class="count">1</span></div>
+<div class="list-item">
+<div class="list-item-content"><div class="list-name">Confirm Highways</div><div class="list-meta">Brightly · Highways</div></div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+
+<div class="domain-group">
+<div class="domain-header dh-platform"><span>Platform / Infrastructure</span> <span class="count">2</span></div>
+<div class="list-item list-item-platform">
+<div class="list-item-content"><div class="list-name">Capita Pay360</div><div class="list-meta">provides: payments</div></div>
+<span class="list-status green">✓</span>
+</div>
+<div class="list-item list-item-platform">
+<div class="list-item-content"><div class="list-name">GOV.UK Notify</div><div class="list-meta">provides: SMS, email</div></div>
+<span class="list-status green">✓</span>
+</div>
+</div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel">
+<div class="pinned-bar">
+<div><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div><label>Vendor</label><span>SAP</span></div>
+<div><label>Functions</label><span>Finance, HR, Procurement</span></div>
+<div><label>Provides</label><span>payments, workflow</span></div>
+</div>
+
+<!-- WHAT THIS SYSTEM DOES -->
+<div class="section">
+<div class="section-title">What this system does</div>
+<div class="row">
+<div class="field w-large"><label>System Name</label><input value="SAP S/4HANA ERP"></div>
+<div class="field w-medium"><label>Vendor</label><input value="SAP"></div>
+<div class="field w-small"><label>Users</label><input value="7,000"></div>
+</div>
+<div style="margin-bottom:6px;">
+<label style="font-weight:bold; font-size:0.65rem; display:block; margin-bottom:3px;">Functions served</label>
+<div class="fn-inline">
+<span class="fn-chip">116 — Finance <span class="x">×</span></span>
+<span class="fn-chip">119 — Human Resources <span class="x">×</span></span>
+<span class="fn-chip">145 — Procurement <span class="x">×</span></span>
+<span class="fn-add">+ add function</span>
+</div>
+<div class="hint" style="font-size:0.55rem; color:#505a5f; margin-top:2px;">Remove all to mark as platform/infrastructure component.</div>
+</div>
+<div style="margin-bottom:6px;">
+<label style="font-weight:bold; font-size:0.65rem; display:block; margin-bottom:3px;">Capabilities provided</label>
+<div class="cap-options">
+<span class="cap-pill cap-pill-active">payments</span>
+<span class="cap-pill cap-pill-active">workflow</span>
+<span class="cap-pill">forms</span>
+<span class="cap-pill">SSO</span>
+<span class="cap-pill">SMS</span>
+<span class="cap-pill">email</span>
+<span class="cap-pill">booking</span>
+<span class="cap-pill">integration</span>
+<span class="cap-custom"><input placeholder="Custom..."><button>+</button></span>
+</div>
+</div>
+<div class="check-row"><input type="checkbox" checked> <span style="font-size:0.68rem;">ERP system (spans multiple functions)</span></div>
+</div>
+
+<!-- LOWER TWO-COLUMN -->
+<div class="two-col">
+<div>
+<!-- CONTRACT & COST -->
+<div class="section">
+<div class="section-title">Contract & Cost</div>
+<div class="row">
+<div class="field w-medium"><label>Annual Cost</label><input value="£2,300,000"></div>
+</div>
+<div class="row">
+<div class="field w-small"><label>Contract End</label><input value="03/2030"></div>
+<div class="field w-tiny"><label>Notice</label><input value="18" style="width:45px;"><div class="hint">months</div></div>
+</div>
+</div>
+
+<!-- TECHNICAL PROFILE -->
+<div class="section">
+<div class="section-title">Technical Profile</div>
+<div style="margin-bottom:4px;"><div class="radio-title">Hosting</div><div class="radio-row"><label><input type="radio" name="h"> Cloud</label><label><input type="radio" name="h" checked> On-prem</label></div></div>
+<div style="margin-bottom:4px;"><div class="radio-title">Data Partitioning</div><div class="radio-row"><label><input type="radio" name="d"> Segmented</label><label><input type="radio" name="d" checked> Monolithic</label></div><div class="hint" style="font-size:0.53rem; color:#505a5f;">Monolithic = entangled data, needs ETL to split</div></div>
+<div style="margin-bottom:4px;"><div class="radio-title">Portability</div><div class="radio-row"><label><input type="radio" name="p"> High</label><label><input type="radio" name="p"> Med</label><label><input type="radio" name="p" checked> Low</label></div><div class="hint" style="font-size:0.53rem; color:#505a5f;">Low = proprietary format, vendor lock-in</div></div>
+<div class="field" style="margin-top:4px;"><label>Support Model</label><select style="border:2px solid #0b0c0c; padding:2px 5px; font-size:0.7rem; width:160px;"><option selected>Vendor-supported</option><option>Community-supported</option><option>Unsupported</option></select></div>
+</div>
+</div>
+
+<div>
+<!-- PROVIDES TO -->
+<div class="section">
+<div class="section-title">Provides capabilities to</div>
+<div class="dep-item"><span class="dep-system">Liquidlogic LAS</span> <span class="dep-cap">payments</span> <span class="dep-x">×</span></div>
+<div class="dep-item"><span class="dep-system">Liquidlogic EHM</span> <span class="dep-cap">payments</span> <span class="dep-x">×</span></div>
+<div class="dep-item"><span class="dep-system">Confirm Highways</span> <span class="dep-cap">payments</span> <span class="dep-cap">workflow</span> <span class="dep-x">×</span></div>
+<a class="dep-add">+ add consumer</a>
+</div>
+
+<!-- DEPENDS ON -->
+<div class="section">
+<div class="section-title">Depends on</div>
+<div class="dep-item"><span class="dep-system">GOV.UK Notify</span> <span class="dep-cap">SMS</span> <span class="dep-x">×</span></div>
+<a class="dep-add">+ add dependency</a>
+</div>
+
+<!-- SHARED WITH -->
+<div class="section">
+<div class="section-title">Shared with</div>
+<div class="chip-container">
+<span class="chip">District Council 1 <span class="remove">×</span></span>
+<input class="chip-input" placeholder="Type council...">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============================================ -->
+<!-- BULK VIEW -->
+<!-- ============================================ -->
+
+<h2>Bulk View (Toggle)</h2>
+<p class="subtitle">Same data, spreadsheet density. Name/Vendor/Function pinned. Column groups swap remaining fields.</p>
+
+<div class="bulk-section">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+<div class="mode-toggle">
+<button class="mode-btn mode-inactive">Focus</button>
+<button class="mode-btn mode-active">Bulk</button>
+</div>
+<div style="font-size:0.7rem;"><span style="font-weight:bold;">14 systems</span> · <span style="color:#505a5f;">10 complete, 2 warnings, 2 errors</span></div>
+</div>
+
+<div class="bulk-tabs">
+<button class="bulk-tab bulk-tab-active">Contract & Cost</button>
+<button class="bulk-tab">Technical</button>
+<button class="bulk-tab">Relationships</button>
+</div>
+
+<div style="overflow-x:auto;">
+<table class="bulk-table">
+<tr>
+<th class="pinned" style="min-width:140px;">System</th>
+<th class="pinned" style="min-width:80px;">Vendor</th>
+<th class="pinned" style="min-width:120px;">Function</th>
+<th style="min-width:100px;">Annual Cost</th>
+<th style="min-width:75px;">End Date</th>
+<th style="min-width:60px;">Notice</th>
+<th style="width:30px;">✓</th>
+</tr>
+<tr>
+<td class="pinned">SAP S/4HANA</td><td class="pinned">SAP</td><td class="pinned">Finance +2</td>
+<td><input value="£2,300,000"></td><td><input value="03/2030"></td><td><input value="18"></td><td class="green">✓</td>
+</tr>
+<tr>
+<td class="pinned">Liquidlogic LAS</td><td class="pinned">System C</td><td class="pinned">Adult SC</td>
+<td><input value="£1,000,000"></td><td><input value="09/2028"></td><td><input value="6"></td><td class="green">✓</td>
+</tr>
+<tr>
+<td class="pinned">NEC Revenues</td><td class="pinned">NEC</td><td class="pinned">Benefits</td>
+<td><input value="£180,000"></td><td><input value="03/2027"></td><td><input value="9"></td><td class="orange">⚠</td>
+</tr>
+<tr>
+<td class="pinned">In-House Env Tracker</td><td class="pinned">In-House</td><td class="pinned">Env Health</td>
+<td><input value="£10,000"></td><td><input value="" placeholder="--"></td><td><input value="" placeholder="--"></td><td class="red">✗</td>
+</tr>
+<tr>
+<td class="pinned">Bartec Waste</td><td class="pinned">Bartec</td><td class="pinned">Waste Mgmt</td>
+<td><input value="£130,000"></td><td><input value="06/2029"></td><td><input value="6"></td><td class="green">✓</td>
+</tr>
+<tr>
+<td class="pinned">Confirm Highways</td><td class="pinned">Brightly</td><td class="pinned">Highways</td>
+<td><input value="£260,000"></td><td><input value="06/2029"></td><td><input value="6"></td><td class="green">✓</td>
+</tr>
+</table>
+</div>
+<p style="font-size:0.6rem; color:#505a5f; margin-top:6px;">Name, Vendor, Function columns always pinned. Switch tabs to edit Technical (hosting, portability, partitioning, support model) or Relationships (shared with, capabilities, dependencies).</p>
+</div>
+
+</body>
+</html>

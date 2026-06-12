@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f2f1; color: #0b0c0c; padding: 1.5rem; margin: 0; font-size: 14px; }
+h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+.subtitle { color: #505a5f; margin-bottom: 1.5rem; font-size: 0.85rem; }
+
+/* Full Focus View layout */
+.focus-layout { display: grid; grid-template-columns: 260px 1fr; border: 1px solid #b1b4b6; background: white; min-height: 600px; margin-bottom: 2rem; }
+
+/* Left panel - system list */
+.list-panel { border-right: 2px solid #b1b4b6; background: #fafafa; overflow-y: auto; }
+.list-header { padding: 8px 10px; background: #f3f2f1; border-bottom: 1px solid #ddd; font-weight: bold; font-size: 0.7rem; position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; }
+.list-item { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; cursor: pointer; font-size: 0.7rem; }
+.list-item:hover { background: #f0f4f8; }
+.list-item-active { background: #e8f4fd; border-left: 4px solid #1d70b8; padding-left: 6px; }
+.list-name { font-weight: bold; }
+.list-meta { color: #505a5f; font-size: 0.6rem; margin-top: 1px; }
+.list-status { float: right; font-size: 0.65rem; }
+.green { color: #00703c; }
+.orange { color: #f47738; }
+.red { color: #d4351c; }
+
+/* Right panel - detail */
+.detail-panel { padding: 1.25rem; overflow-y: auto; }
+.pinned-bar { display: flex; gap: 1.5rem; padding: 6px 10px; background: #f3f2f1; border: 1px solid #ddd; margin-bottom: 1rem; font-size: 0.7rem; }
+.pinned-bar label { font-weight: bold; font-size: 0.55rem; color: #505a5f; display: block; }
+.pinned-bar span { color: #0b0c0c; font-weight: bold; }
+
+.section { margin-bottom: 1rem; }
+.section-title { font-size: 0.65rem; font-weight: bold; color: #505a5f; text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 3px; border-bottom: 1px solid #ddd; margin-bottom: 6px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.field label { font-weight: bold; font-size: 0.65rem; margin-bottom: 1px; display: block; color: #0b0c0c; }
+.field input, .field select { border: 2px solid #0b0c0c; padding: 3px 5px; font-size: 0.75rem; color: #0b0c0c; background: white; }
+.field .hint { font-size: 0.55rem; color: #505a5f; margin-top: 1px; }
+.w-large { flex: 1 1 220px; }
+.w-medium { flex: 1 1 120px; }
+.w-small { flex: 0 0 80px; }
+
+/* Capability pills */
+.cap-options { display: flex; flex-wrap: wrap; gap: 3px; }
+.cap-pill { font-size: 0.6rem; padding: 2px 6px; border: 1px solid #b1b4b6; background: white; cursor: pointer; color: #0b0c0c; border-radius: 2px; }
+.cap-pill-active { background: #1d70b8; color: white; border-color: #1d70b8; }
+
+/* Options for dependency display */
+h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.5rem; }
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.option { border: 2px solid #b1b4b6; padding: 1.25rem; background: white; }
+.option:hover { border-color: #1d70b8; }
+.option h3 { margin-top: 0; font-size: 0.95rem; }
+.option .desc { font-size: 0.8rem; color: #505a5f; margin-bottom: 1rem; }
+.pros-cons { font-size: 0.75rem; color: #505a5f; margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
+.pros-cons strong { color: #0b0c0c; }
+
+/* Mockup elements for options */
+.dep-item { display: flex; align-items: center; gap: 5px; padding: 3px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.7rem; }
+.dep-system { font-weight: bold; }
+.dep-caps { color: #505a5f; font-size: 0.6rem; background: #f3f2f1; padding: 1px 4px; }
+.dep-arrow { color: #505a5f; }
+.dep-add { font-size: 0.65rem; color: #1d70b8; cursor: pointer; margin-top: 3px; display: inline-block; }
+
+.matrix-table { width: 100%; border-collapse: collapse; font-size: 0.65rem; }
+.matrix-table th { background: #f3f2f1; padding: 3px 5px; border-bottom: 1px solid #0b0c0c; text-align: center; }
+.matrix-table td { padding: 3px 5px; border-bottom: 1px solid #eee; text-align: center; }
+.matrix-table .row-head { text-align: left; font-weight: bold; }
+.matrix-check { color: #1d70b8; font-weight: bold; }
+
+.edge-row { display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.7rem; }
+.edge-row select { border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 0.65rem; }
+.edge-row .arrow { color: #505a5f; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<h1>Focus View with Capability Relationship Options</h1>
+<p class="subtitle">Full context of the list + detail layout, with three options for how to handle capability dependencies.</p>
+
+<!-- FULL FOCUS VIEW for context -->
+<div class="focus-layout">
+<div class="list-panel">
+<div class="list-header"><span>14 Systems</span><span style="font-weight:normal;">+ Add</span></div>
+<div class="list-item list-item-active">
+<span class="list-name">SAP S/4HANA ERP</span><span class="list-status green">✓</span>
+<div class="list-meta">SAP · Finance, HR, Procurement · <em>payments, workflow</em></div>
+</div>
+<div class="list-item">
+<span class="list-name">Liquidlogic LAS</span><span class="list-status green">✓</span>
+<div class="list-meta">System C · Adult Social Care</div>
+</div>
+<div class="list-item">
+<span class="list-name">Liquidlogic EHM</span><span class="list-status green">✓</span>
+<div class="list-meta">System C · Children's Services</div>
+</div>
+<div class="list-item">
+<span class="list-name">Confirm Highways</span><span class="list-status green">✓</span>
+<div class="list-meta">Brightly · Highways</div>
+</div>
+<div class="list-item">
+<span class="list-name">NEC Revenues & Benefits</span><span class="list-status orange">⚠</span>
+<div class="list-meta">NEC · Benefits</div>
+</div>
+<div class="list-item">
+<span class="list-name">Bartec Waste</span><span class="list-status green">✓</span>
+<div class="list-meta">Bartec · Waste Management</div>
+</div>
+<div class="list-item">
+<span class="list-name">Microsoft Dynamics 365</span><span class="list-status green">✓</span>
+<div class="list-meta">Microsoft · CRM · <em>forms</em></div>
+</div>
+<div class="list-item">
+<span class="list-name">Capita Pay360</span><span class="list-status green">✓</span>
+<div class="list-meta">Capita · <em>payments</em></div>
+</div>
+<div class="list-item">
+<span class="list-name">GOV.UK Notify</span><span class="list-status green">✓</span>
+<div class="list-meta">GDS · <em>SMS, email</em></div>
+</div>
+<div class="list-item">
+<span class="list-name">In-House CRM</span><span class="list-status red">✗</span>
+<div class="list-meta">In-House · CRM · unsupported</div>
+</div>
+</div>
+
+<div class="detail-panel">
+<div class="pinned-bar">
+<div><label>System</label><span>SAP S/4HANA ERP</span></div>
+<div><label>Vendor</label><span>SAP</span></div>
+<div><label>Functions</label><span>Finance, HR, Procurement</span></div>
+<div><label>Provides</label><span>payments, workflow</span></div>
+</div>
+
+<div class="section">
+<div class="section-title">What this system does</div>
+<div class="row">
+<div class="field w-large"><label>System Name</label><input value="SAP S/4HANA ERP"></div>
+<div class="field w-medium"><label>Vendor</label><input value="SAP"></div>
+<div class="field w-small"><label>Users</label><input value="7,000"></div>
+</div>
+<div style="margin-bottom:6px;">
+<label style="font-weight:bold; font-size:0.65rem; display:block; margin-bottom:2px;">Functions served</label>
+<div style="font-size:0.7rem;">116 — Finance <span style="color:#d4351c; cursor:pointer;">×</span> · 119 — HR <span style="color:#d4351c; cursor:pointer;">×</span> · 145 — Procurement <span style="color:#d4351c; cursor:pointer;">×</span> · <span style="color:#1d70b8; cursor:pointer;">+ add</span></div>
+</div>
+<div>
+<label style="font-weight:bold; font-size:0.65rem; display:block; margin-bottom:3px;">Capabilities provided</label>
+<div class="cap-options">
+<span class="cap-pill cap-pill-active">payments</span>
+<span class="cap-pill cap-pill-active">workflow</span>
+<span class="cap-pill">forms</span>
+<span class="cap-pill">SSO</span>
+<span class="cap-pill">SMS</span>
+<span class="cap-pill">email</span>
+<span class="cap-pill">booking</span>
+<span class="cap-pill">integration</span>
+</div>
+</div>
+</div>
+
+<div style="background:#f9f9f9; border:1px solid #ddd; padding:10px; font-size:0.75rem; color:#505a5f; text-align:center;">
+<em>↓ Capability dependency UI goes here — see options below ↓</em>
+</div>
+</div>
+</div>
+
+<!-- OPTIONS FOR CAPABILITY RELATIONSHIPS -->
+<h2>How should capability dependencies be shown?</h2>
+<p class="subtitle">These define CONSUMES_CAPABILITY edges. "SAP provides payments → Liquidlogic consumes payments from SAP."</p>
+
+<div class="options-grid">
+
+<!-- Option 1: Inline lists (current proposal) -->
+<div class="option">
+<h3>Option 1: Inline Lists (per-system)</h3>
+<p class="desc">Show "provides to" and "depends on" as simple lists within each system's detail. Edit from either side.</p>
+
+<div style="border:1px solid #ddd; padding:10px; background:#fafafa; font-size:0.7rem;">
+<div style="font-weight:bold; font-size:0.65rem; color:#505a5f; text-transform:uppercase; margin-bottom:4px;">Provides to</div>
+<div class="dep-item"><span class="dep-system">Liquidlogic LAS</span> <span class="dep-caps">payments</span> <span style="margin-left:auto; color:#d4351c; cursor:pointer; font-size:0.6rem;">×</span></div>
+<div class="dep-item"><span class="dep-system">Liquidlogic EHM</span> <span class="dep-caps">payments</span> <span style="margin-left:auto; color:#d4351c; cursor:pointer; font-size:0.6rem;">×</span></div>
+<div class="dep-item"><span class="dep-system">Confirm Highways</span> <span class="dep-caps">payments</span> <span class="dep-caps">workflow</span> <span style="margin-left:auto; color:#d4351c; cursor:pointer; font-size:0.6rem;">×</span></div>
+<a class="dep-add">+ add consumer</a>
+
+<div style="font-weight:bold; font-size:0.65rem; color:#505a5f; text-transform:uppercase; margin-top:10px; margin-bottom:4px;">Depends on</div>
+<div class="dep-item"><span class="dep-system">GOV.UK Notify</span> <span class="dep-caps">SMS</span> <span style="margin-left:auto; color:#d4351c; cursor:pointer; font-size:0.6rem;">×</span></div>
+<a class="dep-add">+ add dependency</a>
+</div>
+
+<div class="pros-cons">
+<strong>+</strong> Simple, contextual — see blast radius while editing the system<br>
+<strong>+</strong> Both directions visible at once<br>
+<strong>−</strong> When adding a consumer, need to select system + which capabilities<br>
+<strong>−</strong> Duplicate info: editing SAP's "provides to" should also appear on Liquidlogic's "depends on"
+</div>
+</div>
+
+<!-- Option 2: Dependency matrix -->
+<div class="option">
+<h3>Option 2: Dependency Matrix (separate view)</h3>
+<p class="desc">A dedicated "Dependencies" tab showing a matrix: providers as columns, consumers as rows, capabilities at intersections.</p>
+
+<div style="border:1px solid #ddd; padding:10px; background:#fafafa; overflow-x:auto;">
+<table class="matrix-table">
+<tr><th></th><th>SAP<br><span style="font-weight:normal; font-size:0.55rem;">payments, workflow</span></th><th>Pay360<br><span style="font-weight:normal; font-size:0.55rem;">payments</span></th><th>Notify<br><span style="font-weight:normal; font-size:0.55rem;">SMS, email</span></th><th>Dynamics<br><span style="font-weight:normal; font-size:0.55rem;">forms</span></th></tr>
+<tr><td class="row-head">Liquidlogic LAS</td><td class="matrix-check">payments</td><td></td><td class="matrix-check">SMS</td><td></td></tr>
+<tr><td class="row-head">Liquidlogic EHM</td><td class="matrix-check">payments</td><td></td><td></td><td></td></tr>
+<tr><td class="row-head">Confirm Highways</td><td class="matrix-check">payments, workflow</td><td></td><td></td><td></td></tr>
+<tr><td class="row-head">NEC Revenues</td><td></td><td class="matrix-check">payments</td><td></td><td></td></tr>
+<tr><td class="row-head">Bartec Waste</td><td></td><td></td><td class="matrix-check">SMS</td><td class="matrix-check">forms</td></tr>
+</table>
+</div>
+
+<div class="pros-cons">
+<strong>+</strong> Full picture at a glance — see all relationships in one view<br>
+<strong>+</strong> Easy to spot patterns (everything depends on SAP)<br>
+<strong>+</strong> Natural for bulk entry of dependencies<br>
+<strong>−</strong> Separate view — not inline with system editing<br>
+<strong>−</strong> Grows with system count (N×M matrix)<br>
+<strong>−</strong> Less discoverable for new users
+</div>
+</div>
+
+<!-- Option 3: Edge list (explicit rows) -->
+<div class="option">
+<h3>Option 3: Edge List (like current Edges tab)</h3>
+<p class="desc">A flat list of dependency edges. Each row: Source → provides [capability] → Target. Simple, explicit, familiar.</p>
+
+<div style="border:1px solid #ddd; padding:10px; background:#fafafa; font-size:0.7rem;">
+<div class="edge-row"><select><option>Liquidlogic LAS</option></select> <span class="arrow">←</span> <select><option>payments</option></select> <span class="arrow">←</span> <select><option>SAP S/4HANA</option></select> <span style="color:#d4351c; cursor:pointer;">×</span></div>
+<div class="edge-row"><select><option>Liquidlogic EHM</option></select> <span class="arrow">←</span> <select><option>payments</option></select> <span class="arrow">←</span> <select><option>SAP S/4HANA</option></select> <span style="color:#d4351c; cursor:pointer;">×</span></div>
+<div class="edge-row"><select><option>Confirm Highways</option></select> <span class="arrow">←</span> <select><option>payments, workflow</option></select> <span class="arrow">←</span> <select><option>SAP S/4HANA</option></select> <span style="color:#d4351c; cursor:pointer;">×</span></div>
+<div class="edge-row"><select><option>NEC Revenues</option></select> <span class="arrow">←</span> <select><option>payments</option></select> <span class="arrow">←</span> <select><option>Capita Pay360</option></select> <span style="color:#d4351c; cursor:pointer;">×</span></div>
+<div class="edge-row"><select><option>Bartec Waste</option></select> <span class="arrow">←</span> <select><option>SMS</option></select> <span class="arrow">←</span> <select><option>GOV.UK Notify</option></select> <span style="color:#d4351c; cursor:pointer;">×</span></div>
+<a class="dep-add">+ add dependency</a>
+</div>
+
+<div class="pros-cons">
+<strong>+</strong> Explicit — no ambiguity about what each edge means<br>
+<strong>+</strong> Sortable/filterable<br>
+<strong>+</strong> Maps directly to the JSON schema (CONSUMES_CAPABILITY edges)<br>
+<strong>−</strong> Can get long for complex estates<br>
+<strong>−</strong> Disconnected from the system you're editing<br>
+<strong>−</strong> Repetitive (SAP appears 3 times as provider)
+</div>
+</div>
+
+<!-- Option 4: Hybrid - inline summary + expandable -->
+<div class="option">
+<h3>Option 4: Inline Summary + Full View</h3>
+<p class="desc">Show a compact summary in the system detail ("3 systems depend on this"). Click to expand or jump to a dedicated dependencies view.</p>
+
+<div style="border:1px solid #ddd; padding:10px; background:#fafafa; font-size:0.7rem;">
+<div style="margin-bottom:8px;">
+<div style="font-weight:bold; font-size:0.65rem; color:#505a5f; text-transform:uppercase; margin-bottom:4px;">Blast radius</div>
+<div style="background:#fff5f5; border:1px solid #f4c6c6; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;">
+<span><strong>3 systems</strong> depend on this system's capabilities (payments, workflow)</span>
+<span style="color:#1d70b8; font-size:0.65rem; cursor:pointer; text-decoration:underline;">View details →</span>
+</div>
+</div>
+<div>
+<div style="font-weight:bold; font-size:0.65rem; color:#505a5f; text-transform:uppercase; margin-bottom:4px;">This system depends on</div>
+<div style="padding:4px 0; font-size:0.7rem;">GOV.UK Notify <span style="color:#505a5f;">(SMS)</span> · <span style="color:#1d70b8; cursor:pointer;">Edit →</span></div>
+</div>
+</div>
+
+<div class="pros-cons">
+<strong>+</strong> Minimal space in detail panel — just a summary<br>
+<strong>+</strong> Blast radius immediately visible as a risk indicator<br>
+<strong>+</strong> Full editing deferred to dedicated view (less clutter)<br>
+<strong>−</strong> Extra click to actually edit dependencies<br>
+<strong>−</strong> Need to design the "full view" separately
+</div>
+</div>
+
+</div>
+
+<p style="margin-top:1.5rem; font-size:0.8rem; color:#505a5f;">These aren't mutually exclusive — e.g., Option 4's inline summary + Option 2's matrix as the "full view" it links to.</p>
+
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Full Modal — Concept B with Multi-Function Assignment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.5;
+      padding: 1rem;
+    }
+    h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .subtitle { color: #86868b; margin-bottom: 1rem; font-size: 0.82rem; }
+    .section-title {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #fff; background: #0b0c0c; display: inline-block; padding: 2px 10px; margin-bottom: 8px; margin-top: 1.5rem;
+    }
+
+    /* Modal frame */
+    .modal-frame {
+      background: #fff;
+      border: 2px solid #0b0c0c;
+      border-top: 8px solid #1d70b8;
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .modal-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #b1b4b6;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .modal-header .title { font-size: 18px; font-weight: bold; }
+    .modal-header .meta { font-size: 12px; color: #505a5f; margin-top: 2px; }
+    .modal-header .close-btn {
+      font-size: 20px; cursor: pointer; color: #505a5f; padding: 0 4px;
+      border: none; background: none; line-height: 1;
+    }
+    .modal-body { display: flex; min-height: 450px; }
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #b1b4b6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f3f2f1;
+    }
+    .btn-primary { background: #00703c; color: #fff; border: none; padding: 8px 20px; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .btn-secondary { background: #fff; color: #0b0c0c; border: 2px solid #0b0c0c; padding: 6px 16px; font-weight: bold; font-size: 12px; cursor: pointer; }
+
+    /* Panes */
+    .pane { padding: 14px; font-size: 12px; border-right: 1px solid #b1b4b6; overflow-y: auto; }
+    .pane:last-child { border-right: none; }
+    .pane-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #505a5f; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #1d70b8;
+    }
+
+    /* System card */
+    .sys-card { border: 1px solid #b1b4b6; padding: 8px; margin-bottom: 6px; background: #fafafa; }
+    .sys-card.erp { border: 2px solid #d4351c; }
+    .sys-card .name { font-weight: bold; font-size: 12px; }
+    .sys-card .meta { font-size: 11px; color: #505a5f; }
+    .badge { display: inline-block; font-size: 9px; padding: 1px 4px; font-weight: bold; margin-right: 2px; }
+    .badge-red { background: #fce4e1; color: #d4351c; border: 1px solid #d4351c; }
+    .badge-green { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .badge-orange { background: #fde68a; color: #f47738; border: 1px solid #f47738; }
+
+    /* Function list */
+    .func-row {
+      display: flex; align-items: center; padding: 6px 8px; border: 1px solid #b1b4b6;
+      margin-bottom: 3px; background: #fafafa; font-size: 11px; cursor: pointer;
+    }
+    .func-row:hover { background: #f0f4ff; }
+    .func-row.selected { border-color: #1d70b8; background: #f0f4ff; border-width: 2px; }
+    .func-row .func-name { flex: 1; font-weight: 600; }
+    .func-row .func-status { font-size: 9px; padding: 2px 5px; font-weight: bold; }
+    .status-decided { background: #cce2d8; color: #00703c; }
+    .status-current { background: #f0f4ff; color: #1d70b8; }
+    .status-pending { background: #f3f2f1; color: #505a5f; }
+
+    /* Allocation cards */
+    .alloc-card { border: 1px solid #b1b4b6; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 2px; }
+    .alloc-card.linked { border-color: #00703c; border-width: 2px; background: #f8fdf9; }
+    .alloc-card.linked-secondary { border-color: #00703c; border-width: 2px; border-style: dashed; background: #f8fdf9; }
+    .alloc-card .succ-name { font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+    .alloc-card select {
+      width: 100%; border: 1px solid #0b0c0c; padding: 5px 8px; font-size: 11px;
+      background: #fff; margin-bottom: 5px;
+    }
+    .alloc-card .detail-row {
+      font-size: 11px; color: #505a5f; padding: 2px 0; display: flex; justify-content: space-between; align-items: center;
+    }
+    .alloc-card .inline-edit { border: 1px solid #b1b4b6; padding: 2px 5px; font-size: 11px; width: 130px; }
+
+    .share-toggle {
+      margin-top: 6px; padding: 6px 8px; background: #f0fdf4; border: 1px solid #00703c; border-radius: 2px;
+    }
+    .share-toggle .toggle-label { font-size: 10px; font-weight: bold; color: #00703c; margin-bottom: 3px; }
+    .share-toggle .checkbox-row { font-size: 11px; padding: 1px 0; display: flex; align-items: center; gap: 5px; }
+
+    .linked-badge {
+      display: inline-block; font-size: 9px; padding: 1px 5px; font-weight: bold;
+      background: #cce2d8; color: #00703c; border: 1px solid #00703c; margin-left: 6px;
+    }
+
+    /* Multi-function assignment */
+    .multi-func-section {
+      margin-top: 8px; padding: 6px 8px; background: #eff6ff; border: 1px solid #1d70b8; border-radius: 2px;
+    }
+    .multi-func-section .section-label { font-size: 10px; font-weight: bold; color: #1d70b8; margin-bottom: 3px; }
+    .multi-func-section .checkbox-row { font-size: 11px; padding: 1px 0; display: flex; align-items: center; gap: 5px; }
+
+    /* Cost & impact pane */
+    .cost-section { margin-bottom: 12px; }
+    .cost-section .title { font-size: 11px; font-weight: bold; margin-bottom: 5px; color: #0b0c0c; }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 11px; }
+    .cost-input { width: 44px; border: 1px solid #b1b4b6; padding: 2px 3px; font-size: 10px; text-align: right; }
+
+    .derived-label {
+      padding: 6px 8px; border-radius: 2px; font-size: 10px; font-weight: bold;
+      display: flex; align-items: center; gap: 5px; margin-bottom: 8px;
+    }
+    .derived-shared { background: #cce2d8; color: #00703c; border: 1px solid #00703c; }
+    .derived-mixed { background: #fde68a; color: #0b0c0c; border: 1px solid #f47738; }
+
+    .summary-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+    .summary-table td { padding: 4px 0; border-bottom: 1px solid #e5e5e5; }
+    .summary-table .badge-sm { font-size: 9px; padding: 1px 5px; font-weight: bold; }
+
+    .obligations-list { font-size: 11px; line-height: 1.8; margin-top: 6px; }
+    .obligations-list .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+
+    .note-box { font-size: 11px; padding: 6px 8px; margin-top: 8px; border-left: 3px solid; }
+    .note-orange { background: #fff7e6; border-color: #f47738; }
+    .note-blue { background: #f0f4ff; border-color: #1d70b8; }
+    .divider { border-top: 1px solid #e5e5e5; margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+  <h2>Full Decision Modal — Concept B (Successor-First)</h2>
+  <p class="subtitle">Three-pane layout with successor-first allocation, "Share with..." linking, multi-function assignment, and cost splitting.</p>
+
+  <!-- THE FULL MODAL -->
+  <div class="section-title">Complete modal — HR function selected, mid-decision</div>
+
+  <div class="modal-frame">
+    <div class="modal-header">
+      <div>
+        <div class="title">SAP S/4HANA ERP</div>
+        <div class="meta">Westshire County Council · Partial predecessor · £2.3M/yr · 7,000 users</div>
+      </div>
+      <button class="close-btn">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- PANE 1: System & Function Navigator -->
+      <div class="pane" style="width: 22%; min-width: 160px;">
+        <div class="pane-label">Functions</div>
+        <div style="font-size: 10px; color: #505a5f; margin-bottom: 6px;">Click a function to configure its allocation per successor.</div>
+
+        <div class="func-row">
+          <span class="func-name">Finance</span>
+          <span class="func-status status-decided">Shared ✓</span>
+        </div>
+        <div class="func-row selected">
+          <span class="func-name">Human Resources</span>
+          <span class="func-status status-current">Editing</span>
+        </div>
+        <div class="func-row">
+          <span class="func-name">Procurement</span>
+          <span class="func-status status-pending">Pending</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- System quick-ref -->
+        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 4px;">System info</div>
+        <div class="sys-card erp" style="font-size: 11px;">
+          <div style="margin-bottom: 3px;">
+            <span class="badge badge-red">ERP</span>
+            <span class="badge badge-orange">On-prem</span>
+            <span class="badge badge-red">Monolithic</span>
+          </div>
+          <div class="meta">Vendor: SAP</div>
+          <div class="meta">Ends: 2030-03 (18m notice)</div>
+          <div class="meta" style="margin-top: 4px; font-style: italic; color: #f47738;">
+            Political sensitivity noted
+          </div>
+        </div>
+
+        <div class="note-box note-orange" style="margin-top: 10px;">
+          Decommission requires all 3 functions resolved away.
+        </div>
+      </div>
+
+      <!-- PANE 2: Successor Allocation -->
+      <div class="pane" style="width: 42%;">
+        <div class="pane-label">Allocation: Human Resources</div>
+        <div style="font-size: 11px; color: #505a5f; margin-bottom: 8px;">
+          For each successor, what system serves HR?
+        </div>
+
+        <!-- West Elmhurst — procuring new, sharing with Ivy Hatherley -->
+        <div class="alloc-card linked">
+          <div class="succ-name">West Elmhurst Council <span class="linked-badge">Primary</span></div>
+          <select>
+            <option>SAP S/4HANA HR (keep current)</option>
+            <option selected>Procure new system</option>
+            <option>Use existing: iTrent (Bromwich Borough)</option>
+            <option>Defer — decide post-vesting</option>
+          </select>
+
+          <!-- Inline procurement details -->
+          <div style="padding: 6px 8px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 11px; margin-bottom: 6px;">
+            <div class="detail-row"><span>System:</span><input class="inline-edit" value="Workday HCM"></div>
+            <div class="detail-row"><span>Vendor:</span><input class="inline-edit" value="Workday"></div>
+            <div class="detail-row"><span>Annual cost:</span><input class="inline-edit" value="£400,000"></div>
+            <div class="detail-row"><span>Hosting:</span>
+              <select style="border: 1px solid #b1b4b6; padding: 2px 4px; font-size: 11px; width: 130px;">
+                <option selected>Cloud</option><option>On-premise</option><option>Partner-hosted</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Multi-function assignment -->
+          <div class="multi-func-section">
+            <div class="section-label">Also assign Workday HCM to:</div>
+            <div class="checkbox-row"><input type="checkbox" checked id="mf-proc"><label for="mf-proc"><strong>Procurement</strong> (currently pending)</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="mf-payroll"><label for="mf-payroll">Payroll (if applicable)</label></div>
+            <div style="font-size: 10px; color: #505a5f; margin-top: 3px;">Checked functions will use this system — resolves their decisions automatically.</div>
+          </div>
+
+          <!-- Share toggle -->
+          <div class="share-toggle">
+            <div class="toggle-label">⟷ Share Workday with other successors</div>
+            <div class="checkbox-row"><input type="checkbox" checked id="share-ih2"><label for="share-ih2">Ivy Hatherley Council</label></div>
+          </div>
+        </div>
+
+        <!-- Ivy Hatherley — linked -->
+        <div class="alloc-card linked-secondary">
+          <div class="succ-name">Ivy Hatherley Council <span class="linked-badge">Shared</span></div>
+          <div style="font-size: 12px; color: #00703c; padding: 6px 8px; background: #f0fdf4; border: 1px solid #cce2d8;">
+            <strong>Workday HCM</strong> — shared with West Elmhurst
+          </div>
+          <div style="font-size: 10px; color: #505a5f; padding: 4px 8px;">
+            <a href="#" style="color: #d4351c; text-decoration: underline; font-size: 10px;">Unlink</a> — make independent decision for Ivy Hatherley
+          </div>
+        </div>
+
+        <!-- Derived pattern -->
+        <div class="derived-label derived-shared">
+          <span>⟷</span> Shared service: Workday HCM (new, both successors)
+        </div>
+      </div>
+
+      <!-- PANE 3: Cost, Impact & Summary -->
+      <div class="pane" style="width: 36%; background: #fafcff;">
+        <div class="pane-label">Cost & Impact</div>
+
+        <!-- Transition cost for SAP HR during migration -->
+        <div class="cost-section">
+          <div class="title">SAP HR costs during transition</div>
+          <div style="font-size: 10px; color: #505a5f; margin-bottom: 5px;">
+            Shared until Workday is live:
+          </div>
+          <div class="cost-row">
+            <span>West Elmhurst</span>
+            <span><input class="cost-input" value="50">% → £575k/yr</span>
+          </div>
+          <div class="cost-row">
+            <span>Ivy Hatherley</span>
+            <span><input class="cost-input" value="50">% → £575k/yr</span>
+          </div>
+          <div style="font-size: 10px; text-align: right; margin-top: 3px;">
+            <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Reset to equal</a> ·
+            <a href="#" style="color: #1d70b8; text-decoration: underline; font-size: 10px;">Weight by users</a>
+          </div>
+        </div>
+
+        <!-- New system cost -->
+        <div class="cost-section">
+          <div class="title">Workday HCM (shared) cost split</div>
+          <div style="font-size: 10px; color: #505a5f; margin-bottom: 5px;">
+            Ongoing shared service cost allocation:
+          </div>
+          <div class="cost-row">
+            <span>West Elmhurst</span>
+            <span><input class="cost-input" value="55">% → £220k/yr</span>
+          </div>
+          <div class="cost-row">
+            <span>Ivy Hatherley</span>
+            <span><input class="cost-input" value="45">% → £180k/yr</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Obligations -->
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Obligations generated</div>
+        <div class="obligations-list">
+          <span class="dot" style="background: #d4351c;"></span>Data migration: SAP HR → Workday<br>
+          <span class="dot" style="background: #f47738;"></span>Procurement: Workday HCM<br>
+          <span class="dot" style="background: #1d70b8;"></span>Shared service governance agreement<br>
+          <span class="dot" style="background: #00703c;"></span>Also resolves: Procurement function
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- SAP overall summary -->
+        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #505a5f; margin-bottom: 5px;">SAP S/4HANA — overall</div>
+        <table class="summary-table">
+          <tr>
+            <td><strong>Finance</strong></td>
+            <td style="text-align: right;"><span class="badge-sm" style="background: #cce2d8; color: #00703c;">Shared (SAP)</span></td>
+          </tr>
+          <tr>
+            <td><strong>HR</strong></td>
+            <td style="text-align: right;"><span class="badge-sm" style="background: #cce2d8; color: #00703c;">Shared (Workday) ← new</span></td>
+          </tr>
+          <tr>
+            <td><strong>Procurement</strong></td>
+            <td style="text-align: right;"><span class="badge-sm" style="background: #cce2d8; color: #00703c;">Resolved via HR ← new</span></td>
+          </tr>
+        </table>
+        <div class="note-box note-orange" style="margin-top: 8px;">
+          <strong>All functions resolved away from SAP.</strong><br>
+          SAP S/4HANA will be flagged for decommission. Finance shared service uses SAP directly; HR + Procurement move to Workday.
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <div style="font-size: 11px; color: #505a5f;">
+        <span style="color: #00703c; font-weight: bold;">3 of 3 functions resolved</span> · SAP decommission triggered
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-secondary">Cancel</button>
+        <button class="btn-primary">Apply decisions</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotation: Multi-function assignment explanation -->
+  <div class="note-box note-blue" style="margin-top: 1.5rem; font-size: 12px;">
+    <strong>Multi-function assignment (blue section in Pane 2):</strong> When you procure or select a system, you can check other pending functions to assign them the same system. This:
+    <ul style="margin: 6px 0 0 16px;">
+      <li>Auto-resolves checked functions (they show "Resolved via HR" in Pane 1)</li>
+      <li>Creates the REALIZES edge from new system → those functions</li>
+      <li>Inherits the sharing decision (if Workday is shared for HR, it's shared for Procurement too)</li>
+      <li>Appears in the summary as a batch resolution — single procurement, multiple functions served</li>
+    </ul>
+  </div>
+
+  <div class="note-box note-blue" style="margin-top: 8px; font-size: 12px;">
+    <strong>Two types of cost split in Pane 3:</strong>
+    <ul style="margin: 6px 0 0 16px;">
+      <li><strong>Transition cost</strong> — SAP costs while both successors still depend on it (temporary, during migration)</li>
+      <li><strong>Ongoing cost</strong> — Workday shared service cost allocation (permanent, post-transition)</li>
+    </ul>
+    These are semantically different: transition costs end when migration completes; ongoing costs persist.
+  </div>
+
+</body>
+</html>
