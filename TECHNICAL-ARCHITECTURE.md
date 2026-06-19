@@ -2,28 +2,34 @@
 
 ## Architecture philosophy
 
-Single-file, zero-dependency. The entire application — HTML structure, embedded CSS, and JavaScript — lives in `lgr-rationalisation-engine.html`. This is an intentional constraint: no build toolchain, no package manager, no server, no deployment infrastructure. The file can be opened directly in any modern browser.
+The application is built using a modular Node.js toolchain (`esbuild`), but the *final output* remains a single, dependency-free HTML file (`dist/lgr-rationalisation-engine.html`). This ensures the tool can be opened directly in any modern browser by end-users without requiring them to install a server or dependencies, while allowing developers to work in a structured, multi-file codebase.
 
-The only external dependency is Tailwind CSS, loaded from CDN. This is acceptable for a tool where network access is assumed during use, and avoids any local installation requirement.
+The only external dependency in the built artifact is Tailwind CSS, loaded from CDN. This is acceptable for a tool where network access is assumed during use, and avoids any local installation requirement for the end-user.
 
 ---
 
 ## Technology choices
 
+### Build Pipeline (Node.js & esbuild)
+The `build.js` script acts as a custom build orchestrator. It uses `esbuild` to bundle the JavaScript modules into a single IIFE, reads the CSS, and injects both into an `index.html` template. It also dynamically generates JSON schemas from the application's schema definitions and compiles markdown files into a static documentation site.
+
+### Testing (Vitest & Playwright)
+The project uses `vitest` for unit testing and fast-check for property-based testing. `@playwright/test` is used for end-to-end browser testing.
+
 ### Tailwind CSS (CDN)
-Used for utility-class layout and spacing. The GOV.UK palette is applied via CSS custom properties (`--govuk-blue`, `--govuk-red`, etc.) defined in a `<style>` block, with Tailwind handling structural layout. This gives the tool a credible GDS aesthetic without implementing the full GOV.UK Frontend library, which would require a build pipeline.
+Used for utility-class layout and spacing. The GOV.UK palette is applied via CSS custom properties (`--govuk-blue`, `--govuk-red`, etc.) defined in `src/styles.css`, with Tailwind handling structural layout. This gives the tool a credible GDS aesthetic without implementing the full GOV.UK Frontend library.
 
 ### Vanilla JavaScript (no framework)
-Direct DOM manipulation with module-level state. No React, Vue, or equivalent. Justified by scope: the application state is a small set of variables with a one-directional pipeline, and a framework would add complexity without value for a single-file tool.
+Direct DOM manipulation with module-level state. No React, Vue, or equivalent. Justified by scope: the application state is a pipeline of defined stages, and a framework would add unnecessary complexity and weight to the single-file output.
 
 ### Embedded LGA/ESD taxonomy
-The 176-entry ESD Standard Function Taxonomy is embedded as a JS constant (`LGA_FUNCTIONS`). This eliminates an HTTP dependency at runtime and ensures the taxonomy version is consistent across all sessions. Source: `https://webservices.esd.org.uk/lists/functions` (last modified 2016-09-01). The taxonomy is stable; updates require re-fetching the API and regenerating the constant.
+The 176-entry ESD Standard Function Taxonomy is embedded as a JS constant. This eliminates an HTTP dependency at runtime and ensures the taxonomy version is consistent across all sessions. Source: `https://webservices.esd.org.uk/lists/functions` (last modified 2016-09-01). The taxonomy is stable; updates require re-fetching the API and regenerating the constant.
 
 ---
 
 ## Application state
 
-State is held in module-level variables:
+State is held in a centralized `src/state.js` module and accessed by feature modules:
 
 ```javascript
 // Core workspace state
@@ -148,9 +154,9 @@ Each `SystemAllocation` contains: `{ system, sourceCouncil, allocationType, need
 
 ### Stage 1 — Ingest
 
-File reading uses the native `FileReader` API via `<input type="file" multiple accept=".json">`. Each file is parsed as JSON and classified:
+The `src/features/import-wizard.js` handles file reading using the native `FileReader` API via `<input type="file" multiple accept=".json, .xlsx">`. Files are parsed as JSON or converted from Excel using `src/features/template-converter.js`, validated against the schema using `src/features/schema-validator.js`, and classified:
 
-- **Architecture files** (have `nodes` array): pushed to `rawUploads`; displayed with node count and "Edit Architecture" button
+- **Architecture files** (have `nodes` array): pushed to `rawUploads`; displayed with node count and "Edit Architecture" button (which opens `src/features/unified-editor/`)
 - **Transition config files** (have `successors` array, no `nodes`): stored as `pendingTransitionConfig`; displayed distinctly with successor count
 
 A demo loader provides hardcoded council payloads without requiring file upload.

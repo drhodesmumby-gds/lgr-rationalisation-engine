@@ -1,0 +1,35 @@
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - heading "LGR Workspace Engine" [level=1] [ref=e4]
+    - link "Documentation" [ref=e5] [cursor=pointer]:
+      - /url: docs/index.html
+    - generic [ref=e151]:
+      - generic [ref=e152]: Perspective
+      - combobox "Perspective" [ref=e153] [cursor=pointer]:
+        - option "All Successors" [selected]
+        - option "New Unitary Authority Perspective"
+      - generic [ref=e154]: Persona
+      - combobox "Persona" [ref=e155] [cursor=pointer]:
+        - option "Executive / Transition Board" [selected]
+        - option "Commercial / Transition Director"
+        - option "Enterprise Architect (CTO)"
+      - generic [ref=e156]: "|"
+      - button "Signals" [ref=e157] [cursor=pointer]
+      - button "Glossary" [ref=e158] [cursor=pointer]
+      - button "Reset" [ref=e159] [cursor=pointer]
+  - main [ref=e6]:
+    - generic [ref=e160]:
+      - generic [ref=e161]:
+        - img [ref=e162]
+        - heading "Executive Board View (Consolidated)" [level=2] [ref=e164]
+        - generic [ref=e165]
+      - tablist "Dashboard sections" [ref=e175]:
+        - tab "Matrix" [selected] [ref=e176] [cursor=pointer]
+        - tab "Overview" [ref=e177] [cursor=pointer]
+        - tab "Timeline" [ref=e178] [cursor=pointer]
+        - tab "Vendors" [ref=e179] [cursor=pointer]
+      - generic [ref=e180]:
+        - tabpanel "Matrix" [ref=e182]
+        - generic [ref=e338]

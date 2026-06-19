@@ -4,7 +4,15 @@ A single-file, browser-based tool for analysing the combined IT estate of mergin
 
 ## Getting started
 
-Open `lgr-rationalisation-engine.html` in any modern browser. No build step, no server, no dependencies to install. Tailwind CSS loads from CDN; the LGA/ESD taxonomy (176 functions) is embedded.
+The final application is compiled into a single, dependency-free HTML file (`dist/lgr-rationalisation-engine.html`), along with user documentation and JSON schemas.
+
+**Development Setup:**
+The development environment is modular and requires Node.js.
+1. Install dependencies: `npm install`
+2. Run development build (watch mode): `npm run dev`
+3. Build for production: `npm run build`
+
+You can open the resulting `dist/lgr-rationalisation-engine.html` in any modern browser. No local server is required.
 
 Sample datasets are included — see [Sample datasets](#sample-datasets) and [Example scenarios](#example-scenarios).
 
@@ -128,9 +136,9 @@ Transition configs can be imported at Stage 1.5, or uploaded alongside architect
 
 ### Stage 1 — Ingest
 
-Upload one or more council JSON files. The engine parses and stages them for baselining. If a transition configuration file is included in the upload, it is automatically detected and applied at Stage 1.5. The built-in demo loads sample councils automatically.
+Upload one or more council JSON files, or Excel data templates. The **Import Wizard** handles file parsing, validates them against the JSON schema, and stages them for baselining. If a transition configuration file is included in the upload, it is automatically detected and applied at Stage 1.5. The built-in demo loads sample councils automatically.
 
-Each staged file offers an **Edit Architecture** button opening a visual editor for modifying council data before proceeding.
+Each staged file offers an **Edit Architecture** button opening a **Unified Editor** for visually modifying council data (councils, functions, IT systems, edges) before proceeding. You can also view schema validation warnings and errors directly during import.
 
 ### Stage 1.5 — Transition Structure Configuration
 
@@ -167,9 +175,9 @@ Features:
 - **Contract timeline** — all systems with contract dates, centred on the vesting date, with notice period zones striped in red
 - **Perspective filtering** — view the estate through a specific successor's lens; non-relevant systems are dimmed
 
-### Simulation Mode
+### Simulation Mode & Decision Panel
 
-From Stage 3, enter **simulation mode** to model rationalisation decisions and see their projected impact on the estate. The simulation engine operates as a decision-driven pipeline: users make high-level decisions per function, and the engine translates them into concrete actions with full impact analysis.
+From Stage 3, enter **simulation mode** to model rationalisation decisions and see their projected impact on the estate. The simulation engine operates as a decision-driven pipeline: users make high-level decisions per function via the **Decision Panel**, and the engine translates them into concrete actions with full impact analysis.
 
 **Decision model.** Each function decision captures two axes:
 - **System choice** — *Choose* (retain specific systems, decommission others), *Procure* (replace with a new system), or *Defer* (no decision yet)
@@ -179,16 +187,19 @@ From Stage 3, enter **simulation mode** to model rationalisation decisions and s
 
 **Impact analysis.** The simulation workspace shows:
 - Before/after estate metrics (system count, annual spend, pre-vesting triggers, disaggregation count) with deltas
+- Transition costs modeling
 - Per-decision obligation generation (data migration plans, governance arrangements, shared service obligations)
 - Cross-successor decommission preview when removing systems from shared predecessors
 - Ghost cards in the matrix showing removed systems with strikethrough styling
 
-**Scenario management.** Decisions can be exported as JSON scenario files and re-imported to reconstruct the full projected impact. Scenario files uploaded at Stage 1 alongside architecture data are auto-detected and loaded when simulation is entered.
+**Scenario management.** Decisions can be exported as JSON scenario files via the **Scenario Manager** and re-imported to reconstruct the full projected impact. Scenario files uploaded at Stage 1 alongside architecture data are auto-detected and loaded when simulation is entered.
 
-**Report export.** Persona-tailored HTML reports can be exported from simulation mode:
+**Report export.** Persona-tailored HTML reports and baseline exports can be generated:
+- **Baseline Report** — A complete export of the current state architecture.
+- **Domain Cards** — Summaries of specific operational domains.
 - **Executive** — cost/timeline summary, estate posture changes, decision overview
 - **Commercial** — contract detail per decision, procurement action timeline (date-ordered), deferred system notice triggers with vesting-relative framing, vendor consolidation
-- **Architect** — technical posture narrative synthesis, obligation tables with migration severity and data complexity flags, system-level detail
+- **Architect** — technical posture narrative synthesis, obligation tables with migration severity and data complexity flags, system-level detail, and Sankey diagrams for data flow dependencies.
 
 ---
 
@@ -292,7 +303,17 @@ Each system is assessed against five points from the UK Government Technology Co
 
 ## Codebase reference
 
-The entire application is in `lgr-rationalisation-engine.html`. There is no build system.
+The application source is modularised in the `src/` directory and built using `esbuild`. The resulting output is a single HTML file without external dependencies (aside from Tailwind via CDN).
+
+### Directory Structure
+
+- `src/main.js` — Core application pipeline and event wiring
+- `src/state.js` — Module-level state management
+- `src/styles.css` — Custom GOV.UK-inspired styles applied over Tailwind
+- `src/analysis/` — Signal computation, metrics, allocation, and routing logic
+- `src/constants/` — Embedded taxonomy (`lga-functions.js`), schema definitions, and domain terms
+- `src/features/` — Feature modules (Simulation, Import Wizard, Unified Editor, Schema Validation, Report Export, Excel Template Conversion)
+- `src/docs/` — Markdown source files for the documentation site generated into `dist/docs/`
 
 ### Key state variables
 
