@@ -5,7 +5,7 @@
 // Unmapped functions default to Tier 2
 export const DEFAULT_TIER_MAP = new Map([
     // Tier 1 (Day 1 critical)
-    ['148', 1], ['152', 1], ['3', 1], ['124', 1], ['146', 1], ['119', 1],
+    ['shared-capabilities', 1], ['148', 1], ['152', 1], ['3', 1], ['124', 1], ['146', 1], ['119', 1],
     ['116', 1], ['19', 1], ['130', 1], ['131', 1], ['65', 1], ['68', 1],
     ['142', 1], ['34', 1],
     // Tier 2 (High priority)

@@ -111,9 +111,9 @@ describe('getLgaFunction', () => {
     );
   });
 
-  it('all 176 ESD taxonomy IDs resolve to a defined entry', () => {
+  it('all 177 ESD taxonomy IDs resolve to a defined entry', () => {
     // Exhaustive check — not random, but a useful regression guard
-    expect(LGA_FUNCTIONS.length).toBe(176);
+    expect(LGA_FUNCTIONS.length).toBe(177);
 
     for (const entry of LGA_FUNCTIONS) {
       const result = getLgaFunction(entry.id);
@@ -238,7 +238,7 @@ describe('getLgaBreadcrumb', () => {
   });
 
   it('all LGA_FUNCTIONS entries return null or a non-empty string \u2014 never throws', () => {
-    // Exhaustive check across all 176 entries
+    // Exhaustive check across all 177 entries
     for (const entry of LGA_FUNCTIONS) {
       const result = getLgaBreadcrumb(entry.id);
       expect(result === null || (typeof result === 'string' && result.length > 0)).toBe(true);

@@ -8,10 +8,10 @@ describe('test infrastructure', () => {
     expect(1 + 1).toBe(2);
   });
 
-  it('LGA_FUNCTIONS has 176 entries', () => {
+  it('LGA_FUNCTIONS has 177 entries', () => {
     expect(LGA_FUNCTIONS).toBeDefined();
     expect(Array.isArray(LGA_FUNCTIONS)).toBe(true);
-    expect(LGA_FUNCTIONS.length).toBe(176);
+    expect(LGA_FUNCTIONS.length).toBe(177);
   });
 
   it('getLgaFunction and getLgaBreadcrumb are functions', () => {
