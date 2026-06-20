@@ -73,6 +73,7 @@ Each council prepares a JSON file following the schema below. The engine enforce
   "dataPartitioning": "Segmented",
   "isCloud": true,
   "isERP": false,
+  "isIndependent": false,
   "sharedWith": ["Easton District Council"],
   "targetAuthorities": ["North Essex Unitary"],
   "capabilityType": ["payments"]
@@ -91,6 +92,7 @@ Each council prepares a JSON file following the schema below. The engine enforce
 | `dataPartitioning` | `"Segmented"` / `"Monolithic"` | Whether data can be cleanly partitioned (e.g. by ward/department) or is entangled across domains |
 | `isCloud` | boolean | SaaS / cloud-hosted vs on-premise |
 | `isERP` | boolean | Enterprise Resource Planning system (triggers additional monolithic risk treatment) |
+| `isIndependent` | boolean | Optional. True for capability systems (e.g., GOV.UK Notify) that don't realise LGA functions directly but provide capabilities to other systems. |
 | `sharedWith` | string[] | Optional. Other council names sharing this system instance; triggers shared service analysis |
 | `targetAuthorities` | string[] | Optional. Explicit successor authority assignment; overrides default allocation logic |
 | `capabilityType` | string[] | Optional. Capabilities this system provides (e.g., `"payments"`, `"forms"`, `"sms"`, `"email"`, `"workflow"`); used for blast radius analysis and CONSUMES_CAPABILITY dependency tracking |
