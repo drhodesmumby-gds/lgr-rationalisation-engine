@@ -50,6 +50,7 @@ const SHEET_DESCRIPTIONS = {
     'Advice & Benefits':        'Revenues, benefits, welfare rights, grants',
     'Leisure & Culture':        'Libraries, leisure centres, arts, museums',
     'Business & Employment':    'Business support, regeneration, trading standards',
+    'Shared Capabilities':      'Cross-cutting systems like Identity Management, API Gateways, etc.',
     'Dependencies':             'System-to-system capability dependencies',
     'Definitions':              'What each dropdown field means — refer here if unsure',
     '_Lookups':                 'Validation lists (internal use)',
@@ -101,7 +102,7 @@ function buildIndexSheet(wb) {
     const sheet = wb.addWorksheet('Index');
     applyColumnWidths(sheet, [35, 55]);
 
-    const allSheetNames = ['Council Info', ...DOMAIN_SHEET_NAMES, 'Dependencies', 'Definitions'];
+    const allSheetNames = ['Council Info', ...DOMAIN_SHEET_NAMES, 'Shared Capabilities', 'Dependencies', 'Definitions'];
 
     // Row 1: Title
     const titleRow = sheet.addRow(['LGR Architecture Data Template']);
@@ -311,8 +312,8 @@ function buildDependenciesSheet(wb) {
     });
 
     // Match formula: COUNTIF across all domain sheet system name columns (column C)
-    const countifParts = DOMAIN_SHEET_NAMES.map(name => `COUNTIF('${name}'!C:C,A{row})`).join('+');
-    const countifPartsB = DOMAIN_SHEET_NAMES.map(name => `COUNTIF('${name}'!C:C,B{row})`).join('+');
+    const countifParts = DOMAIN_SHEET_NAMES.map(name => `COUNTIF('${name}'!C:C,A{row})`).join('+') + `+COUNTIF('Shared Capabilities'!A:A,A{row})`;
+    const countifPartsB = DOMAIN_SHEET_NAMES.map(name => `COUNTIF('${name}'!C:C,B{row})`).join('+') + `+COUNTIF('Shared Capabilities'!A:A,B{row})`;
     for (let row = 3; row <= 100; row++) {
         const formula = `IF(AND(A${row}<>"",B${row}<>""),IF(AND(${countifParts.replace(/\{row\}/g, row)}>0,${countifPartsB.replace(/\{row\}/g, row)}>0),"✓","⚠ Not found"),"")`;
         sheet.getCell(`D${row}`).value = { formula };
@@ -323,6 +324,91 @@ function buildDependenciesSheet(wb) {
     sheet.getCell('B2').note = 'The system that provides the capability — use the EXACT same name from your domain sheets.';
     sheet.getCell('C2').note = 'What capability is consumed? e.g., payments, workflow, SSO, integration, SMS, forms.';
     sheet.getCell('D2').note = 'Auto-checks whether both system names match entries in your domain sheets. ✓ = found, ⚠ = not found (check spelling).';
+
+    return sheet;
+}
+
+function buildSharedCapabilitiesSheet(wb) {
+    const sheetName = 'Shared Capabilities';
+    const sheet = wb.addWorksheet(sheetName);
+    
+    const headers = DOMAIN_HEADERS.slice(2);
+    const widths = DOMAIN_COL_WIDTHS.slice(2);
+    applyColumnWidths(sheet, widths);
+
+    const guidanceText = `List the shared capability systems your council uses (e.g. Identity Management, API Gateways, Data Warehouses). Add extra rows as needed. Fields marked * are mandatory.`;
+    const guidanceRow = sheet.addRow([guidanceText]);
+    sheet.mergeCells('A1:P1');
+    guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    guidanceRow.font = { italic: true };
+
+    const headerRow = sheet.addRow(headers);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } };
+        cell.border = {
+            bottom: { style: 'medium', color: { argb: 'FF000000' } }
+        };
+    });
+
+    sheet.autoFilter = 'A2:P1000';
+
+    const fallback = [
+        'Example Identity Provider', 'Okta', '', '', '', '', '', '', '', '', '', '', '', 'Vendor-supported', '',
+    ];
+    const exRow = sheet.addRow(fallback);
+    exRow.font = { italic: true, color: { argb: 'FF666666' } };
+    exRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    });
+
+    for (let i = 0; i < 20; i++) {
+        sheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    }
+
+    const validations = {
+        H: {
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$C$2:$C$4'],
+            showInputMessage: true, promptTitle: 'Data Portability',
+            prompt: 'How easy is it to extract your data in bulk?\nHigh - Open APIs, standard formats, export tools.\nMedium - Some export capability, may require vendor support.\nLow - Proprietary format, vendor lock-in, reverse engineering.'
+        },
+        I: {
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$D$2:$D$3'],
+            showInputMessage: true, promptTitle: 'Data Partitioning',
+            prompt: 'How is data organised?\nSegmented - Logically separated by service area. Can be split easily.\nMonolithic - Entangled across all areas. Splitting requires complex ETL work.'
+        },
+        J: {
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$E$2:$E$4'],
+            showInputMessage: true, promptTitle: 'Hosting Model',
+            prompt: 'Where is this system hosted?\nCloud - Vendor-hosted SaaS or cloud platform.\nOn-Premise - Hosted on council-owned servers.\nPartner-Hosted - Hosted by another council or shared service body.'
+        },
+        L: {
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$B$2:$B$3'],
+            showInputMessage: true, promptTitle: 'ERP System?',
+            prompt: 'Is this an Enterprise Resource Planning system?\nYes - Large integrated platform spanning multiple functions (e.g. SAP, Oracle).\nNo - Focused on a single function or service area.'
+        },
+        O: {
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$F$2:$F$4'],
+            showInputMessage: true, promptTitle: 'Support Model',
+            prompt: 'Who maintains this system?\nVendor-supported - Commercial vendor with SLA.\nCommunity-supported - Maintained collaboratively (open source, shared digital team).\nUnsupported - No active maintenance agreement.'
+        },
+    };
+
+    for (const [col, validation] of Object.entries(validations)) {
+        sheet.dataValidations.add(`${col}3:${col}1000`, validation);
+    }
+
+    sheet.getCell('A2').note = 'The name of the IT system as your council knows it. Use the same name consistently (it must match in the Dependencies sheet).';
+    sheet.getCell('B2').note = 'Software vendor name, or "In-House" if developed internally by the council.';
+    sheet.getCell('C2').note = 'Version string of the software.';
+    sheet.getCell('D2').note = 'Approximate number of staff who regularly use this system.';
+    sheet.getCell('E2').note = 'Annual licence, hosting, and support cost in pounds (number only, no £ symbol).';
+    sheet.getCell('F2').note = 'When the current contract expires. Format: mm/yyyy (e.g., 03/2028).';
+    sheet.getCell('G2').note = 'How many months notice you must give to exit the contract before it auto-renews.';
+    sheet.getCell('K2').note = 'Name of the council or organisation hosting this (if Partner-Hosted).';
+    sheet.getCell('M2').note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
+    sheet.getCell('N2').note = 'Successor authorities this system is explicitly allocated to. Comma-separated.';
+    sheet.getCell('P2').note = 'What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.';
 
     return sheet;
 }
@@ -486,6 +572,9 @@ export function generateTemplate() {
 
         buildDomainSheet(wb, sheetName, rootId);
     }
+
+    // Shared Capabilities
+    buildSharedCapabilitiesSheet(wb);
 
     // Sheet 12: Dependencies
     buildDependenciesSheet(wb);
