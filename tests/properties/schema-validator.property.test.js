@@ -177,6 +177,19 @@ describe('validateArchitecture', () => {
         expect(result.warnings.some(w => w.message.includes('orphaned'))).toBe(true);
     });
 
+    it('bypasses orphan warning for independent capability systems', () => {
+        const result = validateArchitecture({
+            councilName: 'X',
+            nodes: [
+                { id: 'fn-1', type: 'Function', label: 'F', lgaFunctionId: '1' },
+                { id: 'sys-1', type: 'ITSystem', label: 'Independent', vendor: 'V', isIndependent: true }
+            ],
+            edges: []
+        });
+        expect(result.valid).toBe(true);
+        expect(result.warnings.some(w => w.message.includes('orphaned'))).toBe(false);
+    });
+
     it('warns on Function with no systems', () => {
         const result = validateArchitecture({
             councilName: 'X',

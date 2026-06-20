@@ -39,6 +39,7 @@ export function buildSuccessorAllocation(nodes, edges, transitionStructure) {
     nodes.forEach(n => nodeById.set(n.id, n));
 
     const systemToFunctions = new Map();
+    const capabilityProviders = new Set();
     edges.forEach(edge => {
         if (edge.relationship === 'REALIZES') {
             const targetNode = nodeById.get(edge.target);
@@ -46,6 +47,8 @@ export function buildSuccessorAllocation(nodes, edges, transitionStructure) {
                 if (!systemToFunctions.has(edge.source)) systemToFunctions.set(edge.source, new Set());
                 systemToFunctions.get(edge.source).add(targetNode.lgaFunctionId);
             }
+        } else if (edge.relationship === 'CONSUMES_CAPABILITY') {
+            capabilityProviders.add(edge.target);
         }
     });
 
@@ -58,12 +61,17 @@ export function buildSuccessorAllocation(nodes, edges, transitionStructure) {
     // Process each system
     systems.forEach(sys => {
         const sourceCouncil = sys._sourceCouncil;
-        const functionIds = systemToFunctions.get(sys.id);
+        let functionIds = systemToFunctions.get(sys.id);
 
         if (!functionIds || functionIds.size === 0) {
-            // System doesn't REALIZE any function — skip but don't warn
-            // (it may be connected via other relationship types)
-            return;
+            if (sys.isIndependent === true || capabilityProviders.has(sys.id)) {
+                functionIds = new Set(['shared-capabilities']);
+                systemToFunctions.set(sys.id, functionIds);
+            } else {
+                // System doesn't REALIZE any function — skip but don't warn
+                // (it may be connected via other relationship types)
+                return;
+            }
         }
 
         // Determine allocation targets

@@ -232,6 +232,9 @@ export function validateArchitecture(json) {
     for (const sysId of systemNodeIds) {
         if (!realizesTargets.has(sysId) && !capabilityProviderIds.has(sysId)) {
             const sysNode = nodes.find(n => n.id === sysId);
+            if (sysNode && sysNode.isIndependent === true) {
+                continue;
+            }
             const label = (sysNode && sysNode.label) ? sysNode.label : sysId;
             addWarning(result, `ITSystem node '${label}': no REALIZES edge and not a capability provider — system may be orphaned`);
         }

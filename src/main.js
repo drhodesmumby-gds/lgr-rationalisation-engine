@@ -1212,17 +1212,15 @@ export function runBaselining() {
 
         upload.data.nodes.forEach(node => {
             if (node.type === 'Function') {
-                const assignedLgaId = node.lgaFunctionId || `custom-${node.label.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+                if (!node.lgaFunctionId) {
+                    validationErrors.push(`Node '${node.label || node.id}' is missing lgaFunctionId`);
+                    return; // skip adding to state
+                }
+                const assignedLgaId = node.lgaFunctionId;
                 
                 if (!state.lgaFunctionMap.has(assignedLgaId)) {
                     let lgaFn = getLgaFunction(assignedLgaId);
                     
-                    if (!lgaFn && assignedLgaId.startsWith('custom-')) {
-                        const parentId = node._sourceSheet ? DOMAIN_ROOT_MAP[node._sourceSheet] : null;
-                        lgaFn = { id: assignedLgaId, label: node.label, parentId: parentId || null };
-                        registerCustomFunction(lgaFn);
-                    }
-
                     state.lgaFunctionMap.set(assignedLgaId, {
                         lgaId: assignedLgaId,
                         label: lgaFn ? lgaFn.label : node.label,
@@ -1235,8 +1233,8 @@ export function runBaselining() {
                 entry.councils.add(councilName);
                 entry.localNodeIds.add(node.id);
                 
-                // Add to merged architecture, ensuring lgaFunctionId is set
-                state.mergedArchitecture.nodes.push({ ...node, lgaFunctionId: assignedLgaId, _sourceCouncil: councilName });
+                // Add to merged architecture
+                state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
             } else {
                 state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
             }

@@ -154,6 +154,49 @@ const arbScenario = fc
 
 describe('Property 1: Successor allocation correctness', { tags: ['Feature: lgr-transition-planning', 'Property 1: Successor allocation correctness'] }, () => {
 
+  it('allocates independent capability systems to shared-capabilities function', () => {
+    const nodes = [
+      { id: 'sys-indep', type: 'ITSystem', label: 'Indep', _sourceCouncil: 'Council-A', isIndependent: true }
+    ];
+    const edges = [];
+    const transitionStructure = {
+      successors: [{ name: 'Successor-1', fullPredecessors: ['Council-A'], partialPredecessors: [] }]
+    };
+    
+    const { allocation } = buildSuccessorAllocation(nodes, edges, transitionStructure);
+    
+    const succMap = allocation.get('Successor-1');
+    expect(succMap).toBeDefined();
+    
+    const sharedAllocs = succMap.get('shared-capabilities');
+    expect(sharedAllocs).toBeDefined();
+    expect(sharedAllocs.length).toBe(1);
+    expect(sharedAllocs[0].system.id).toBe('sys-indep');
+  });
+
+  it('allocates capability providers to shared-capabilities function', () => {
+    const nodes = [
+      { id: 'sys-provider', type: 'ITSystem', label: 'Prov', _sourceCouncil: 'Council-A' },
+      { id: 'sys-consumer', type: 'ITSystem', label: 'Cons', _sourceCouncil: 'Council-A' }
+    ];
+    // No REALIZES edges, just CONSUMES_CAPABILITY
+    const edges = [
+      { source: 'sys-consumer', target: 'sys-provider', relationship: 'CONSUMES_CAPABILITY' }
+    ];
+    const transitionStructure = {
+      successors: [{ name: 'Successor-1', fullPredecessors: ['Council-A'], partialPredecessors: [] }]
+    };
+    
+    const { allocation } = buildSuccessorAllocation(nodes, edges, transitionStructure);
+    
+    const succMap = allocation.get('Successor-1');
+    const sharedAllocs = succMap.get('shared-capabilities');
+    expect(sharedAllocs).toBeDefined();
+    // Consumer has no edges and isn't independent, so it is skipped. Provider should be mapped.
+    expect(sharedAllocs.length).toBe(1);
+    expect(sharedAllocs[0].system.id).toBe('sys-provider');
+  });
+
   it('full predecessor systems (no targetAuthorities) appear in exactly one successor with allocationType "full" and needsAllocationReview false', () => {
     fc.assert(
       fc.property(arbScenario, ({ councils, transitionStructure, successorNames }) => {
