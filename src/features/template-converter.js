@@ -418,6 +418,96 @@ export function convertXlsxToArchitecture(workbook) {
     }
 
     // -----------------------------------------------------------------------
+    // 2b. Parse Shared Capabilities sheet
+    // -----------------------------------------------------------------------
+    const sharedSheet = workbook.Sheets['Shared Capabilities'];
+    if (sharedSheet) {
+        const rows = XLSX.utils.sheet_to_json(sharedSheet, { header: 1 });
+        // Guidance (0), Header (1), Example (2) -> Data starts at 3
+        const dataStartIndex = 3;
+
+        for (let ri = dataStartIndex; ri < rows.length; ri++) {
+            const row = rows[ri];
+            if (!Array.isArray(row)) continue;
+
+            // Columns are shifted left by 2 because ESD_ID and FUNCTION are omitted
+            const systemName = safeStr(row[COL.SYSTEM_NAME - 2]);
+            if (!systemName || systemName.toUpperCase().includes('EXAMPLE')) continue;
+
+            sysCounter++;
+            const sysNodeId = `sys-${sysCounter}`;
+
+            const sysNode = {
+                id: sysNodeId,
+                label: systemName,
+                type: 'ITSystem',
+                isIndependent: true
+            };
+
+            const vendor = safeStr(row[COL.VENDOR - 2]);
+            if (vendor) sysNode.vendor = vendor;
+
+            const version = safeStr(row[COL.VERSION - 2]);
+            if (version) sysNode.version = version;
+
+            const users = safeInt(row[COL.USERS - 2]);
+            if (users !== undefined) sysNode.users = users;
+
+            const rawCost = row[COL.ANNUAL_COST - 2];
+            const costStr = safeStr(rawCost).replace(/[£$,\s]/g, '');
+            const annualCost = costStr ? parseFloat(costStr) : NaN;
+            if (!isNaN(annualCost) && annualCost > 0) {
+                sysNode.annualCost = annualCost;
+            }
+
+            const contractEndParsed = parseContractEnd(row[COL.CONTRACT_END - 2]);
+            if (contractEndParsed) {
+                sysNode.endYear  = contractEndParsed.endYear;
+                sysNode.endMonth = contractEndParsed.endMonth;
+            }
+
+            const noticePeriod = safeInt(row[COL.NOTICE_PERIOD - 2]);
+            if (noticePeriod !== undefined) sysNode.noticePeriod = noticePeriod;
+
+            const portability = parsePortability(row[COL.PORTABILITY - 2]);
+            if (portability !== undefined) sysNode.portability = portability;
+
+            const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING - 2]);
+            if (dataPartitioning !== undefined) sysNode.dataPartitioning = dataPartitioning;
+
+            const hostingRaw = safeStr(row[COL.CLOUD_HOSTED - 2]).toLowerCase().trim();
+            if (hostingRaw) {
+                if (['yes','true','cloud','saas','hosted'].includes(hostingRaw)) sysNode.hosting = 'cloud';
+                else if (['no','false','on-prem','on-premise','local'].includes(hostingRaw)) sysNode.hosting = 'on-premise';
+                else if (['partner','shared','shared service'].includes(hostingRaw)) sysNode.hosting = 'partner-hosted';
+            }
+            
+            const hostingPartner = safeStr(row[COL.HOSTING_PARTNER - 2]);
+            if (hostingPartner) sysNode.hostingPartner = hostingPartner;
+
+            const isERP = parseBool(row[COL.ERP - 2]);
+            if (isERP !== undefined) sysNode.isERP = isERP;
+
+            const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH - 2]);
+            if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
+            
+            const targetAuthArr = parseCommaSeparated(row[COL.TARGET_AUTHORITIES - 2]);
+            if (targetAuthArr.length > 0) sysNode.targetAuthorities = targetAuthArr;
+
+            const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL - 2]);
+            if (supportModel !== undefined) sysNode.supportModel = supportModel;
+
+            const capabilitiesArr = parseCommaSeparated(row[COL.CAPABILITIES - 2]).map(c => c.toLowerCase());
+            if (capabilitiesArr.length > 0) sysNode.capabilityType = capabilitiesArr;
+
+            nodes.push(sysNode);
+            systemsByName.set(systemName.toLowerCase(), sysNodeId);
+            
+            // NO REALIZES edges for independent systems
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // 3. Parse Dependencies sheet
     // -----------------------------------------------------------------------
     const depsSheet = workbook.Sheets['Dependencies'];
@@ -453,11 +543,11 @@ export function convertXlsxToArchitecture(workbook) {
             const dependedOnId = systemsByName.get(dependedOnName);
 
             if (!dependentId) {
-                warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain sheets — edge skipped.`);
+                warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain or capabilities sheets — edge skipped.`);
                 continue;
             }
             if (!dependedOnId) {
-                warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain sheets — edge skipped.`);
+                warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain or capabilities sheets — edge skipped.`);
                 continue;
             }
 

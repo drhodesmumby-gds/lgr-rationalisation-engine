@@ -498,6 +498,37 @@ describe('convertXlsxToArchitecture — nodes and edges from domain sheets', () 
     });
 });
 
+describe('convertXlsxToArchitecture — Shared Capabilities sheet', () => {
+    function sharedSheetRows(dataRows) {
+        return [
+            ['Guidance text...'],
+            ['System Name', 'Vendor', 'Version', 'Users', 'Annual Cost', 'Contract End', 'Notice Period', 'Portability', 'Data Partitioning', 'Cloud Hosted', 'Hosting Partner', 'ERP', 'Shared With', 'Target Authorities', 'Support Model', 'Capabilities'],
+            ['Example System', ...Array(15).fill('')],
+            ...dataRows
+        ];
+    }
+
+    it('parses independent systems correctly with isIndependent: true and no REALIZES edges', () => {
+        const wb = mockWorkbook({
+            'Shared Capabilities': sharedSheetRows([
+                ['Notify', 'GOV.UK', 'v1', 500, 1000, 48000, 3, 'High', 'Monolithic', 'Cloud', '', 'No', '', '', 'Vendor-supported', 'SMS, Email']
+            ])
+        });
+
+        const { architecture, warnings } = convertXlsxToArchitecture(wb);
+        const sysNode = architecture.nodes.find(n => n.type === 'ITSystem');
+        
+        expect(sysNode).toBeDefined();
+        expect(sysNode.label).toBe('Notify');
+        expect(sysNode.isIndependent).toBe(true);
+        expect(sysNode.capabilityType).toEqual(['sms', 'email']);
+        
+        // No REALIZES edges should be generated for independent systems
+        const realizesEdges = architecture.edges.filter(e => e.source === sysNode.id && e.relationship === 'REALIZES');
+        expect(realizesEdges.length).toBe(0);
+    });
+});
+
 
 describe('convertXlsxToArchitecture — dependency sheet', () => {
 
