@@ -24,15 +24,15 @@ import { DOMAIN_SHEET_NAMES } from './template-converter.js';
 // Hosting | ERP? | Shared With | Support Model | Capabilities Provided
 // -----------------------------------------------------------------------
 const EXAMPLE_SYSTEMS = {
-    'Health & Social Care':           ['148', 'Adult social care', 'Liquidlogic LAS', 'System C', 3500, 950000, '03/2028', 12, 'High', 'Segmented', 'Yes', 'No', '', 'Vendor-supported', ''],
-    'Administration & Government':    ['116', 'Finance', 'SAP S/4HANA', 'SAP', 7000, 2300000, '03/2030', 18, 'Low', 'Monolithic', 'No', 'Yes', '', 'Vendor-supported', 'payments,workflow'],
-    'Environmental Protection':       ['34', 'Environmental health', 'Idox Public Protection', 'Idox', 40, 60000, '06/2027', 6, 'Medium', 'Segmented', 'No', 'No', '', 'Vendor-supported', ''],
-    'Planning & Building Control':    ['101', 'Development control', 'Idox Uniform', 'Idox', 25, 45000, '12/2027', 6, 'Medium', 'Segmented', 'Yes', 'No', '', 'Vendor-supported', ''],
-    'Housing':                        ['66', 'Housing', 'NEC Housing', 'NEC', 80, 120000, '09/2028', 9, 'Low', 'Monolithic', 'No', 'No', '', 'Vendor-supported', ''],
-    'Transport & Highways':           ['109', 'Highway maintenance', 'Confirm Highways', 'Confirm', 150, 280000, '06/2029', 12, 'Medium', 'Segmented', 'No', 'No', 'Other County Council', 'Vendor-supported', ''],
-    'Advice & Benefits':              ['3', 'Benefits', 'NEC Revenues & Benefits', 'NEC', 200, 350000, '03/2028', 12, 'Low', 'Monolithic', 'No', 'No', '', 'Vendor-supported', ''],
-    'Leisure & Culture':              ['76', 'Libraries', 'Koha LMS', 'In-House', 45, 30000, '12/2027', 3, 'High', 'Segmented', 'Yes', 'No', '', 'Community-supported', ''],
-    'Business & Employment':          ['7', 'Business advice and support', 'CRM System', 'Microsoft', 60, 85000, '09/2028', 6, 'High', 'Segmented', 'Yes', 'No', '', 'Vendor-supported', ''],
+    'Health & Social Care':           ['148', 'Adult social care', 'Liquidlogic LAS', 'System C', 'v10', 3500, 950000, '03/2028', 12, 'High', 'Segmented', 'Cloud', '', 'No', '', '', 'Vendor-supported', ''],
+    'Administration & Government':    ['116', 'Finance', 'SAP S/4HANA', 'SAP', '2023', 7000, 2300000, '03/2030', 18, 'Low', 'Monolithic', 'On-Premise', '', 'Yes', '', '', 'Vendor-supported', 'payments,workflow'],
+    'Environmental Protection':       ['34', 'Environmental health', 'Idox Public Protection', 'Idox', '', 40, 60000, '06/2027', 6, 'Medium', 'Segmented', 'On-Premise', '', 'No', '', '', 'Vendor-supported', ''],
+    'Planning & Building Control':    ['101', 'Development control', 'Idox Uniform', 'Idox', '', 25, 45000, '12/2027', 6, 'Medium', 'Segmented', 'Cloud', '', 'No', '', '', 'Vendor-supported', ''],
+    'Housing':                        ['66', 'Housing', 'NEC Housing', 'NEC', '', 80, 120000, '09/2028', 9, 'Low', 'Monolithic', 'On-Premise', '', 'No', '', '', 'Vendor-supported', ''],
+    'Transport & Highways':           ['109', 'Highway maintenance', 'Confirm Highways', 'Confirm', '', 150, 280000, '06/2029', 12, 'Medium', 'Segmented', 'On-Premise', '', 'No', 'Other County Council', '', 'Vendor-supported', ''],
+    'Advice & Benefits':              ['3', 'Benefits', 'NEC Revenues & Benefits', 'NEC', '', 200, 350000, '03/2028', 12, 'Low', 'Monolithic', 'On-Premise', '', 'No', '', '', 'Vendor-supported', ''],
+    'Leisure & Culture':              ['76', 'Libraries', 'Koha LMS', 'In-House', '23.11', 45, 30000, '12/2027', 3, 'High', 'Segmented', 'Cloud', '', 'No', '', '', 'Community-supported', ''],
+    'Business & Employment':          ['7', 'Business advice and support', 'CRM System', 'Microsoft', 'Online', 60, 85000, '09/2028', 6, 'High', 'Segmented', 'Cloud', '', 'No', '', '', 'Vendor-supported', ''],
 };
 
 // -----------------------------------------------------------------------
@@ -60,16 +60,16 @@ const SHEET_DESCRIPTIONS = {
 // Domain column headers
 // -----------------------------------------------------------------------
 const DOMAIN_HEADERS = [
-    'ESD ID', 'Function', 'System Name', 'Vendor', 'Users',
+    'ESD ID', 'Function', 'System Name*', 'Vendor', 'Version', 'Users',
     'Annual Cost (£)', 'Contract End', 'Notice Period (months)',
-    'Portability', 'Data Partitioning', 'Hosting', 'ERP?',
-    'Shared With', 'Support Model', 'Capabilities Provided',
+    'Portability', 'Data Partitioning', 'Hosting', 'Hosting Partner', 'ERP?',
+    'Shared With', 'Target Authorities', 'Support Model', 'Capabilities Provided',
 ];
 
 // -----------------------------------------------------------------------
 // Column widths (character units)
 // -----------------------------------------------------------------------
-const DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 8, 14, 13, 10, 12, 15, 12, 6, 22, 20, 22];
+const DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 12, 8, 14, 13, 10, 12, 15, 12, 20, 6, 22, 20, 20, 22];
 
 // -----------------------------------------------------------------------
 // Helpers
@@ -111,7 +111,7 @@ function buildIndexSheet(wb) {
     // Row 2: blank
     sheet.addRow([]);
 
-    // Rows 3-9: Instructions
+    // Rows 3-10: Instructions
     sheet.addRow(['Instructions:']);
     sheet.getCell('A3').font = { bold: true };
     sheet.addRow(['1. Fill in the "Council Info" sheet with your council\'s name, tier, and financial distress status.']);
@@ -120,8 +120,9 @@ function buildIndexSheet(wb) {
     sheet.addRow(['4. Add extra rows for the same function if multiple systems serve it.']);
     sheet.addRow(['5. Use the "Dependencies" sheet to record system-to-system capability links.']);
     sheet.addRow(['6. Upload the completed file to the LGR Workspace Engine.']);
+    sheet.addRow(['7. Fields marked with an asterisk (*) are mandatory. All other fields are optional but recommended.']);
 
-    // Row 10: blank
+    // Row 11: blank
     sheet.addRow([]);
 
     // Row 11: Sheet table header
@@ -148,7 +149,7 @@ function buildCouncilInfoSheet(wb) {
     applyColumnWidths(sheet, [30, 15, 18]);
 
     // Row 1: Guidance
-    const guidanceRow = sheet.addRow(['Enter your council\'s details below. This identifies your architecture in the merged estate.']);
+    const guidanceRow = sheet.addRow(['Enter your council\'s details below. This identifies your architecture in the merged estate. Fields marked * are mandatory.']);
     guidanceRow.font = { italic: true };
     sheet.mergeCells('A1:C1');
     guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
@@ -156,28 +157,20 @@ function buildCouncilInfoSheet(wb) {
     // Row 2: blank
     sheet.addRow([]);
 
-    // Row 3: Headers
-    const headerRow = sheet.addRow(['Council Name', 'Council Tier', 'Financial Distress']);
-    headerRow.font = { bold: true };
+    // Row 3: Data rows
+    sheet.addRow(['Council Name*', '']);
+    sheet.addRow(['Council Tier*', '']);
+    sheet.addRow(['Financial Distress', 'No']);
 
-    // Row 4: Example
-    const exampleRow = sheet.addRow(['EXAMPLE — delete this row', 'District', 'No']);
-    exampleRow.font = { italic: true, color: { argb: 'FF666666' } };
-    exampleRow.eachCell(cell => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    // Data validation on Tier (B4) and Financial Distress (B5)
+    sheet.dataValidations.add('B4:B4', {
+        type: 'list', allowBlank: true,
+        formulae: ['\'_Lookups\'!$A$2:$A$5']
     });
-
-    // Data validation on Tier (column B) and Financial Distress (column C) for rows 4-100
-    for (let row = 4; row <= 100; row++) {
-        sheet.getCell(`B${row}`).dataValidation = {
-            type: 'list', allowBlank: true,
-            formulae: ['"County,District,Borough,Unitary"']
-        };
-        sheet.getCell(`C${row}`).dataValidation = {
-            type: 'list', allowBlank: true,
-            formulae: ['"Yes,No"']
-        };
-    }
+    sheet.dataValidations.add('B5:B5', {
+        type: 'list', allowBlank: true,
+        formulae: ['\'_Lookups\'!$B$2:$B$3']
+    });
 
     return sheet;
 }
@@ -203,15 +196,24 @@ function buildDomainSheet(wb, sheetName, rootId) {
     const example = EXAMPLE_SYSTEMS[sheetName] || null;
 
     // Row 1: Guidance (merged across all columns, grey fill)
-    const guidanceText = `List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`;
+    const guidanceText = `List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function. Fields marked * are mandatory.`;
     const guidanceRow = sheet.addRow([guidanceText]);
-    sheet.mergeCells(`A1:O1`);
+    sheet.mergeCells(`A1:R1`);
     guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
     guidanceRow.font = { italic: true };
 
     // Row 2: Column headers (bold)
     const headerRow = sheet.addRow(DOMAIN_HEADERS);
-    headerRow.font = { bold: true };
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } };
+        cell.border = {
+            bottom: { style: 'medium', color: { argb: 'FF000000' } }
+        };
+    });
+
+    // AutoFilter (replaces table filter buttons)
+    sheet.autoFilter = 'A2:R1000';
 
     // Row 3: Example row (italic, grey fill, clearly marked)
     if (example) {
@@ -224,8 +226,7 @@ function buildDomainSheet(wb, sheetName, rootId) {
         const firstFn = functions[0];
         const fallback = [
             firstFn ? firstFn.id : '', firstFn ? firstFn.label : '',
-            'Example System Name', 'Example Vendor',
-            '', '', '', '', '', '', '', '', '', 'Vendor-supported', '',
+            'Example System Name', 'Example Vendor', '', '', '', '', '', '', '', '', '', '', '', '', 'Vendor-supported', '',
         ];
         const exRow = sheet.addRow(fallback);
         exRow.font = { italic: true, color: { argb: 'FF666666' } };
@@ -236,68 +237,54 @@ function buildDomainSheet(wb, sheetName, rootId) {
 
     // Rows 4+: One row per function (ESD ID + label pre-filled, rest empty)
     for (const fn of functions) {
-        sheet.addRow([fn.id, fn.label, '', '', '', '', '', '', '', '', '', '', '', '', '']);
+        sheet.addRow([fn.id, fn.label, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     }
-
-    // Add Excel Table (ListObject) for the data area — auto-expands as councils add rows
-    const tableId = sheetName.replace(/[^a-zA-Z]/g, '');
-    const lastDataRow = sheet.rowCount;
-    sheet.addTable({
-        name: tableId,
-        ref: 'A2',
-        headerRow: true,
-        totalsRow: false,
-        columns: DOMAIN_HEADERS.map(h => ({ name: h })),
-        rows: Array.from({ length: lastDataRow - 2 }, (_, i) => {
-            const row = sheet.getRow(i + 3);
-            return DOMAIN_HEADERS.map((_, col) => row.getCell(col + 1).value || '');
-        })
-    });
 
     // Data validation with input messages (rows 3-200 for dropdown columns)
     const validations = {
-        I: {
-            type: 'list', allowBlank: true, formulae: ['"High,Medium,Low"'],
-            showInputMessage: true, promptTitle: 'Data Portability',
-            prompt: 'How easy is it to extract your data in bulk?\n\nHigh — Open APIs, standard formats (CSV/XML), vendor provides export tools. You could migrate data without vendor assistance.\n\nMedium — Some export capability exists but may require vendor support or have proprietary elements.\n\nLow — Proprietary format, no bulk export API, significant vendor lock-in. Migration requires vendor cooperation or reverse engineering.'
-        },
         J: {
-            type: 'list', allowBlank: true, formulae: ['"Segmented,Monolithic"'],
-            showInputMessage: true, promptTitle: 'Data Partitioning',
-            prompt: 'How is data organised within this system?\n\nSegmented — Data is logically separated (e.g., by service area, team, or geography). Can be split without major restructuring.\n\nMonolithic — Data is entangled across all areas the system serves. Splitting it would require ETL (Extract, Transform, Load) work and significant planning.'
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$C$2:$C$4'],
+            showInputMessage: true, promptTitle: 'Data Portability',
+            prompt: 'How easy is it to extract your data in bulk?\nHigh - Open APIs, standard formats, export tools.\nMedium - Some export capability, may require vendor support.\nLow - Proprietary format, vendor lock-in, reverse engineering.'
         },
         K: {
-            type: 'list', allowBlank: true, formulae: ['"Cloud,On-Premise,Partner-Hosted"'],
-            showInputMessage: true, promptTitle: 'Hosting Model',
-            prompt: 'Where is this system hosted?\n\nCloud — Vendor-hosted SaaS or cloud platform (Azure, AWS, etc.). Council has no infrastructure responsibility.\n\nOn-Premise — Hosted on council-owned servers or data centre.\n\nPartner-Hosted — Hosted by another council or shared service body.'
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$D$2:$D$3'],
+            showInputMessage: true, promptTitle: 'Data Partitioning',
+            prompt: 'How is data organised?\nSegmented - Logically separated by service area. Can be split easily.\nMonolithic - Entangled across all areas. Splitting requires complex ETL work.'
         },
         L: {
-            type: 'list', allowBlank: true, formulae: ['"Yes,No"'],
-            showInputMessage: true, promptTitle: 'ERP System?',
-            prompt: 'Is this an Enterprise Resource Planning system?\n\nYes — A large integrated system spanning multiple functions (e.g., SAP, Oracle, Unit4). Typically handles finance, HR, procurement, etc. in one platform.\n\nNo — A system focused on a single function or service area.'
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$E$2:$E$4'],
+            showInputMessage: true, promptTitle: 'Hosting Model',
+            prompt: 'Where is this system hosted?\nCloud - Vendor-hosted SaaS or cloud platform.\nOn-Premise - Hosted on council-owned servers.\nPartner-Hosted - Hosted by another council or shared service body.'
         },
         N: {
-            type: 'list', allowBlank: true, formulae: ['"Vendor-supported,Community-supported,Unsupported"'],
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$B$2:$B$3'],
+            showInputMessage: true, promptTitle: 'ERP System?',
+            prompt: 'Is this an Enterprise Resource Planning system?\nYes - Large integrated platform spanning multiple functions (e.g. SAP, Oracle).\nNo - Focused on a single function or service area.'
+        },
+        Q: {
+            type: 'list', allowBlank: true, formulae: ['_Lookups!$F$2:$F$4'],
             showInputMessage: true, promptTitle: 'Support Model',
-            prompt: 'Who maintains and supports this system going forward?\n\nVendor-supported — Commercial vendor with SLA, support contract, and product roadmap.\n\nCommunity-supported — Maintained collaboratively (multi-council partnership, open source with active contributors, shared digital team).\n\nUnsupported — No active maintenance agreement. Original developer may have left, product may be end-of-life, or no SLA exists.'
+            prompt: 'Who maintains this system?\nVendor-supported - Commercial vendor with SLA.\nCommunity-supported - Maintained collaboratively (open source, shared digital team).\nUnsupported - No active maintenance agreement.'
         },
     };
 
     for (const [col, validation] of Object.entries(validations)) {
-        for (let row = 3; row <= 200; row++) {
-            sheet.getCell(`${col}${row}`).dataValidation = validation;
-        }
+        sheet.dataValidations.add(`${col}3:${col}1000`, validation);
     }
 
     // Cell notes on column headers (row 2)
     sheet.getCell('C2').note = 'The name of the IT system as your council knows it. Use the same name consistently (it must match in the Dependencies sheet).';
     sheet.getCell('D2').note = 'Software vendor name, or "In-House" if developed internally by the council.';
-    sheet.getCell('E2').note = 'Approximate number of staff who regularly use this system.';
-    sheet.getCell('F2').note = 'Annual licence, hosting, and support cost in pounds (number only, no £ symbol).';
-    sheet.getCell('G2').note = 'When the current contract expires. Format: mm/yyyy (e.g., 03/2028).';
-    sheet.getCell('H2').note = 'How many months notice you must give to exit the contract before it auto-renews.';
-    sheet.getCell('M2').note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
-    sheet.getCell('O2').note = 'What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.';
+    sheet.getCell('E2').note = 'Version string of the software.';
+    sheet.getCell('F2').note = 'Approximate number of staff who regularly use this system.';
+    sheet.getCell('G2').note = 'Annual licence, hosting, and support cost in pounds (number only, no £ symbol).';
+    sheet.getCell('H2').note = 'When the current contract expires. Format: mm/yyyy (e.g., 03/2028).';
+    sheet.getCell('I2').note = 'How many months notice you must give to exit the contract before it auto-renews.';
+    sheet.getCell('M2').note = 'Name of the council or organisation hosting this (if Partner-Hosted).';
+    sheet.getCell('O2').note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
+    sheet.getCell('P2').note = 'Successor authorities this system is explicitly allocated to. Comma-separated.';
+    sheet.getCell('R2').note = 'What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.';
 
     return sheet;
 }
@@ -307,13 +294,13 @@ function buildDependenciesSheet(wb) {
     applyColumnWidths(sheet, [30, 30, 20, 14]);
 
     // Row 1: Guidance
-    const guidanceRow = sheet.addRow(['List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?']);
+    const guidanceRow = sheet.addRow(['List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly? Fields marked * are mandatory.']);
     sheet.mergeCells('A1:D1');
     guidanceRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
     guidanceRow.font = { italic: true };
 
     // Row 2: Headers
-    const headerRow = sheet.addRow(['System that depends', 'System it depends on', 'What for?', 'Match ✓']);
+    const headerRow = sheet.addRow(['System that depends*', 'System it depends on*', 'What for?', 'Match ✓']);
     headerRow.font = { bold: true };
 
     // Row 3: Example
@@ -400,11 +387,12 @@ function buildLookupsSheet(wb) {
     const yesNo = ['Yes', 'No'];
     const portability = ['High', 'Medium', 'Low'];
     const dataPartitioning = ['Segmented', 'Monolithic'];
+    const hosting = ['Cloud', 'On-Premise', 'Partner-Hosted'];
     const supportModels = ['Vendor-supported', 'Community-supported', 'Unsupported'];
     const capabilities = LGAM_CAPABILITIES.map(c => c.id);
 
-    const headers = ['Tier', 'YesNo', 'Portability', 'DataPartitioning', 'SupportModel', 'Capabilities'];
-    applyColumnWidths(sheet, [12, 8, 12, 16, 20, 16]);
+    const headers = ['Tier', 'YesNo', 'Portability', 'DataPartitioning', 'Hosting', 'SupportModel', 'Capabilities'];
+    applyColumnWidths(sheet, [12, 8, 12, 16, 16, 20, 16]);
 
     sheet.addRow(headers);
     const headerRow = sheet.getRow(1);
@@ -415,6 +403,7 @@ function buildLookupsSheet(wb) {
         yesNo.length,
         portability.length,
         dataPartitioning.length,
+        hosting.length,
         supportModels.length,
         capabilities.length,
     );
@@ -425,6 +414,7 @@ function buildLookupsSheet(wb) {
             yesNo[i]            || '',
             portability[i]      || '',
             dataPartitioning[i] || '',
+            hosting[i]          || '',
             supportModels[i]    || '',
             capabilities[i]     || '',
         ]);

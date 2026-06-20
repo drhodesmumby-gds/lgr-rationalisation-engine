@@ -208,6 +208,7 @@ function renderSuccessorCard({
             <div class="flex justify-between items-center mb-1"><span>System:</span><input class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="label" value="${escHtml(ps.label || '')}"></div>
             <div class="flex justify-between items-center mb-1"><span>Vendor:</span><input class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="vendor" value="${escHtml(ps.vendor || '')}"></div>
             <div class="flex justify-between items-center mb-1"><span>Annual cost:</span><input type="number" class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="annualCost" value="${ps.annualCost || ''}"></div>
+            <div class="flex justify-between items-center mb-1"><span>Impl. cost:</span><input type="number" class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="implementationCost" value="${ps.implementationCost || ''}"></div>
             <div class="flex justify-between items-center"><span>Hosting:</span>
                 <select class="border border-[#b1b4b6] px-1 py-0.5 text-xs w-32 procure-field" data-field="hosting">
                     <option value="cloud" ${(ps.hosting || 'cloud') === 'cloud' ? 'selected' : ''}>Cloud</option>

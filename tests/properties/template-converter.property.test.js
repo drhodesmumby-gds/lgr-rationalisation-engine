@@ -71,6 +71,7 @@ function makeRow({
     fnLabel = 'Adult Social Care',
     systemName = 'Liquidlogic LAS',
     vendor = 'System C',
+    version = '',
     users = 3500,
     annualCost = '£950000',
     contractEnd = '03/2027',
@@ -78,14 +79,16 @@ function makeRow({
     portability = 'High',
     dataPartitioning = 'Segmented',
     cloud = 'Yes',
+    hostingPartner = '',
     erp = 'No',
     sharedWith = '',
+    targetAuthorities = '',
     supportModel = 'vendor-supported',
     capabilities = 'payments',
 } = {}) {
-    return [esdId, fnLabel, systemName, vendor, users, annualCost, contractEnd,
-            noticePeriod, portability, dataPartitioning, cloud, erp,
-            sharedWith, supportModel, capabilities];
+    return [esdId, fnLabel, systemName, vendor, version, users, annualCost, contractEnd,
+            noticePeriod, portability, dataPartitioning, cloud, hostingPartner, erp,
+            sharedWith, targetAuthorities, supportModel, capabilities];
 }
 
 // ---------------------------------------------------------------------------
@@ -330,7 +333,7 @@ describe('convertXlsxToArchitecture — nodes and edges from domain sheets', () 
 
     it('omits optional fields when not provided', () => {
         const row = ['148', 'Adult Social Care', 'Minimal System',
-                     '', '', '', '', '', '', '', '', '', '', '', ''];
+                     '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''];
         const wb = mockWorkbook({
             'Health & Social Care': domainSheetRows([row]),
         });

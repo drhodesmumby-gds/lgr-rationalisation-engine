@@ -36,17 +36,20 @@ const COL = {
     FUNCTION:           1,  // B
     SYSTEM_NAME:        2,  // C
     VENDOR:             3,  // D
-    USERS:              4,  // E
-    ANNUAL_COST:        5,  // F
-    CONTRACT_END:       6,  // G
-    NOTICE_PERIOD:      7,  // H
-    PORTABILITY:        8,  // I
-    DATA_PARTITIONING:  9,  // J
-    CLOUD_HOSTED:       10, // K
-    ERP:                11, // L
-    SHARED_WITH:        12, // M
-    SUPPORT_MODEL:      13, // N
-    CAPABILITIES:       14, // O
+    VERSION:            4,  // E
+    USERS:              5,  // F
+    ANNUAL_COST:        6,  // G
+    CONTRACT_END:       7,  // H
+    NOTICE_PERIOD:      8,  // I
+    PORTABILITY:        9,  // J
+    DATA_PARTITIONING:  10, // K
+    CLOUD_HOSTED:       11, // L
+    HOSTING_PARTNER:    12, // M
+    ERP:                13, // N
+    SHARED_WITH:        14, // O
+    TARGET_AUTHORITIES: 15, // P
+    SUPPORT_MODEL:      16, // Q
+    CAPABILITIES:       17, // R
 };
 
 // -----------------------------------------------------------------------
@@ -244,7 +247,7 @@ export function convertXlsxToArchitecture(workbook) {
         //   Row with "Financial Distress" in col 0, value in col 1
         for (const row of rows) {
             if (!Array.isArray(row) || row.length < 2) continue;
-            const key = safeStr(row[0]).toLowerCase();
+            const key = safeStr(row[0]).toLowerCase().replace(/\*/g, '').trim();
             const val = row[1];
             if (key.includes('council') && key.includes('name')) {
                 councilName = safeStr(val) || councilName;
@@ -322,6 +325,7 @@ export function convertXlsxToArchitecture(workbook) {
                     id: fnNodeId,
                     label: fnLabel,
                     type: 'Function',
+                    _sourceSheet: sheetName
                 };
                 if (esdId) fnNode.lgaFunctionId = esdId;
                 nodes.push(fnNode);
@@ -341,6 +345,9 @@ export function convertXlsxToArchitecture(workbook) {
 
             const vendor = safeStr(row[COL.VENDOR]);
             if (vendor) sysNode.vendor = vendor;
+
+            const version = safeStr(row[COL.VERSION]);
+            if (version) sysNode.version = version;
 
             const users = safeInt(row[COL.USERS]);
             if (users !== undefined) sysNode.users = users;
@@ -375,12 +382,18 @@ export function convertXlsxToArchitecture(workbook) {
                 else if (['no','false','on-prem','on-premise','local'].includes(hostingRaw)) sysNode.hosting = 'on-premise';
                 else if (['partner','shared','shared service'].includes(hostingRaw)) sysNode.hosting = 'partner-hosted';
             }
+            
+            const hostingPartner = safeStr(row[COL.HOSTING_PARTNER]);
+            if (hostingPartner) sysNode.hostingPartner = hostingPartner;
 
             const isERP = parseBool(row[COL.ERP]);
             if (isERP !== undefined) sysNode.isERP = isERP;
 
             const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH]);
             if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
+            
+            const targetAuthArr = parseCommaSeparated(row[COL.TARGET_AUTHORITIES]);
+            if (targetAuthArr.length > 0) sysNode.targetAuthorities = targetAuthArr;
 
             const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL]);
             if (supportModel !== undefined) sysNode.supportModel = supportModel;

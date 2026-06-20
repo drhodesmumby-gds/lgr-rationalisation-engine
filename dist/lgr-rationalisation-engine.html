@@ -976,10 +976,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
                 <div id="decisionPanelContent" class="overflow-y-auto flex-1 pr-2"></div>
                 <div id="decisionPanelError" role="alert" class="hidden mt-3 p-3 bg-red-50 border-l-4 border-l-[#d4351c] text-[#d4351c] font-bold text-sm"></div>
                 <div id="capabilityBlastRadiusSummary" class="hidden"></div>
-                <div id="decisionPanelFooter" class="flex gap-3 mt-4 pt-4 border-t border-[#b1b4b6]">
-                    <button id="btnApplyDecision" class="gds-btn" type="button">Apply Decision</button>
-                    <button id="btnCancelDecision" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Cancel</button>
-                </div>
             </div>
         </div>
 
@@ -1286,6 +1282,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   // src/taxonomy.js
   function getLgaFunction(id) {
     return LGA_FUNCTIONS.find((f) => f.id === id);
+  }
+  function registerCustomFunction(lgaFn) {
+    if (!LGA_FUNCTIONS.some((f) => f.id === lgaFn.id)) {
+      LGA_FUNCTIONS.push(lgaFn);
+    }
   }
   function getLgaBreadcrumb2(id) {
     const fn = getLgaFunction(id);
@@ -2854,28 +2855,34 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     // C
     VENDOR: 3,
     // D
-    USERS: 4,
+    VERSION: 4,
     // E
-    ANNUAL_COST: 5,
+    USERS: 5,
     // F
-    CONTRACT_END: 6,
+    ANNUAL_COST: 6,
     // G
-    NOTICE_PERIOD: 7,
+    CONTRACT_END: 7,
     // H
-    PORTABILITY: 8,
+    NOTICE_PERIOD: 8,
     // I
-    DATA_PARTITIONING: 9,
+    PORTABILITY: 9,
     // J
-    CLOUD_HOSTED: 10,
+    DATA_PARTITIONING: 10,
     // K
-    ERP: 11,
+    CLOUD_HOSTED: 11,
     // L
-    SHARED_WITH: 12,
+    HOSTING_PARTNER: 12,
     // M
-    SUPPORT_MODEL: 13,
+    ERP: 13,
     // N
-    CAPABILITIES: 14
+    SHARED_WITH: 14,
     // O
+    TARGET_AUTHORITIES: 15,
+    // P
+    SUPPORT_MODEL: 16,
+    // Q
+    CAPABILITIES: 17
+    // R
   };
   function excelSerialToDate(serial) {
     const MS_PER_DAY = 864e5;
@@ -2981,7 +2988,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
       const rows = XLSX.utils.sheet_to_json(infoSheet, { header: 1 });
       for (const row of rows) {
         if (!Array.isArray(row) || row.length < 2) continue;
-        const key = safeStr(row[0]).toLowerCase();
+        const key = safeStr(row[0]).toLowerCase().replace(/\*/g, "").trim();
         const val = row[1];
         if (key.includes("council") && key.includes("name")) {
           councilName = safeStr(val) || councilName;
@@ -3036,7 +3043,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           const fnNode = {
             id: fnNodeId,
             label: fnLabel,
-            type: "Function"
+            type: "Function",
+            _sourceSheet: sheetName
           };
           if (esdId) fnNode.lgaFunctionId = esdId;
           nodes.push(fnNode);
@@ -3050,6 +3058,8 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         };
         const vendor = safeStr(row[COL.VENDOR]);
         if (vendor) sysNode.vendor = vendor;
+        const version = safeStr(row[COL.VERSION]);
+        if (version) sysNode.version = version;
         const users = safeInt(row[COL.USERS]);
         if (users !== void 0) sysNode.users = users;
         const rawCost = row[COL.ANNUAL_COST];
@@ -3075,10 +3085,14 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           else if (["no", "false", "on-prem", "on-premise", "local"].includes(hostingRaw)) sysNode.hosting = "on-premise";
           else if (["partner", "shared", "shared service"].includes(hostingRaw)) sysNode.hosting = "partner-hosted";
         }
+        const hostingPartner = safeStr(row[COL.HOSTING_PARTNER]);
+        if (hostingPartner) sysNode.hostingPartner = hostingPartner;
         const isERP = parseBool(row[COL.ERP]);
         if (isERP !== void 0) sysNode.isERP = isERP;
         const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH]);
         if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
+        const targetAuthArr = parseCommaSeparated(row[COL.TARGET_AUTHORITIES]);
+        if (targetAuthArr.length > 0) sysNode.targetAuthorities = targetAuthArr;
         const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL]);
         if (supportModel !== void 0) sysNode.supportModel = supportModel;
         const capabilitiesArr = parseCommaSeparated(row[COL.CAPABILITIES]).map((c) => c.toLowerCase());
@@ -3160,9 +3174,10 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     return area ? area.firstElementChild : document.body;
   }
   function enforceLimit(container) {
-    const notifications = container.querySelectorAll(".app-notification");
+    let notifications = container.querySelectorAll(".app-notification");
     while (notifications.length >= MAX_NOTIFICATIONS) {
       notifications[0].remove();
+      notifications = container.querySelectorAll(".app-notification");
     }
   }
   function showNotification({ type = "info", title, message, autoDismissMs = 8e3, containerId } = {}) {
@@ -10865,6 +10880,23 @@ ${hardErrors.join("\n")}`);
         </div>
     `;
   }
+  function findAllFunctionsForSystem(primarySystem, successorName) {
+    if (!primarySystem) return [];
+    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+    const successorMap = allocMap ? allocMap.get(successorName) : null;
+    if (!successorMap) return [];
+    const functions = [];
+    for (const [funcId, allocations] of successorMap) {
+      if (allocations.some((a) => a.system && a.system.id === primarySystem.id)) {
+        const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+        functions.push({
+          funcId,
+          label: funcEntry ? funcEntry.label : `Function ${funcId}`
+        });
+      }
+    }
+    return functions;
+  }
 
   // src/features/decision-panel/pane-systems.js
   function renderPane1Simple(systems, vestingDate) {
@@ -10883,50 +10915,74 @@ ${hardErrors.join("\n")}`);
         </div>
     `;
   }
-  function renderPane1Expanded(primarySystem, functions, currentFunctionId, successorName, vestingDate, pendingPerFunction) {
+  function renderPane1Expanded(systems, currentFunctionId, successorName, vestingDate, pendingPerFunction) {
     const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
-    const systemCardHtml = renderSystemCard(primarySystem, vestingDate, { compact: true });
-    const funcRows = functions.map((f) => {
-      const isCurrent = f.funcId === currentFunctionId;
-      const key = getDecisionKey(f.funcId, successorName);
-      const existing = decisions.get(key);
-      const pendingState = pendingPerFunction && pendingPerFunction[f.funcId];
-      const hasPendingSystem = pendingState && pendingState.primarySystemValue && pendingState.primarySystemValue !== "";
-      let statusBadge;
-      if (isCurrent) {
-        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f0f4ff] text-[#1d70b8]">Editing</span>';
-      } else if (existing && existing.resolvedVia) {
-        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f3f2f1] text-[#505a5f]">Resolved</span>';
-      } else if (existing && existing.sharedServiceOrigin) {
-        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Shared \u2713</span>';
-      } else if (existing) {
-        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Done \u2713</span>';
-      } else if (hasPendingSystem) {
-        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#fde68a] text-[#0b0c0c]">Configured</span>';
-      } else {
-        statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f3f2f1] text-[#505a5f]">Pending</span>';
-      }
-      const selectedClass = isCurrent ? "border-[#1d70b8] bg-[#f0f4ff] border-2" : "border border-[#b1b4b6] bg-[#fafafa]";
+    const sortedSystems = [...systems].sort((a, b) => {
+      const lenA = findAllFunctionsForSystem(a, successorName).length;
+      const lenB = findAllFunctionsForSystem(b, successorName).length;
+      return lenB - lenA;
+    });
+    const systemBlocks = sortedSystems.map((sys) => {
+      const systemCardHtml = renderSystemCard(sys, vestingDate, { compact: true });
+      const functions = findAllFunctionsForSystem(sys, successorName);
+      const sortedFunctions = [...functions].sort((a, b) => {
+        if (a.funcId === currentFunctionId) return -1;
+        if (b.funcId === currentFunctionId) return 1;
+        return a.label.localeCompare(b.label);
+      });
+      const funcRows = sortedFunctions.map((f) => {
+        const isCurrent = f.funcId === currentFunctionId;
+        const key = getDecisionKey(f.funcId, successorName);
+        const existing = decisions.get(key);
+        const pendingState = pendingPerFunction && pendingPerFunction[f.funcId];
+        const hasPendingSystem = pendingState && pendingState.primarySystemValue && pendingState.primarySystemValue !== "";
+        let statusBadge;
+        if (isCurrent) {
+          statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f0f4ff] text-[#1d70b8]">Editing</span>';
+        } else if (existing && existing.resolvedVia) {
+          statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f3f2f1] text-[#505a5f]">Resolved</span>';
+        } else if (existing && existing.sharedServiceOrigin) {
+          statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Shared \u2713</span>';
+        } else if (existing) {
+          statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#cce2d8] text-[#00703c]">Done \u2713</span>';
+        } else if (hasPendingSystem) {
+          statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#fde68a] text-[#0b0c0c]">Configured</span>';
+        } else {
+          statusBadge = '<span class="text-[9px] px-1.5 py-0.5 font-bold bg-[#f3f2f1] text-[#505a5f]">Pending</span>';
+        }
+        const selectedClass = isCurrent ? "border-[#1d70b8] bg-[#f0f4ff] border-2" : "border border-[#b1b4b6] bg-[#fafafa]";
+        return `
+                <div class="flex items-center p-1.5 ${selectedClass} mb-0.5 cursor-pointer text-xs func-nav-row" data-func-id="${escHtml(f.funcId)}">
+                    <span class="flex-1 font-semibold text-[11px] leading-tight pr-1">${escHtml(f.label)}</span>
+                    ${statusBadge}
+                </div>`;
+      }).join("");
+      const isErp = sys.isERP || false;
+      const decommNote = isErp ? `<div class="mt-1 p-1.5 bg-[#fff7e6] border-l-4 border-l-[#f47738] text-[10px]">
+                <strong>ERP:</strong> Decommissioned when all ${functions.length} functions resolved away.
+               </div>` : "";
+      const entanglementBadge = functions.length > 3 ? `<div class="mb-1.5 mt-1 text-[10px] font-bold text-[#d4351c] bg-[#fdf3f2] p-1 inline-block border border-[#d4351c]">Highly entangled (${functions.length} functions)</div>` : "";
       return `
-            <div class="flex items-center p-1.5 ${selectedClass} mb-0.5 cursor-pointer text-xs func-nav-row" data-func-id="${escHtml(f.funcId)}">
-                <span class="flex-1 font-semibold">${escHtml(f.label)}</span>
-                ${statusBadge}
-            </div>`;
+            <div class="mb-4">
+                <div class="font-bold text-[13px] mb-0.5 leading-tight">${escHtml(sys.label || "Unnamed")}</div>
+                <div class="text-[10px] text-gray-500 mb-1.5">${escHtml(sys.sourceCouncil || sys._sourceCouncil || "")}</div>
+                ${systemCardHtml}
+                <div class="mt-2 pl-2 border-l-2 border-[#b1b4b6]">
+                    <div class="text-[9px] font-bold uppercase text-[#505a5f] mb-1">Functions served</div>
+                    ${entanglementBadge}
+                    <div class="pr-1">
+                        ${funcRows}
+                    </div>
+                    ${decommNote}
+                </div>
+            </div>
+        `;
     }).join("");
-    const isErp = primarySystem.isERP || false;
-    const decommNote = isErp ? `<div class="mt-2 p-1.5 bg-[#fff7e6] border-l-4 border-l-[#f47738] text-[10px]">
-            <strong>ERP:</strong> Decommissioned when all ${functions.length} functions resolved away.
-           </div>` : "";
     return `
-        <div class="pane-label">System</div>
-        <div class="mb-3">
-            <div class="font-bold text-sm mb-1">${escHtml(primarySystem.label || "Unnamed")}</div>
-            <div class="text-xs text-gray-500 mb-2">${escHtml(primarySystem.sourceCouncil || primarySystem._sourceCouncil || "")}</div>
-            ${systemCardHtml}
+        <div class="pane-label">Competing Systems</div>
+        <div class="mt-2">
+            ${systemBlocks}
         </div>
-        <div class="text-[10px] font-bold uppercase text-[#505a5f] mb-1">Functions</div>
-        ${funcRows}
-        ${decommNote}
     `;
   }
 
@@ -11085,6 +11141,7 @@ ${hardErrors.join("\n")}`);
             <div class="flex justify-between items-center mb-1"><span>System:</span><input class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="label" value="${escHtml(ps.label || "")}"></div>
             <div class="flex justify-between items-center mb-1"><span>Vendor:</span><input class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="vendor" value="${escHtml(ps.vendor || "")}"></div>
             <div class="flex justify-between items-center mb-1"><span>Annual cost:</span><input type="number" class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="annualCost" value="${ps.annualCost || ""}"></div>
+            <div class="flex justify-between items-center mb-1"><span>Impl. cost:</span><input type="number" class="border border-[#b1b4b6] px-1.5 py-0.5 text-xs w-32 procure-field" data-field="implementationCost" value="${ps.implementationCost || ""}"></div>
             <div class="flex justify-between items-center"><span>Hosting:</span>
                 <select class="border border-[#b1b4b6] px-1 py-0.5 text-xs w-32 procure-field" data-field="hosting">
                     <option value="cloud" ${(ps.hosting || "cloud") === "cloud" ? "selected" : ""}>Cloud</option>
@@ -11136,20 +11193,19 @@ ${hardErrors.join("\n")}`);
     sharedWithSuccessors,
     procuredSystem,
     existingDecision,
-    isExpanded,
-    primarySystem,
-    allFunctions
+    isExpanded
   }) {
-    let html = '<div class="pane-label">Cost & Impact</div>';
-    if (sharedWithSuccessors.length > 0 || selectedSystemId && getSuccessorNamesForSystem(selectedSystemId).length > 1) {
+    let html = '<div class="flex-1 overflow-y-auto pr-2 pb-4">';
+    html += '<div class="pane-label mb-3 text-sm font-bold text-[#0b0c0c]">Cost & Impact</div>';
+    if (systemChoice !== "defer" && (sharedWithSuccessors.length > 0 || selectedSystemId && getSuccessorNamesForSystem(selectedSystemId).length > 1 || systemChoice === "procure")) {
       const costSystem = selectedSystemId ? systems.find((s) => s.id === selectedSystemId) : null;
       const annualCost = costSystem ? costSystem.annualCost : procuredSystem ? procuredSystem.annualCost : 0;
-      const systemLabel = costSystem ? costSystem.label : procuredSystem ? procuredSystem.label : "System";
+      const systemLabel = costSystem ? costSystem.label : procuredSystem && procuredSystem.label ? procuredSystem.label : "New System";
+      html += `<div class="text-xs font-bold mb-1">${escHtml(systemLabel)}</div>`;
       if (annualCost) {
         const participants = [primarySuccessorName, ...sharedWithSuccessors];
         const overrides = selectedSystemId ? state.costSplitOverrides[selectedSystemId] || {} : {};
         const equalProp = 1 / participants.length;
-        html += `<div class="text-xs font-bold mb-1">${escHtml(systemLabel)} \u2014 \xA3${Number(annualCost).toLocaleString()}/yr</div>`;
         html += `<div class="text-[10px] text-[#505a5f] mb-1.5">${sharedWithSuccessors.length > 0 ? "Shared service" : "Transition"} cost split:</div>`;
         for (const name of participants) {
           const prop = overrides[name] != null ? overrides[name] : equalProp;
@@ -11165,33 +11221,45 @@ ${hardErrors.join("\n")}`);
                 <a href="#" class="text-[#1d70b8] underline cost-split-shortcut" data-action="by-users">By users</a> \xB7
                 <a href="#" class="text-[#1d70b8] underline cost-split-shortcut" data-action="by-functions">By functions</a>
             </div>`;
-        html += '<div class="border-t border-[#e5e5e5] my-2.5"></div>';
+      } else {
+        html += `<div class="text-[10px] text-[#505a5f] italic mb-1">Financial data unavailable.</div>`;
       }
+      html += '<div class="border-t border-[#e5e5e5] my-2.5"></div>';
     }
-    if (systemChoice === "choose" && selectedSystemId) {
+    if (systemChoice === "choose" || systemChoice === "procure") {
       const toDecommission = systems.filter((s) => s.id !== selectedSystemId && !s.isERP);
-      if (toDecommission.length > 0) {
-        const totalSaved = toDecommission.reduce((sum, s) => sum + (s.annualCost || 0), 0);
+      const erpDecommissions = systems.filter((s) => s.id !== selectedSystemId && s.isERP);
+      if (toDecommission.length > 0 || erpDecommissions.length > 0) {
         html += '<div class="text-xs font-bold mb-1">Decommissions</div>';
-        html += toDecommission.map(
-          (s) => `<div class="text-xs text-[#d4351c]">\u2022 ${escHtml(s.label)}${s.annualCost ? ` \u2014 \xA3${Number(s.annualCost).toLocaleString()}/yr saved` : ""}</div>`
-        ).join("");
-        if (totalSaved > 0) {
-          html += `<div class="text-xs font-bold text-[#00703c] mt-0.5">Total saving: \xA3${totalSaved.toLocaleString()}/yr</div>`;
+        if (toDecommission.length > 0) {
+          const totalSaved = toDecommission.reduce((sum, s) => sum + (s.annualCost || 0), 0);
+          html += toDecommission.map(
+            (s) => `<div class="text-xs text-[#d4351c]">\u2022 ${escHtml(s.label)}${s.annualCost ? ` \u2014 \xA3${Number(s.annualCost).toLocaleString()}/yr saved` : ""}</div>`
+          ).join("");
+          if (totalSaved > 0) {
+            html += `<div class="text-xs font-bold text-[#00703c] mt-0.5 mb-1">Total saving: \xA3${totalSaved.toLocaleString()}/yr</div>`;
+          }
+        }
+        if (erpDecommissions.length > 0) {
+          html += erpDecommissions.map(
+            (s) => `<div class="text-xs text-[#505a5f] italic mt-1">\u2022 ${escHtml(s.label)} (ERP \u2014 decommissioned when all functions resolve)</div>`
+          ).join("");
         }
         html += '<div class="border-t border-[#e5e5e5] my-2.5"></div>';
       }
     }
     html += '<div class="text-xs font-bold mb-1">Obligations</div>';
     const obligations = [];
-    if (systemChoice === "choose" && selectedSystemId) {
+    if (systemChoice === "choose" || systemChoice === "procure") {
       const migrateFrom = systems.filter((s) => s.id !== selectedSystemId);
       migrateFrom.forEach((s) => {
-        if (s.users > 0) obligations.push({ color: "#d4351c", text: `Data migration: ${s.label}` });
+        if (s.users > 0 || s.annualCost > 0 || systemChoice === "procure") {
+          obligations.push({ color: "#d4351c", text: `Data migration: ${s.label}` });
+        }
       });
     }
     if (systemChoice === "procure") {
-      obligations.push({ color: "#f47738", text: `Procurement: ${procuredSystem ? procuredSystem.label : "new system"}` });
+      obligations.push({ color: "#f47738", text: `Procurement: ${procuredSystem && procuredSystem.label ? procuredSystem.label : "new system"}` });
     }
     if (sharedWithSuccessors.length > 0) {
       obligations.push({ color: "#1d70b8", text: "Shared service governance agreement" });
@@ -11203,40 +11271,72 @@ ${hardErrors.join("\n")}`);
         (o) => `<div class="text-xs leading-relaxed"><span style="color:${o.color}">\u25CF</span> ${escHtml(o.text)}</div>`
       ).join("");
     }
-    if (isExpanded && primarySystem && allFunctions && allFunctions.length > 0) {
+    if (isExpanded) {
+      const erpSystems = systems.filter((s) => s.isERP);
       const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
-      html += '<div class="border-t border-[#e5e5e5] my-2.5"></div>';
-      html += `<div class="text-xs font-bold mb-1">${escHtml(primarySystem.label)} decommission</div>`;
-      let resolvedCount = 0;
-      html += allFunctions.map((f) => {
-        const key = getDecisionKey(f.funcId, primarySuccessorName);
-        const dec = decisions.get(key);
-        const isCurrent = f.funcId === functionId;
-        if (dec || isCurrent) resolvedCount++;
-        if (isCurrent) return `<div class="text-xs"><span class="text-[#1d70b8]">\u25C6</span> ${escHtml(f.label)} \u2014 editing</div>`;
-        if (dec) return `<div class="text-xs"><span class="text-[#00703c]">\u2713</span> ${escHtml(f.label)} \u2014 resolved</div>`;
-        return `<div class="text-xs"><span class="text-[#b1b4b6]">\u25CB</span> ${escHtml(f.label)} \u2014 pending</div>`;
-      }).join("");
-      const remaining = allFunctions.length - resolvedCount;
-      if (remaining > 0) {
-        html += `<div class="text-[10px] text-[#f47738] font-bold mt-1">${remaining} pending \u2014 not yet decommissioned</div>`;
-      } else {
-        html += `<div class="text-[10px] text-[#00703c] font-bold mt-1">All resolved \u2014 decommission triggered</div>`;
-      }
+      erpSystems.forEach((erp) => {
+        const erpFunctions = findAllFunctionsForSystem(erp, primarySuccessorName);
+        if (erpFunctions.length === 0) return;
+        html += '<div class="border-t border-[#e5e5e5] my-2.5"></div>';
+        html += `<div class="text-xs font-bold mb-1">${escHtml(erp.label)} decommission</div>`;
+        let resolvedCount = 0;
+        let trackerHtml = "";
+        erpFunctions.forEach((f) => {
+          const key = getDecisionKey(f.funcId, primarySuccessorName);
+          const dec = decisions.get(key);
+          const isCurrent = f.funcId === functionId;
+          if (dec || isCurrent) resolvedCount++;
+          if (isCurrent) {
+            trackerHtml += `<div class="text-[11px] leading-tight mb-0.5"><span class="text-[#1d70b8]">\u25C6</span> <span>${escHtml(f.label)}</span> \u2014 editing</div>`;
+          } else if (dec) {
+            trackerHtml += `<div class="text-[11px] leading-tight mb-0.5"><span class="text-[#00703c]">\u2713</span> <span>${escHtml(f.label)}</span> \u2014 resolved</div>`;
+          } else {
+            trackerHtml += `<div class="text-[11px] leading-tight text-[#505a5f] mb-0.5"><span class="text-[#b1b4b6]">\u25CB</span> <span>${escHtml(f.label)}</span> \u2014 pending</div>`;
+          }
+        });
+        if (erpFunctions.length > 5) {
+          html += `<div class="max-h-32 overflow-y-auto pr-1 border border-[#e5e5e5] p-1 bg-[#f8f8f8]">${trackerHtml}</div>`;
+        } else {
+          html += trackerHtml;
+        }
+        const remaining = erpFunctions.length - resolvedCount;
+        if (remaining > 0) {
+          html += `<div class="text-[10px] text-[#f47738] font-bold mt-1">${remaining} pending \u2014 not yet decommissioned</div>`;
+        } else {
+          html += `<div class="text-[10px] text-[#00703c] font-bold mt-1">All resolved \u2014 decommission triggered</div>`;
+        }
+      });
     }
     html += '<div class="border-t border-[#e5e5e5] my-2.5"></div>';
     const existingRationale = existingDecision ? existingDecision.rationale || "" : "";
     html += `<div class="text-xs font-bold mb-1">Rationale <span class="font-normal text-[#86868b]">(optional)</span></div>`;
-    html += `<textarea id="decisionRationale" class="w-full border border-[#b1b4b6] p-1.5 text-xs h-10 resize-y" placeholder="e.g. Cloud-first strategy, board decision 2026-06-01.">${escHtml(existingRationale)}</textarea>`;
+    html += `<textarea id="decisionRationale" class="w-full border border-[#b1b4b6] p-1.5 text-xs h-16 resize-y focus:outline-none focus:border-[#0b0c0c] focus:ring-2 focus:ring-[#fd0]" placeholder="e.g. Cloud-first strategy, board decision 2026-06-01.">${escHtml(existingRationale)}</textarea>`;
+    html += "</div>";
+    html += `
+        <div id="decisionPanelFooter" class="mt-auto pt-4 border-t-2 border-[#b1b4b6] shrink-0 bg-[#fafafa]">
+            <div class="flex gap-3">
+                <button id="btnApplyDecision" class="gds-btn" type="button">Apply Decision</button>
+                <button id="btnCancelDecision" class="gds-btn-secondary px-4 py-2 font-bold" type="button">Cancel</button>
+            </div>
+        </div>
+    `;
     return html;
   }
 
   // src/features/decision-panel/sharing-grid.js
-  function computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing) {
-    const grid = {};
+  function computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing, selectedSystemId) {
+    const grid = /* @__PURE__ */ Object.create(null);
     for (const func of functions) {
-      grid[func.funcId] = {};
-      grid[func.funcId][primarySuccessor] = true;
+      grid[func.funcId] = /* @__PURE__ */ Object.create(null);
+      if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
+        grid[func.funcId][primarySuccessor] = pendingSharing.currentPrimaryValue === selectedSystemId;
+      } else if (pendingSharing && pendingSharing.perFunction && pendingSharing.perFunction[func.funcId]) {
+        grid[func.funcId][primarySuccessor] = pendingSharing.perFunction[func.funcId].primarySystemValue === selectedSystemId;
+      } else {
+        const key = getDecisionKey(func.funcId, primarySuccessor);
+        const dec = decisions.get(key);
+        grid[func.funcId][primarySuccessor] = !!(dec && dec.systemChoice === "choose" && dec.retainedSystemIds.includes(selectedSystemId));
+      }
       for (const other of otherSuccessors) {
         if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
           grid[func.funcId][other] = (pendingSharing.sharedWithSuccessors || []).includes(other);
@@ -11252,9 +11352,9 @@ ${hardErrors.join("\n")}`);
     }
     return grid;
   }
-  function renderSharingGrid(functions, primarySuccessor, otherSuccessors, pendingSharing) {
+  function renderSharingGrid(functions, primarySuccessor, otherSuccessors, pendingSharing, selectedSystemId) {
     const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
-    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing);
+    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing, selectedSystemId);
     let headerCells = '<th class="text-left"></th>';
     for (const func of functions) {
       const sysNote = func.systemLabel ? `<br><span style="font-size:9px;font-weight:normal;">(${escHtml(func.systemLabel)})</span>` : "";
@@ -11264,7 +11364,13 @@ ${hardErrors.join("\n")}`);
     let rows = "";
     rows += `<tr class="bg-white"><td class="font-semibold text-left">${escHtml(primarySuccessor)}<br><span class="text-[9px] text-[#505a5f] font-bold">Primary</span></td>`;
     for (const func of functions) {
-      rows += `<td class="text-center"><input type="checkbox" checked disabled class="w-4 h-4"></td>`;
+      const cellState = gridState[func.funcId][primarySuccessor];
+      const checked = cellState ? "checked" : "";
+      if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
+        rows += `<td class="text-center"><input type="checkbox" ${checked} disabled class="w-4 h-4 opacity-50" title="Controlled by dropdown above"></td>`;
+      } else {
+        rows += `<td class="text-center"><input type="checkbox" ${checked} class="w-4 h-4 cursor-pointer grid-primary-cb" data-func-id="${escHtml(func.funcId)}" title="Toggle whether ${escHtml(primarySuccessor)} uses this system for ${escHtml(func.label)}"></td>`;
+      }
     }
     rows += "<td></td></tr>";
     for (const other of otherSuccessors) {
@@ -11324,11 +11430,13 @@ ${hardErrors.join("\n")}`);
       }
       const vendorField = primaryCard.querySelector('.procure-field[data-field="vendor"]');
       const costField = primaryCard.querySelector('.procure-field[data-field="annualCost"]');
+      const implCostField = primaryCard.querySelector('.procure-field[data-field="implementationCost"]');
       const hostingField = primaryCard.querySelector('.procure-field[data-field="hosting"]');
       procuredSystem = {
         label,
         vendor: vendorField ? vendorField.value.trim() : "",
         annualCost: costField && costField.value ? Number(costField.value) : 0,
+        implementationCost: implCostField && implCostField.value ? Number(implCostField.value) : 0,
         hosting: hostingField ? hostingField.value : "cloud"
       };
     } else if (selectValue === "") {
@@ -11556,7 +11664,10 @@ ${hardErrors.join("\n")}`);
   function renderPanel(functionId, successorName) {
     const content = document.getElementById("decisionPanelContent");
     if (!content) return;
-    const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(functionId) : null;
+    let funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(functionId) : null;
+    if (!funcEntry) {
+      funcEntry = (LGA_FUNCTIONS || []).find((f) => String(f.id) === String(functionId));
+    }
     const funcLabel = funcEntry ? funcEntry.label : `Function ${functionId}`;
     const tierNum = state.tierMap ? state.tierMap.get(functionId) || 2 : 2;
     const tierBadge = renderTierBadge(tierNum);
@@ -11591,6 +11702,7 @@ ${hardErrors.join("\n")}`);
             label: pf.procuredSystem.label || "",
             vendor: pf.procuredSystem.vendor || "",
             annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
+            implementationCost: pf.procuredSystem.implementationCost ? Number(pf.procuredSystem.implementationCost) : 0,
             hosting: pf.procuredSystem.hosting || "cloud"
           } : { label: "" };
         } else if (hasSystem) {
@@ -11609,18 +11721,20 @@ ${hardErrors.join("\n")}`);
     }
     const footer = document.getElementById("decisionPanelFooter");
     if (existingDecision && existingDecision.sharedServiceOrigin) {
+      content.classList.add("overflow-y-auto");
+      content.classList.remove("flex", "flex-col", "overflow-hidden");
       content.innerHTML = renderPropagatedSharedServiceView(existingDecision, funcLabel, successorName, tierBadge);
       if (footer) footer.classList.add("hidden");
       return;
     }
-    if (footer) footer.classList.remove("hidden");
+    if (footer) footer.classList.add("hidden");
+    content.classList.remove("overflow-y-auto");
+    content.classList.add("flex", "flex-col", "overflow-hidden");
     _isExpanded = detectExpandedState(systems, functionId, successorName);
     const headerHtml = renderHeader(funcLabel, successorName, tierBadge, isSavedDecision);
     let pane1Html, pane2Html, pane3Html;
     if (_isExpanded) {
-      _primarySystem = findPrimarySystem(systems, functionId, successorName);
-      _allFunctions = findAllFunctionsForSystem(_primarySystem, successorName);
-      pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate, _pendingPerFunction);
+      pane1Html = renderPane1Expanded(systems, functionId, successorName, vestingDate, _pendingPerFunction);
       pane2Html = renderPane2Allocation({
         functionId,
         primarySuccessorName: successorName,
@@ -11631,7 +11745,49 @@ ${hardErrors.join("\n")}`);
       });
       const currentPrimaryValue = _pendingFormState?.primarySystemValue || (existingDecision?.systemChoice === "choose" ? existingDecision.retainedSystemIds[0] : null) || (existingDecision?.systemChoice === "procure" ? "__procure__" : null);
       const hasCurrentSystem = !!currentPrimaryValue && currentPrimaryValue !== "__defer__";
-      const gridFunctions = _allFunctions.map((f) => {
+      let activeSystemFunctions = [];
+      if (currentPrimaryValue && currentPrimaryValue !== "__defer__") {
+        const funcMap = /* @__PURE__ */ new Map();
+        if (currentPrimaryValue !== "__procure__") {
+          const activeSys = systems.find((s) => s.id === currentPrimaryValue);
+          if (activeSys) {
+            const baselineFuncs = findAllFunctionsForSystem(activeSys, successorName);
+            baselineFuncs.forEach((f) => funcMap.set(f.funcId, f.label));
+          }
+        }
+        for (const [fId, pending] of Object.entries(_pendingPerFunction)) {
+          if (pending.primarySystemValue === currentPrimaryValue) {
+            if (!funcMap.has(fId)) {
+              let funcEntry2 = state.lgaFunctionMap ? state.lgaFunctionMap.get(fId) : null;
+              if (!funcEntry2) {
+                funcEntry2 = (LGA_FUNCTIONS || []).find((f) => String(f.id) === String(fId));
+              }
+              funcMap.set(fId, funcEntry2 ? funcEntry2.label : `Function ${fId}`);
+            }
+          }
+        }
+        if (currentPrimaryValue !== "__procure__") {
+          const decisions2 = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
+          for (const [key, dec] of decisions2.entries()) {
+            if (dec.systemChoice === "choose" && dec.retainedSystemIds.includes(currentPrimaryValue)) {
+              const fId = key.split("|")[0];
+              const succ = key.split("|")[1];
+              if (succ === successorName && !funcMap.has(fId)) {
+                let funcEntry2 = state.lgaFunctionMap ? state.lgaFunctionMap.get(fId) : null;
+                if (!funcEntry2) {
+                  funcEntry2 = (LGA_FUNCTIONS || []).find((f) => String(f.id) === String(fId));
+                }
+                funcMap.set(fId, funcEntry2 ? funcEntry2.label : `Function ${fId}`);
+              }
+            }
+          }
+        }
+        activeSystemFunctions = Array.from(funcMap.entries()).map(([funcId, label]) => ({ funcId, label }));
+      }
+      if (activeSystemFunctions.length === 0) {
+        activeSystemFunctions = [{ funcId: functionId, label: funcLabel }];
+      }
+      const gridFunctions = activeSystemFunctions.map((f) => {
         const key = getDecisionKey(f.funcId, successorName);
         const dec = decisions.get(key);
         const pf = _pendingPerFunction[f.funcId];
@@ -11647,14 +11803,14 @@ ${hardErrors.join("\n")}`);
         };
       });
       const otherSuccessors = (state.transitionStructure?.successors || []).map((s) => s.name).filter((n) => n !== successorName);
-      const currentShared = existingDecision?.sharedWithSuccessors || [];
       const pendingSharing = {
         currentFuncId: functionId,
-        sharedWithSuccessors: currentShared,
+        currentPrimaryValue,
+        sharedWithSuccessors: _pendingFormState ? _pendingFormState.sharedWithSuccessors : existingDecision ? existingDecision.sharedWithSuccessors : [],
         perFunction: _pendingPerFunction
       };
-      const sharingGridHtml = otherSuccessors.length > 0 ? renderSharingGrid(gridFunctions, successorName, otherSuccessors, pendingSharing) : "";
-      pane2Html += sharingGridHtml;
+      const gridHtml = hasCurrentSystem ? renderSharingGrid(gridFunctions, successorName, otherSuccessors, pendingSharing, currentPrimaryValue) : "";
+      pane2Html += gridHtml;
       pane3Html = renderPane3CostImpact({
         functionId,
         primarySuccessorName: successorName,
@@ -11664,9 +11820,7 @@ ${hardErrors.join("\n")}`);
         sharedWithSuccessors: existingDecision?.sharedWithSuccessors || [],
         procuredSystem: existingDecision?.procuredSystem || null,
         existingDecision,
-        isExpanded: true,
-        primarySystem: _primarySystem,
-        allFunctions: _allFunctions
+        isExpanded: true
       });
     } else {
       pane1Html = renderPane1Simple(systems, vestingDate);
@@ -11686,9 +11840,7 @@ ${hardErrors.join("\n")}`);
         sharedWithSuccessors: existingDecision?.sharedWithSuccessors || [],
         procuredSystem: existingDecision?.procuredSystem || null,
         existingDecision,
-        isExpanded: false,
-        primarySystem: null,
-        allFunctions: []
+        isExpanded: false
       });
     }
     const pane1Width = _isExpanded ? "w-[22%] min-w-[160px]" : "w-[28%]";
@@ -11725,49 +11877,6 @@ ${hardErrors.join("\n")}`);
       }
     }
     return false;
-  }
-  function findPrimarySystem(systems, functionId, successorName) {
-    const erp = systems.find((s) => s.isERP);
-    if (erp) return erp;
-    const disagg = systems.find((s) => s.isDisaggregation);
-    if (disagg) return disagg;
-    const shared = systems.find((s) => s.sharedWith && s.sharedWith.length > 0);
-    if (shared) return shared;
-    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
-    const successorMap = allocMap ? allocMap.get(successorName) : null;
-    if (successorMap && systems.length > 0) {
-      let best = systems[0];
-      let bestCount = 0;
-      for (const sys of systems) {
-        let count = 0;
-        for (const [, allocations] of successorMap) {
-          if (allocations.some((a) => a.system && a.system.id === sys.id)) count++;
-        }
-        if (count > bestCount) {
-          best = sys;
-          bestCount = count;
-        }
-      }
-      return best;
-    }
-    return systems[0] || null;
-  }
-  function findAllFunctionsForSystem(primarySystem, successorName) {
-    if (!primarySystem) return [];
-    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
-    const successorMap = allocMap ? allocMap.get(successorName) : null;
-    if (!successorMap) return [];
-    const functions = [];
-    for (const [funcId, allocations] of successorMap) {
-      if (allocations.some((a) => a.system && a.system.id === primarySystem.id)) {
-        const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
-        functions.push({
-          funcId,
-          label: funcEntry ? funcEntry.label : `Function ${funcId}`
-        });
-      }
-    }
-    return functions;
   }
   function renderHeader(funcLabel, successorName, tierBadge, isSavedDecision) {
     return `
@@ -11863,21 +11972,21 @@ ${hardErrors.join("\n")}`);
           procureDetail.classList.toggle("hidden", select.value !== "__procure__");
         }
         if (isPrimary) {
+          _pendingFormState = captureFormState();
+          if (_pendingFormState) _pendingFormState.primarySystemValue = select.value;
+          renderPanel(_currentFunctionId, _currentSuccessorName);
+          _pendingFormState = null;
+          const newContent = document.getElementById("decisionPanelContent");
+          if (newContent) {
+            const restoredSelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+            if (restoredSelect) restoredSelect.focus();
+          }
+          return;
+        } else {
           const shareToggle = card.querySelector("[data-share-toggle]");
           const hasSystem = select.value && select.value !== "" && select.value !== "__defer__";
           if (shareToggle) {
             shareToggle.classList.toggle("hidden", !hasSystem);
-          } else if (hasSystem) {
-            _pendingFormState = captureFormState();
-            if (_pendingFormState) _pendingFormState.primarySystemValue = select.value;
-            renderPanel(_currentFunctionId, _currentSuccessorName);
-            _pendingFormState = null;
-            const newContent = document.getElementById("decisionPanelContent");
-            if (newContent) {
-              const restoredSelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
-              if (restoredSelect) restoredSelect.focus();
-            }
-            return;
           }
         }
         rerenderPane3Only();
@@ -11954,6 +12063,35 @@ ${hardErrors.join("\n")}`);
             pf.sharedWithSuccessors = pf.sharedWithSuccessors.filter((s) => s !== targetSuccessor);
           }
         }
+      });
+    });
+    content.querySelectorAll(".grid-primary-cb").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const targetFuncId = cb.dataset.funcId;
+        const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+        const selectedSystemId = primarySelect ? primarySelect.value : null;
+        if (!_pendingPerFunction[targetFuncId]) {
+          const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
+          const existingDec = decisions.get(getDecisionKey(targetFuncId, _currentSuccessorName));
+          _pendingPerFunction[targetFuncId] = {
+            primarySystemValue: existingDec ? existingDec.systemChoice === "choose" ? existingDec.retainedSystemIds[0] : existingDec.systemChoice === "procure" ? "__procure__" : "__defer__" : "",
+            sharedWithSuccessors: existingDec ? [...existingDec.sharedWithSuccessors] : [],
+            rationale: existingDec ? existingDec.rationale : "",
+            procuredSystem: existingDec ? existingDec.procuredSystem : null
+          };
+        }
+        const pf = _pendingPerFunction[targetFuncId];
+        if (cb.checked) {
+          pf.primarySystemValue = selectedSystemId;
+        } else {
+          pf.primarySystemValue = "__defer__";
+          pf.sharedWithSuccessors = [];
+        }
+        if (typeof captureFormState === "function") {
+          _pendingFormState = captureFormState();
+        }
+        renderPanel(_currentFunctionId, _currentSuccessorName);
+        _pendingFormState = null;
       });
     });
     content.querySelectorAll(".func-nav-row").forEach((row) => {
@@ -12074,6 +12212,36 @@ ${hardErrors.join("\n")}`);
         showAddFunctionTypeahead(addFuncBtn);
       });
     }
+    wireFooterButtons(content);
+  }
+  function wireFooterButtons(container) {
+    const applyBtn = container.querySelector("#btnApplyDecision");
+    if (applyBtn) {
+      applyBtn.addEventListener("click", () => {
+        const currentState = captureFormState();
+        if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== "") {
+          _pendingPerFunction[_currentFunctionId] = currentState;
+        }
+        applyDecisionFromPanel({
+          functionId: _currentFunctionId,
+          successorName: _currentSuccessorName,
+          systems: _allSystems,
+          closePanel: closeDecisionPanel,
+          showError: (msg) => {
+            const errorEl = document.getElementById("decisionPanelError");
+            if (errorEl) {
+              errorEl.textContent = msg;
+              errorEl.classList.remove("hidden");
+            }
+          },
+          pendingPerFunction: _pendingPerFunction
+        });
+      });
+    }
+    const cancelBtn = container.querySelector("#btnCancelDecision");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", closeDecisionPanel);
+    }
   }
   function rerenderPane3Only() {
     const content = document.getElementById("decisionPanelContent");
@@ -12114,9 +12282,7 @@ ${hardErrors.join("\n")}`);
       sharedWithSuccessors,
       procuredSystem,
       existingDecision,
-      isExpanded: _isExpanded,
-      primarySystem: _primarySystem,
-      allFunctions: _allFunctions
+      isExpanded: _isExpanded
     });
     pane3.querySelectorAll(".cost-split-input").forEach((input) => {
       input.addEventListener("change", (e) => {
@@ -12141,24 +12307,28 @@ ${hardErrors.join("\n")}`);
         rerenderPane3Only();
       });
     });
+    wireFooterButtons(pane3);
   }
   function showAddFunctionTypeahead(anchorEl) {
     const existing = document.getElementById("addFuncTypeahead");
     if (existing) existing.remove();
     const existingFuncIds = new Set(_allFunctions.map((f) => f.funcId));
-    const available = (LGA_FUNCTIONS || []).filter((f) => !existingFuncIds.has(f.id));
+    const available = (LGA_FUNCTIONS || []).filter((f) => !existingFuncIds.has(String(f.id)));
     if (available.length === 0) return;
     const dropdown = document.createElement("div");
     dropdown.id = "addFuncTypeahead";
-    dropdown.className = "absolute bg-white border-2 border-[#0b0c0c] shadow-lg z-50 max-h-48 overflow-y-auto w-64";
+    dropdown.className = "bg-white border-2 border-[#0b0c0c] shadow-lg z-50 max-h-48 overflow-y-auto w-64";
     dropdown.innerHTML = `
         <input type="text" placeholder="Search functions..." class="w-full border-b border-[#b1b4b6] p-2 text-xs" id="addFuncSearch">
         <div id="addFuncResults" class="max-h-40 overflow-y-auto">
             ${available.slice(0, 20).map((f) => `<div class="p-1.5 text-xs cursor-pointer hover:bg-[#f0f4ff] add-func-option" data-func-id="${escHtml(f.id)}">${escHtml(f.label)}</div>`).join("")}
         </div>
     `;
-    anchorEl.parentElement.style.position = "relative";
-    anchorEl.parentElement.appendChild(dropdown);
+    const rect = anchorEl.getBoundingClientRect();
+    dropdown.style.position = "fixed";
+    dropdown.style.top = `${rect.bottom + 4}px`;
+    dropdown.style.left = `${Math.max(0, rect.right - 256)}px`;
+    document.body.appendChild(dropdown);
     const searchInput = dropdown.querySelector("#addFuncSearch");
     if (searchInput) {
       searchInput.focus();
@@ -12187,13 +12357,42 @@ ${hardErrors.join("\n")}`);
       opt.addEventListener("click", () => {
         const funcId = opt.dataset.funcId;
         if (funcId) {
-          const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+          const newContent = document.getElementById("decisionPanelContent");
+          let selectedSystemId = null;
+          if (newContent) {
+            const primarySelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+            if (primarySelect) selectedSystemId = primarySelect.value;
+          }
+          if (!selectedSystemId || selectedSystemId === "__defer__") {
+            dropdown.remove();
+            return;
+          }
+          if (!_pendingPerFunction[funcId]) {
+            const decisions = state.simulationState ? state.simulationState.decisions : /* @__PURE__ */ new Map();
+            const existingDec = decisions.get(getDecisionKey(funcId, _currentSuccessorName));
+            _pendingPerFunction[funcId] = {
+              primarySystemValue: selectedSystemId,
+              sharedWithSuccessors: existingDec ? [...existingDec.sharedWithSuccessors] : [],
+              rationale: existingDec ? existingDec.rationale : "",
+              procuredSystem: existingDec ? existingDec.procuredSystem : null
+            };
+          } else {
+            _pendingPerFunction[funcId].primarySystemValue = selectedSystemId;
+          }
+          let funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+          if (!funcEntry) {
+            funcEntry = (LGA_FUNCTIONS || []).find((f) => String(f.id) === String(funcId));
+          }
           _allFunctions.push({
             funcId,
             label: funcEntry ? funcEntry.label : `Function ${funcId}`
           });
           dropdown.remove();
+          if (typeof captureFormState === "function") {
+            _pendingFormState = captureFormState();
+          }
           renderPanel(_currentFunctionId, _currentSuccessorName);
+          _pendingFormState = null;
         }
       });
     });
@@ -12243,27 +12442,6 @@ ${hardErrors.join("\n")}`);
   var _decisionPanelModal = document.getElementById("decisionPanelModal");
   if (_decisionPanelModal) {
     document.getElementById("btnCloseDecisionPanel").addEventListener("click", closeDecisionPanel);
-    document.getElementById("btnCancelDecision").addEventListener("click", closeDecisionPanel);
-    document.getElementById("btnApplyDecision").addEventListener("click", () => {
-      const currentState = captureFormState();
-      if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== "") {
-        _pendingPerFunction[_currentFunctionId] = currentState;
-      }
-      applyDecisionFromPanel({
-        functionId: _currentFunctionId,
-        successorName: _currentSuccessorName,
-        systems: _allSystems,
-        closePanel: closeDecisionPanel,
-        showError: (msg) => {
-          const errorEl = document.getElementById("decisionPanelError");
-          if (errorEl) {
-            errorEl.textContent = msg;
-            errorEl.classList.remove("hidden");
-          }
-        },
-        pendingPerFunction: _pendingPerFunction
-      });
-    });
     _decisionPanelModal.addEventListener("click", async (e) => {
       if (e.target === _decisionPanelModal) {
         closeDecisionPanel();
@@ -13932,15 +14110,15 @@ tr:nth-child(even){background:#f3f2f1;}
 
   // src/features/template-generator.js
   var EXAMPLE_SYSTEMS = {
-    "Health & Social Care": ["148", "Adult social care", "Liquidlogic LAS", "System C", 3500, 95e4, "03/2028", 12, "High", "Segmented", "Yes", "No", "", "Vendor-supported", ""],
-    "Administration & Government": ["116", "Finance", "SAP S/4HANA", "SAP", 7e3, 23e5, "03/2030", 18, "Low", "Monolithic", "No", "Yes", "", "Vendor-supported", "payments,workflow"],
-    "Environmental Protection": ["34", "Environmental health", "Idox Public Protection", "Idox", 40, 6e4, "06/2027", 6, "Medium", "Segmented", "No", "No", "", "Vendor-supported", ""],
-    "Planning & Building Control": ["101", "Development control", "Idox Uniform", "Idox", 25, 45e3, "12/2027", 6, "Medium", "Segmented", "Yes", "No", "", "Vendor-supported", ""],
-    "Housing": ["66", "Housing", "NEC Housing", "NEC", 80, 12e4, "09/2028", 9, "Low", "Monolithic", "No", "No", "", "Vendor-supported", ""],
-    "Transport & Highways": ["109", "Highway maintenance", "Confirm Highways", "Confirm", 150, 28e4, "06/2029", 12, "Medium", "Segmented", "No", "No", "Other County Council", "Vendor-supported", ""],
-    "Advice & Benefits": ["3", "Benefits", "NEC Revenues & Benefits", "NEC", 200, 35e4, "03/2028", 12, "Low", "Monolithic", "No", "No", "", "Vendor-supported", ""],
-    "Leisure & Culture": ["76", "Libraries", "Koha LMS", "In-House", 45, 3e4, "12/2027", 3, "High", "Segmented", "Yes", "No", "", "Community-supported", ""],
-    "Business & Employment": ["7", "Business advice and support", "CRM System", "Microsoft", 60, 85e3, "09/2028", 6, "High", "Segmented", "Yes", "No", "", "Vendor-supported", ""]
+    "Health & Social Care": ["148", "Adult social care", "Liquidlogic LAS", "System C", "v10", 3500, 95e4, "03/2028", 12, "High", "Segmented", "Cloud", "", "No", "", "", "Vendor-supported", ""],
+    "Administration & Government": ["116", "Finance", "SAP S/4HANA", "SAP", "2023", 7e3, 23e5, "03/2030", 18, "Low", "Monolithic", "On-Premise", "", "Yes", "", "", "Vendor-supported", "payments,workflow"],
+    "Environmental Protection": ["34", "Environmental health", "Idox Public Protection", "Idox", "", 40, 6e4, "06/2027", 6, "Medium", "Segmented", "On-Premise", "", "No", "", "", "Vendor-supported", ""],
+    "Planning & Building Control": ["101", "Development control", "Idox Uniform", "Idox", "", 25, 45e3, "12/2027", 6, "Medium", "Segmented", "Cloud", "", "No", "", "", "Vendor-supported", ""],
+    "Housing": ["66", "Housing", "NEC Housing", "NEC", "", 80, 12e4, "09/2028", 9, "Low", "Monolithic", "On-Premise", "", "No", "", "", "Vendor-supported", ""],
+    "Transport & Highways": ["109", "Highway maintenance", "Confirm Highways", "Confirm", "", 150, 28e4, "06/2029", 12, "Medium", "Segmented", "On-Premise", "", "No", "Other County Council", "", "Vendor-supported", ""],
+    "Advice & Benefits": ["3", "Benefits", "NEC Revenues & Benefits", "NEC", "", 200, 35e4, "03/2028", 12, "Low", "Monolithic", "On-Premise", "", "No", "", "", "Vendor-supported", ""],
+    "Leisure & Culture": ["76", "Libraries", "Koha LMS", "In-House", "23.11", 45, 3e4, "12/2027", 3, "High", "Segmented", "Cloud", "", "No", "", "", "Community-supported", ""],
+    "Business & Employment": ["7", "Business advice and support", "CRM System", "Microsoft", "Online", 60, 85e3, "09/2028", 6, "High", "Segmented", "Cloud", "", "No", "", "", "Vendor-supported", ""]
   };
   var SHEET_DESCRIPTIONS = {
     "Index": "This sheet \u2014 instructions and workbook guide",
@@ -13962,8 +14140,9 @@ tr:nth-child(even){background:#f3f2f1;}
   var DOMAIN_HEADERS = [
     "ESD ID",
     "Function",
-    "System Name",
+    "System Name*",
     "Vendor",
+    "Version",
     "Users",
     "Annual Cost (\xA3)",
     "Contract End",
@@ -13971,12 +14150,14 @@ tr:nth-child(even){background:#f3f2f1;}
     "Portability",
     "Data Partitioning",
     "Hosting",
+    "Hosting Partner",
     "ERP?",
     "Shared With",
+    "Target Authorities",
     "Support Model",
     "Capabilities Provided"
   ];
-  var DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 8, 14, 13, 10, 12, 15, 12, 6, 22, 20, 22];
+  var DOMAIN_COL_WIDTHS = [8, 30, 28, 18, 12, 8, 14, 13, 10, 12, 15, 12, 20, 6, 22, 20, 20, 22];
   function todayISO() {
     return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   }
@@ -14001,6 +14182,7 @@ tr:nth-child(even){background:#f3f2f1;}
     sheet.addRow(["4. Add extra rows for the same function if multiple systems serve it."]);
     sheet.addRow(['5. Use the "Dependencies" sheet to record system-to-system capability links.']);
     sheet.addRow(["6. Upload the completed file to the LGR Workspace Engine."]);
+    sheet.addRow(["7. Fields marked with an asterisk (*) are mandatory. All other fields are optional but recommended."]);
     sheet.addRow([]);
     const headerRow = sheet.addRow(["Sheet name", "Description"]);
     headerRow.font = { bold: true };
@@ -14017,30 +14199,24 @@ tr:nth-child(even){background:#f3f2f1;}
   function buildCouncilInfoSheet(wb) {
     const sheet = wb.addWorksheet("Council Info");
     applyColumnWidths(sheet, [30, 15, 18]);
-    const guidanceRow = sheet.addRow(["Enter your council's details below. This identifies your architecture in the merged estate."]);
+    const guidanceRow = sheet.addRow(["Enter your council's details below. This identifies your architecture in the merged estate. Fields marked * are mandatory."]);
     guidanceRow.font = { italic: true };
     sheet.mergeCells("A1:C1");
     guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
     sheet.addRow([]);
-    const headerRow = sheet.addRow(["Council Name", "Council Tier", "Financial Distress"]);
-    headerRow.font = { bold: true };
-    const exampleRow = sheet.addRow(["EXAMPLE \u2014 delete this row", "District", "No"]);
-    exampleRow.font = { italic: true, color: { argb: "FF666666" } };
-    exampleRow.eachCell((cell) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+    sheet.addRow(["Council Name*", ""]);
+    sheet.addRow(["Council Tier*", ""]);
+    sheet.addRow(["Financial Distress", "No"]);
+    sheet.dataValidations.add("B4:B4", {
+      type: "list",
+      allowBlank: true,
+      formulae: ["'_Lookups'!$A$2:$A$5"]
     });
-    for (let row = 4; row <= 100; row++) {
-      sheet.getCell(`B${row}`).dataValidation = {
-        type: "list",
-        allowBlank: true,
-        formulae: ['"County,District,Borough,Unitary"']
-      };
-      sheet.getCell(`C${row}`).dataValidation = {
-        type: "list",
-        allowBlank: true,
-        formulae: ['"Yes,No"']
-      };
-    }
+    sheet.dataValidations.add("B5:B5", {
+      type: "list",
+      allowBlank: true,
+      formulae: ["'_Lookups'!$B$2:$B$3"]
+    });
     return sheet;
   }
   function buildDomainSheet(wb, sheetName, rootId) {
@@ -14049,13 +14225,20 @@ tr:nth-child(even){background:#f3f2f1;}
     const descendantIds = getDescendantIds(rootId);
     const functions = LGA_FUNCTIONS.filter((f) => descendantIds.has(f.id)).sort((a, b) => a.label.localeCompare(b.label));
     const example = EXAMPLE_SYSTEMS[sheetName] || null;
-    const guidanceText = `List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function.`;
+    const guidanceText = `List the IT systems your council uses for each ${sheetName} function below. Leave functions empty if you don't deliver them. Add extra rows if multiple systems serve the same function. Fields marked * are mandatory.`;
     const guidanceRow = sheet.addRow([guidanceText]);
-    sheet.mergeCells(`A1:O1`);
+    sheet.mergeCells(`A1:R1`);
     guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
     guidanceRow.font = { italic: true };
     const headerRow = sheet.addRow(DOMAIN_HEADERS);
-    headerRow.font = { bold: true };
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+      cell.border = {
+        bottom: { style: "medium", color: { argb: "FF000000" } }
+      };
+    });
+    sheet.autoFilter = "A2:R1000";
     if (example) {
       const exRow = sheet.addRow(example);
       exRow.font = { italic: true, color: { argb: "FF666666" } };
@@ -14078,6 +14261,9 @@ tr:nth-child(even){background:#f3f2f1;}
         "",
         "",
         "",
+        "",
+        "",
+        "",
         "Vendor-supported",
         ""
       ];
@@ -14088,86 +14274,74 @@ tr:nth-child(even){background:#f3f2f1;}
       });
     }
     for (const fn of functions) {
-      sheet.addRow([fn.id, fn.label, "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      sheet.addRow([fn.id, fn.label, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
-    const tableId = sheetName.replace(/[^a-zA-Z]/g, "");
-    const lastDataRow = sheet.rowCount;
-    sheet.addTable({
-      name: tableId,
-      ref: "A2",
-      headerRow: true,
-      totalsRow: false,
-      columns: DOMAIN_HEADERS.map((h) => ({ name: h })),
-      rows: Array.from({ length: lastDataRow - 2 }, (_, i) => {
-        const row = sheet.getRow(i + 3);
-        return DOMAIN_HEADERS.map((_2, col) => row.getCell(col + 1).value || "");
-      })
-    });
     const validations = {
-      I: {
-        type: "list",
-        allowBlank: true,
-        formulae: ['"High,Medium,Low"'],
-        showInputMessage: true,
-        promptTitle: "Data Portability",
-        prompt: "How easy is it to extract your data in bulk?\n\nHigh \u2014 Open APIs, standard formats (CSV/XML), vendor provides export tools. You could migrate data without vendor assistance.\n\nMedium \u2014 Some export capability exists but may require vendor support or have proprietary elements.\n\nLow \u2014 Proprietary format, no bulk export API, significant vendor lock-in. Migration requires vendor cooperation or reverse engineering."
-      },
       J: {
         type: "list",
         allowBlank: true,
-        formulae: ['"Segmented,Monolithic"'],
+        formulae: ["_Lookups!$C$2:$C$4"],
         showInputMessage: true,
-        promptTitle: "Data Partitioning",
-        prompt: "How is data organised within this system?\n\nSegmented \u2014 Data is logically separated (e.g., by service area, team, or geography). Can be split without major restructuring.\n\nMonolithic \u2014 Data is entangled across all areas the system serves. Splitting it would require ETL (Extract, Transform, Load) work and significant planning."
+        promptTitle: "Data Portability",
+        prompt: "How easy is it to extract your data in bulk?\nHigh - Open APIs, standard formats, export tools.\nMedium - Some export capability, may require vendor support.\nLow - Proprietary format, vendor lock-in, reverse engineering."
       },
       K: {
         type: "list",
         allowBlank: true,
-        formulae: ['"Cloud,On-Premise,Partner-Hosted"'],
+        formulae: ["_Lookups!$D$2:$D$3"],
         showInputMessage: true,
-        promptTitle: "Hosting Model",
-        prompt: "Where is this system hosted?\n\nCloud \u2014 Vendor-hosted SaaS or cloud platform (Azure, AWS, etc.). Council has no infrastructure responsibility.\n\nOn-Premise \u2014 Hosted on council-owned servers or data centre.\n\nPartner-Hosted \u2014 Hosted by another council or shared service body."
+        promptTitle: "Data Partitioning",
+        prompt: "How is data organised?\nSegmented - Logically separated by service area. Can be split easily.\nMonolithic - Entangled across all areas. Splitting requires complex ETL work."
       },
       L: {
         type: "list",
         allowBlank: true,
-        formulae: ['"Yes,No"'],
+        formulae: ["_Lookups!$E$2:$E$4"],
         showInputMessage: true,
-        promptTitle: "ERP System?",
-        prompt: "Is this an Enterprise Resource Planning system?\n\nYes \u2014 A large integrated system spanning multiple functions (e.g., SAP, Oracle, Unit4). Typically handles finance, HR, procurement, etc. in one platform.\n\nNo \u2014 A system focused on a single function or service area."
+        promptTitle: "Hosting Model",
+        prompt: "Where is this system hosted?\nCloud - Vendor-hosted SaaS or cloud platform.\nOn-Premise - Hosted on council-owned servers.\nPartner-Hosted - Hosted by another council or shared service body."
       },
       N: {
         type: "list",
         allowBlank: true,
-        formulae: ['"Vendor-supported,Community-supported,Unsupported"'],
+        formulae: ["_Lookups!$B$2:$B$3"],
+        showInputMessage: true,
+        promptTitle: "ERP System?",
+        prompt: "Is this an Enterprise Resource Planning system?\nYes - Large integrated platform spanning multiple functions (e.g. SAP, Oracle).\nNo - Focused on a single function or service area."
+      },
+      Q: {
+        type: "list",
+        allowBlank: true,
+        formulae: ["_Lookups!$F$2:$F$4"],
         showInputMessage: true,
         promptTitle: "Support Model",
-        prompt: "Who maintains and supports this system going forward?\n\nVendor-supported \u2014 Commercial vendor with SLA, support contract, and product roadmap.\n\nCommunity-supported \u2014 Maintained collaboratively (multi-council partnership, open source with active contributors, shared digital team).\n\nUnsupported \u2014 No active maintenance agreement. Original developer may have left, product may be end-of-life, or no SLA exists."
+        prompt: "Who maintains this system?\nVendor-supported - Commercial vendor with SLA.\nCommunity-supported - Maintained collaboratively (open source, shared digital team).\nUnsupported - No active maintenance agreement."
       }
     };
     for (const [col, validation] of Object.entries(validations)) {
-      for (let row = 3; row <= 200; row++) {
-        sheet.getCell(`${col}${row}`).dataValidation = validation;
-      }
+      sheet.dataValidations.add(`${col}3:${col}1000`, validation);
     }
     sheet.getCell("C2").note = "The name of the IT system as your council knows it. Use the same name consistently (it must match in the Dependencies sheet).";
     sheet.getCell("D2").note = 'Software vendor name, or "In-House" if developed internally by the council.';
-    sheet.getCell("E2").note = "Approximate number of staff who regularly use this system.";
-    sheet.getCell("F2").note = "Annual licence, hosting, and support cost in pounds (number only, no \xA3 symbol).";
-    sheet.getCell("G2").note = "When the current contract expires. Format: mm/yyyy (e.g., 03/2028).";
-    sheet.getCell("H2").note = "How many months notice you must give to exit the contract before it auto-renews.";
-    sheet.getCell("M2").note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
-    sheet.getCell("O2").note = "What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.";
+    sheet.getCell("E2").note = "Version string of the software.";
+    sheet.getCell("F2").note = "Approximate number of staff who regularly use this system.";
+    sheet.getCell("G2").note = "Annual licence, hosting, and support cost in pounds (number only, no \xA3 symbol).";
+    sheet.getCell("H2").note = "When the current contract expires. Format: mm/yyyy (e.g., 03/2028).";
+    sheet.getCell("I2").note = "How many months notice you must give to exit the contract before it auto-renews.";
+    sheet.getCell("M2").note = "Name of the council or organisation hosting this (if Partner-Hosted).";
+    sheet.getCell("O2").note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
+    sheet.getCell("P2").note = "Successor authorities this system is explicitly allocated to. Comma-separated.";
+    sheet.getCell("R2").note = "What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.";
     return sheet;
   }
   function buildDependenciesSheet(wb) {
     const sheet = wb.addWorksheet("Dependencies");
     applyColumnWidths(sheet, [30, 30, 20, 14]);
-    const guidanceRow = sheet.addRow(["List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly?"]);
+    const guidanceRow = sheet.addRow(["List systems that depend on other systems for a specific capability. Ask yourself: if System B was removed or replaced, would System A stop working properly? Fields marked * are mandatory."]);
     sheet.mergeCells("A1:D1");
     guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
     guidanceRow.font = { italic: true };
-    const headerRow = sheet.addRow(["System that depends", "System it depends on", "What for?", "Match \u2713"]);
+    const headerRow = sheet.addRow(["System that depends*", "System it depends on*", "What for?", "Match \u2713"]);
     headerRow.font = { bold: true };
     const exRow = sheet.addRow(["Liquidlogic LAS", "SAP S/4HANA", "payments", ""]);
     exRow.font = { italic: true, color: { argb: "FF666666" } };
@@ -14242,10 +14416,11 @@ tr:nth-child(even){background:#f3f2f1;}
     const yesNo = ["Yes", "No"];
     const portability = ["High", "Medium", "Low"];
     const dataPartitioning = ["Segmented", "Monolithic"];
+    const hosting = ["Cloud", "On-Premise", "Partner-Hosted"];
     const supportModels = ["Vendor-supported", "Community-supported", "Unsupported"];
     const capabilities = LGAM_CAPABILITIES.map((c) => c.id);
-    const headers = ["Tier", "YesNo", "Portability", "DataPartitioning", "SupportModel", "Capabilities"];
-    applyColumnWidths(sheet, [12, 8, 12, 16, 20, 16]);
+    const headers = ["Tier", "YesNo", "Portability", "DataPartitioning", "Hosting", "SupportModel", "Capabilities"];
+    applyColumnWidths(sheet, [12, 8, 12, 16, 16, 20, 16]);
     sheet.addRow(headers);
     const headerRow = sheet.getRow(1);
     headerRow.font = { bold: true };
@@ -14254,6 +14429,7 @@ tr:nth-child(even){background:#f3f2f1;}
       yesNo.length,
       portability.length,
       dataPartitioning.length,
+      hosting.length,
       supportModels.length,
       capabilities.length
     );
@@ -14263,6 +14439,7 @@ tr:nth-child(even){background:#f3f2f1;}
         yesNo[i] || "",
         portability[i] || "",
         dataPartitioning[i] || "",
+        hosting[i] || "",
         supportModels[i] || "",
         capabilities[i] || ""
       ]);
@@ -15236,7 +15413,8 @@ tr:nth-child(even){background:#f3f2f1;}
       allUploads: state.rawUploads,
       currentUploadIdx: uploadIdx
     });
-    wireUnifiedEditor(editorOverlay, upload.data, {
+    const editorRoot = editorOverlay.firstElementChild;
+    wireUnifiedEditor(editorRoot, upload.data, {
       source: "edit",
       onSave(data) {
         state.rawUploads[uploadIdx] = { filename: upload.filename, data };
@@ -15650,7 +15828,9 @@ tr:nth-child(even){background:#f3f2f1;}
             document.body.appendChild(editorOverlay);
           }
           editorOverlay.classList.remove("hidden");
+          console.log(">>> About to renderUnifiedEditor");
           editorOverlay.innerHTML = renderUnifiedEditor(json, { source: "validator", title: json.councilName || "Architecture Editor" });
+          console.log(">>> About to wireUnifiedEditor");
           wireUnifiedEditor(editorOverlay, json, {
             source: "validator",
             onSave(fixedJson) {
@@ -16129,6 +16309,17 @@ tr:nth-child(even){background:#f3f2f1;}
     stageTransitionConfig.classList.remove("hidden");
     renderTransitionConfigPanel();
   });
+  var DOMAIN_ROOT_MAP = {
+    "Health & Social Care": "58",
+    "Administration & Government": "42",
+    "Environmental Protection": "30",
+    "Planning & Building Control": "99",
+    "Housing": "66",
+    "Transport & Highways": "105",
+    "Advice & Benefits": "1",
+    "Leisure & Culture": "72",
+    "Business & Employment": "6"
+  };
   function runBaselining() {
     state.mergedArchitecture = { nodes: [], edges: [], councils: /* @__PURE__ */ new Set() };
     state.lgaFunctionMap.clear();
@@ -16140,24 +16331,26 @@ tr:nth-child(even){background:#f3f2f1;}
       state.mergedArchitecture.councils.add(councilName);
       upload.data.nodes.forEach((node) => {
         if (node.type === "Function") {
-          if (!node.lgaFunctionId) {
-            validationErrors.push(`${councilName}: "${node.label}" (${node.id}) missing lgaFunctionId`);
-            return;
-          }
-          if (!state.lgaFunctionMap.has(node.lgaFunctionId)) {
-            const lgaFn = getLgaFunction(node.lgaFunctionId);
-            state.lgaFunctionMap.set(node.lgaFunctionId, {
-              lgaId: node.lgaFunctionId,
+          const assignedLgaId = node.lgaFunctionId || `custom-${node.label.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+          if (!state.lgaFunctionMap.has(assignedLgaId)) {
+            let lgaFn = getLgaFunction(assignedLgaId);
+            if (!lgaFn && assignedLgaId.startsWith("custom-")) {
+              const parentId = node._sourceSheet ? DOMAIN_ROOT_MAP[node._sourceSheet] : null;
+              lgaFn = { id: assignedLgaId, label: node.label, parentId: parentId || null };
+              registerCustomFunction(lgaFn);
+            }
+            state.lgaFunctionMap.set(assignedLgaId, {
+              lgaId: assignedLgaId,
               label: lgaFn ? lgaFn.label : node.label,
-              breadcrumb: getLgaBreadcrumb2(node.lgaFunctionId),
+              breadcrumb: getLgaBreadcrumb2(assignedLgaId) || "Custom / Local Capabilities",
               councils: /* @__PURE__ */ new Set(),
               localNodeIds: /* @__PURE__ */ new Set()
             });
           }
-          const entry = state.lgaFunctionMap.get(node.lgaFunctionId);
+          const entry = state.lgaFunctionMap.get(assignedLgaId);
           entry.councils.add(councilName);
           entry.localNodeIds.add(node.id);
-          state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
+          state.mergedArchitecture.nodes.push({ ...node, lgaFunctionId: assignedLgaId, _sourceCouncil: councilName });
         } else {
           state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
         }

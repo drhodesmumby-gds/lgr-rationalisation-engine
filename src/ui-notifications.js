@@ -20,9 +20,11 @@ function getContainer(containerId) {
 }
 
 function enforceLimit(container) {
-  const notifications = container.querySelectorAll('.app-notification');
+  let notifications = container.querySelectorAll('.app-notification');
   while (notifications.length >= MAX_NOTIFICATIONS) {
     notifications[0].remove();
+    // Re-query to update the static NodeList
+    notifications = container.querySelectorAll('.app-notification');
   }
 }
 

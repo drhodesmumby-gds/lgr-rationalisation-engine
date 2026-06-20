@@ -5,7 +5,7 @@ import { SIGNAL_DEFS, PERSONA_DEFAULT_WEIGHTS } from './constants/signals.js';
 import { LGAM_CAPABILITIES } from './constants/capabilities.js';
 import { DOMAIN_TERMS } from './constants/domain-terms.js';
 import { DOCUMENTATION } from './constants/documentation.js';
-import { getLgaFunction, getLgaBreadcrumb, getRootCategoryId, getDescendantIds, getRootCategories } from './taxonomy.js';
+import { getLgaFunction, getLgaBreadcrumb, getRootCategoryId, getDescendantIds, getRootCategories, registerCustomFunction } from './taxonomy.js';
 import { wrapWithTooltip, helpIcon, escHtml, tagToSignalDotClass } from './ui-helpers.js';
 import {
     buildSuccessorAllocation, classifyVestingZone,
@@ -63,7 +63,7 @@ window.addEventListener('beforeunload', (e) => {
 
 let _editorEscHandler = null;
 
-function openUnifiedEditor(uploadIdx) {
+function openUnifiedEditor(uploadIdx) { 
     const upload = state.rawUploads[uploadIdx];
     if (!upload) return;
 
@@ -86,7 +86,9 @@ function openUnifiedEditor(uploadIdx) {
         allUploads: state.rawUploads,
         currentUploadIdx: uploadIdx
     });
-    wireUnifiedEditor(editorOverlay, upload.data, {
+    
+    const editorRoot = editorOverlay.firstElementChild;
+    wireUnifiedEditor(editorRoot, upload.data, {
         source: 'edit',
         onSave(data) {
             state.rawUploads[uploadIdx] = { filename: upload.filename, data };
@@ -1185,6 +1187,18 @@ document.getElementById('btnReconfigureTransition').addEventListener('click', ()
 });
 
 // --- STAGE 2: BASELINING LOGIC ---
+const DOMAIN_ROOT_MAP = {
+    'Health & Social Care': '58',
+    'Administration & Government': '42',
+    'Environmental Protection': '30',
+    'Planning & Building Control': '99',
+    'Housing': '66',
+    'Transport & Highways': '105',
+    'Advice & Benefits': '1',
+    'Leisure & Culture': '72',
+    'Business & Employment': '6'
+};
+
 export function runBaselining() {
     state.mergedArchitecture = { nodes: [], edges: [], councils: new Set() };
     state.lgaFunctionMap.clear();
@@ -1198,24 +1212,31 @@ export function runBaselining() {
 
         upload.data.nodes.forEach(node => {
             if (node.type === 'Function') {
-                if (!node.lgaFunctionId) {
-                    validationErrors.push(`${councilName}: "${node.label}" (${node.id}) missing lgaFunctionId`);
-                    return;
-                }
-                if (!state.lgaFunctionMap.has(node.lgaFunctionId)) {
-                    const lgaFn = getLgaFunction(node.lgaFunctionId);
-                    state.lgaFunctionMap.set(node.lgaFunctionId, {
-                        lgaId: node.lgaFunctionId,
+                const assignedLgaId = node.lgaFunctionId || `custom-${node.label.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+                
+                if (!state.lgaFunctionMap.has(assignedLgaId)) {
+                    let lgaFn = getLgaFunction(assignedLgaId);
+                    
+                    if (!lgaFn && assignedLgaId.startsWith('custom-')) {
+                        const parentId = node._sourceSheet ? DOMAIN_ROOT_MAP[node._sourceSheet] : null;
+                        lgaFn = { id: assignedLgaId, label: node.label, parentId: parentId || null };
+                        registerCustomFunction(lgaFn);
+                    }
+
+                    state.lgaFunctionMap.set(assignedLgaId, {
+                        lgaId: assignedLgaId,
                         label: lgaFn ? lgaFn.label : node.label,
-                        breadcrumb: getLgaBreadcrumb(node.lgaFunctionId),
+                        breadcrumb: getLgaBreadcrumb(assignedLgaId) || 'Custom / Local Capabilities',
                         councils: new Set(),
                         localNodeIds: new Set()
                     });
                 }
-                const entry = state.lgaFunctionMap.get(node.lgaFunctionId);
+                const entry = state.lgaFunctionMap.get(assignedLgaId);
                 entry.councils.add(councilName);
                 entry.localNodeIds.add(node.id);
-                state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
+                
+                // Add to merged architecture, ensuring lgaFunctionId is set
+                state.mergedArchitecture.nodes.push({ ...node, lgaFunctionId: assignedLgaId, _sourceCouncil: councilName });
             } else {
                 state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
             }

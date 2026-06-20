@@ -206,3 +206,22 @@ export function renderSystemCard(sys, vestingDate, options = {}) {
         </div>
     `;
 }
+
+export function findAllFunctionsForSystem(primarySystem, successorName) {
+    if (!primarySystem) return [];
+    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
+    const successorMap = allocMap ? allocMap.get(successorName) : null;
+    if (!successorMap) return [];
+
+    const functions = [];
+    for (const [funcId, allocations] of successorMap) {
+        if (allocations.some(a => a.system && a.system.id === primarySystem.id)) {
+            const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+            functions.push({
+                funcId,
+                label: funcEntry ? funcEntry.label : `Function ${funcId}`
+            });
+        }
+    }
+    return functions;
+}

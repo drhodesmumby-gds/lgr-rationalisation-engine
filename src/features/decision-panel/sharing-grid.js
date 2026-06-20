@@ -21,13 +21,24 @@ import { getDecisionKey } from '../../simulation/decisions.js';
  * @param {Object} [pendingSharing] - { currentFuncId, sharedWithSuccessors[] } for unsaved form state
  * @returns {Object} - { [funcId]: { [successorName]: true|false|'disabled' } }
  */
-export function computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing) {
-    const grid = {};
+export function computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing, selectedSystemId) {
+    const grid = Object.create(null);
 
     for (const func of functions) {
-        grid[func.funcId] = {};
-        grid[func.funcId][primarySuccessor] = true;
+        grid[func.funcId] = Object.create(null);
+        
+        // Evaluate primary successor
+        if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
+            grid[func.funcId][primarySuccessor] = (pendingSharing.currentPrimaryValue === selectedSystemId);
+        } else if (pendingSharing && pendingSharing.perFunction && pendingSharing.perFunction[func.funcId]) {
+            grid[func.funcId][primarySuccessor] = (pendingSharing.perFunction[func.funcId].primarySystemValue === selectedSystemId);
+        } else {
+            const key = getDecisionKey(func.funcId, primarySuccessor);
+            const dec = decisions.get(key);
+            grid[func.funcId][primarySuccessor] = !!(dec && dec.systemChoice === 'choose' && dec.retainedSystemIds.includes(selectedSystemId));
+        }
 
+        // Evaluate other successors
         for (const other of otherSuccessors) {
             if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
                 grid[func.funcId][other] = (pendingSharing.sharedWithSuccessors || []).includes(other);
@@ -54,9 +65,9 @@ export function computeGridState(functions, primarySuccessor, otherSuccessors, d
  * @param {Object} [pendingSharing] - { currentFuncId, sharedWithSuccessors[], perFunction }
  * @returns {string} HTML
  */
-export function renderSharingGrid(functions, primarySuccessor, otherSuccessors, pendingSharing) {
+export function renderSharingGrid(functions, primarySuccessor, otherSuccessors, pendingSharing, selectedSystemId) {
     const decisions = state.simulationState ? state.simulationState.decisions : new Map();
-    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing);
+    const gridState = computeGridState(functions, primarySuccessor, otherSuccessors, decisions, pendingSharing, selectedSystemId);
 
     let headerCells = '<th class="text-left"></th>';
     for (const func of functions) {
@@ -69,7 +80,13 @@ export function renderSharingGrid(functions, primarySuccessor, otherSuccessors, 
 
     rows += `<tr class="bg-white"><td class="font-semibold text-left">${escHtml(primarySuccessor)}<br><span class="text-[9px] text-[#505a5f] font-bold">Primary</span></td>`;
     for (const func of functions) {
-        rows += `<td class="text-center"><input type="checkbox" checked disabled class="w-4 h-4"></td>`;
+        const cellState = gridState[func.funcId][primarySuccessor];
+        const checked = cellState ? 'checked' : '';
+        if (pendingSharing && func.funcId === pendingSharing.currentFuncId) {
+            rows += `<td class="text-center"><input type="checkbox" ${checked} disabled class="w-4 h-4 opacity-50" title="Controlled by dropdown above"></td>`;
+        } else {
+            rows += `<td class="text-center"><input type="checkbox" ${checked} class="w-4 h-4 cursor-pointer grid-primary-cb" data-func-id="${escHtml(func.funcId)}" title="Toggle whether ${escHtml(primarySuccessor)} uses this system for ${escHtml(func.label)}"></td>`;
+        }
     }
     rows += '<td></td></tr>';
 

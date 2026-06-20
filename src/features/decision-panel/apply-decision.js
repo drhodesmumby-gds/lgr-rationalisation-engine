@@ -63,12 +63,14 @@ export async function applyDecisionFromPanel({ functionId, successorName, system
         }
         const vendorField = primaryCard.querySelector('.procure-field[data-field="vendor"]');
         const costField = primaryCard.querySelector('.procure-field[data-field="annualCost"]');
+        const implCostField = primaryCard.querySelector('.procure-field[data-field="implementationCost"]');
         const hostingField = primaryCard.querySelector('.procure-field[data-field="hosting"]');
 
         procuredSystem = {
             label,
             vendor: vendorField ? vendorField.value.trim() : '',
             annualCost: costField && costField.value ? Number(costField.value) : 0,
+            implementationCost: implCostField && implCostField.value ? Number(implCostField.value) : 0,
             hosting: hostingField ? hostingField.value : 'cloud'
         };
     } else if (selectValue === '') {

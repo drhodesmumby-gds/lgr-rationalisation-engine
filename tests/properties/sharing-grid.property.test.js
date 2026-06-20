@@ -12,13 +12,21 @@ describe('sharing grid state', () => {
 
     const arbSuccessor = fc.string({ minLength: 1, maxLength: 20 });
 
-    it('primary successor is always checked for all functions', () => {
+    it('primary successor is checked if it selected the current system', () => {
         fc.assert(fc.property(
             fc.array(arbFunction.map(f => ({ ...f, decided: true })), { minLength: 1, maxLength: 5 }),
             arbSuccessor,
             fc.array(arbSuccessor, { minLength: 1, maxLength: 3 }),
-            (functions, primary, others) => {
-                const gridState = computeGridState(functions, primary, others, new Map());
+            fc.string({ minLength: 1, maxLength: 10 }), // selectedSystemId
+            (functions, primary, others, selectedSystemId) => {
+                const decisions = new Map();
+                for (const f of functions) {
+                    decisions.set(`${f.funcId}::${primary}`, {
+                        systemChoice: 'choose',
+                        retainedSystemIds: [selectedSystemId]
+                    });
+                }
+                const gridState = computeGridState(functions, primary, others, decisions, null, selectedSystemId);
                 for (const func of functions) {
                     expect(gridState[func.funcId][primary]).toBe(true);
                 }

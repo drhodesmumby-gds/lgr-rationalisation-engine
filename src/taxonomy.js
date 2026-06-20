@@ -4,6 +4,12 @@ export function getLgaFunction(id) {
     return LGA_FUNCTIONS.find(f => f.id === id);
 }
 
+export function registerCustomFunction(lgaFn) {
+    if (!LGA_FUNCTIONS.some(f => f.id === lgaFn.id)) {
+        LGA_FUNCTIONS.push(lgaFn);
+    }
+}
+
 export function getLgaBreadcrumb(id) {
     const fn = getLgaFunction(id);
     if (!fn || !fn.parentId) return null;

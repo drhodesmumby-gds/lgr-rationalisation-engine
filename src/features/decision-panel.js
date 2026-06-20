@@ -19,8 +19,7 @@ import { getDecisionKey } from '../simulation/decisions.js';
 import { isCapabilitySystem } from '../analysis/allocation.js';
 import { recomputeSimulation } from './simulation-panel.js';
 import { showConfirm } from '../ui-notifications.js';
-
-import { renderTierBadge, getSuccessorNamesForSystem } from './decision-panel/helpers.js';
+import { getSuccessorNamesForSystem, findAllFunctionsForSystem, renderTierBadge } from './decision-panel/helpers.js';
 import { renderPane1Simple, renderPane1Expanded } from './decision-panel/pane-systems.js';
 import { renderPane2Allocation } from './decision-panel/pane-allocation.js';
 import { renderPane3CostImpact } from './decision-panel/pane-cost-impact.js';
@@ -81,7 +80,10 @@ function renderPanel(functionId, successorName) {
     const content = document.getElementById('decisionPanelContent');
     if (!content) return;
 
-    const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(functionId) : null;
+    let funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(functionId) : null;
+    if (!funcEntry) {
+        funcEntry = (LGA_FUNCTIONS || []).find(f => String(f.id) === String(functionId));
+    }
     const funcLabel = funcEntry ? funcEntry.label : `Function ${functionId}`;
     const tierNum = state.tierMap ? (state.tierMap.get(functionId) || 2) : 2;
     const tierBadge = renderTierBadge(tierNum);
@@ -123,6 +125,7 @@ function renderPanel(functionId, successorName) {
                     label: pf.procuredSystem.label || '',
                     vendor: pf.procuredSystem.vendor || '',
                     annualCost: pf.procuredSystem.annualCost ? Number(pf.procuredSystem.annualCost) : 0,
+                    implementationCost: pf.procuredSystem.implementationCost ? Number(pf.procuredSystem.implementationCost) : 0,
                     hosting: pf.procuredSystem.hosting || 'cloud'
                 } : { label: '' };
             } else if (hasSystem) {
@@ -140,14 +143,20 @@ function renderPanel(functionId, successorName) {
         }
     }
 
-    // Show propagated shared-service read-only view if applicable
+    // The global footer is now always hidden (action buttons moved to Pane 3)
     const footer = document.getElementById('decisionPanelFooter');
     if (existingDecision && existingDecision.sharedServiceOrigin) {
+        content.classList.add('overflow-y-auto');
+        content.classList.remove('flex', 'flex-col', 'overflow-hidden');
         content.innerHTML = renderPropagatedSharedServiceView(existingDecision, funcLabel, successorName, tierBadge);
         if (footer) footer.classList.add('hidden');
         return;
     }
-    if (footer) footer.classList.remove('hidden');
+    if (footer) footer.classList.add('hidden');
+
+    // Make content act as a constrained flex column so inner panes can scroll independently
+    content.classList.remove('overflow-y-auto');
+    content.classList.add('flex', 'flex-col', 'overflow-hidden');
 
     // Determine if expanded state is needed
     _isExpanded = detectExpandedState(systems, functionId, successorName);
@@ -159,11 +168,8 @@ function renderPanel(functionId, successorName) {
     let pane1Html, pane2Html, pane3Html;
 
     if (_isExpanded) {
-        // State 2: find the primary system and all functions it serves
-        _primarySystem = findPrimarySystem(systems, functionId, successorName);
-        _allFunctions = findAllFunctionsForSystem(_primarySystem, successorName);
-
-        pane1Html = renderPane1Expanded(_primarySystem, _allFunctions, functionId, successorName, vestingDate, _pendingPerFunction);
+        // State 2: expanded view for multi-system or multi-function allocation
+        pane1Html = renderPane1Expanded(systems, functionId, successorName, vestingDate, _pendingPerFunction);
         pane2Html = renderPane2Allocation({
             functionId,
             primarySuccessorName: successorName,
@@ -179,7 +185,56 @@ function renderPanel(functionId, successorName) {
             || (existingDecision?.systemChoice === 'procure' ? '__procure__' : null);
         const hasCurrentSystem = !!currentPrimaryValue && currentPrimaryValue !== '__defer__';
 
-        const gridFunctions = _allFunctions.map(f => {
+        // The sharing grid dynamically reflects the footprint of the selected system
+        let activeSystemFunctions = [];
+        if (currentPrimaryValue && currentPrimaryValue !== '__defer__') {
+            const funcMap = new Map();
+            if (currentPrimaryValue !== '__procure__') {
+                const activeSys = systems.find(s => s.id === currentPrimaryValue);
+                if (activeSys) {
+                    const baselineFuncs = findAllFunctionsForSystem(activeSys, successorName);
+                    baselineFuncs.forEach(f => funcMap.set(f.funcId, f.label));
+                }
+            }
+            
+            // Pending state functions for the selected system (or '__procure__')
+            for (const [fId, pending] of Object.entries(_pendingPerFunction)) {
+                if (pending.primarySystemValue === currentPrimaryValue) {
+                    if (!funcMap.has(fId)) {
+                        let funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(fId) : null;
+                        if (!funcEntry) {
+                            funcEntry = (LGA_FUNCTIONS || []).find(f => String(f.id) === String(fId));
+                        }
+                        funcMap.set(fId, funcEntry ? funcEntry.label : `Function ${fId}`);
+                    }
+                }
+            }
+            
+            // Saved decisions (only for choose)
+            if (currentPrimaryValue !== '__procure__') {
+                const decisions = state.simulationState ? state.simulationState.decisions : new Map();
+                for (const [key, dec] of decisions.entries()) {
+                    if (dec.systemChoice === 'choose' && dec.retainedSystemIds.includes(currentPrimaryValue)) {
+                        const fId = key.split('|')[0];
+                        const succ = key.split('|')[1];
+                        if (succ === successorName && !funcMap.has(fId)) {
+                            let funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(fId) : null;
+                            if (!funcEntry) {
+                                funcEntry = (LGA_FUNCTIONS || []).find(f => String(f.id) === String(fId));
+                            }
+                            funcMap.set(fId, funcEntry ? funcEntry.label : `Function ${fId}`);
+                        }
+                    }
+                }
+            }
+
+            activeSystemFunctions = Array.from(funcMap.entries()).map(([funcId, label]) => ({ funcId, label }));
+        }
+        if (activeSystemFunctions.length === 0) {
+            activeSystemFunctions = [{ funcId: functionId, label: funcLabel }];
+        }
+
+        const gridFunctions = activeSystemFunctions.map(f => {
             const key = getDecisionKey(f.funcId, successorName);
             const dec = decisions.get(key);
             const pf = _pendingPerFunction[f.funcId];
@@ -201,16 +256,17 @@ function renderPanel(functionId, successorName) {
             .map(s => s.name)
             .filter(n => n !== successorName);
         // Build pending sharing from current form state + previously navigated functions
-        const currentShared = existingDecision?.sharedWithSuccessors || [];
         const pendingSharing = {
             currentFuncId: functionId,
-            sharedWithSuccessors: currentShared,
+            currentPrimaryValue: currentPrimaryValue,
+            sharedWithSuccessors: _pendingFormState ? _pendingFormState.sharedWithSuccessors : (existingDecision ? existingDecision.sharedWithSuccessors : []),
             perFunction: _pendingPerFunction
         };
-        const sharingGridHtml = otherSuccessors.length > 0
-            ? renderSharingGrid(gridFunctions, successorName, otherSuccessors, pendingSharing)
+
+        const gridHtml = hasCurrentSystem 
+            ? renderSharingGrid(gridFunctions, successorName, otherSuccessors, pendingSharing, currentPrimaryValue) 
             : '';
-        pane2Html += sharingGridHtml;
+        pane2Html += gridHtml;
 
         pane3Html = renderPane3CostImpact({
             functionId,
@@ -221,9 +277,7 @@ function renderPanel(functionId, successorName) {
             sharedWithSuccessors: existingDecision?.sharedWithSuccessors || [],
             procuredSystem: existingDecision?.procuredSystem || null,
             existingDecision,
-            isExpanded: true,
-            primarySystem: _primarySystem,
-            allFunctions: _allFunctions
+            isExpanded: true
         });
     } else {
         // State 1: simple
@@ -244,9 +298,7 @@ function renderPanel(functionId, successorName) {
             sharedWithSuccessors: existingDecision?.sharedWithSuccessors || [],
             procuredSystem: existingDecision?.procuredSystem || null,
             existingDecision,
-            isExpanded: false,
-            primarySystem: null,
-            allFunctions: []
+            isExpanded: false
         });
     }
 
@@ -299,50 +351,7 @@ function detectExpandedState(systems, functionId, successorName) {
     return false;
 }
 
-function findPrimarySystem(systems, functionId, successorName) {
-    // Prefer ERP, then disaggregation systems, then first system
-    const erp = systems.find(s => s.isERP);
-    if (erp) return erp;
-    const disagg = systems.find(s => s.isDisaggregation);
-    if (disagg) return disagg;
-    const shared = systems.find(s => s.sharedWith && s.sharedWith.length > 0);
-    if (shared) return shared;
-    // Find the system that serves the most functions
-    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
-    const successorMap = allocMap ? allocMap.get(successorName) : null;
-    if (successorMap && systems.length > 0) {
-        let best = systems[0];
-        let bestCount = 0;
-        for (const sys of systems) {
-            let count = 0;
-            for (const [, allocations] of successorMap) {
-                if (allocations.some(a => a.system && a.system.id === sys.id)) count++;
-            }
-            if (count > bestCount) { best = sys; bestCount = count; }
-        }
-        return best;
-    }
-    return systems[0] || null;
-}
-
-function findAllFunctionsForSystem(primarySystem, successorName) {
-    if (!primarySystem) return [];
-    const allocMap = state.simulationState.baselineAllocation || state.successorAllocationMap;
-    const successorMap = allocMap ? allocMap.get(successorName) : null;
-    if (!successorMap) return [];
-
-    const functions = [];
-    for (const [funcId, allocations] of successorMap) {
-        if (allocations.some(a => a.system && a.system.id === primarySystem.id)) {
-            const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
-            functions.push({
-                funcId,
-                label: funcEntry ? funcEntry.label : `Function ${funcId}`
-            });
-        }
-    }
-    return functions;
-}
+// findPrimarySystem removed
 
 // ---------------------------------------------------------------------------
 // Header
@@ -466,27 +475,26 @@ function wireInteractivity(systems, successorName, existingDecision) {
             if (procureDetail) {
                 procureDetail.classList.toggle('hidden', select.value !== '__procure__');
             }
-            // Show/hide share toggle based on whether a system is selected
+            // For primary successor, the sharing grid columns and state depend on the selected system, so we must always re-render
             if (isPrimary) {
+                _pendingFormState = captureFormState();
+                if (_pendingFormState) _pendingFormState.primarySystemValue = select.value;
+                renderPanel(_currentFunctionId, _currentSuccessorName);
+                _pendingFormState = null;
+                
+                // Restore focus
+                const newContent = document.getElementById('decisionPanelContent');
+                if (newContent) {
+                    const restoredSelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+                    if (restoredSelect) restoredSelect.focus();
+                }
+                return;
+            } else {
+                // Show/hide share toggle based on whether a system is selected
                 const shareToggle = card.querySelector('[data-share-toggle]');
                 const hasSystem = select.value && select.value !== '' && select.value !== '__defer__';
                 if (shareToggle) {
                     shareToggle.classList.toggle('hidden', !hasSystem);
-                } else if (hasSystem) {
-                    // Share toggle wasn't rendered (no system at render time) — need full re-render of Pane 2
-                    _pendingFormState = captureFormState();
-                    // Override with current select value since captureFormState reads from DOM
-                    if (_pendingFormState) _pendingFormState.primarySystemValue = select.value;
-                    renderPanel(_currentFunctionId, _currentSuccessorName);
-                    _pendingFormState = null;
-                    
-                    // Restore focus
-                    const newContent = document.getElementById('decisionPanelContent');
-                    if (newContent) {
-                        const restoredSelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
-                        if (restoredSelect) restoredSelect.focus();
-                    }
-                    return;
                 }
             }
             rerenderPane3Only();
@@ -578,6 +586,42 @@ function wireInteractivity(systems, successorName, existingDecision) {
                     pf.sharedWithSuccessors = pf.sharedWithSuccessors.filter(s => s !== targetSuccessor);
                 }
             }
+        });
+    });
+
+    // Primary successor checkbox in grid (adds/removes functions from the ERP's footprint)
+    content.querySelectorAll('.grid-primary-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const targetFuncId = cb.dataset.funcId;
+            const primarySelect = content.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+            const selectedSystemId = primarySelect ? primarySelect.value : null;
+
+            if (!_pendingPerFunction[targetFuncId]) {
+                const decisions = state.simulationState ? state.simulationState.decisions : new Map();
+                const existingDec = decisions.get(getDecisionKey(targetFuncId, _currentSuccessorName));
+                
+                _pendingPerFunction[targetFuncId] = { 
+                    primarySystemValue: existingDec ? (existingDec.systemChoice === 'choose' ? existingDec.retainedSystemIds[0] : (existingDec.systemChoice === 'procure' ? '__procure__' : '__defer__')) : '', 
+                    sharedWithSuccessors: existingDec ? [...existingDec.sharedWithSuccessors] : [], 
+                    rationale: existingDec ? existingDec.rationale : '', 
+                    procuredSystem: existingDec ? existingDec.procuredSystem : null
+                };
+            }
+            
+            const pf = _pendingPerFunction[targetFuncId];
+            if (cb.checked) {
+                pf.primarySystemValue = selectedSystemId;
+            } else {
+                // If deselected, reset to defer and clear sharing
+                pf.primarySystemValue = '__defer__';
+                pf.sharedWithSuccessors = [];
+            }
+            
+            if (typeof captureFormState === 'function') {
+                _pendingFormState = captureFormState();
+            }
+            renderPanel(_currentFunctionId, _currentSuccessorName);
+            _pendingFormState = null;
         });
     });
 
@@ -723,6 +767,39 @@ function wireInteractivity(systems, successorName, existingDecision) {
             showAddFunctionTypeahead(addFuncBtn);
         });
     }
+
+    wireFooterButtons(content);
+}
+
+function wireFooterButtons(container) {
+    const applyBtn = container.querySelector('#btnApplyDecision');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+            const currentState = captureFormState();
+            if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== '') {
+                _pendingPerFunction[_currentFunctionId] = currentState;
+            }
+            applyDecisionFromPanel({
+                functionId: _currentFunctionId,
+                successorName: _currentSuccessorName,
+                systems: _allSystems,
+                closePanel: closeDecisionPanel,
+                showError: (msg) => {
+                    const errorEl = document.getElementById('decisionPanelError');
+                    if (errorEl) {
+                        errorEl.textContent = msg;
+                        errorEl.classList.remove('hidden');
+                    }
+                },
+                pendingPerFunction: _pendingPerFunction
+            });
+        });
+    }
+
+    const cancelBtn = container.querySelector('#btnCancelDecision');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeDecisionPanel);
+    }
 }
 
 function rerenderPane3Only() {
@@ -773,9 +850,7 @@ function rerenderPane3Only() {
         sharedWithSuccessors,
         procuredSystem,
         existingDecision,
-        isExpanded: _isExpanded,
-        primarySystem: _primarySystem,
-        allFunctions: _allFunctions
+        isExpanded: _isExpanded
     });
 
     // Re-wire cost split inputs within pane 3
@@ -804,6 +879,8 @@ function rerenderPane3Only() {
             rerenderPane3Only();
         });
     });
+
+    wireFooterButtons(pane3);
 }
 
 // ---------------------------------------------------------------------------
@@ -817,12 +894,12 @@ function showAddFunctionTypeahead(anchorEl) {
 
     const existingFuncIds = new Set(_allFunctions.map(f => f.funcId));
 
-    const available = (LGA_FUNCTIONS || []).filter(f => !existingFuncIds.has(f.id));
+    const available = (LGA_FUNCTIONS || []).filter(f => !existingFuncIds.has(String(f.id)));
     if (available.length === 0) return;
 
     const dropdown = document.createElement('div');
     dropdown.id = 'addFuncTypeahead';
-    dropdown.className = 'absolute bg-white border-2 border-[#0b0c0c] shadow-lg z-50 max-h-48 overflow-y-auto w-64';
+    dropdown.className = 'bg-white border-2 border-[#0b0c0c] shadow-lg z-50 max-h-48 overflow-y-auto w-64';
     dropdown.innerHTML = `
         <input type="text" placeholder="Search functions..." class="w-full border-b border-[#b1b4b6] p-2 text-xs" id="addFuncSearch">
         <div id="addFuncResults" class="max-h-40 overflow-y-auto">
@@ -830,8 +907,12 @@ function showAddFunctionTypeahead(anchorEl) {
         </div>
     `;
 
-    anchorEl.parentElement.style.position = 'relative';
-    anchorEl.parentElement.appendChild(dropdown);
+    const rect = anchorEl.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = `${rect.bottom + 4}px`;
+    dropdown.style.left = `${Math.max(0, rect.right - 256)}px`;
+    
+    document.body.appendChild(dropdown);
 
     const searchInput = dropdown.querySelector('#addFuncSearch');
     if (searchInput) {
@@ -865,14 +946,51 @@ function wireAddFuncOptions(dropdown) {
         opt.addEventListener('click', () => {
             const funcId = opt.dataset.funcId;
             if (funcId) {
-                // Add function to the list and re-render
-                const funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+                // Get the current selected system
+                const newContent = document.getElementById('decisionPanelContent');
+                let selectedSystemId = null;
+                if (newContent) {
+                    const primarySelect = newContent.querySelector('.successor-card[data-is-primary="true"] .successor-system-select');
+                    if (primarySelect) selectedSystemId = primarySelect.value;
+                }
+
+                if (!selectedSystemId || selectedSystemId === '__defer__') {
+                    dropdown.remove();
+                    return;
+                }
+
+                // Add to _pendingPerFunction so it shows up in the grid for this system
+                if (!_pendingPerFunction[funcId]) {
+                    const decisions = state.simulationState ? state.simulationState.decisions : new Map();
+                    const existingDec = decisions.get(getDecisionKey(funcId, _currentSuccessorName));
+                    _pendingPerFunction[funcId] = {
+                        primarySystemValue: selectedSystemId,
+                        sharedWithSuccessors: existingDec ? [...existingDec.sharedWithSuccessors] : [],
+                        rationale: existingDec ? existingDec.rationale : '',
+                        procuredSystem: existingDec ? existingDec.procuredSystem : null
+                    };
+                } else {
+                    _pendingPerFunction[funcId].primarySystemValue = selectedSystemId;
+                }
+
+                // Add function to the list
+                let funcEntry = state.lgaFunctionMap ? state.lgaFunctionMap.get(funcId) : null;
+                if (!funcEntry) {
+                    funcEntry = (LGA_FUNCTIONS || []).find(f => String(f.id) === String(funcId));
+                }
                 _allFunctions.push({
                     funcId,
                     label: funcEntry ? funcEntry.label : `Function ${funcId}`
                 });
+
                 dropdown.remove();
+                
+                // Preserve current form state before re-rendering
+                if (typeof captureFormState === 'function') {
+                    _pendingFormState = captureFormState();
+                }
                 renderPanel(_currentFunctionId, _currentSuccessorName);
+                _pendingFormState = null;
             }
         });
     });
@@ -934,29 +1052,6 @@ function createFocusTrap(modalEl) {
 const _decisionPanelModal = document.getElementById('decisionPanelModal');
 if (_decisionPanelModal) {
     document.getElementById('btnCloseDecisionPanel').addEventListener('click', closeDecisionPanel);
-    document.getElementById('btnCancelDecision').addEventListener('click', closeDecisionPanel);
-    document.getElementById('btnApplyDecision').addEventListener('click', () => {
-        // Capture current function's state into pending before applying
-        const currentState = captureFormState();
-        if (currentState && currentState.primarySystemValue && currentState.primarySystemValue !== '') {
-            _pendingPerFunction[_currentFunctionId] = currentState;
-        }
-
-        applyDecisionFromPanel({
-            functionId: _currentFunctionId,
-            successorName: _currentSuccessorName,
-            systems: _allSystems,
-            closePanel: closeDecisionPanel,
-            showError: (msg) => {
-                const errorEl = document.getElementById('decisionPanelError');
-                if (errorEl) {
-                    errorEl.textContent = msg;
-                    errorEl.classList.remove('hidden');
-                }
-            },
-            pendingPerFunction: _pendingPerFunction
-        });
-    });
 
     _decisionPanelModal.addEventListener('click', async (e) => {
         if (e.target === _decisionPanelModal) { closeDecisionPanel(); return; }
