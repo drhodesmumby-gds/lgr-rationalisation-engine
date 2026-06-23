@@ -63,7 +63,7 @@ window.addEventListener('beforeunload', (e) => {
 
 let _editorEscHandler = null;
 
-function openUnifiedEditor(uploadIdx) { 
+export function openUnifiedEditor(uploadIdx) { 
     const upload = state.rawUploads[uploadIdx];
     if (!upload) return;
 
@@ -114,7 +114,7 @@ function openUnifiedEditor(uploadIdx) {
     document.addEventListener('keydown', _editorEscHandler);
 }
 
-function closeUnifiedEditor() {
+export function closeUnifiedEditor() {
     const editorOverlay = document.getElementById('unifiedEditorOverlay');
     if (editorOverlay) {
         editorOverlay.classList.add('hidden');
@@ -1213,8 +1213,8 @@ export function runBaselining() {
         upload.data.nodes.forEach(node => {
             if (node.type === 'Function') {
                 if (!node.lgaFunctionId) {
-                    validationErrors.push(`Node '${node.label || node.id}' is missing lgaFunctionId`);
-                    return; // skip adding to state
+                    const slug = (node.label || node.id).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    node.lgaFunctionId = 'custom-' + slug;
                 }
                 const assignedLgaId = node.lgaFunctionId;
                 

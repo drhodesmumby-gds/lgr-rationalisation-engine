@@ -94,6 +94,7 @@ IT system nodes describe each system in the council's estate.
   "dataPartitioning": "Segmented",
   "hosting": "cloud",
   "isERP": false,
+  "isIndependent": false,
   "sharedWith": ["Other Borough Council"],
   "targetAuthorities": ["North Unitary"],
   "capabilityType": ["workflow"],
@@ -121,6 +122,7 @@ IT system nodes describe each system in the council's estate.
 | `hosting` | string | No | Hosting model: `"cloud"`, `"on-premise"`, or `"partner-hosted"` | See hosting guidance below |
 | `hostingPartner` | string | No | Name of the hosting partner (when hosting is `"partner-hosted"`) | Specify which council or body hosts the system |
 | `isERP` | boolean | No | Whether this is an Enterprise Resource Planning system | ERPs get distinct risk treatment (monolithic data, multi-function span) |
+| `isIndependent` | boolean | No | True for capability systems (e.g., GOV.UK Notify) | Systems that do not realise LGA functions directly but provide capabilities to other systems |
 | `sharedWith` | string[] | No | Names of other councils sharing this system instance | Use exact council names as they appear in their own files |
 | `targetAuthorities` | string[] | No | Explicit successor authority allocation | Overrides the default allocation logic |
 | `capabilityType` | string[] | No | Capabilities this system provides | e.g., `["payments", "forms", "sms"]` |

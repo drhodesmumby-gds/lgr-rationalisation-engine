@@ -7,3 +7,24 @@ screenshots/
 slides/
 e2e-*.js
 .claude/sprints/
+
+# Test output directories
+test-results/
+tests/test-results/
+tests/e2e/test-results/
+playwright-report/
+
+# Temporary and diagnostic scripts
+patch-logs*.sh
+e2e-*.js
+test-switcher.js
+generate-demo-template.js
+pending_changes.diff
+*.xlsx
+
+# Local environment folders
+.kiro/
+.superpowers/
+
+# Archives
+*.zip

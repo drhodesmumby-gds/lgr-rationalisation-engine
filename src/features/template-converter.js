@@ -423,8 +423,19 @@ export function convertXlsxToArchitecture(workbook) {
     const sharedSheet = workbook.Sheets['Shared Capabilities'];
     if (sharedSheet) {
         const rows = XLSX.utils.sheet_to_json(sharedSheet, { header: 1 });
-        // Guidance (0), Header (1), Example (2) -> Data starts at 3
-        const dataStartIndex = 3;
+        let dataStartIndex = 3;
+        for (let i = 0; i < Math.min(rows.length, 5); i++) {
+            const row = rows[i];
+            if (Array.isArray(row) && safeStr(row[0]).toLowerCase().startsWith('system name')) {
+                const nextRow = rows[i + 1];
+                if (nextRow && Array.isArray(nextRow) && safeStr(nextRow[0]).toLowerCase().includes('example')) {
+                    dataStartIndex = i + 2;
+                } else {
+                    dataStartIndex = i + 1;
+                }
+                break;
+            }
+        }
 
         for (let ri = dataStartIndex; ri < rows.length; ri++) {
             const row = rows[ri];
@@ -503,7 +514,22 @@ export function convertXlsxToArchitecture(workbook) {
             nodes.push(sysNode);
             systemsByName.set(systemName.toLowerCase(), sysNodeId);
             
-            // NO REALIZES edges for independent systems
+            const fnNodeId = 'fn-shared-capabilities';
+            if (!functionsSeen.has('shared-capabilities')) {
+                functionsSeen.add('shared-capabilities');
+                nodes.push({
+                    id: fnNodeId,
+                    label: 'Shared Technical Capabilities',
+                    type: 'Function',
+                    lgaFunctionId: 'shared-capabilities',
+                    _sourceSheet: 'Shared Capabilities'
+                });
+            }
+            edges.push({
+                source: fnNodeId,
+                target: sysNodeId,
+                relationship: 'REALIZES'
+            });
         }
     }
 

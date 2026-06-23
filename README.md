@@ -63,6 +63,7 @@ Each council prepares a JSON file following the schema below. The engine enforce
   "label": "Liquidlogic LAS",
   "type": "ITSystem",
   "vendor": "System C",
+  "version": "v12.1",
   "users": 3500,
   "cost": "£950k/yr",
   "annualCost": 950000,
@@ -71,9 +72,10 @@ Each council prepares a JSON file following the schema below. The engine enforce
   "noticePeriod": 12,
   "portability": "Medium",
   "dataPartitioning": "Segmented",
-  "isCloud": true,
+  "hosting": "cloud",
   "isERP": false,
   "isIndependent": false,
+  "supportModel": "vendor-supported",
   "sharedWith": ["Easton District Council"],
   "targetAuthorities": ["North Essex Unitary"],
   "capabilityType": ["payments"]
@@ -90,12 +92,16 @@ Each council prepares a JSON file following the schema below. The engine enforce
 | `noticePeriod` | number | Months of notice required before expiry |
 | `portability` | `"High"` / `"Medium"` / `"Low"` | Data extraction capability: High = open API/native interop; Medium = batch/CSV/SQL; Low = proprietary lock-in |
 | `dataPartitioning` | `"Segmented"` / `"Monolithic"` | Whether data can be cleanly partitioned (e.g. by ward/department) or is entangled across domains |
-| `isCloud` | boolean | SaaS / cloud-hosted vs on-premise |
+| `hosting` | `"cloud"` / `"on-premise"` / `"partner-hosted"` | SaaS / cloud-hosted vs on-premise |
+| `hostingPartner` | string | Optional. Name of the council or organisation hosting this system (only if `partner-hosted`) |
 | `isERP` | boolean | Enterprise Resource Planning system (triggers additional monolithic risk treatment) |
 | `isIndependent` | boolean | Optional. True for capability systems (e.g., GOV.UK Notify) that don't realise LGA functions directly but provide capabilities to other systems. |
 | `sharedWith` | string[] | Optional. Other council names sharing this system instance; triggers shared service analysis |
 | `targetAuthorities` | string[] | Optional. Explicit successor authority assignment; overrides default allocation logic |
 | `capabilityType` | string[] | Optional. Capabilities this system provides (e.g., `"payments"`, `"forms"`, `"sms"`, `"email"`, `"workflow"`); used for blast radius analysis and CONSUMES_CAPABILITY dependency tracking |
+| `supportModel` | `"vendor-supported"` / `"community-supported"` / `"unsupported"` | Optional. Who maintains the system going forward. |
+| `version` | string | Optional. System version or release identifier (e.g. "SAP S/4HANA 2023", "v4.2.1"). |
+| `notes` | string | Optional. Free-text notes for context not captured by other fields. |
 
 ### Edge
 
@@ -139,6 +145,15 @@ Transition configs can be imported at Stage 1.5, or uploaded alongside architect
 ### Stage 1 — Ingest
 
 Upload one or more council JSON files, or Excel data templates. The **Import Wizard** handles file parsing, validates them against the JSON schema, and stages them for baselining. If a transition configuration file is included in the upload, it is automatically detected and applied at Stage 1.5. The built-in demo loads sample councils automatically.
+
+**Excel Templates:**
+Users can download a blank Excel template directly from the Import Wizard. This template contains:
+- Pre-configured domain sheets mapped to standard LGA functions (e.g. Administration & Government, Health & Social Care).
+- Dedicated sheets for Shared Capabilities (independent systems like SSO or Payment gateways).
+- A Dependencies sheet for mapping `CONSUMES_CAPABILITY` edges between systems.
+- Dropdown validations to enforce correct data entry for constraints like Portability, Hosting, and Tier.
+
+The engine parses uploaded `.xlsx` files entirely locally in the browser, translating them into the engine's standard JSON schema architecture representation.
 
 Each staged file offers an **Edit Architecture** button opening a **Unified Editor** for visually modifying council data (councils, functions, IT systems, edges) before proceeding. You can also view schema validation warnings and errors directly during import.
 

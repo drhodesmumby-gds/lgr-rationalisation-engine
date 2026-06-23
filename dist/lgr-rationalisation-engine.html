@@ -999,11 +999,12 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     <script>
 (() => {
   // src/constants/lga-functions.js
-  var LGA_FUNCTIONS = [{ "id": "43", "label": "Accessing and updating personal information", "parentId": "42" }, { "id": "42", "label": "Administration and Government", "parentId": null }, { "id": "24", "label": "Adult education and lifelong learning", "parentId": "23" }, { "id": "59", "label": "Adult services", "parentId": "58" }, { "id": "148", "label": "Adult social care", "parentId": "59" }, { "id": "1", "label": "Advice and benefits", "parentId": null }, { "id": "2", "label": "Advice and welfare rights", "parentId": "1" }, { "id": "83", "label": "Alcohol and entertainment", "parentId": "82" }, { "id": "134", "label": "Alternative education provision", "parentId": "26" }, { "id": "31", "label": "Animal welfare", "parentId": "30" }, { "id": "84", "label": "Animals", "parentId": "82" }, { "id": "73", "label": "Arts and entertainment", "parentId": "72" }, { "id": "44", "label": "Asylum and immigration", "parentId": "42" }, { "id": "3", "label": "Benefits", "parentId": "1" }, { "id": "85", "label": "Building and construction", "parentId": "82" }, { "id": "100", "label": "Building control", "parentId": "99" }, { "id": "7", "label": "Business advice and support", "parentId": "6" }, { "id": "6", "label": "Business and employment", "parentId": null }, { "id": "8", "label": "Business grants", "parentId": "6" }, { "id": "9", "label": "Business rates", "parentId": "6" }, { "id": "163", "label": "Businesses", "parentId": "86" }, { "id": "86", "label": "Businesses and markets", "parentId": "82" }, { "id": "60", "label": "Care homes, supported and sheltered housing", "parentId": "58" }, { "id": "10", "label": "Careers and employment", "parentId": "6" }, { "id": "122", "label": "Carer and disability benefits", "parentId": "3" }, { "id": "61", "label": "Carers", "parentId": "59" }, { "id": "63", "label": "Children and families", "parentId": "58" }, { "id": "152", "label": "Children and young people social care", "parentId": "63" }, { "id": "96", "label": "Coastline", "parentId": "95" }, { "id": "95", "label": "Coastline management", "parentId": null }, { "id": "45", "label": "Commercial activities", "parentId": "42" }, { "id": "11", "label": "Commercial property", "parentId": "6" }, { "id": "140", "label": "Commercial waste", "parentId": "38" }, { "id": "46", "label": "Communications and publicity", "parentId": "42" }, { "id": "62", "label": "Community centres and facilities", "parentId": "58" }, { "id": "126", "label": "Community grants", "parentId": "5" }, { "id": "16", "label": "Community safety", "parentId": null }, { "id": "4", "label": "Community support", "parentId": "1" }, { "id": "106", "label": "Community transport", "parentId": "105" }, { "id": "47", "label": "Complaints and compliments", "parentId": "42" }, { "id": "32", "label": "Conservation and sustainability", "parentId": "30" }, { "id": "48", "label": "Consultations", "parentId": "42" }, { "id": "114", "label": "Corporate management", "parentId": "52" }, { "id": "67", "label": "Council and community housing", "parentId": "66" }, { "id": "33", "label": "Countryside and farming", "parentId": "30" }, { "id": "17", "label": "Criminal justice", "parentId": "16" }, { "id": "138", "label": "Curriculum and policy", "parentId": "28" }, { "id": "107", "label": "Cycling", "parentId": "105" }, { "id": "49", "label": "Data protection and freedom of information", "parentId": "42" }, { "id": "121", "label": "Death and benefits", "parentId": "3" }, { "id": "50", "label": "Democracy", "parentId": "42" }, { "id": "115", "label": "Democratic services", "parentId": "52" }, { "id": "146", "label": "Democratic services", "parentId": "50" }, { "id": "101", "label": "Development control", "parentId": "99" }, { "id": "127", "label": "Disabled facilities grants", "parentId": "5" }, { "id": "25", "label": "Early years and childcare", "parentId": "63" }, { "id": "26", "label": "Educational support", "parentId": "23" }, { "id": "147", "label": "Elected members", "parentId": "50" }, { "id": "18", "label": "Emergencies", "parentId": "16" }, { "id": "34", "label": "Environmental health", "parentId": "30" }, { "id": "30", "label": "Environmental protection", "parentId": null }, { "id": "51", "label": "Equality and diversity", "parentId": "42" }, { "id": "149", "label": "Equipment and supporting services", "parentId": "59" }, { "id": "74", "label": "Events and exhibitions", "parentId": "72" }, { "id": "139", "label": "Extra-curricular activities", "parentId": "28" }, { "id": "118", "label": "Facilities", "parentId": "52" }, { "id": "123", "label": "Family benefits", "parentId": "3" }, { "id": "116", "label": "Finance", "parentId": "52" }, { "id": "130", "label": "Fire attendance", "parentId": "19" }, { "id": "131", "label": "Fire prevention and certification", "parentId": "19" }, { "id": "19", "label": "Fire safety", "parentId": "16" }, { "id": "89", "label": "Food", "parentId": "82" }, { "id": "108", "label": "Footpaths, byways and bridleways", "parentId": "105" }, { "id": "153", "label": "Fostering and adoption", "parentId": "63" }, { "id": "35", "label": "Funerals and cremations", "parentId": "30" }, { "id": "90", "label": "Gambling and lottery", "parentId": "82" }, { "id": "144", "label": "Goods and services", "parentId": "45" }, { "id": "5", "label": "Grants and aid", "parentId": "1" }, { "id": "128", "label": "Grants for children and young people", "parentId": "5" }, { "id": "88", "label": "Hazardous materials", "parentId": "82" }, { "id": "141", "label": "Hazardous waste", "parentId": "38" }, { "id": "12", "label": "Health and safety at work", "parentId": "6" }, { "id": "58", "label": "Health and social care", "parentId": null }, { "id": "135", "label": "Health and welfare at school", "parentId": "26" }, { "id": "64", "label": "Health services", "parentId": "58" }, { "id": "124", "label": "Heating and housing benefits", "parentId": "3" }, { "id": "150", "label": "Help and advice for adults", "parentId": "59" }, { "id": "102", "label": "Heritage and landscape", "parentId": "99" }, { "id": "27", "label": "Higher education", "parentId": "23" }, { "id": "109", "label": "Highway maintenance", "parentId": "171" }, { "id": "171", "label": "Highways", "parentId": "105" }, { "id": "172", "label": "Highways policy", "parentId": "171" }, { "id": "68", "label": "Homelessness and prevention", "parentId": "66" }, { "id": "142", "label": "Household waste", "parentId": "38" }, { "id": "66", "label": "Housing", "parentId": null }, { "id": "69", "label": "Housing advice", "parentId": "66" }, { "id": "156", "label": "Housing allocation", "parentId": "67" }, { "id": "157", "label": "Housing finance", "parentId": "67" }, { "id": "129", "label": "Housing grants", "parentId": "5" }, { "id": "158", "label": "Housing policy", "parentId": "67" }, { "id": "159", "label": "Housing services", "parentId": "67" }, { "id": "119", "label": "Human resources", "parentId": "52" }, { "id": "70", "label": "Improvements and repairs", "parentId": "66" }, { "id": "132", "label": "Incident response", "parentId": "20" }, { "id": "120", "label": "Information communication technology", "parentId": "52" }, { "id": "97", "label": "Inland waterways", "parentId": "95" }, { "id": "52", "label": "Internal operation", "parentId": "42" }, { "id": "117", "label": "Legal", "parentId": "52" }, { "id": "75", "label": "Leisure activities", "parentId": "72" }, { "id": "72", "label": "Leisure and culture", "parentId": null }, { "id": "76", "label": "Libraries", "parentId": "72" }, { "id": "160", "label": "Library membership", "parentId": "76" }, { "id": "82", "label": "Licences, permits and permissions", "parentId": null }, { "id": "77", "label": "Local history and heritage", "parentId": "72" }, { "id": "154", "label": "Looked after children", "parentId": "63" }, { "id": "125", "label": "Low income benefits", "parentId": "3" }, { "id": "164", "label": "Markets", "parentId": "86" }, { "id": "71", "label": "Multiple occupancy homes", "parentId": "66" }, { "id": "78", "label": "Museums and galleries", "parentId": "72" }, { "id": "21", "label": "Neighbourhood security", "parentId": "16" }, { "id": "175", "label": "NHS services", "parentId": "64" }, { "id": "110", "label": "Parking", "parentId": "105" }, { "id": "36", "label": "Parks and open spaces", "parentId": "30" }, { "id": "165", "label": "Permissions and consents", "parentId": "82" }, { "id": "99", "label": "Planning and building control", "parentId": null }, { "id": "103", "label": "Planning policy", "parentId": "99" }, { "id": "170", "label": "Planning services", "parentId": "99" }, { "id": "20", "label": "Police services", "parentId": "16" }, { "id": "53", "label": "Policy and performance", "parentId": "42" }, { "id": "37", "label": "Pollution control", "parentId": "30" }, { "id": "168", "label": "Port and harbour facilities", "parentId": "98" }, { "id": "169", "label": "Port and harbour operations", "parentId": "98" }, { "id": "98", "label": "Ports and harbours", "parentId": "95" }, { "id": "174", "label": "Private and community health providers", "parentId": "64" }, { "id": "145", "label": "Procurement", "parentId": "45" }, { "id": "65", "label": "Public health", "parentId": "58" }, { "id": "133", "label": "Public safety", "parentId": "20" }, { "id": "111", "label": "Public transport", "parentId": "105" }, { "id": "136", "label": "Pupil development and support", "parentId": "26" }, { "id": "39", "label": "Recycling", "parentId": "30" }, { "id": "161", "label": "Reference and research", "parentId": "76" }, { "id": "13", "label": "Regeneration", "parentId": "6" }, { "id": "54", "label": "Registration", "parentId": "42" }, { "id": "79", "label": "Religion and culture", "parentId": "72" }, { "id": "151", "label": "Residential care and housing", "parentId": "59" }, { "id": "112", "label": "Road safety", "parentId": "105" }, { "id": "173", "label": "Road signs and markings", "parentId": "171" }, { "id": "166", "label": "Roads and streets", "parentId": "91" }, { "id": "137", "label": "School admissions", "parentId": "28" }, { "id": "162", "label": "School and special libraries", "parentId": "76" }, { "id": "28", "label": "Schools", "parentId": "23" }, { "id": "23", "label": "Schools and education", "parentId": null }, { "id": "87", "label": "Social care and education", "parentId": "82" }, { "id": "176", "label": "Social Housing Provider Regulation", "parentId": "67" }, { "id": "29", "label": "Special education needs", "parentId": "63" }, { "id": "80", "label": "Sports and sporting venues", "parentId": "72" }, { "id": "55", "label": "Statistics and census information", "parentId": "42" }, { "id": "40", "label": "Street care and cleaning", "parentId": "30" }, { "id": "155", "label": "Support for children and young people", "parentId": "63" }, { "id": "56", "label": "Taxation", "parentId": "42" }, { "id": "167", "label": "Taxi and private hire", "parentId": "91" }, { "id": "14", "label": "Tenders and contracts", "parentId": "6" }, { "id": "81", "label": "Tourism", "parentId": "72" }, { "id": "104", "label": "Town centre management", "parentId": "99" }, { "id": "15", "label": "Trading standards", "parentId": "6" }, { "id": "91", "label": "Transport", "parentId": "82" }, { "id": "105", "label": "Transport and highways", "parentId": null }, { "id": "113", "label": "Transport schemes", "parentId": "105" }, { "id": "41", "label": "Utilites", "parentId": "30" }, { "id": "92", "label": "Utilites", "parentId": "82" }, { "id": "57", "label": "Volunteering and voluntary organisations", "parentId": "42" }, { "id": "93", "label": "Waste and pollution", "parentId": "82" }, { "id": "38", "label": "Waste management", "parentId": "30" }, { "id": "143", "label": "Waste policy", "parentId": "38" }, { "id": "94", "label": "Water activities", "parentId": "82" }, { "id": "22", "label": "Youth offending", "parentId": "63" }];
+  var LGA_FUNCTIONS = [{ "id": "43", "label": "Accessing and updating personal information", "parentId": "42" }, { "id": "42", "label": "Administration and Government", "parentId": null }, { "id": "24", "label": "Adult education and lifelong learning", "parentId": "23" }, { "id": "59", "label": "Adult services", "parentId": "58" }, { "id": "148", "label": "Adult social care", "parentId": "59" }, { "id": "1", "label": "Advice and benefits", "parentId": null }, { "id": "2", "label": "Advice and welfare rights", "parentId": "1" }, { "id": "83", "label": "Alcohol and entertainment", "parentId": "82" }, { "id": "134", "label": "Alternative education provision", "parentId": "26" }, { "id": "31", "label": "Animal welfare", "parentId": "30" }, { "id": "84", "label": "Animals", "parentId": "82" }, { "id": "73", "label": "Arts and entertainment", "parentId": "72" }, { "id": "44", "label": "Asylum and immigration", "parentId": "42" }, { "id": "3", "label": "Benefits", "parentId": "1" }, { "id": "85", "label": "Building and construction", "parentId": "82" }, { "id": "100", "label": "Building control", "parentId": "99" }, { "id": "7", "label": "Business advice and support", "parentId": "6" }, { "id": "6", "label": "Business and employment", "parentId": null }, { "id": "8", "label": "Business grants", "parentId": "6" }, { "id": "9", "label": "Business rates", "parentId": "6" }, { "id": "163", "label": "Businesses", "parentId": "86" }, { "id": "86", "label": "Businesses and markets", "parentId": "82" }, { "id": "60", "label": "Care homes, supported and sheltered housing", "parentId": "58" }, { "id": "10", "label": "Careers and employment", "parentId": "6" }, { "id": "122", "label": "Carer and disability benefits", "parentId": "3" }, { "id": "61", "label": "Carers", "parentId": "59" }, { "id": "63", "label": "Children and families", "parentId": "58" }, { "id": "152", "label": "Children and young people social care", "parentId": "63" }, { "id": "96", "label": "Coastline", "parentId": "95" }, { "id": "95", "label": "Coastline management", "parentId": null }, { "id": "45", "label": "Commercial activities", "parentId": "42" }, { "id": "11", "label": "Commercial property", "parentId": "6" }, { "id": "140", "label": "Commercial waste", "parentId": "38" }, { "id": "46", "label": "Communications and publicity", "parentId": "42" }, { "id": "62", "label": "Community centres and facilities", "parentId": "58" }, { "id": "126", "label": "Community grants", "parentId": "5" }, { "id": "16", "label": "Community safety", "parentId": null }, { "id": "4", "label": "Community support", "parentId": "1" }, { "id": "106", "label": "Community transport", "parentId": "105" }, { "id": "47", "label": "Complaints and compliments", "parentId": "42" }, { "id": "32", "label": "Conservation and sustainability", "parentId": "30" }, { "id": "48", "label": "Consultations", "parentId": "42" }, { "id": "114", "label": "Corporate management", "parentId": "52" }, { "id": "67", "label": "Council and community housing", "parentId": "66" }, { "id": "33", "label": "Countryside and farming", "parentId": "30" }, { "id": "17", "label": "Criminal justice", "parentId": "16" }, { "id": "138", "label": "Curriculum and policy", "parentId": "28" }, { "id": "107", "label": "Cycling", "parentId": "105" }, { "id": "49", "label": "Data protection and freedom of information", "parentId": "42" }, { "id": "121", "label": "Death and benefits", "parentId": "3" }, { "id": "50", "label": "Democracy", "parentId": "42" }, { "id": "115", "label": "Democratic services", "parentId": "52" }, { "id": "146", "label": "Democratic services", "parentId": "50" }, { "id": "101", "label": "Development control", "parentId": "99" }, { "id": "127", "label": "Disabled facilities grants", "parentId": "5" }, { "id": "25", "label": "Early years and childcare", "parentId": "63" }, { "id": "26", "label": "Educational support", "parentId": "23" }, { "id": "147", "label": "Elected members", "parentId": "50" }, { "id": "18", "label": "Emergencies", "parentId": "16" }, { "id": "34", "label": "Environmental health", "parentId": "30" }, { "id": "30", "label": "Environmental protection", "parentId": null }, { "id": "51", "label": "Equality and diversity", "parentId": "42" }, { "id": "149", "label": "Equipment and supporting services", "parentId": "59" }, { "id": "74", "label": "Events and exhibitions", "parentId": "72" }, { "id": "139", "label": "Extra-curricular activities", "parentId": "28" }, { "id": "118", "label": "Facilities", "parentId": "52" }, { "id": "123", "label": "Family benefits", "parentId": "3" }, { "id": "116", "label": "Finance", "parentId": "52" }, { "id": "130", "label": "Fire attendance", "parentId": "19" }, { "id": "131", "label": "Fire prevention and certification", "parentId": "19" }, { "id": "19", "label": "Fire safety", "parentId": "16" }, { "id": "89", "label": "Food", "parentId": "82" }, { "id": "108", "label": "Footpaths, byways and bridleways", "parentId": "105" }, { "id": "153", "label": "Fostering and adoption", "parentId": "63" }, { "id": "35", "label": "Funerals and cremations", "parentId": "30" }, { "id": "90", "label": "Gambling and lottery", "parentId": "82" }, { "id": "144", "label": "Goods and services", "parentId": "45" }, { "id": "5", "label": "Grants and aid", "parentId": "1" }, { "id": "128", "label": "Grants for children and young people", "parentId": "5" }, { "id": "88", "label": "Hazardous materials", "parentId": "82" }, { "id": "141", "label": "Hazardous waste", "parentId": "38" }, { "id": "12", "label": "Health and safety at work", "parentId": "6" }, { "id": "58", "label": "Health and social care", "parentId": null }, { "id": "135", "label": "Health and welfare at school", "parentId": "26" }, { "id": "64", "label": "Health services", "parentId": "58" }, { "id": "124", "label": "Heating and housing benefits", "parentId": "3" }, { "id": "150", "label": "Help and advice for adults", "parentId": "59" }, { "id": "102", "label": "Heritage and landscape", "parentId": "99" }, { "id": "27", "label": "Higher education", "parentId": "23" }, { "id": "109", "label": "Highway maintenance", "parentId": "171" }, { "id": "171", "label": "Highways", "parentId": "105" }, { "id": "172", "label": "Highways policy", "parentId": "171" }, { "id": "68", "label": "Homelessness and prevention", "parentId": "66" }, { "id": "142", "label": "Household waste", "parentId": "38" }, { "id": "66", "label": "Housing", "parentId": null }, { "id": "69", "label": "Housing advice", "parentId": "66" }, { "id": "156", "label": "Housing allocation", "parentId": "67" }, { "id": "157", "label": "Housing finance", "parentId": "67" }, { "id": "129", "label": "Housing grants", "parentId": "5" }, { "id": "158", "label": "Housing policy", "parentId": "67" }, { "id": "159", "label": "Housing services", "parentId": "67" }, { "id": "119", "label": "Human resources", "parentId": "52" }, { "id": "70", "label": "Improvements and repairs", "parentId": "66" }, { "id": "132", "label": "Incident response", "parentId": "20" }, { "id": "120", "label": "Information communication technology", "parentId": "52" }, { "id": "97", "label": "Inland waterways", "parentId": "95" }, { "id": "52", "label": "Internal operation", "parentId": "42" }, { "id": "117", "label": "Legal", "parentId": "52" }, { "id": "75", "label": "Leisure activities", "parentId": "72" }, { "id": "72", "label": "Leisure and culture", "parentId": null }, { "id": "76", "label": "Libraries", "parentId": "72" }, { "id": "160", "label": "Library membership", "parentId": "76" }, { "id": "82", "label": "Licences, permits and permissions", "parentId": null }, { "id": "77", "label": "Local history and heritage", "parentId": "72" }, { "id": "154", "label": "Looked after children", "parentId": "63" }, { "id": "125", "label": "Low income benefits", "parentId": "3" }, { "id": "164", "label": "Markets", "parentId": "86" }, { "id": "71", "label": "Multiple occupancy homes", "parentId": "66" }, { "id": "78", "label": "Museums and galleries", "parentId": "72" }, { "id": "21", "label": "Neighbourhood security", "parentId": "16" }, { "id": "175", "label": "NHS services", "parentId": "64" }, { "id": "110", "label": "Parking", "parentId": "105" }, { "id": "36", "label": "Parks and open spaces", "parentId": "30" }, { "id": "165", "label": "Permissions and consents", "parentId": "82" }, { "id": "99", "label": "Planning and building control", "parentId": null }, { "id": "103", "label": "Planning policy", "parentId": "99" }, { "id": "170", "label": "Planning services", "parentId": "99" }, { "id": "20", "label": "Police services", "parentId": "16" }, { "id": "53", "label": "Policy and performance", "parentId": "42" }, { "id": "37", "label": "Pollution control", "parentId": "30" }, { "id": "168", "label": "Port and harbour facilities", "parentId": "98" }, { "id": "169", "label": "Port and harbour operations", "parentId": "98" }, { "id": "98", "label": "Ports and harbours", "parentId": "95" }, { "id": "174", "label": "Private and community health providers", "parentId": "64" }, { "id": "145", "label": "Procurement", "parentId": "45" }, { "id": "65", "label": "Public health", "parentId": "58" }, { "id": "133", "label": "Public safety", "parentId": "20" }, { "id": "111", "label": "Public transport", "parentId": "105" }, { "id": "136", "label": "Pupil development and support", "parentId": "26" }, { "id": "39", "label": "Recycling", "parentId": "30" }, { "id": "161", "label": "Reference and research", "parentId": "76" }, { "id": "13", "label": "Regeneration", "parentId": "6" }, { "id": "54", "label": "Registration", "parentId": "42" }, { "id": "79", "label": "Religion and culture", "parentId": "72" }, { "id": "151", "label": "Residential care and housing", "parentId": "59" }, { "id": "112", "label": "Road safety", "parentId": "105" }, { "id": "173", "label": "Road signs and markings", "parentId": "171" }, { "id": "166", "label": "Roads and streets", "parentId": "91" }, { "id": "137", "label": "School admissions", "parentId": "28" }, { "id": "162", "label": "School and special libraries", "parentId": "76" }, { "id": "28", "label": "Schools", "parentId": "23" }, { "id": "23", "label": "Schools and education", "parentId": null }, { "id": "87", "label": "Social care and education", "parentId": "82" }, { "id": "176", "label": "Social Housing Provider Regulation", "parentId": "67" }, { "id": "29", "label": "Special education needs", "parentId": "63" }, { "id": "80", "label": "Sports and sporting venues", "parentId": "72" }, { "id": "55", "label": "Statistics and census information", "parentId": "42" }, { "id": "40", "label": "Street care and cleaning", "parentId": "30" }, { "id": "155", "label": "Support for children and young people", "parentId": "63" }, { "id": "56", "label": "Taxation", "parentId": "42" }, { "id": "167", "label": "Taxi and private hire", "parentId": "91" }, { "id": "14", "label": "Tenders and contracts", "parentId": "6" }, { "id": "81", "label": "Tourism", "parentId": "72" }, { "id": "104", "label": "Town centre management", "parentId": "99" }, { "id": "15", "label": "Trading standards", "parentId": "6" }, { "id": "91", "label": "Transport", "parentId": "82" }, { "id": "105", "label": "Transport and highways", "parentId": null }, { "id": "113", "label": "Transport schemes", "parentId": "105" }, { "id": "41", "label": "Utilites", "parentId": "30" }, { "id": "92", "label": "Utilites", "parentId": "82" }, { "id": "57", "label": "Volunteering and voluntary organisations", "parentId": "42" }, { "id": "93", "label": "Waste and pollution", "parentId": "82" }, { "id": "38", "label": "Waste management", "parentId": "30" }, { "id": "143", "label": "Waste policy", "parentId": "38" }, { "id": "94", "label": "Water activities", "parentId": "82" }, { "id": "22", "label": "Youth offending", "parentId": "63" }, { "id": "shared-capabilities", "label": "Shared Technical Capabilities", "parentId": null }];
 
   // src/constants/tier-map.js
   var DEFAULT_TIER_MAP = /* @__PURE__ */ new Map([
     // Tier 1 (Day 1 critical)
+    ["shared-capabilities", 1],
     ["148", 1],
     ["152", 1],
     ["3", 1],
@@ -1283,11 +1284,6 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
   function getLgaFunction(id) {
     return LGA_FUNCTIONS.find((f) => f.id === id);
   }
-  function registerCustomFunction(lgaFn) {
-    if (!LGA_FUNCTIONS.some((f) => f.id === lgaFn.id)) {
-      LGA_FUNCTIONS.push(lgaFn);
-    }
-  }
   function getLgaBreadcrumb2(id) {
     const fn = getLgaFunction(id);
     if (!fn || !fn.parentId) return null;
@@ -1368,6 +1364,7 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
     const nodeById = /* @__PURE__ */ new Map();
     nodes.forEach((n) => nodeById.set(n.id, n));
     const systemToFunctions = /* @__PURE__ */ new Map();
+    const capabilityProviders = /* @__PURE__ */ new Set();
     edges.forEach((edge) => {
       if (edge.relationship === "REALIZES") {
         const targetNode = nodeById.get(edge.target);
@@ -1375,15 +1372,22 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
           if (!systemToFunctions.has(edge.source)) systemToFunctions.set(edge.source, /* @__PURE__ */ new Set());
           systemToFunctions.get(edge.source).add(targetNode.lgaFunctionId);
         }
+      } else if (edge.relationship === "CONSUMES_CAPABILITY") {
+        capabilityProviders.add(edge.target);
       }
     });
     const systems = nodes.filter((n) => n.type === "ITSystem");
     const systemSuccessorCount = /* @__PURE__ */ new Map();
     systems.forEach((sys) => {
       const sourceCouncil = sys._sourceCouncil;
-      const functionIds = systemToFunctions.get(sys.id);
+      let functionIds = systemToFunctions.get(sys.id);
       if (!functionIds || functionIds.size === 0) {
-        return;
+        if (sys.isIndependent === true || capabilityProviders.has(sys.id)) {
+          functionIds = /* @__PURE__ */ new Set(["shared-capabilities"]);
+          systemToFunctions.set(sys.id, functionIds);
+        } else {
+          return;
+        }
       }
       let allocations = [];
       if (sys.targetAuthorities && Array.isArray(sys.targetAuthorities) && sys.targetAuthorities.length > 0) {
@@ -3106,6 +3110,96 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         });
       }
     }
+    const sharedSheet = workbook.Sheets["Shared Capabilities"];
+    if (sharedSheet) {
+      const rows = XLSX.utils.sheet_to_json(sharedSheet, { header: 1 });
+      let dataStartIndex = 3;
+      for (let i = 0; i < Math.min(rows.length, 5); i++) {
+        const row = rows[i];
+        if (Array.isArray(row) && safeStr(row[0]).toLowerCase().startsWith("system name")) {
+          const nextRow = rows[i + 1];
+          if (nextRow && Array.isArray(nextRow) && safeStr(nextRow[0]).toLowerCase().includes("example")) {
+            dataStartIndex = i + 2;
+          } else {
+            dataStartIndex = i + 1;
+          }
+          break;
+        }
+      }
+      for (let ri = dataStartIndex; ri < rows.length; ri++) {
+        const row = rows[ri];
+        if (!Array.isArray(row)) continue;
+        const systemName = safeStr(row[COL.SYSTEM_NAME - 2]);
+        if (!systemName || systemName.toUpperCase().includes("EXAMPLE")) continue;
+        sysCounter++;
+        const sysNodeId = `sys-${sysCounter}`;
+        const sysNode = {
+          id: sysNodeId,
+          label: systemName,
+          type: "ITSystem",
+          isIndependent: true
+        };
+        const vendor = safeStr(row[COL.VENDOR - 2]);
+        if (vendor) sysNode.vendor = vendor;
+        const version = safeStr(row[COL.VERSION - 2]);
+        if (version) sysNode.version = version;
+        const users = safeInt(row[COL.USERS - 2]);
+        if (users !== void 0) sysNode.users = users;
+        const rawCost = row[COL.ANNUAL_COST - 2];
+        const costStr = safeStr(rawCost).replace(/[£$,\s]/g, "");
+        const annualCost = costStr ? parseFloat(costStr) : NaN;
+        if (!isNaN(annualCost) && annualCost > 0) {
+          sysNode.annualCost = annualCost;
+        }
+        const contractEndParsed = parseContractEnd(row[COL.CONTRACT_END - 2]);
+        if (contractEndParsed) {
+          sysNode.endYear = contractEndParsed.endYear;
+          sysNode.endMonth = contractEndParsed.endMonth;
+        }
+        const noticePeriod = safeInt(row[COL.NOTICE_PERIOD - 2]);
+        if (noticePeriod !== void 0) sysNode.noticePeriod = noticePeriod;
+        const portability = parsePortability(row[COL.PORTABILITY - 2]);
+        if (portability !== void 0) sysNode.portability = portability;
+        const dataPartitioning = parseDataPartitioning(row[COL.DATA_PARTITIONING - 2]);
+        if (dataPartitioning !== void 0) sysNode.dataPartitioning = dataPartitioning;
+        const hostingRaw = safeStr(row[COL.CLOUD_HOSTED - 2]).toLowerCase().trim();
+        if (hostingRaw) {
+          if (["yes", "true", "cloud", "saas", "hosted"].includes(hostingRaw)) sysNode.hosting = "cloud";
+          else if (["no", "false", "on-prem", "on-premise", "local"].includes(hostingRaw)) sysNode.hosting = "on-premise";
+          else if (["partner", "shared", "shared service"].includes(hostingRaw)) sysNode.hosting = "partner-hosted";
+        }
+        const hostingPartner = safeStr(row[COL.HOSTING_PARTNER - 2]);
+        if (hostingPartner) sysNode.hostingPartner = hostingPartner;
+        const isERP = parseBool(row[COL.ERP - 2]);
+        if (isERP !== void 0) sysNode.isERP = isERP;
+        const sharedWithArr = parseCommaSeparated(row[COL.SHARED_WITH - 2]);
+        if (sharedWithArr.length > 0) sysNode.sharedWith = sharedWithArr;
+        const targetAuthArr = parseCommaSeparated(row[COL.TARGET_AUTHORITIES - 2]);
+        if (targetAuthArr.length > 0) sysNode.targetAuthorities = targetAuthArr;
+        const supportModel = parseSupportModel(row[COL.SUPPORT_MODEL - 2]);
+        if (supportModel !== void 0) sysNode.supportModel = supportModel;
+        const capabilitiesArr = parseCommaSeparated(row[COL.CAPABILITIES - 2]).map((c) => c.toLowerCase());
+        if (capabilitiesArr.length > 0) sysNode.capabilityType = capabilitiesArr;
+        nodes.push(sysNode);
+        systemsByName.set(systemName.toLowerCase(), sysNodeId);
+        const fnNodeId = "fn-shared-capabilities";
+        if (!functionsSeen.has("shared-capabilities")) {
+          functionsSeen.add("shared-capabilities");
+          nodes.push({
+            id: fnNodeId,
+            label: "Shared Technical Capabilities",
+            type: "Function",
+            lgaFunctionId: "shared-capabilities",
+            _sourceSheet: "Shared Capabilities"
+          });
+        }
+        edges.push({
+          source: fnNodeId,
+          target: sysNodeId,
+          relationship: "REALIZES"
+        });
+      }
+    }
     const depsSheet = workbook.Sheets["Dependencies"];
     if (depsSheet) {
       const rows = XLSX.utils.sheet_to_json(depsSheet, { header: 1 });
@@ -3131,11 +3225,11 @@ body { font-family: "Arial", sans-serif; color: var(--govuk-black); background-c
         const dependentId = systemsByName.get(dependentName);
         const dependedOnId = systemsByName.get(dependedOnName);
         if (!dependentId) {
-          warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain sheets \u2014 edge skipped.`);
+          warnings.push(`Dependencies: system "${safeStr(row[0])}" not found in domain or capabilities sheets \u2014 edge skipped.`);
           continue;
         }
         if (!dependedOnId) {
-          warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain sheets \u2014 edge skipped.`);
+          warnings.push(`Dependencies: system "${safeStr(row[1])}" not found in domain or capabilities sheets \u2014 edge skipped.`);
           continue;
         }
         edges.push({
@@ -14132,6 +14226,7 @@ tr:nth-child(even){background:#f3f2f1;}
     "Advice & Benefits": "Revenues, benefits, welfare rights, grants",
     "Leisure & Culture": "Libraries, leisure centres, arts, museums",
     "Business & Employment": "Business support, regeneration, trading standards",
+    "Shared Capabilities": "Cross-cutting systems like Identity Management, API Gateways, etc.",
     "Dependencies": "System-to-system capability dependencies",
     "Definitions": "What each dropdown field means \u2014 refer here if unsure",
     "_Lookups": "Validation lists (internal use)",
@@ -14141,7 +14236,7 @@ tr:nth-child(even){background:#f3f2f1;}
     "ESD ID",
     "Function",
     "System Name*",
-    "Vendor",
+    "Vendor*",
     "Version",
     "Users",
     "Annual Cost (\xA3)",
@@ -14169,7 +14264,7 @@ tr:nth-child(even){background:#f3f2f1;}
   function buildIndexSheet(wb) {
     const sheet = wb.addWorksheet("Index");
     applyColumnWidths(sheet, [35, 55]);
-    const allSheetNames = ["Council Info", ...DOMAIN_SHEET_NAMES, "Dependencies", "Definitions"];
+    const allSheetNames = ["Council Info", ...DOMAIN_SHEET_NAMES, "Shared Capabilities", "Dependencies", "Definitions"];
     const titleRow = sheet.addRow(["LGR Architecture Data Template"]);
     titleRow.font = { bold: true, size: 14 };
     sheet.mergeCells("A1:B1");
@@ -14348,8 +14443,8 @@ tr:nth-child(even){background:#f3f2f1;}
     exRow.eachCell((cell) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
     });
-    const countifParts = DOMAIN_SHEET_NAMES.map((name) => `COUNTIF('${name}'!C:C,A{row})`).join("+");
-    const countifPartsB = DOMAIN_SHEET_NAMES.map((name) => `COUNTIF('${name}'!C:C,B{row})`).join("+");
+    const countifParts = DOMAIN_SHEET_NAMES.map((name) => `COUNTIF('${name}'!C:C,A{row})`).join("+") + `+COUNTIF('Shared Capabilities'!A:A,A{row})`;
+    const countifPartsB = DOMAIN_SHEET_NAMES.map((name) => `COUNTIF('${name}'!C:C,B{row})`).join("+") + `+COUNTIF('Shared Capabilities'!A:A,B{row})`;
     for (let row = 3; row <= 100; row++) {
       const formula = `IF(AND(A${row}<>"",B${row}<>""),IF(AND(${countifParts.replace(/\{row\}/g, row)}>0,${countifPartsB.replace(/\{row\}/g, row)}>0),"\u2713","\u26A0 Not found"),"")`;
       sheet.getCell(`D${row}`).value = { formula };
@@ -14358,6 +14453,111 @@ tr:nth-child(even){background:#f3f2f1;}
     sheet.getCell("B2").note = "The system that provides the capability \u2014 use the EXACT same name from your domain sheets.";
     sheet.getCell("C2").note = "What capability is consumed? e.g., payments, workflow, SSO, integration, SMS, forms.";
     sheet.getCell("D2").note = "Auto-checks whether both system names match entries in your domain sheets. \u2713 = found, \u26A0 = not found (check spelling).";
+    return sheet;
+  }
+  function buildSharedCapabilitiesSheet(wb) {
+    const sheetName = "Shared Capabilities";
+    const sheet = wb.addWorksheet(sheetName);
+    const headers = DOMAIN_HEADERS.slice(2);
+    const widths = DOMAIN_COL_WIDTHS.slice(2);
+    applyColumnWidths(sheet, widths);
+    const guidanceText = `List the shared capability systems your council uses (e.g. Identity Management, API Gateways, Data Warehouses). Add extra rows as needed. Fields marked * are mandatory.`;
+    const guidanceRow = sheet.addRow([guidanceText]);
+    sheet.mergeCells("A1:P1");
+    guidanceRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+    guidanceRow.font = { italic: true };
+    const headerRow = sheet.addRow(headers);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+      cell.border = {
+        bottom: { style: "medium", color: { argb: "FF000000" } }
+      };
+    });
+    sheet.autoFilter = "A2:P1000";
+    const fallback = [
+      "Example Identity Provider",
+      "Okta",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Vendor-supported",
+      "SSO, Identity"
+    ];
+    const exRow = sheet.addRow(fallback);
+    exRow.font = { italic: true, color: { argb: "FF666666" } };
+    exRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+    });
+    for (let i = 0; i < 20; i++) {
+      sheet.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    }
+    const validations = {
+      H: {
+        type: "list",
+        allowBlank: true,
+        formulae: ["_Lookups!$C$2:$C$4"],
+        showInputMessage: true,
+        promptTitle: "Data Portability",
+        prompt: "How easy is it to extract your data in bulk?\nHigh - Open APIs, standard formats, export tools.\nMedium - Some export capability, may require vendor support.\nLow - Proprietary format, vendor lock-in, reverse engineering."
+      },
+      I: {
+        type: "list",
+        allowBlank: true,
+        formulae: ["_Lookups!$D$2:$D$3"],
+        showInputMessage: true,
+        promptTitle: "Data Partitioning",
+        prompt: "How is data organised?\nSegmented - Logically separated by service area. Can be split easily.\nMonolithic - Entangled across all areas. Splitting requires complex ETL work."
+      },
+      J: {
+        type: "list",
+        allowBlank: true,
+        formulae: ["_Lookups!$E$2:$E$4"],
+        showInputMessage: true,
+        promptTitle: "Hosting Model",
+        prompt: "Where is this system hosted?\nCloud - Vendor-hosted SaaS or cloud platform.\nOn-Premise - Hosted on council-owned servers.\nPartner-Hosted - Hosted by another council or shared service body."
+      },
+      L: {
+        type: "list",
+        allowBlank: true,
+        formulae: ["_Lookups!$B$2:$B$3"],
+        showInputMessage: true,
+        promptTitle: "ERP System?",
+        prompt: "Is this an Enterprise Resource Planning system?\nYes - Large integrated platform spanning multiple functions (e.g. SAP, Oracle).\nNo - Focused on a single function or service area."
+      },
+      O: {
+        type: "list",
+        allowBlank: true,
+        formulae: ["_Lookups!$F$2:$F$4"],
+        showInputMessage: true,
+        promptTitle: "Support Model",
+        prompt: "Who maintains this system?\nVendor-supported - Commercial vendor with SLA.\nCommunity-supported - Maintained collaboratively (open source, shared digital team).\nUnsupported - No active maintenance agreement."
+      }
+    };
+    for (const [col, validation] of Object.entries(validations)) {
+      sheet.dataValidations.add(`${col}3:${col}1000`, validation);
+    }
+    sheet.getCell("A2").note = "The name of the IT system as your council knows it. Use the same name consistently (it must match in the Dependencies sheet).";
+    sheet.getCell("B2").note = 'Software vendor name, or "In-House" if developed internally by the council.';
+    sheet.getCell("C2").note = "Version string of the software.";
+    sheet.getCell("D2").note = "Approximate number of staff who regularly use this system.";
+    sheet.getCell("E2").note = "Annual licence, hosting, and support cost in pounds (number only, no \xA3 symbol).";
+    sheet.getCell("F2").note = "When the current contract expires. Format: mm/yyyy (e.g., 03/2028).";
+    sheet.getCell("G2").note = "How many months notice you must give to exit the contract before it auto-renews.";
+    sheet.getCell("K2").note = "Name of the council or organisation hosting this (if Partner-Hosted).";
+    sheet.getCell("M2").note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
+    sheet.getCell("N2").note = "Successor authorities this system is explicitly allocated to. Comma-separated.";
+    sheet.getCell("O2").note = "Who maintains this system? Vendor-supported, Community-supported, or Unsupported.";
+    sheet.getCell("P2").note = "What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.";
     return sheet;
   }
   function buildDefinitionsSheet(wb) {
@@ -14480,6 +14680,7 @@ tr:nth-child(even){background:#f3f2f1;}
       if (descendantIds.size === 0) continue;
       buildDomainSheet(wb, sheetName, rootId);
     }
+    buildSharedCapabilitiesSheet(wb);
     buildDependenciesSheet(wb);
     buildDefinitionsSheet(wb);
     buildLookupsSheet(wb);
@@ -14684,6 +14885,12 @@ tr:nth-child(even){background:#f3f2f1;}
               type: "boolean",
               required: false,
               description: "Whether this is an Enterprise Resource Planning system spanning multiple functions"
+            },
+            {
+              name: "isIndependent",
+              type: "boolean",
+              required: false,
+              description: "True for capability systems (e.g., GOV.UK Notify) that do not realize LGA functions directly but provide capabilities to other systems"
             },
             {
               name: "sharedWith",
@@ -15049,6 +15256,9 @@ tr:nth-child(even){background:#f3f2f1;}
     for (const sysId of systemNodeIds) {
       if (!realizesTargets.has(sysId) && !capabilityProviderIds.has(sysId)) {
         const sysNode = nodes.find((n) => n.id === sysId);
+        if (sysNode && sysNode.isIndependent === true) {
+          continue;
+        }
         const label = sysNode && sysNode.label ? sysNode.label : sysId;
         addWarning(result, `ITSystem node '${label}': no REALIZES edge and not a capability provider \u2014 system may be orphaned`);
       }
@@ -15828,9 +16038,7 @@ tr:nth-child(even){background:#f3f2f1;}
             document.body.appendChild(editorOverlay);
           }
           editorOverlay.classList.remove("hidden");
-          console.log(">>> About to renderUnifiedEditor");
           editorOverlay.innerHTML = renderUnifiedEditor(json, { source: "validator", title: json.councilName || "Architecture Editor" });
-          console.log(">>> About to wireUnifiedEditor");
           wireUnifiedEditor(editorOverlay, json, {
             source: "validator",
             onSave(fixedJson) {
@@ -16309,17 +16517,6 @@ tr:nth-child(even){background:#f3f2f1;}
     stageTransitionConfig.classList.remove("hidden");
     renderTransitionConfigPanel();
   });
-  var DOMAIN_ROOT_MAP = {
-    "Health & Social Care": "58",
-    "Administration & Government": "42",
-    "Environmental Protection": "30",
-    "Planning & Building Control": "99",
-    "Housing": "66",
-    "Transport & Highways": "105",
-    "Advice & Benefits": "1",
-    "Leisure & Culture": "72",
-    "Business & Employment": "6"
-  };
   function runBaselining() {
     state.mergedArchitecture = { nodes: [], edges: [], councils: /* @__PURE__ */ new Set() };
     state.lgaFunctionMap.clear();
@@ -16331,14 +16528,13 @@ tr:nth-child(even){background:#f3f2f1;}
       state.mergedArchitecture.councils.add(councilName);
       upload.data.nodes.forEach((node) => {
         if (node.type === "Function") {
-          const assignedLgaId = node.lgaFunctionId || `custom-${node.label.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+          if (!node.lgaFunctionId) {
+            const slug = (node.label || node.id).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            node.lgaFunctionId = "custom-" + slug;
+          }
+          const assignedLgaId = node.lgaFunctionId;
           if (!state.lgaFunctionMap.has(assignedLgaId)) {
             let lgaFn = getLgaFunction(assignedLgaId);
-            if (!lgaFn && assignedLgaId.startsWith("custom-")) {
-              const parentId = node._sourceSheet ? DOMAIN_ROOT_MAP[node._sourceSheet] : null;
-              lgaFn = { id: assignedLgaId, label: node.label, parentId: parentId || null };
-              registerCustomFunction(lgaFn);
-            }
             state.lgaFunctionMap.set(assignedLgaId, {
               lgaId: assignedLgaId,
               label: lgaFn ? lgaFn.label : node.label,
@@ -16350,7 +16546,7 @@ tr:nth-child(even){background:#f3f2f1;}
           const entry = state.lgaFunctionMap.get(assignedLgaId);
           entry.councils.add(councilName);
           entry.localNodeIds.add(node.id);
-          state.mergedArchitecture.nodes.push({ ...node, lgaFunctionId: assignedLgaId, _sourceCouncil: councilName });
+          state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
         } else {
           state.mergedArchitecture.nodes.push({ ...node, _sourceCouncil: councilName });
         }

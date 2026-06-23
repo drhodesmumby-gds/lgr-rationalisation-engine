@@ -212,6 +212,12 @@ export const SCHEMA_DEFINITIONS = {
                         description: 'Whether this is an Enterprise Resource Planning system spanning multiple functions'
                     },
                     {
+                        name: 'isIndependent',
+                        type: 'boolean',
+                        required: false,
+                        description: 'True for capability systems (e.g., GOV.UK Notify) that do not realize LGA functions directly but provide capabilities to other systems'
+                    },
+                    {
                         name: 'sharedWith',
                         type: 'array',
                         required: false,

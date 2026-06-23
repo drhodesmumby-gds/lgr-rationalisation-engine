@@ -61,7 +61,7 @@ const SHEET_DESCRIPTIONS = {
 // Domain column headers
 // -----------------------------------------------------------------------
 const DOMAIN_HEADERS = [
-    'ESD ID', 'Function', 'System Name*', 'Vendor', 'Version', 'Users',
+    'ESD ID', 'Function', 'System Name*', 'Vendor*', 'Version', 'Users',
     'Annual Cost (£)', 'Contract End', 'Notice Period (months)',
     'Portability', 'Data Partitioning', 'Hosting', 'Hosting Partner', 'ERP?',
     'Shared With', 'Target Authorities', 'Support Model', 'Capabilities Provided',
@@ -354,7 +354,7 @@ function buildSharedCapabilitiesSheet(wb) {
     sheet.autoFilter = 'A2:P1000';
 
     const fallback = [
-        'Example Identity Provider', 'Okta', '', '', '', '', '', '', '', '', '', '', '', 'Vendor-supported', '',
+        'Example Identity Provider', 'Okta', '', '', '', '', '', '', '', '', '', '', '', '', 'Vendor-supported', 'SSO, Identity',
     ];
     const exRow = sheet.addRow(fallback);
     exRow.font = { italic: true, color: { argb: 'FF666666' } };
@@ -408,6 +408,7 @@ function buildSharedCapabilitiesSheet(wb) {
     sheet.getCell('K2').note = 'Name of the council or organisation hosting this (if Partner-Hosted).';
     sheet.getCell('M2').note = 'Other councils that share this same system instance with you. Comma-separated (e.g., "Westshire County, Easton District"). Leave blank if not shared.';
     sheet.getCell('N2').note = 'Successor authorities this system is explicitly allocated to. Comma-separated.';
+    sheet.getCell('O2').note = 'Who maintains this system? Vendor-supported, Community-supported, or Unsupported.';
     sheet.getCell('P2').note = 'What capabilities does this system provide to OTHER systems? e.g., payments, SSO, forms, SMS. Only fill this if other systems depend on this one for a specific service.';
 
     return sheet;

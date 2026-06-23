@@ -508,7 +508,7 @@ describe('convertXlsxToArchitecture — Shared Capabilities sheet', () => {
         ];
     }
 
-    it('parses independent systems correctly with isIndependent: true and no REALIZES edges', () => {
+    it('parses independent systems correctly with isIndependent: true and wires them to shared-capabilities Function', () => {
         const wb = mockWorkbook({
             'Shared Capabilities': sharedSheetRows([
                 ['Notify', 'GOV.UK', 'v1', 500, 1000, 48000, 3, 'High', 'Monolithic', 'Cloud', '', 'No', '', '', 'Vendor-supported', 'SMS, Email']
@@ -523,9 +523,15 @@ describe('convertXlsxToArchitecture — Shared Capabilities sheet', () => {
         expect(sysNode.isIndependent).toBe(true);
         expect(sysNode.capabilityType).toEqual(['sms', 'email']);
         
-        // No REALIZES edges should be generated for independent systems
-        const realizesEdges = architecture.edges.filter(e => e.source === sysNode.id && e.relationship === 'REALIZES');
-        expect(realizesEdges.length).toBe(0);
+        // Ensure the Function node is created
+        const fnNode = architecture.nodes.find(n => n.id === 'fn-shared-capabilities');
+        expect(fnNode).toBeDefined();
+        expect(fnNode.lgaFunctionId).toBe('shared-capabilities');
+        
+        // Ensure REALIZES edge is created
+        const realizesEdges = architecture.edges.filter(e => e.target === sysNode.id && e.relationship === 'REALIZES');
+        expect(realizesEdges.length).toBe(1);
+        expect(realizesEdges[0].source).toBe('fn-shared-capabilities');
     });
 });
 
