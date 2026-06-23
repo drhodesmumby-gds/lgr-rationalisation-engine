@@ -61,7 +61,7 @@ The `lgaFunctionId` is the critical field that enables cross-council comparison.
 
 Two councils calling the same service different names (e.g., "Refuse Operations" and "Waste Collection") will appear in the same analysis row if they share the same ESD identifier.
 
-> **Note:** Functions without a valid `lgaFunctionId` are excluded from the analysis matrix and flagged during baselining. The Architecture Editor provides search and auto-suggest to help find the correct identifier.
+> **Note:** Functions without a valid `lgaFunctionId` are excluded from the analysis matrix and flagged during baselining. The Architecture Editor provides search and auto-suggest to help find the correct identifier. (Exception: Systems marked as `isIndependent: true` bypass this rule and are automatically mapped to a virtual 'Shared Technical Capabilities' function).
 
 Common ESD function IDs:
 

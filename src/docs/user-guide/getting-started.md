@@ -70,7 +70,7 @@ A council file with just system names and vendors is usable but will produce lim
 | Tip | Why it matters |
 |-----|----------------|
 | Use consistent vendor names across councils | "System C" and "SystemC Ltd" will be treated as different vendors |
-| Include the `lgaFunctionId` for every function | Functions without this identifier are excluded from cross-council analysis |
+| Include the `lgaFunctionId` for every function | Functions without this identifier are excluded from cross-council analysis (unless the system is marked as an independent capability) |
 | Provide contract end dates as year and month | The engine calculates notice triggers from these - missing dates mean missing urgency signals |
 | Record user counts consistently | Decide whether you are counting concurrent users, named users, or total licensed users - and use the same measure across all councils |
 | Flag shared services explicitly | Use the `sharedWith` field to list other councils sharing each system instance |
